@@ -1,14 +1,16 @@
 "use client";
 
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
+import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Permission, Post } from "peal-contract";
+import type { Permission, Platform, Post } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { reconnectChannel } from "#channels/channels-api.ts";
+import { rememberConnection } from "#channels/pending-connection.ts";
 import {
   followUpsChanged,
   startFollowUp,
@@ -47,7 +49,34 @@ const FollowUpForm = ({
   const explain = useFollowUpErrorText();
   const [draft, setDraft] = useState<FollowUpDraft>(freshFollowUp);
   const [error, setError] = useState<string | null>(null);
+  // The channels that would repost once connected again, as the refusal
+  // said: Bluesky asks for reposts when a rule first needs them.
+  const [reconnectable, setReconnectable] = useState<
+    readonly { readonly channelId: string; readonly platform: Platform }[]
+  >([]);
+  const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
   const [busy, startTransition] = useTransition();
+
+  const allowReposts = (channel: {
+    readonly channelId: string;
+    readonly platform: Platform;
+  }) => {
+    startTransition(async () => {
+      const exit = await reconnect({
+        params: { channelId: channel.channelId, workspaceId },
+        query: { reposts: "true" },
+      });
+
+      if (Exit.isSuccess(exit)) {
+        rememberConnection({ platform: channel.platform, workspaceId });
+        globalThis.location.assign(exit.value.authorizationUrl);
+
+        return;
+      }
+
+      toast.error(t("allowRepostsFailed"));
+    });
+  };
 
   const submit = () => {
     const request = followUpRequestOf(post.id, draft);
@@ -76,20 +105,45 @@ const FollowUpForm = ({
         },
         onSome: (refused) => {
           setError(explain(refused));
+          setReconnectable(
+            refused.key === "notPossible" ? refused.reconnect : []
+          );
         },
       });
     });
   };
 
   return (
-    <FollowUpFormView
-      busy={busy}
-      draft={draft}
-      error={error}
-      onCancel={onClose}
-      onChange={setDraft}
-      onSubmit={submit}
-    />
+    <>
+      <FollowUpFormView
+        busy={busy}
+        draft={draft}
+        error={error}
+        onCancel={onClose}
+        onChange={setDraft}
+        onSubmit={submit}
+      />
+      {reconnectable.length === 0 ? null : (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">
+            {t("repostsNeedReconnect")}
+          </span>
+          {reconnectable.map((channel) => (
+            <Button
+              key={channel.channelId}
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                allowReposts(channel);
+              }}
+            >
+              {t("allowReposts")}
+            </Button>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

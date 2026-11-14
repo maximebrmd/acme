@@ -1,6 +1,6 @@
 import { Cause, Exit, Option, Schema } from "effect";
 import { FollowUpNotPossible, TooManyFollowUpRules } from "peal-contract";
-import type { FollowUpRefusal } from "peal-contract";
+import type { FollowUpRefusal, Platform } from "peal-contract";
 
 // Why a change to a follow-up rule failed, as the FollowUps.errors
 // catalogue explains it, from the API's errors.
@@ -9,7 +9,15 @@ export type FollowUpError =
   | {
       readonly key: "ended" | "forbidden" | "notFound" | "taken" | "unknown";
     }
-  | { readonly key: "notPossible"; readonly reason: FollowUpRefusal }
+  | {
+      readonly key: "notPossible";
+      readonly reason: FollowUpRefusal;
+      /** The channels that would repost once connected again. */
+      readonly reconnect: readonly {
+        readonly channelId: string;
+        readonly platform: Platform;
+      }[];
+    }
   | { readonly allowed: number; readonly key: "tooMany" };
 
 const isNotPossible = Schema.is(FollowUpNotPossible);
@@ -25,7 +33,13 @@ const keys = new Map<string, "ended" | "forbidden" | "notFound" | "taken">([
 
 const explain = (error: { readonly _tag: string }): FollowUpError => {
   if (isNotPossible(error)) {
-    return { key: "notPossible", reason: error.reason };
+    return {
+      key: "notPossible",
+      reason: error.reason,
+      reconnect: error.channels
+        .filter(({ repost }) => repost === "reconnect")
+        .map(({ channelId, platform }) => ({ channelId, platform })),
+    };
   }
 
   if (isTooMany(error)) {

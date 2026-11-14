@@ -146,7 +146,7 @@ Une règle de relance agit sur votre propre publication quand elle a assez de me
 
 | Plateforme | Commentaire                                                                  | Repartage                                          |
 | ---------- | ---------------------------------------------------------------------------- | -------------------------------------------------- |
-| Bluesky    | Oui                                                                          | Oui (un canal connecté avant doit être reconnecté) |
+| Bluesky    | Oui                                                                          | Oui (la première règle de repartage le fait reconnecter) |
 | Mastodon   | Oui                                                                          | Oui (un partage)                                   |
 | X          | Oui, là où le serveur envoie les fils X ; X le facture comme une publication | Pas encore                                         |
 | LinkedIn   | Non : les conditions de LinkedIn interdisent la publication automatisée      | Non                                                |
@@ -156,17 +156,19 @@ Une règle de relance agit sur votre propre publication quand elle a assez de me
 ### Quand une règle agit [#follow-up-timing]
 
 - Les mentions J’aime sont celles que les [statistiques](/fr/guides/engage/analytics) de Peal ont comptées en dernier : toutes les heures pendant deux jours après la mise en ligne, puis chaque jour. Une règle ne demande jamais rien de plus à une plateforme : une publication atteint ses mentions J’aime au prochain comptage de Peal, et une plateforme où Peal ne compte rien (X, sauf si la lecture est activée) ne la déclenche jamais.
-- Une publication est relancée une fois de chaque sorte, quelles que soient les règles qui agissent sur elle, et un canal porte 10 relances par jour au plus ; au-delà, elles attendent le lendemain, dans leurs sept jours.
+- Une publication est relancée une fois de chaque sorte, quelles que soient les règles qui agissent sur elle, et un canal porte 10 relances par jour au plus ; au-delà, elles attendent le lendemain, dans leurs sept jours. Ce qu’une règle arrêtée a abandonné revient à la règle suivante ; une règle sur une publication qu’une autre règle relance déjà de toutes les façons demandées est refusée.
+- Ajouter un commentaire ou un repartage à une règle sur une publication agit aussitôt sur les canaux où la publication est déjà en ligne.
+- Sur X, un commentaire dont l’envoi a été interrompu est recherché parmi les publications récentes du compte avant tout nouvel envoi : une lecture aux frais de Peal, jamais facturée.
 - Le commentaire va sous la dernière partie de la publication, et se lit comme la suite du fil. Rien n’aime, ne suit ni n’écrit à personne.
 - Une règle sur un canal agit sur chaque publication que le canal met en ligne après son lancement. Une publication et un canal ont une règle en cours à la fois.
 
 ### Approbations [#follow-up-approvals]
 
-Une règle publie d’elle-même : là où la [politique d’approbation](/fr/guides/posts/review) de l’espace de travail retient vos publications, la règle attend qu’un membre qui approuve les publications l’approuve dans **Réglages › Relances**. Modifier son commentaire ou le repartage demande à nouveau ; modifier les mentions J’aime ou la mettre en pause, non. Si la politique se met à retenir vos publications après le lancement, elle attend aussi, sauf si elle a été approuvée.
+Une règle publie d’elle-même : là où la [politique d’approbation](/fr/guides/posts/review) de l’espace de travail retient vos publications, la règle attend qu’un membre qui approuve les publications l’approuve dans **Réglages › Relances**. Modifier son commentaire ou le repartage demande à nouveau, sauf si le membre qui le modifie approuve les publications et que la politique ne retient pas les siennes : sa modification l’approuve. Modifier les mentions J’aime ou la mettre en pause, non. Si la politique se met à retenir vos publications après le lancement, elle attend aussi, sauf si elle a été approuvée, et un membre qui approuve les publications peut alors l’approuver. Juste avant qu’une relance parte, Peal vérifie à nouveau ; si elle ne peut plus partir, elle attend, dans ses sept jours.
 
 ### Quand une relance ne part pas [#follow-up-ends]
 
-Une relance expire quand ses sept jours passent : la publication n’a pas atteint les mentions J’aime, la règle était en pause ou attendait une approbation, ou la journée du canal était pleine. Elle est abandonnée quand sa règle est arrêtée, quand sa publication n’est plus en ligne, ou quand son canal ne peut plus la porter. Une plateforme qui la refuse la fait échouer, avec le code de la plateforme ; une plateforme qui a pu la prendre sans répondre la laisse non confirmée : vérifiez la plateforme, Peal ne l’envoie jamais deux fois. Une règle prend fin quand la personne qui l’a lancée ne peut plus publier, ou, sur une publication, quand tout ce qu’elle préparait est terminé.
+Une relance expire quand ses sept jours passent : la publication n’a pas atteint les mentions J’aime, la règle était en pause ou attendait une approbation, ou la journée du canal était pleine. Elle est abandonnée quand sa règle est arrêtée, quand sa publication n’est plus en ligne, ou quand son canal ne peut plus la porter. Une plateforme qui la refuse la fait échouer, avec le code de la plateforme ; une plateforme qui a pu la prendre sans répondre la laisse non confirmée : vérifiez la plateforme, Peal ne l’envoie jamais deux fois. Une règle prend fin quand la personne qui l’a lancée ne peut plus publier, quand son canal est déconnecté, ou, sur une publication, quand tout ce qu’elle préparait est terminé.
 
 ## Publier depuis un flux [#feeds]
 

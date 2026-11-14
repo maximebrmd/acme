@@ -28,6 +28,7 @@ import {
   CommentRuleSchema,
   CommentRuleStatusSchema,
   maxKeywords,
+  maxChannelRepliesPerDay,
   maxRuleRepliesPerDay,
 } from "peal-contract";
 
@@ -306,7 +307,7 @@ const commentRuleId = Schema.String.annotate({
   description: "The comment rule's id, as list_comment_rules answers it.",
 });
 
-const rulesAnswer = `A comment rule answers by itself, in public, as the channel's account, a comment received after it started under a post it answers on that holds one of its keywords as a word (whatever its case and accents), with its \`reply\`: once a comment and once a person, ${String(maxRuleRepliesPerDay)} a day at most, each reply one of the inbox's own, with their meter. It answers on Mastodon, and on Facebook Pages and Instagram where the server reads them; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself. It never likes, follows or messages anyone privately.`;
+const rulesAnswer = `A comment rule answers by itself, in public, as the channel's account, a comment received after it started or was last set going again under a post it answers on that holds one of its keywords as a word (whatever its case and accents), with its \`reply\`: once a comment and once a person, ${String(maxRuleRepliesPerDay)} a day at most and ${String(maxChannelRepliesPerDay)} a day for every rule of a channel together, each reply one of the inbox's own, with their meter. It answers on Mastodon, and on Facebook Pages and Instagram where the server reads them; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself. It never likes, follows or messages anyone privately.`;
 
 const keywords = Schema.Array(Schema.String).annotate({
   description: `1 to ${String(maxKeywords)} words or phrases, 60 characters each at most.`,

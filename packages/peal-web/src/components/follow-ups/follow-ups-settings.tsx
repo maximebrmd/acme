@@ -1,8 +1,7 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
-import type { Exit } from "effect";
+import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type { FollowUpRule } from "peal-contract";
@@ -21,6 +20,8 @@ import { Button } from "peal-ui/components/button";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
+import { reconnectChannel } from "#channels/channels-api.ts";
+import { rememberConnection } from "#channels/pending-connection.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import {
   SettingsLoadFailed,
@@ -163,6 +164,8 @@ const RuleList = ({
   const query = workspaceFollowUps(workspaceId);
   const result = useAtomValue(query);
   const retry = useAtomRefresh(query);
+  const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
+  const [reconnecting, startReconnect] = useTransition();
 
   if (AsyncResult.isFailure(result)) {
     return <SettingsLoadFailed onRetry={retry} />;
@@ -174,6 +177,30 @@ const RuleList = ({
 
   const rules = result.value.items;
 
+  // Bluesky asks for reposts only when a rule needs them: connecting the
+  // channel again with them, back here once it signed in.
+  const allowReposts = (rule: FollowUpRule, channelId: string) => {
+    const platform =
+      rule.channels.find((channel) => channel.channelId === channelId)
+        ?.platform ?? "bluesky";
+
+    startReconnect(async () => {
+      const exit = await reconnect({
+        params: { channelId, workspaceId },
+        query: { reposts: "true" },
+      });
+
+      if (Exit.isSuccess(exit)) {
+        rememberConnection({ platform, workspaceId });
+        globalThis.location.assign(exit.value.authorizationUrl);
+
+        return;
+      }
+
+      toast.error(t("allowRepostsFailed"));
+    });
+  };
+
   return rules.length === 0 ? (
     <p className="text-muted-foreground">{t("empty")}</p>
   ) : (
@@ -183,6 +210,13 @@ const RuleList = ({
           key={rule.id}
           highlighted={rule.id === highlighted}
           rule={rule}
+          {...(mayChange && !reconnecting
+            ? {
+                onAllowReposts: (channelId: string) => {
+                  allowReposts(rule, channelId);
+                },
+              }
+            : {})}
           scope={
             rule.postId === null ? (
               t("onChannel")

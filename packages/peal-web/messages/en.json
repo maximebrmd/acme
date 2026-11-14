@@ -4404,6 +4404,9 @@
     "awaitingApproval": "Awaiting approval",
     "ended": "Ended: {reason, select, stopped {stopped by a member} completed {everything it armed is over} starterGone {whoever started it can no longer publish} channelGone {its channel was disconnected} other {for another reason}}.",
     "carries": "{platform, select, x {X} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} linkedin {LinkedIn} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {A channel}}: comment {comment, select, available {yes} notAsked {not asked} noApi {not possible there} review {waits for the platform’s review} notBuilt {not yet} notAllowed {forbidden by the platform’s rules} turnedOff {turned off on this server} reconnect {connect the channel again} notCounted {no likes counted there} textTooLong {too long} other {no}}, repost {repost, select, available {yes} notAsked {not asked} noApi {not possible there} review {waits for the platform’s review} notBuilt {not yet} notAllowed {forbidden by the platform’s rules} turnedOff {turned off on this server} reconnect {connect the channel again} notCounted {no likes counted there} textTooLong {too long} other {no}}",
+    "allowReposts": "Allow reposts",
+    "allowRepostsFailed": "The channel could not be connected again: try again.",
+    "repostsNeedReconnect": "Bluesky asks to connect the channel again before Peal reposts from it.",
     "nothingYet": "Nothing yet: it waits for a post to go live and reach the likes.",
     "kind": "{kind, select, comment {Comment} repost {Repost} other {Follow-up}}",
     "platform": "{platform, select, x {on X} bluesky {on Bluesky} mastodon {on Mastodon} other {}}",
@@ -4449,7 +4452,7 @@
   },
   "CommentRules": {
     "title": "Comment replies",
-    "description": "Rules that answer, by themselves and in public, the comments under a channel’s posts that hold a keyword you chose: once a comment and once a person, 25 replies a day at most, each one of your inbox’s replies. They answer on Mastodon, and on Facebook Pages and Instagram where Peal reads their comments; Bluesky’s, X’s, LinkedIn’s and YouTube’s rules forbid an app to answer by itself. A rule never likes, follows or writes privately to anyone.",
+    "description": "Rules that answer, by themselves and in public, the comments under a channel’s posts that hold a keyword you chose: once a comment and once a person, 25 replies a day at most, 100 a day for all of a channel’s rules together, each one of your inbox’s replies. They answer on Mastodon, and on Facebook Pages and Instagram where Peal reads their comments; Bluesky’s, X’s, LinkedIn’s and YouTube’s rules forbid an app to answer by itself. A rule never likes, follows or writes privately to anyone.",
     "readOnly": "You may read the rules: changing them takes a role that answers comments.",
     "empty": "No rule answers comments by itself.",
     "keywords": "When a comment says: {keywords}",

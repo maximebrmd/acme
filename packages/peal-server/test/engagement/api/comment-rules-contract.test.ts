@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import {
   CommentRuleAbilitySchema as ContractAbilitySchema,
   CommentRuleEndReasonSchema as ContractEndReasonSchema,
+  maxChannelRepliesPerDay as contractPerChannelDay,
   maxCommentRulesPerWorkspace as contractRules,
   maxKeywordLength as contractKeywordLength,
   maxKeywords as contractKeywords,
@@ -15,6 +16,7 @@ import {
 } from "#engagement/application/comment-rules.ts";
 import { CommentRuleEndReasonSchema } from "#engagement/domain/comment-rule-end-reason.ts";
 import {
+  maxChannelRepliesPerDay,
   maxCommentRulesPerWorkspace,
   maxKeywordLength,
   maxKeywords,
@@ -29,12 +31,14 @@ describe("the comment rules' contract", () => {
     expect({
       keywordLength: contractKeywordLength,
       keywords: contractKeywords,
+      perChannelDay: contractPerChannelDay,
       perDay: contractPerDay,
       rules: contractRules,
       shown: contractShown,
     }).toStrictEqual({
       keywordLength: maxKeywordLength,
       keywords: maxKeywords,
+      perChannelDay: maxChannelRepliesPerDay,
       perDay: maxRuleRepliesPerDay,
       rules: maxCommentRulesPerWorkspace,
       shown: matchesShown,

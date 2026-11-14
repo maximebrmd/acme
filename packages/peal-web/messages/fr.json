@@ -4404,6 +4404,9 @@
     "awaitingApproval": "En attente d’approbation",
     "ended": "Terminée : {reason, select, stopped {arrêtée par un membre} completed {tout ce qu’elle préparait est terminé} starterGone {la personne qui l’a lancée ne peut plus publier} channelGone {son canal a été déconnecté} other {pour une autre raison}}.",
     "carries": "{platform, select, x {X} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} linkedin {LinkedIn} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {Un canal}} : commentaire {comment, select, available {oui} notAsked {non demandé} noApi {impossible là} review {attend l’examen de la plateforme} notBuilt {pas encore} notAllowed {interdit par les règles de la plateforme} turnedOff {désactivé sur ce serveur} reconnect {reconnectez le canal} notCounted {aucune mention J’aime comptée là} textTooLong {trop long} other {non}}, repartage {repost, select, available {oui} notAsked {non demandé} noApi {impossible là} review {attend l’examen de la plateforme} notBuilt {pas encore} notAllowed {interdit par les règles de la plateforme} turnedOff {désactivé sur ce serveur} reconnect {reconnectez le canal} notCounted {aucune mention J’aime comptée là} textTooLong {trop long} other {non}}",
+    "allowReposts": "Autoriser les repartages",
+    "allowRepostsFailed": "Le canal n’a pas pu être reconnecté : réessayez.",
+    "repostsNeedReconnect": "Bluesky demande de reconnecter le canal avant que Peal repartage depuis celui-ci.",
     "nothingYet": "Rien pour l’instant : elle attend qu’une publication soit en ligne et atteigne les mentions J’aime.",
     "kind": "{kind, select, comment {Commentaire} repost {Repartage} other {Relance}}",
     "platform": "{platform, select, x {sur X} bluesky {sur Bluesky} mastodon {sur Mastodon} other {}}",
@@ -4439,7 +4442,7 @@
       "nothing": "Écrivez un commentaire, demandez un repartage, ou les deux."
     },
     "errors": {
-      "notPossible": "{reason, select, noAction {Écrivez un commentaire, demandez un repartage, ou les deux.} emptyComment {Le commentaire est vide.} postCancelled {La publication a été annulée.} noChannel {La règle n’agit sur aucun canal de l’espace de travail.} alreadyFollowedUp {Une autre règle donne déjà cette suite à la publication : arrêtez-la d’abord.} other {Aucun canal de la publication ne peut porter ceci, ou le commentaire est trop long pour l’un d’eux.}}",
+      "notPossible": "{reason, select, noAction {Écrivez un commentaire, demandez un repartage, ou les deux.} emptyComment {Le commentaire est vide.} postCancelled {La publication a été annulée.} noChannel {La règle n’agit sur aucun canal de l’espace de travail.} alreadyFollowedUp {Une autre règle relance déjà cette publication ainsi : arrêtez-la d’abord.} other {Aucun canal de la publication ne peut porter ceci, ou le commentaire est trop long pour l’un d’eux.}}",
       "tooMany": "L’espace de travail a {allowed} règles en cours, le maximum permis : arrêtez-en une d’abord.",
       "ended": "La règle a pris fin et ne change plus.",
       "forbidden": "Votre rôle ne permet pas cela.",
@@ -4449,7 +4452,7 @@
   },
   "CommentRules": {
     "title": "Réponses aux commentaires",
-    "description": "Des règles qui répondent d’elles-mêmes, en public, aux commentaires sous les publications d’un canal qui contiennent un mot-clé que vous avez choisi : une fois par commentaire et une fois par personne, 25 réponses par jour au plus, chacune une réponse de votre boîte de réception. Elles répondent sur Mastodon, et sur les Pages Facebook et Instagram là où Peal lit leurs commentaires ; les règles de Bluesky, X, LinkedIn et YouTube interdisent à une application de répondre d’elle-même. Une règle n’aime, ne suit ni n’écrit jamais en privé à personne.",
+    "description": "Des règles qui répondent d’elles-mêmes, en public, aux commentaires sous les publications d’un canal qui contiennent un mot-clé que vous avez choisi : une fois par commentaire et une fois par personne, 25 réponses par jour au plus, 100 par jour pour toutes les règles d’un canal ensemble, chacune une réponse de votre boîte de réception. Elles répondent sur Mastodon, et sur les Pages Facebook et Instagram là où Peal lit leurs commentaires ; les règles de Bluesky, X, LinkedIn et YouTube interdisent à une application de répondre d’elle-même. Une règle n’aime, ne suit ni n’écrit jamais en privé à personne.",
     "readOnly": "Vous pouvez lire les règles : les modifier demande un rôle qui répond aux commentaires.",
     "empty": "Aucune règle ne répond d’elle-même aux commentaires.",
     "keywords": "Quand un commentaire dit : {keywords}",

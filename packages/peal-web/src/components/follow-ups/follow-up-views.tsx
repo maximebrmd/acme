@@ -85,12 +85,18 @@ const FollowUpLineView = ({
 export const FollowUpRuleView = ({
   actions,
   highlighted = false,
+  onAllowReposts,
   rule,
   scope,
 }: {
   readonly actions: ReactNode;
   /** Whether the page was opened for this rule. */
   readonly highlighted?: boolean;
+  /**
+   * Connects a channel again to let it repost, for a channel whose
+   * reposts wait for that; none where the reader may not.
+   */
+  readonly onAllowReposts?: (channelId: string) => void;
   readonly rule: FollowUpRule;
   /** A link to the post, or the channel's name. */
   readonly scope: ReactNode;
@@ -136,8 +142,22 @@ export const FollowUpRuleView = ({
       </div>
       <ul className="flex flex-col gap-1">
         {rule.channels.map(({ channelId, comment, platform, repost }) => (
-          <li key={channelId} className="text-muted-foreground text-sm">
+          <li
+            key={channelId}
+            className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm"
+          >
             {t("carries", { comment, platform, repost })}
+            {repost === "reconnect" && onAllowReposts !== undefined ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onAllowReposts(channelId);
+                }}
+              >
+                {t("allowReposts")}
+              </Button>
+            ) : null}
           </li>
         ))}
       </ul>

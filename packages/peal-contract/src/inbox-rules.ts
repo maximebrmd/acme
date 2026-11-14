@@ -17,6 +17,7 @@ import {
   CommentRulePageSchema,
   CommentRuleSchema,
   CommentRuleStatusSchema,
+  maxChannelRepliesPerDay,
   maxCommentRulesPerWorkspace,
   maxRuleRepliesPerDay,
   NewCommentRuleSchema,
@@ -29,7 +30,7 @@ const workspace = { workspaceId: Schema.String };
 
 const rule = { ...workspace, ruleId: Schema.String };
 
-const answers = `A rule answers, by itself and in public, as the channel's account, a comment received after it started, under a post it answers on, that holds one of its keywords as a word (whatever its case and accents): with its \`reply\`, once a comment and once a person, ${String(maxRuleRepliesPerDay)} replies a day at most, through the inbox's own replies (their journal, one reply a comment, each one of the billing account's outbound messages). It answers on Mastodon, and on Facebook Pages and Instagram where the server reads their comments; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself, and \`channels\` says so. It never likes, follows or messages anyone privately. It acts as whoever started it, with what they may do then: it ends when they can no longer answer comments.`;
+const answers = `A rule answers, by itself and in public, as the channel's account, a comment received after it started or was last set going again, under a post it answers on (a post's rule acts on the channels the post is for, scheduled or out), that holds one of its keywords as a word (whatever its case and accents): with its \`reply\`, once a comment and once a person, ${String(maxRuleRepliesPerDay)} replies a day at most, and ${String(maxChannelRepliesPerDay)} a day for every rule of a channel together, through the inbox's own replies (their journal, one reply a comment, each one of the billing account's outbound messages). It answers on Mastodon, and on Facebook Pages and Instagram where the server reads their comments; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself, and \`channels\` says so. It never likes, follows or messages anyone privately. It acts as whoever started it, with what they may do then: it ends when they can no longer answer comments, and when its channel is disconnected.`;
 
 /** Rules that answer comments holding a keyword, by themselves. */
 export class InboxRulesApi extends HttpApiGroup.make("inboxRules")

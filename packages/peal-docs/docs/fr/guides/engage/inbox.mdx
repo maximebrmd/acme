@@ -285,9 +285,9 @@ Un canal Google Business Profile publie au nom d’un établissement, et les per
 
 Une règle de réponse répond d’elle-même, en public, depuis le compte du canal, aux commentaires qui contiennent un mot-clé choisi, sous une publication ou sous chaque publication d’un canal. Dans **Réglages › Réponses aux commentaires**, choisissez le canal, jusqu’à 10 mots-clés et la réponse. Une règle répond :
 
-- à un commentaire reçu après son lancement, qui contient un mot-clé comme un mot, quelles que soient sa casse et ses accents (`prix` répond à « Quel PRIX ? », pas à « surprix ») ;
+- à un commentaire reçu après son lancement, ou après sa dernière reprise, qui contient un mot-clé comme un mot, quelles que soient sa casse et ses accents (`prix` répond à « Quel PRIX ? », pas à « surprix ») ;
 - une fois par commentaire, et une fois par personne : quelqu’un qui commente à nouveau n’obtient pas deux réponses ;
-- 25 fois par jour au plus ;
+- 25 fois par jour au plus, et 100 fois par jour pour toutes les règles d’un canal ensemble (jours UTC) ;
 - par les réponses de la boîte de réception : chacune apparaît dans son fil, compte comme un de vos messages sortants, et n’est jamais envoyée deux fois. Un commentaire auquel quelqu’un a répondu, ou répond, est laissé tel quel.
 
 | Plateforme                | Règles de réponse                                                                                 |
@@ -299,7 +299,7 @@ Une règle de réponse répond d’elle-même, en public, depuis le compte du ca
 | LinkedIn                  | Non : ses conditions interdisent les commentaires automatisés                                     |
 | YouTube                   | Non : ses règles demandent votre accord pour chaque commentaire                                   |
 
-Une règle n’aime, ne suit ni n’écrit jamais en privé à personne. Elle agit au nom de la personne qui l’a lancée : elle prend fin quand celle-ci ne peut plus répondre aux commentaires. Une règle en pause ne répond à rien, et jamais aux commentaires reçus pendant la pause.
+Une règle sur une publication peut démarrer avant que la publication ne parte : elle agit sur les canaux auxquels la publication est destinée, et seulement là où leur plateforme le permet, quels que soient les autres canaux où la publication est partie. Une règle n’aime, ne suit ni n’écrit jamais en privé à personne. Elle agit au nom de la personne qui l’a lancée : elle prend fin quand celle-ci ne peut plus répondre aux commentaires, et quand son canal est déconnecté. Une règle en pause ne répond à rien, et jamais aux commentaires reçus pendant la pause.
 
 ## Messages privés [#direct-messages]
 

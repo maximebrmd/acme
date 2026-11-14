@@ -242,6 +242,7 @@ export {
   CommentRuleRefusalSchema,
   CommentRuleSchema,
   CommentRuleStatusSchema,
+  maxChannelRepliesPerDay,
   maxCommentRulesPerWorkspace,
   maxKeywordLength,
   maxKeywords,

@@ -17,6 +17,9 @@ export const maxKeywordLength = 60;
 /** The most replies a rule sends a UTC day. */
 export const maxRuleRepliesPerDay = 25;
 
+/** The most replies a channel's rules send a UTC day, all together. */
+export const maxChannelRepliesPerDay = 100;
+
 /** How many of what a rule looked at its view shows, newest first. */
 export const commentRuleMatchesShown = 20;
 

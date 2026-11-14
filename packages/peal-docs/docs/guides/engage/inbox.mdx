@@ -280,9 +280,9 @@ A Google Business Profile channel posts as a location, and the people who visit 
 
 A comment rule answers by itself, in public, as the channel's account, the comments that hold a keyword you chose, under one post or every post of a channel. In **Settings › Comment replies**, choose the channel, up to 10 keywords and the reply. A rule answers:
 
-- a comment received after it started, that holds a keyword as a word, whatever its case and accents (`prix` answers "Quel PRIX ?", not "surprix");
+- a comment received after it started, or after it was last resumed, that holds a keyword as a word, whatever its case and accents (`prix` answers "Quel PRIX ?", not "surprix");
 - once a comment, and once a person: someone who comments again is not answered twice;
-- 25 times a day at most;
+- 25 times a day at most, and 100 times a day for all the rules of a channel together (UTC days);
 - through the inbox's own replies: each is shown in its thread, counts as one of your outbound messages, and is never sent twice. A comment someone already answered, or is answering, is left alone.
 
 | Platform                  | Comment rules                                                               |
@@ -294,7 +294,7 @@ A comment rule answers by itself, in public, as the channel's account, the comme
 | LinkedIn                  | No: its terms forbid automated comments                                     |
 | YouTube                   | No: its policies ask for your consent to each comment                       |
 
-A rule never likes, follows or writes privately to anyone. It acts as whoever started it: it ends when they can no longer answer comments. A paused rule answers nothing, and never the comments received while it was paused.
+A rule on a post can start before the post is out: it acts on the channels the post is for, and only where their platform allows it, whatever else the post went out on. A rule never likes, follows or writes privately to anyone. It acts as whoever started it: it ends when they can no longer answer comments, and when its channel is disconnected. A paused rule answers nothing, and never the comments received while it was paused.
 
 ## Direct messages [#direct-messages]
 
