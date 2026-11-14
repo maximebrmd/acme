@@ -62,7 +62,8 @@ export class Channel extends Schema.Class<Channel>(
   "peal-server/channels/domain/Channel"
 )({
   // The account's own id on the platform, which never changes: a workspace
-  // connects each account once.
+  // connects each account once. A website's is its API's root, which moves
+  // only with the site (`siteMovedTo`).
   accountId: Schema.NonEmptyString,
   avatarUrl: Schema.Option(AvatarUrlSchema),
   // How an Instagram channel reaches its account (Instagram Login, or
@@ -158,6 +159,28 @@ const withChange = (
     status,
     token: account.token,
     updatedAt: now,
+    workspaceId: channel.workspaceId,
+  });
+
+/**
+ * A website whose API moved under the same home page, as when its
+ * permalinks change: the channel's account is the API's new root.
+ */
+export const siteMovedTo = (channel: Channel, accountId: string): Channel =>
+  new Channel({
+    accountId,
+    avatarUrl: channel.avatarUrl,
+    connection: channel.connection,
+    createdAt: channel.createdAt,
+    displayName: channel.displayName,
+    handle: channel.handle,
+    id: channel.id,
+    label: channel.label,
+    platform: channel.platform,
+    scopes: channel.scopes,
+    status: channel.status,
+    token: channel.token,
+    updatedAt: channel.updatedAt,
     workspaceId: channel.workspaceId,
   });
 

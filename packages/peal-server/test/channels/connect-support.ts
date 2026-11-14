@@ -13,6 +13,7 @@ import type { PlatformAuthorizer } from "#channels/application/platform-authoriz
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
+import { MemorySiteConnectPace } from "#channels/infrastructure/memory-site-connect-pace.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { googleBusinessAuthorizer } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import type { GoogleBusinessEndpoints } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
@@ -336,8 +337,11 @@ export const pinterestAuthorizerOn = (hosts: PinterestHosts) =>
  */
 export const WordPressSitesTest = ConnectSite.layer.pipe(
   Layer.provide(
-    WordPressSiteVerifierLive.pipe(
-      Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+    Layer.merge(
+      WordPressSiteVerifierLive.pipe(
+        Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+      ),
+      MemorySiteConnectPace
     )
   )
 );

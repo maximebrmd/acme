@@ -1688,6 +1688,8 @@ export { TooManyRequests } from "./too-many-requests.ts";
 
 export { Unauthenticated } from "./unauthenticated.ts";
 
+export { SiteConnectLimited } from "./site-connect-limited.ts";
+
 export {
   SiteNotConnected,
   SiteNotConnectedReasonSchema,

@@ -3,6 +3,7 @@ import { Context, DateTime, Effect, Layer, Option, Redacted } from "effect";
 import {
   connectChannel,
   reconnect as reconnectChannel,
+  siteMovedTo,
 } from "#channels/domain/channel.ts";
 import type { Channel, ConnectedAccount } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -23,6 +24,8 @@ import { channelRoomOf } from "./channel-room.ts";
 import { encryptTokens } from "./channel-tokens.ts";
 import type { MissingTokenKey } from "./missing-token-key.ts";
 import type { IssuedTokens } from "./platform-authorizer.ts";
+import type { SiteConnectLimited } from "./site-connect-limited.ts";
+import { SiteConnectPace } from "./site-connect-pace.ts";
 import type { SiteRefused } from "./site-refused.ts";
 import { SiteVerifier } from "./site-verifier.ts";
 import type { SiteSignIn, VerifiedSite } from "./site-verifier.ts";
@@ -38,7 +41,17 @@ export type ConnectSiteFailure =
   | MissingTokenKey
   | PlanLimitReached
   | PlatformUnavailable
+  | SiteConnectLimited
   | SiteRefused;
+
+// The host a site's handle (its home page, host and path) or a typed
+// address names, as the two compare.
+const hostOf = (written: string) =>
+  written
+    .trim()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//iu, "")
+    .split("/")[0]
+    ?.toLowerCase() ?? "";
 
 // The credential every call to the site carries: the user and the
 // application password, as Basic authentication joins them.
@@ -95,14 +108,38 @@ export class ConnectSite extends Context.Service<
       const verifier = yield* SiteVerifier;
       const ids = yield* Ids;
       const withCipher = Effect.provideService(TokenCipher, cipher);
-      const { insertCounted } = channelRoomOf(channels, allowance);
+      const pace = yield* SiteConnectPace;
+
+      const { insertCounted, roomForChannel } = channelRoomOf(
+        channels,
+        allowance
+      );
+
+      // The workspace's websites of the platform on that host.
+      const sitesOn = (
+        workspaceId: Actor["workspaceId"],
+        platform: SiteSignIn["platform"],
+        host: string
+      ) =>
+        channels
+          .list(workspaceId)
+          .pipe(
+            Effect.map((listed) =>
+              listed.filter(
+                (channel) =>
+                  channel.platform === platform &&
+                  hostOf(channel.handle) === host
+              )
+            )
+          );
 
       // The site the workspace has takes the new password, under its
       // channel's lock, as a reconnected account's tokens are saved.
       const reconnectTo = (
         existing: Channel,
         tokens: IssuedTokens,
-        connected: ConnectedAccount
+        connected: ConnectedAccount,
+        accountId: string = existing.accountId
       ) =>
         locks.withLock(
           existing.id,
@@ -114,11 +151,18 @@ export class ConnectSite extends Context.Service<
               existing.id
             );
 
-            const channel = reconnectChannel(
+            const reconnected = reconnectChannel(
               Option.getOrElse(current, () => existing),
               connected,
               now
             );
+
+            // The site's API may have moved under its home page, as when
+            // its permalinks change: the channel follows it.
+            const channel =
+              reconnected.accountId === accountId
+                ? reconnected
+                : siteMovedTo(reconnected, accountId);
 
             const credentials = yield* encryptTokens(tokens, channel.id).pipe(
               withCipher
@@ -176,9 +220,23 @@ export class ConnectSite extends Context.Service<
         signIn: SiteSignIn
       ) {
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
+        yield* pace.take(actor.workspaceId);
+
+        // A new site needs room in the plan: checked before the site is
+        // called, unless the workspace has one on that host already.
+        const known = yield* sitesOn(
+          actor.workspaceId,
+          signIn.platform,
+          hostOf(signIn.address)
+        );
+
+        if (known.length === 0) {
+          yield* roomForChannel(actor.workspaceId);
+        }
 
         const site = yield* verifier.verify(signIn);
         const tokens = tokensOf(signIn, site);
+        const connected = connectedOf(site);
 
         const existing = yield* channels.findByAccount(
           actor.workspaceId,
@@ -187,7 +245,18 @@ export class ConnectSite extends Context.Service<
         );
 
         if (Option.isSome(existing)) {
-          return yield* reconnectTo(existing.value, tokens, connectedOf(site));
+          return yield* reconnectTo(existing.value, tokens, connected);
+        }
+
+        // The same site, its home page the same, under another API root.
+        const moved = (yield* sitesOn(
+          actor.workspaceId,
+          signIn.platform,
+          hostOf(connected.handle)
+        )).find((channel) => channel.handle === connected.handle);
+
+        if (moved !== undefined) {
+          return yield* reconnectTo(moved, tokens, connected, site.accountId);
         }
 
         return yield* add(actor, signIn, site, tokens).pipe(

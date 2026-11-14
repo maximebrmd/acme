@@ -10,9 +10,13 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { decryptTokens } from "#channels/application/channel-tokens.ts";
 import { ConnectSite } from "#channels/application/connect-site.ts";
 import { SiteRefused } from "#channels/application/site-refused.ts";
-import type { SiteSignIn } from "#channels/application/site-verifier.ts";
+import type {
+  SiteSignIn,
+  VerifiedSite,
+} from "#channels/application/site-verifier.ts";
 import { SiteVerifier } from "#channels/application/site-verifier.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
+import { MemorySiteConnectPace } from "#channels/infrastructure/memory-site-connect-pace.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -27,26 +31,40 @@ import {
 
 const root = "https://garden.example/wp-json/";
 
+// How many times a site was asked.
+const verified = Ref.makeUnsafe(0);
+
+const answerFor = (
+  signIn: SiteSignIn
+): Effect.Effect<VerifiedSite, PlatformUnavailable | SiteRefused> => {
+  if (signIn.address.includes("down.example")) {
+    return Effect.fail(new PlatformUnavailable());
+  }
+
+  return Redacted.value(signIn.applicationPassword) === "synthetic pass"
+    ? Effect.succeed({
+        accountId: signIn.address.endsWith("/plain")
+          ? "https://garden.example/?rest_route=/"
+          : root,
+        avatarUrl: Option.none(),
+        displayName: Option.some("Synthetic Garden Journal"),
+        handle: "garden.example",
+        scopes: ["publish_posts", "upload_files"],
+      })
+    : Effect.fail(new SiteRefused({ reason: "credentialsRefused" }));
+};
+
 // The site as the verifier finds it, for the password `synthetic`; any
-// other is refused, and `down.example` does not answer.
+// other is refused, and `down.example` does not answer. Typed with
+// `/plain`, the same site answers at the API root it has without pretty
+// permalinks.
 const VerifierTest = Layer.succeed(
   SiteVerifier,
   SiteVerifier.of({
-    verify: (signIn: SiteSignIn) => {
-      if (signIn.address.includes("down.example")) {
-        return Effect.fail(new PlatformUnavailable());
-      }
-
-      return Redacted.value(signIn.applicationPassword) === "synthetic pass"
-        ? Effect.succeed({
-            accountId: root,
-            avatarUrl: Option.none(),
-            displayName: Option.some("Synthetic Garden Journal"),
-            handle: "garden.example",
-            scopes: ["publish_posts", "upload_files"],
-          })
-        : Effect.fail(new SiteRefused({ reason: "credentialsRefused" }));
-    },
+    verify: (signIn: SiteSignIn) =>
+      Ref.update(verified, (count) => count + 1).pipe(
+        Effect.andThen(answerFor(signIn))
+      ),
   })
 );
 
@@ -84,7 +102,8 @@ const ConnectSiteTest = ConnectSite.layer.pipe(
       ChannelEvents.none,
       SqlChannelLocks,
       AllowanceTest,
-      VerifierTest
+      VerifierTest,
+      MemorySiteConnectPace
     )
   ),
   Layer.provideMerge(TokenCipherTest),
@@ -172,12 +191,57 @@ layer(ConnectSiteTest)("connecting a website", (it) => {
         yield* repository.insert(channel, syntheticCredentials(channel));
       }
 
+      const asked = yield* Ref.get(verified);
+
       const refused = yield* sites
         .connect(manager(workspaceId), signIn())
         .pipe(Effect.flip);
 
       assert.strictEqual(refused._tag, "PlanLimitReached");
       assert.lengthOf(yield* repository.list(workspaceId), 2);
+      // Refused before the site was called with the password.
+      assert.strictEqual(yield* Ref.get(verified), asked);
+    })
+  );
+
+  it.effect("reconnects the site whose API moved under its home page", () =>
+    Effect.gen(function* moved() {
+      const workspaceId = yield* freshWorkspace;
+      const sites = yield* ConnectSite;
+      const repository = yield* ChannelRepository;
+
+      const first = yield* sites.connect(manager(workspaceId), signIn());
+
+      const again = yield* sites.connect(manager(workspaceId), {
+        ...signIn(),
+        address: "garden.example/plain",
+      });
+
+      assert.strictEqual(again.id, first.id);
+      assert.strictEqual(
+        again.accountId,
+        "https://garden.example/?rest_route=/"
+      );
+      assert.lengthOf(yield* repository.list(workspaceId), 1);
+    })
+  );
+
+  it.effect("takes 30 tries an hour from a workspace", () =>
+    Effect.gen(function* paced() {
+      const workspaceId = yield* freshWorkspace;
+      const sites = yield* ConnectSite;
+
+      for (let tries = 0; tries < 30; tries += 1) {
+        yield* sites
+          .connect(manager(workspaceId), signIn("synthetic wrong"))
+          .pipe(Effect.flip);
+      }
+
+      const refused = yield* sites
+        .connect(manager(workspaceId), signIn())
+        .pipe(Effect.flip);
+
+      assert.strictEqual(refused._tag, "SiteConnectLimited");
     })
   );
 

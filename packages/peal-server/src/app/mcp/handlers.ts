@@ -26,6 +26,7 @@ import {
   ListChannels,
   maxChannelPageSize,
 } from "#channels/application/list-channels.ts";
+import { isSocialChannel } from "#channels/application/social-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -169,7 +170,10 @@ const BasicToolsLive = BasicTools.toLayer(
               .list(actor)
               .pipe(Effect.catchTags(readingFailures));
 
-            return { channels: found.map(toChannelView) };
+            // Websites take articles, which no tool writes yet.
+            return {
+              channels: found.filter(isSocialChannel).map(toChannelView),
+            };
           }
 
           // Every page of those that match: a tool's answer has no cursor.
@@ -197,7 +201,10 @@ const BasicToolsLive = BasicTools.toLayer(
 
           const { counts, items } = yield* matching(Option.none());
 
-          return { channels: items.map(toChannelView), counts };
+          return {
+            channels: items.filter(isSocialChannel).map(toChannelView),
+            counts,
+          };
         }),
       list_workspaces: () =>
         Effect.gen(function* workspaces() {

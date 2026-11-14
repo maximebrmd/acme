@@ -63,6 +63,9 @@ type PublicClient = HttpClient.HttpClient.With<
 
 const refused = (reason: SiteRefused["reason"]) => new SiteRefused({ reason });
 
+// The longest API root kept as a channel's account.
+const maxRootLength = 2048;
+
 // The address as typed, with HTTPS when it names no scheme.
 const addressOf = (typed: string): Option.Option<URL> => {
   const trimmed = typed.trim();
@@ -235,6 +238,16 @@ export const WordPressSiteVerifierLive = Layer.effect(
         home.linked,
         () => new URL("wp-json/", home.at.href.replace(/\/*$/u, "/"))
       );
+
+      // The password goes to the API on the home page's own site, and to
+      // an address short enough to keep, or to none.
+      if (root.origin !== home.at.origin) {
+        return yield* refused("addressNotAllowed");
+      }
+
+      if (root.href.length > maxRootLength) {
+        return yield* refused("notWordPress");
+      }
 
       const index = yield* indexAt(http, root);
 

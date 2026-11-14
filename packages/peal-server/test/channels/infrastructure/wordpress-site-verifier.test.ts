@@ -106,6 +106,68 @@ layer(VerifierTest)("checking a WordPress site", (it) => {
     })
   );
 
+  it.effect(
+    "sends no password to an API the home page names on another site",
+    () =>
+      Effect.gen(function* elsewhere() {
+        const site = yield* fakeWordPress({
+          intercept: (request) =>
+            request.route === "/"
+              ? {
+                  headers: {
+                    link: '<https://elsewhere.example/wp-json/>; rel="https://api.w.org/"',
+                  },
+                  status: 200,
+                }
+              : undefined,
+        });
+
+        const refused = yield* verify(site.home).pipe(Effect.flip);
+
+        assert.strictEqual(
+          refused._tag === "SiteRefused" ? refused.reason : refused._tag,
+          "addressNotAllowed"
+        );
+        assert.isFalse(
+          site
+            .requests()
+            .some(({ authorization }) => authorization !== undefined)
+        );
+      })
+  );
+
+  it.effect("refuses an API root too long to keep", () =>
+    Effect.gen(function* tooLong() {
+      let origin = "";
+
+      // The home page names a root on its own site, 3 kB long.
+      const long = yield* fakeWordPress({
+        intercept: (request) =>
+          request.route === "/"
+            ? {
+                headers: {
+                  link: `<${origin}/wp-json/${"a".repeat(3000)}/>; rel="https://api.w.org/"`,
+                },
+                status: 200,
+              }
+            : undefined,
+      });
+
+      ({ origin } = new URL(long.home));
+
+      const refused = yield* verify(long.home).pipe(Effect.flip);
+
+      assert.strictEqual(
+        refused._tag === "SiteRefused" ? refused.reason : refused._tag,
+        "notWordPress"
+      );
+      // Refused before the root was asked anything.
+      assert.isFalse(
+        long.requests().some(({ route }) => route.includes("aaaa"))
+      );
+    })
+  );
+
   it.effect("refuses a password the site refuses", () =>
     Effect.gen(function* wrong() {
       const site = yield* fakeWordPress();

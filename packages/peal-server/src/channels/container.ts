@@ -28,6 +28,7 @@ import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-
 import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connect-link-store.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { engagementChannelEvents } from "#channels/infrastructure/engagement-channel-events.ts";
+import { MemorySiteConnectPace } from "#channels/infrastructure/memory-site-connect-pace.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
 import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
 import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
@@ -115,7 +116,7 @@ const UseCasesLive = Layer.mergeAll(
     Layer.provideMerge(ConnectLinks.layer),
     Layer.provideMerge(ConnectChannel.layer)
   ),
-  ConnectSite.layer,
+  ConnectSite.layer.pipe(Layer.provide(MemorySiteConnectPace)),
   ChannelUsage.layer,
   DeletePlatformUserData.layer,
   DeauthorizePlatformUser.layer,

@@ -8,6 +8,7 @@ import {
   defaultChannelPageSize,
   OAuthClientNotPublished,
   PlatformUnreachable,
+  SiteConnectLimited,
   SiteNotConnected,
 } from "peal-contract";
 import type {
@@ -213,6 +214,7 @@ const siteFailureWith =
         Effect.logWarning("A website did not answer while connecting").pipe(
           Effect.andThen(Effect.fail(new PlatformUnreachable()))
         ),
+      SiteConnectLimited: () => Effect.fail(new SiteConnectLimited()),
       SiteRefused: ({ reason }) =>
         Effect.fail(new SiteNotConnected({ reason })),
     });
