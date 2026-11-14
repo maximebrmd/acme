@@ -206,6 +206,7 @@ export class RetireLegacyPlans extends Context.Service<
         );
 
         const legacy = yield* retirements.legacy;
+
         const found = legacy.map(
           (held) => [held, planned(held, endsAt)] as const
         );

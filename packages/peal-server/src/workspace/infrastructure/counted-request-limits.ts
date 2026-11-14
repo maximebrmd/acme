@@ -2,7 +2,9 @@ import { Duration, Effect, Layer, Option } from "effect";
 
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import type { LimitHolder } from "#activity/application/request-limiter.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { PartnerStore } from "#workspace/application/partner-store.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { limitSubjectOf } from "#workspace/domain/limit-subject.ts";
@@ -22,13 +24,15 @@ export const countingTimeout = Duration.seconds(2);
  * plan its customers share; an OAuth application's bound workspace's;
  * and for a token bound to no workspace, as the command line's, its
  * user's own billing account (the one they pay for, else the free tier),
- * with the limit staff set for the workspace it acts in, if any.
+ * one count per user, with the limit staff set for the workspace it acts
+ * in when the user is a member of it.
  */
 export const CountedRequestLimits = Layer.effect(
   RequestLimits,
   Effect.gen(function* CountedRequestLimits() {
     const limiter = yield* RequestLimiter;
     const partners = yield* PartnerStore;
+    const directory = yield* MemberDirectory;
 
     const holderOf = (
       principal: Principal,
@@ -60,7 +64,15 @@ export const CountedRequestLimits = Layer.effect(
         onNone: (): LimitHolder => ({
           _tag: "payer",
           actingIn,
-          key: `user:${principal.userId}@${Option.getOrElse(actingIn, () => "-")}`,
+          key: `user:${principal.userId}`,
+          memberships: directory.account(principal.userId).pipe(
+            Effect.map((account) =>
+              Option.toArray(account).flatMap(({ workspaces }) =>
+                workspaces.map(({ id }) => id)
+              )
+            ),
+            Effect.mapError(({ cause }) => new DatabaseError({ cause }))
+          ),
           userId: principal.userId,
         }),
         onSome: (workspaceId): LimitHolder => ({

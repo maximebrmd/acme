@@ -27,6 +27,9 @@ const sibling = WorkspaceIdSchema.make("00000000-0000-4000-8000-00000000f004");
 const payer = UserIdSchema.make("00000000-0000-4000-8000-0000000000e1");
 const member = UserIdSchema.make("00000000-0000-4000-8000-0000000000e2");
 
+// Pays for nothing, and is no member of the raised workspace.
+const stranger = UserIdSchema.make("00000000-0000-4000-8000-0000000000e3");
+
 // What the test sets, and how often the limiter read it.
 interface World {
   readonly paying: Set<WorkspaceId>;
@@ -73,8 +76,11 @@ const standingsOf = (world: World) =>
         Effect.sync(() => {
           world.reads += 1;
 
+          // Only the payer pays for an account; the others for none.
           return {
-            account: Option.some(`account-of-${userId}`),
+            account: world.payers.has(userId)
+              ? Option.some(`account-of-${userId}`)
+              : Option.none(),
             paying: world.payers.has(userId),
           };
         }),
@@ -157,7 +163,11 @@ const unbound = (
 ): LimitHolder => ({
   _tag: "payer",
   actingIn,
-  key: `user:${userId}@${Option.getOrElse(actingIn, () => "-")}`,
+  key: `user:${userId}`,
+  // Every workspace of the test, but the raised one for the stranger.
+  memberships: Effect.succeed(
+    userId === stranger ? [free, paying] : [free, paying, raised, sibling]
+  ),
   userId,
 });
 
@@ -265,6 +275,70 @@ describe("the rate limit by standing", () => {
   );
 
   it.effect(
+    "counts a person who pays for no account once, whatever workspaces their requests name, and gives an override only in a workspace they are in",
+    () => {
+      const world = worldOf();
+
+      return Effect.gen(function* oncePerPerson() {
+        const limiter = yield* RequestLimiter;
+
+        yield* TestClock.setTime(Date.UTC(2026, 10, 14, 10, 0, 0));
+
+        // Sixty requests, each naming another workspace id.
+        for (const index of sixtyOne.slice(0, 60)) {
+          const named = WorkspaceIdSchema.make(
+            `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`
+          );
+
+          yield* limiter.admit(
+            "oauth:cli:stranger",
+            unbound(stranger, Option.some(named))
+          );
+        }
+
+        const next = yield* limiter.admit(
+          "oauth:cli:stranger",
+          unbound(stranger, Option.some(free))
+        );
+
+        assert.isFalse(next.allowed);
+        // One read for the person, whatever the workspaces named.
+        assert.strictEqual(world.reads, 1);
+
+        // A workspace they are not in gives its override nothing.
+        const outside = yield* limiter.admit(
+          "oauth:cli:stranger",
+          unbound(stranger, Option.some(raised))
+        );
+
+        assert.strictEqual(outside.policy, "free");
+      }).pipe(Effect.provide(limiterOver(world, true)));
+    }
+  );
+
+  it.effect(
+    "keeps the setting, never the free tier, when reading a standing fails twice with nothing known",
+    () => {
+      const world = worldOf();
+
+      return Effect.gen(function* unknownPayer() {
+        const limiter = yield* RequestLimiter;
+
+        world.failing = true;
+
+        const standing = yield* limiter.admit("key:p", keyOf(paying));
+
+        assert.deepStrictEqual(
+          [standing.policy, standing.limit],
+          ["default", 600]
+        );
+        // Tried once more before giving up.
+        assert.strictEqual(world.reads, 2);
+      }).pipe(Effect.provide(limiterOver(world, true)));
+    }
+  );
+
+  it.effect(
     "never gives the free tier more than a lower setting gives a payer",
     () => {
       const world = worldOf();
@@ -334,12 +408,16 @@ describe("the rate limit by standing", () => {
         assert.deepStrictEqual([kept.policy, kept.limit], ["default", 600]);
 
         yield* limiter.admit("key:p", keyOf(paying));
-        assert.strictEqual(world.reads, 2);
+        // The first read, and the failed one tried twice.
+        assert.strictEqual(world.reads, 3);
 
-        // Never known: the free tier's, a few seconds.
+        // Never known: the setting, a few seconds.
         const unknown = yield* limiter.admit("key:q", keyOf(raised));
 
-        assert.deepStrictEqual([unknown.policy, unknown.limit], ["free", 60]);
+        assert.deepStrictEqual(
+          [unknown.policy, unknown.limit],
+          ["default", 600]
+        );
 
         yield* TestClock.adjust("5 seconds");
         world.failing = false;

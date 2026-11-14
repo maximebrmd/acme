@@ -2,7 +2,6 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import {
   countRetentionSeconds,
-  freePolicy,
   policyOfWorkspaces,
   raisedByPaymentMethod,
   standingOf,
@@ -30,8 +29,10 @@ import { SubjectDigest } from "./subject-digest.ts";
  * - `workspace`: the billing account of the workspace a key, a partner key
  *   or a bound token acts for (none when it has none: the free tier);
  * - `payer`: a person's own billing account (the one they pay for), for a
- *   token bound to no workspace, and the override staff set for the
- *   workspace it acts in now, if any.
+ *   token bound to no workspace, kept once per person (`user:<id>`), with
+ *   the overrides staff set for the workspaces they are a member of
+ *   (`memberships`): the one of the workspace a request acts in applies,
+ *   and a workspace they are not in names nothing.
  */
 export type LimitHolder =
   | {
@@ -46,6 +47,10 @@ export type LimitHolder =
       readonly _tag: "payer";
       readonly actingIn: Option.Option<WorkspaceId>;
       readonly key: string;
+      readonly memberships: Effect.Effect<
+        readonly WorkspaceId[],
+        DatabaseError
+      >;
       readonly userId: UserId;
     };
 
@@ -60,9 +65,10 @@ export interface CountedStanding extends LimitStanding {
 export const policyLifetimeSeconds = 60;
 
 /**
- * How long a policy is kept when reading it failed: the last one known,
- * or the free tier's, so a database in trouble is not asked again on
- * every request.
+ * How long a policy is kept when reading it failed (once, then once
+ * more): the last one known, or else the setting, as before the limit
+ * read any standing, so a payer is never held to the free tier by a
+ * database in trouble, and it is not asked again on every request.
  */
 export const failedReadSeconds = 5;
 
@@ -72,9 +78,13 @@ export const policyCacheSize = 10_000;
 interface Kept {
   /** What the free tier's count is kept under: its billing account. */
   readonly account: string;
+  /** A person's: the override of each workspace they are a member of. */
+  readonly overrides: ReadonlyMap<WorkspaceId, RateLimitPolicy>;
   readonly policy: RateLimitPolicy;
   readonly until: number;
 }
+
+type Read = Omit<Kept, "until">;
 
 const noAccount: AccountStanding = { account: Option.none(), paying: false };
 
@@ -88,7 +98,8 @@ const noAccount: AccountStanding = { account: Option.none(), paying: false };
  * holder (`policyLifetimeSeconds`): a billing account that pays, or a
  * workspace staff gave its own limit, is counted per credential; the free
  * tier is counted per billing account, every key, partner key and
- * application on it together, so more credentials send no more.
+ * application on it together, so more credentials send no more, and a
+ * person who pays for no account once.
  */
 export class RequestLimiter extends Context.Service<
   RequestLimiter,
@@ -115,62 +126,96 @@ export class RequestLimiter extends Context.Service<
       const digestOf = yield* SubjectDigest;
       const kept = new Map<string, Kept>();
 
-      // The workspace a holder acts in, and its billing account's standing.
-      const standingOf_ = (
-        holder: LimitHolder
-      ): Effect.Effect<
-        readonly [Option.Option<WorkspaceId>, AccountStanding],
-        DatabaseError
-      > =>
-        holder._tag === "payer"
-          ? standings
-              .ofPayer(holder.userId)
-              .pipe(Effect.map((standing) => [holder.actingIn, standing]))
-          : holder.workspace.pipe(
-              Effect.flatMap((found) =>
-                Option.match(found, {
-                  onNone: () => Effect.succeed([found, noAccount] as const),
-                  onSome: (id) =>
-                    standings
-                      .ofWorkspaces([id])
-                      .pipe(
-                        Effect.map(
-                          (each) => [found, each.get(id) ?? noAccount] as const
-                        )
-                      ),
-                })
-              )
-            );
-
-      // What the holder's policy is, and whose free tier it counts on.
-      const read = Effect.fn("RequestLimiter.read")(function* read(
-        holder: LimitHolder,
-        withoutPaymentMethod: number
-      ) {
-        const [workspace, standing] = yield* standingOf_(holder);
-
-        const override = yield* Option.match(workspace, {
-          onNone: () => Effect.succeedNone,
-          onSome: (id) =>
-            overrides
-              .of([id])
+      const overridesOf = (workspaceIds: readonly WorkspaceId[]) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map<WorkspaceId, number>())
+          : overrides
+              .of(workspaceIds)
               .pipe(
-                Effect.map((set) =>
-                  Option.fromUndefinedOr(set.get(id)).pipe(
-                    Option.map(({ requestsPerMinute }) => requestsPerMinute)
-                  )
+                Effect.map(
+                  (set) =>
+                    new Map(
+                      [...set].map(
+                        ([id, { requestsPerMinute }]) =>
+                          [id, requestsPerMinute] as const
+                      )
+                    )
                 )
-              ),
-        });
+              );
 
-        return {
-          account: Option.getOrElse(standing.account, () => holder.key),
-          policy: policyOfWorkspaces(
-            { setting: setting.limit, withoutPaymentMethod },
-            [{ override, paying: standing.paying }]
-          ),
-        };
-      });
+      // A person's: their own account's standing, and the override of each
+      // workspace they are a member of.
+      const readPayer = Effect.fn("RequestLimiter.readPayer")(
+        function* readPayer(
+          holder: Extract<LimitHolder, { readonly _tag: "payer" }>,
+          withoutPaymentMethod: number
+        ) {
+          const terms = { setting: setting.limit, withoutPaymentMethod };
+          const standing = yield* standings.ofPayer(holder.userId);
+          const set = yield* overridesOf(yield* holder.memberships);
+
+          const read: Read = {
+            account: Option.getOrElse(
+              standing.account,
+              () => `user:${holder.userId}`
+            ),
+            overrides: new Map(
+              [...set].map(
+                ([id, limit]) =>
+                  [
+                    id,
+                    policyOfWorkspaces(terms, [
+                      { override: Option.some(limit), paying: standing.paying },
+                    ]),
+                  ] as const
+              )
+            ),
+            policy: policyOfWorkspaces(terms, [
+              { override: Option.none(), paying: standing.paying },
+            ]),
+          };
+
+          return read;
+        }
+      );
+
+      // A workspace's: its billing account's standing, and its override.
+      const readWorkspace = Effect.fn("RequestLimiter.readWorkspace")(
+        function* readWorkspace(
+          holder: Extract<LimitHolder, { readonly _tag: "workspace" }>,
+          withoutPaymentMethod: number
+        ) {
+          const workspace = yield* holder.workspace;
+
+          const standing = yield* Option.match(workspace, {
+            onNone: () => Effect.succeed(noAccount),
+            onSome: (id) =>
+              standings
+                .ofWorkspaces([id])
+                .pipe(Effect.map((each) => each.get(id) ?? noAccount)),
+          });
+
+          const set = yield* overridesOf(Option.toArray(workspace));
+
+          const read: Read = {
+            account: Option.getOrElse(standing.account, () => holder.key),
+            overrides: new Map(),
+            policy: policyOfWorkspaces(
+              { setting: setting.limit, withoutPaymentMethod },
+              [
+                {
+                  override: workspace.pipe(
+                    Option.flatMap((id) => Option.fromUndefinedOr(set.get(id)))
+                  ),
+                  paying: standing.paying,
+                },
+              ]
+            ),
+          };
+
+          return read;
+        }
+      );
 
       const keep = (key: string, entry: Kept) => {
         kept.delete(key);
@@ -199,22 +244,28 @@ export class RequestLimiter extends Context.Service<
           return found;
         }
 
-        // A read that fails keeps the last policy known, or the free
-        // tier's, a few seconds, and fails the count no more.
-        const fresh: Kept = yield* read(holder, withoutPaymentMethod).pipe(
+        const read =
+          holder._tag === "payer"
+            ? readPayer(holder, withoutPaymentMethod)
+            : readWorkspace(holder, withoutPaymentMethod);
+
+        // A read that fails is tried once more; failing again, the last
+        // policy known, or else the setting, holds a few seconds, and the
+        // count goes on.
+        const fresh: Kept = yield* read.pipe(
+          Effect.retry({ times: 1 }),
           Effect.map((done) => ({
             ...done,
             until: millis + policyLifetimeSeconds * 1000,
           })),
           Effect.catchTag("DatabaseError", () =>
             Effect.logWarning(
-              "Reading a credential's standing for the rate limit failed: the last one known, or the free tier's, holds a few seconds"
+              "Reading a credential's standing for the rate limit failed: the last one known, or the setting, holds a few seconds"
             ).pipe(
               Effect.as({
                 account: found?.account ?? holder.key,
-                policy:
-                  found?.policy ??
-                  freePolicy({ setting: setting.limit, withoutPaymentMethod }),
+                overrides: found?.overrides ?? new Map(),
+                policy: found?.policy ?? setting,
                 until: millis + failedReadSeconds * 1000,
               })
             )
@@ -225,6 +276,20 @@ export class RequestLimiter extends Context.Service<
 
         return fresh;
       });
+
+      // The policy a request of the holder sends under: a person's in a
+      // workspace of theirs with its own limit takes that one.
+      const applying = (holder: LimitHolder, entry: Kept) =>
+        holder._tag === "payer"
+          ? Option.getOrElse(
+              holder.actingIn.pipe(
+                Option.flatMap((id) =>
+                  Option.fromUndefinedOr(entry.overrides.get(id))
+                )
+              ),
+              () => entry.policy
+            )
+          : entry.policy;
 
       return RequestLimiter.of({
         admit: Effect.fn("RequestLimiter.admit")(
@@ -237,7 +302,12 @@ export class RequestLimiter extends Context.Service<
                 onNone: () =>
                   Effect.succeed({ account: subject, policy: setting }),
                 onSome: (withoutPaymentMethod) =>
-                  policyOf(holder, withoutPaymentMethod, now),
+                  policyOf(holder, withoutPaymentMethod, now).pipe(
+                    Effect.map((entry) => ({
+                      account: entry.account,
+                      policy: applying(holder, entry),
+                    }))
+                  ),
               }
             );
 

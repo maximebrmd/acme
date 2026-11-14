@@ -7,6 +7,7 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import type { LimitHolder } from "#activity/application/request-limiter.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { PartnerStore } from "#workspace/application/partner-store.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
@@ -27,6 +28,9 @@ const userId = UserIdSchema.make("00000000-0000-4000-8000-0000000000b1");
 const partnerId = PartnerIdSchema.make("0190f3a0-0000-7000-8000-0000000000c1");
 
 const Fakes = Layer.mergeAll(
+  Layer.mock(MemberDirectory, {
+    account: () => Effect.succeed(Option.none()),
+  }),
   Layer.mock(PartnerStore, {
     get: () =>
       Effect.succeed(
@@ -88,6 +92,7 @@ const holderOf = (principal: Principal) =>
       ? {
           actingIn: found.actingIn,
           key: found.key,
+          memberships: yield* found.memberships,
           tag: found._tag,
           userId: found.userId,
         }
@@ -173,7 +178,8 @@ describe("whose standing decides a credential's limit", () => {
           ),
           {
             actingIn: Option.some(own),
-            key: `user:${userId}@${own}`,
+            key: `user:${userId}`,
+            memberships: [],
             tag: "payer",
             userId,
           }

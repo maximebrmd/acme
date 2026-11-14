@@ -18,13 +18,16 @@
   pays: per-account pricing or a legacy plan, as billing's `ApiStandings`
   says) or `override`. A key, a partner key and a bound token take their
   workspace's billing account; a token bound to none takes its user's own
-  account (`ofPayer`: the accounts they pay for), with the override of the
-  workspace the request names. `free` is counted once per billing account
-  (`free:<billing workspace>`), every credential on it together; the
-  others per credential. Each holder's policy is kept a minute
-  (`policyLifetimeSeconds`, 10,000 at most, in a map the layer holds), and
-  a read that fails keeps the last one, or `free`, five seconds
-  (`failedReadSeconds`). The policies' names (`PolicyNameSchema`: in the
+  account (`ofPayer`: the accounts they pay for), kept once per person
+  (`user:<id>`) with the overrides of the workspaces they are a member of,
+  so the override of the workspace a request names applies only there.
+  `free` is counted once per billing account (`free:<billing workspace>`,
+  or `free:user:<id>` for a person who pays for none), every credential on
+  it together; the others per credential. Each holder's policy is kept a
+  minute (`policyLifetimeSeconds`, 10,000 at most, in a map the layer
+  holds); a read that fails is tried once more, then the last policy
+  known, or else the setting (never `free`, which would hold a payer to
+  60), holds five seconds (`failedReadSeconds`). The policies' names (`PolicyNameSchema`: in the
   `RateLimit` headers and `TooManyRequests.policy`) are persisted for
   clients: add, never rename.
 - An event (`ActivityEvent`) is metadata only: when, the operation
