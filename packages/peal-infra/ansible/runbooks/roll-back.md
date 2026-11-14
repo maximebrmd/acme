@@ -73,3 +73,29 @@ channel off a scheduled post (`post_targets.dropped`, migration
    workspaces of the drafts listed not to schedule or duplicate them until
    this release is back. Keep the roll-back short, and run the checks
    again before releasing this one once more.
+
+## Past X's pass-through
+
+The release that bills X at X's rates (migration `x-usage-settings`)
+writes, on a server that bills only, two states the release before cannot
+read: a post target failed as `paymentMethodRequired` or
+`xCeilingReached`, and a notice `XSpendCeiling`. The release before fails
+to decode a post or a notice holding one. A server that does not bill
+(production today) writes neither, and the new table is ignored.
+
+1. **Targets that failed for X's meter:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT t.post_id, t.id FROM publishing.post_targets t WHERE t.failure_reason IN ('paymentMethodRequired', 'xCeilingReached') OR EXISTS (SELECT 1 FROM publishing.publication_attempts a WHERE a.target_id = t.id AND (a.detail::text LIKE '%paymentMethodRequired%' OR a.detail::text LIKE '%xCeilingReached%'))"
+   ```
+
+2. **Notices of X's ceiling:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT id, workspace_id FROM notifications.notices WHERE kind = 'XSpendCeiling' OR event->>'_tag' = 'XSpendCeiling'"
+   ```
+
+3. **Either lists a row:** do not roll back past this release; release a
+   fix forward instead. Never change the rows by hand.
