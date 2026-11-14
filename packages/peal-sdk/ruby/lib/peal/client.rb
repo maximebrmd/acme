@@ -190,6 +190,16 @@ module Peal
       @recycling ||= Peal::Recycling::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::FollowUps::Client]
+    def follow_ups
+      @follow_ups ||= Peal::FollowUps::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::InboxRules::Client]
+    def inbox_rules
+      @inbox_rules ||= Peal::InboxRules::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Feeds::Client]
     def feeds
       @feeds ||= Peal::Feeds::Client.new(client: @raw_client)

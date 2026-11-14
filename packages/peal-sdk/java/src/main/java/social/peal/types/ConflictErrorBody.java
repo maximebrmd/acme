@@ -26,51 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody postNotRecyclable(PostNotRecyclableEncoded value) {
-        return new ConflictErrorBody(new PostNotRecyclableValue(value));
+    public static ConflictErrorBody followUpRuleTaken(FollowUpRuleTakenEncoded value) {
+        return new ConflictErrorBody(new FollowUpRuleTakenValue(value));
     }
 
-    public static ConflictErrorBody recyclingRuleEnded(RecyclingRuleEndedEncoded value) {
-        return new ConflictErrorBody(new RecyclingRuleEndedValue(value));
+    public static ConflictErrorBody tooManyFollowUpRules(TooManyFollowUpRulesEncoded value) {
+        return new ConflictErrorBody(new TooManyFollowUpRulesValue(value));
     }
 
-    public static ConflictErrorBody tooManyRecyclingRules(TooManyRecyclingRulesEncoded value) {
-        return new ConflictErrorBody(new TooManyRecyclingRulesValue(value));
+    public boolean isFollowUpRuleTaken() {
+        return value instanceof FollowUpRuleTakenValue;
     }
 
-    public boolean isPostNotRecyclable() {
-        return value instanceof PostNotRecyclableValue;
-    }
-
-    public boolean isRecyclingRuleEnded() {
-        return value instanceof RecyclingRuleEndedValue;
-    }
-
-    public boolean isTooManyRecyclingRules() {
-        return value instanceof TooManyRecyclingRulesValue;
+    public boolean isTooManyFollowUpRules() {
+        return value instanceof TooManyFollowUpRulesValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<PostNotRecyclableEncoded> getPostNotRecyclable() {
-        if (isPostNotRecyclable()) {
-            return Optional.of(((PostNotRecyclableValue) value).value);
+    public Optional<FollowUpRuleTakenEncoded> getFollowUpRuleTaken() {
+        if (isFollowUpRuleTaken()) {
+            return Optional.of(((FollowUpRuleTakenValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<RecyclingRuleEndedEncoded> getRecyclingRuleEnded() {
-        if (isRecyclingRuleEnded()) {
-            return Optional.of(((RecyclingRuleEndedValue) value).value);
-        }
-        return Optional.empty();
-    }
-
-    public Optional<TooManyRecyclingRulesEncoded> getTooManyRecyclingRules() {
-        if (isTooManyRecyclingRules()) {
-            return Optional.of(((TooManyRecyclingRulesValue) value).value);
+    public Optional<TooManyFollowUpRulesEncoded> getTooManyFollowUpRules() {
+        if (isTooManyFollowUpRules()) {
+            return Optional.of(((TooManyFollowUpRulesValue) value).value);
         }
         return Optional.empty();
     }
@@ -104,52 +89,47 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitPostNotRecyclable(PostNotRecyclableEncoded postNotRecyclable);
+        T visitFollowUpRuleTaken(FollowUpRuleTakenEncoded followUpRuleTaken);
 
-        T visitRecyclingRuleEnded(RecyclingRuleEndedEncoded recyclingRuleEnded);
-
-        T visitTooManyRecyclingRules(TooManyRecyclingRulesEncoded tooManyRecyclingRules);
+        T visitTooManyFollowUpRules(TooManyFollowUpRulesEncoded tooManyFollowUpRules);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({
-        @JsonSubTypes.Type(PostNotRecyclableValue.class),
-        @JsonSubTypes.Type(RecyclingRuleEndedValue.class),
-        @JsonSubTypes.Type(TooManyRecyclingRulesValue.class)
+    @JsonSubTypes({@JsonSubTypes.Type(FollowUpRuleTakenValue.class), @JsonSubTypes.Type(TooManyFollowUpRulesValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("PostNotRecyclable")
+    @JsonTypeName("FollowUpRuleTaken")
     @JsonIgnoreProperties("_tag")
-    private static final class PostNotRecyclableValue implements Value {
+    private static final class FollowUpRuleTakenValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private PostNotRecyclableEncoded value;
+        private FollowUpRuleTakenEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private PostNotRecyclableValue() {}
+        private FollowUpRuleTakenValue() {}
 
-        private PostNotRecyclableValue(PostNotRecyclableEncoded value) {
+        private FollowUpRuleTakenValue(FollowUpRuleTakenEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitPostNotRecyclable(value);
+            return visitor.visitFollowUpRuleTaken(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof PostNotRecyclableValue && equalTo((PostNotRecyclableValue) other);
+            return other instanceof FollowUpRuleTakenValue && equalTo((FollowUpRuleTakenValue) other);
         }
 
-        private boolean equalTo(PostNotRecyclableValue other) {
+        private boolean equalTo(FollowUpRuleTakenValue other) {
             return value.equals(other.value);
         }
 
@@ -164,72 +144,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("RecyclingRuleEnded")
+    @JsonTypeName("TooManyFollowUpRules")
     @JsonIgnoreProperties("_tag")
-    private static final class RecyclingRuleEndedValue implements Value {
+    private static final class TooManyFollowUpRulesValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private RecyclingRuleEndedEncoded value;
+        private TooManyFollowUpRulesEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private RecyclingRuleEndedValue() {}
+        private TooManyFollowUpRulesValue() {}
 
-        private RecyclingRuleEndedValue(RecyclingRuleEndedEncoded value) {
+        private TooManyFollowUpRulesValue(TooManyFollowUpRulesEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitRecyclingRuleEnded(value);
+            return visitor.visitTooManyFollowUpRules(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof RecyclingRuleEndedValue && equalTo((RecyclingRuleEndedValue) other);
+            return other instanceof TooManyFollowUpRulesValue && equalTo((TooManyFollowUpRulesValue) other);
         }
 
-        private boolean equalTo(RecyclingRuleEndedValue other) {
-            return value.equals(other.value);
-        }
-
-        @java.lang.Override
-        public int hashCode() {
-            return Objects.hash(this.value);
-        }
-
-        @java.lang.Override
-        public String toString() {
-            return "ConflictErrorBody{" + "value: " + value + "}";
-        }
-    }
-
-    @JsonTypeName("TooManyRecyclingRules")
-    @JsonIgnoreProperties("_tag")
-    private static final class TooManyRecyclingRulesValue implements Value {
-        @JsonUnwrapped
-        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyRecyclingRulesEncoded value;
-
-        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyRecyclingRulesValue() {}
-
-        private TooManyRecyclingRulesValue(TooManyRecyclingRulesEncoded value) {
-            this.value = value;
-        }
-
-        @java.lang.Override
-        public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyRecyclingRules(value);
-        }
-
-        @java.lang.Override
-        public boolean equals(Object other) {
-            if (this == other) return true;
-            return other instanceof TooManyRecyclingRulesValue && equalTo((TooManyRecyclingRulesValue) other);
-        }
-
-        private boolean equalTo(TooManyRecyclingRulesValue other) {
+        private boolean equalTo(TooManyFollowUpRulesValue other) {
             return value.equals(other.value);
         }
 

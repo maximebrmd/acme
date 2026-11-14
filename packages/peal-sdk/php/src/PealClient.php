@@ -36,6 +36,8 @@ use Peal\Signatures\SignaturesClient;
 use Peal\ChannelSets\ChannelSetsClient;
 use Peal\Queues\QueuesClient;
 use Peal\Recycling\RecyclingClient;
+use Peal\FollowUps\FollowUpsClient;
+use Peal\InboxRules\InboxRulesClient;
 use Peal\Feeds\FeedsClient;
 use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Peal\ShortLinks\ShortLinksClient;
@@ -215,6 +217,16 @@ class PealClient
     public RecyclingClient $recycling;
 
     /**
+     * @var FollowUpsClient $followUps
+     */
+    public FollowUpsClient $followUps;
+
+    /**
+     * @var InboxRulesClient $inboxRules
+     */
+    public InboxRulesClient $inboxRules;
+
+    /**
      * @var FeedsClient $feeds
      */
     public FeedsClient $feeds;
@@ -314,6 +326,8 @@ class PealClient
         $this->channelSets = new ChannelSetsClient($this->client, $this->options);
         $this->queues = new QueuesClient($this->client, $this->options);
         $this->recycling = new RecyclingClient($this->client, $this->options);
+        $this->followUps = new FollowUpsClient($this->client, $this->options);
+        $this->inboxRules = new InboxRulesClient($this->client, $this->options);
         $this->feeds = new FeedsClient($this->client, $this->options);
         $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
         $this->shortLinks = new ShortLinksClient($this->client, $this->options);

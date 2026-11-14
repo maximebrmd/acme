@@ -19,8 +19,10 @@ import social.peal.resources.channelsets.AsyncChannelSetsClient;
 import social.peal.resources.connectlinks.AsyncConnectLinksClient;
 import social.peal.resources.credential.AsyncCredentialClient;
 import social.peal.resources.feeds.AsyncFeedsClient;
+import social.peal.resources.followups.AsyncFollowUpsClient;
 import social.peal.resources.inbox.AsyncInboxClient;
 import social.peal.resources.inboxreviews.AsyncInboxReviewsClient;
+import social.peal.resources.inboxrules.AsyncInboxRulesClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
 import social.peal.resources.lookups.AsyncLookupsClient;
 import social.peal.resources.media.AsyncMediaClient;
@@ -115,6 +117,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncRecyclingClient> recyclingClient;
 
+    protected final Supplier<AsyncFollowUpsClient> followUpsClient;
+
+    protected final Supplier<AsyncInboxRulesClient> inboxRulesClient;
+
     protected final Supplier<AsyncFeedsClient> feedsClient;
 
     protected final Supplier<AsyncChannelDefaultsClient> channelDefaultsClient;
@@ -158,6 +164,8 @@ public class AsyncPealClient implements AutoCloseable {
         this.channelSetsClient = Suppliers.memoize(() -> new AsyncChannelSetsClient(clientOptions));
         this.queuesClient = Suppliers.memoize(() -> new AsyncQueuesClient(clientOptions));
         this.recyclingClient = Suppliers.memoize(() -> new AsyncRecyclingClient(clientOptions));
+        this.followUpsClient = Suppliers.memoize(() -> new AsyncFollowUpsClient(clientOptions));
+        this.inboxRulesClient = Suppliers.memoize(() -> new AsyncInboxRulesClient(clientOptions));
         this.feedsClient = Suppliers.memoize(() -> new AsyncFeedsClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new AsyncChannelDefaultsClient(clientOptions));
         this.shortLinksClient = Suppliers.memoize(() -> new AsyncShortLinksClient(clientOptions));
@@ -297,6 +305,14 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncRecyclingClient recycling() {
         return this.recyclingClient.get();
+    }
+
+    public AsyncFollowUpsClient followUps() {
+        return this.followUpsClient.get();
+    }
+
+    public AsyncInboxRulesClient inboxRules() {
+        return this.inboxRulesClient.get();
     }
 
     public AsyncFeedsClient feeds() {

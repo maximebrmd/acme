@@ -7459,6 +7459,423 @@
       }
     },
     {
+      "id": "d0723a44-a02a-4d22-8cee-53b09ab8c157",
+      "name": "List follow-up rules - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"approval\": \"notNeeded\",\n      \"approvedAt\": \"approvedAt\",\n      \"approvedBy\": \"approvedBy\",\n      \"channels\": [\n        {\n          \"channelId\": \"channelId\",\n          \"comment\": \"available\",\n          \"platform\": \"x\",\n          \"repost\": \"available\"\n        }\n      ],\n      \"channelId\": \"channelId\",\n      \"comment\": \"comment\",\n      \"createdAt\": \"createdAt\",\n      \"endedReason\": \"stopped\",\n      \"followUps\": [\n        {\n          \"armedAt\": \"armedAt\",\n          \"channelId\": \"channelId\",\n          \"id\": \"id\",\n          \"kind\": \"comment\",\n          \"likes\": null,\n          \"permalink\": null,\n          \"platformPostId\": null,\n          \"postId\": \"postId\",\n          \"reason\": null,\n          \"sentAt\": null,\n          \"status\": \"armed\",\n          \"targetId\": \"targetId\",\n          \"triggeredAt\": null,\n          \"until\": null\n        }\n      ],\n      \"id\": \"id\",\n      \"likes\": 1,\n      \"postId\": \"postId\",\n      \"repost\": true,\n      \"startedBy\": \"startedBy\",\n      \"startedVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"active\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d0723a44-a02a-4d22-8cee-53b09ab8c157",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "694367c1-1e0e-4574-aab2-572d559d6727",
+      "name": "Start a follow-up rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"approval\": \"notNeeded\",\n  \"approvedAt\": \"approvedAt\",\n  \"approvedBy\": \"approvedBy\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"comment\": \"available\",\n      \"platform\": \"x\",\n      \"repost\": \"available\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"comment\": \"comment\",\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"followUps\": [\n    {\n      \"armedAt\": \"armedAt\",\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"kind\": \"comment\",\n      \"likes\": 1,\n      \"permalink\": \"permalink\",\n      \"platformPostId\": \"platformPostId\",\n      \"postId\": \"postId\",\n      \"reason\": \"reason\",\n      \"sentAt\": \"sentAt\",\n      \"status\": \"armed\",\n      \"targetId\": \"targetId\",\n      \"triggeredAt\": \"triggeredAt\",\n      \"until\": \"until\"\n    }\n  ],\n  \"id\": \"id\",\n  \"likes\": 1,\n  \"postId\": \"postId\",\n  \"repost\": true,\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "694367c1-1e0e-4574-aab2-572d559d6727",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3f24f2e4-6128-4a03-aa54-3d3439d93349",
+      "name": "Get a follow-up rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups/{ruleId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approval\": \"notNeeded\",\n  \"approvedAt\": \"approvedAt\",\n  \"approvedBy\": \"approvedBy\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"comment\": \"available\",\n      \"platform\": \"x\",\n      \"repost\": \"available\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"comment\": \"comment\",\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"followUps\": [\n    {\n      \"armedAt\": \"armedAt\",\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"kind\": \"comment\",\n      \"likes\": 1,\n      \"permalink\": \"permalink\",\n      \"platformPostId\": \"platformPostId\",\n      \"postId\": \"postId\",\n      \"reason\": \"reason\",\n      \"sentAt\": \"sentAt\",\n      \"status\": \"armed\",\n      \"targetId\": \"targetId\",\n      \"triggeredAt\": \"triggeredAt\",\n      \"until\": \"until\"\n    }\n  ],\n  \"id\": \"id\",\n  \"likes\": 1,\n  \"postId\": \"postId\",\n  \"repost\": true,\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3f24f2e4-6128-4a03-aa54-3d3439d93349",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "be2d2f77-68de-415c-be3b-0f8ab757f880",
+      "name": "Stop a follow-up rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups/{ruleId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "be2d2f77-68de-415c-be3b-0f8ab757f880",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "29bb3fc1-b517-4098-8e96-0c11d7946edd",
+      "name": "Update a follow-up rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups/{ruleId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approval\": \"notNeeded\",\n  \"approvedAt\": \"approvedAt\",\n  \"approvedBy\": \"approvedBy\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"comment\": \"available\",\n      \"platform\": \"x\",\n      \"repost\": \"available\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"comment\": \"comment\",\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"followUps\": [\n    {\n      \"armedAt\": \"armedAt\",\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"kind\": \"comment\",\n      \"likes\": 1,\n      \"permalink\": \"permalink\",\n      \"platformPostId\": \"platformPostId\",\n      \"postId\": \"postId\",\n      \"reason\": \"reason\",\n      \"sentAt\": \"sentAt\",\n      \"status\": \"armed\",\n      \"targetId\": \"targetId\",\n      \"triggeredAt\": \"triggeredAt\",\n      \"until\": \"until\"\n    }\n  ],\n  \"id\": \"id\",\n  \"likes\": 1,\n  \"postId\": \"postId\",\n  \"repost\": true,\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "29bb3fc1-b517-4098-8e96-0c11d7946edd",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4d1a9293-edbc-413d-9223-485f437680f1",
+      "name": "Approve a follow-up rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/follow-ups/{ruleId}/approve",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approval\": \"notNeeded\",\n  \"approvedAt\": \"approvedAt\",\n  \"approvedBy\": \"approvedBy\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"comment\": \"available\",\n      \"platform\": \"x\",\n      \"repost\": \"available\"\n    }\n  ],\n  \"channelId\": \"channelId\",\n  \"comment\": \"comment\",\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"followUps\": [\n    {\n      \"armedAt\": \"armedAt\",\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"kind\": \"comment\",\n      \"likes\": 1,\n      \"permalink\": \"permalink\",\n      \"platformPostId\": \"platformPostId\",\n      \"postId\": \"postId\",\n      \"reason\": \"reason\",\n      \"sentAt\": \"sentAt\",\n      \"status\": \"armed\",\n      \"targetId\": \"targetId\",\n      \"triggeredAt\": \"triggeredAt\",\n      \"until\": \"until\"\n    }\n  ],\n  \"id\": \"id\",\n  \"likes\": 1,\n  \"postId\": \"postId\",\n  \"repost\": true,\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "4d1a9293-edbc-413d-9223-485f437680f1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3a140736-2fb7-428e-bb04-1d462cc82c96",
+      "name": "List comment rules - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/rules",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"channelId\": \"channelId\",\n      \"channels\": [\n        {\n          \"channelId\": \"channelId\",\n          \"platform\": \"x\",\n          \"reply\": \"available\"\n        }\n      ],\n      \"createdAt\": \"createdAt\",\n      \"endedReason\": \"stopped\",\n      \"id\": \"id\",\n      \"keywords\": [\n        \"keywords\"\n      ],\n      \"matches\": [\n        {\n          \"code\": null,\n          \"commentId\": \"commentId\",\n          \"lookedAt\": \"lookedAt\",\n          \"outcome\": \"claimed\",\n          \"replyId\": null\n        }\n      ],\n      \"postId\": \"postId\",\n      \"reply\": \"reply\",\n      \"startedBy\": \"startedBy\",\n      \"status\": \"active\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3a140736-2fb7-428e-bb04-1d462cc82c96",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a432b59d-a667-444c-be71-a8c06e843053",
+      "name": "Start a comment rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/rules",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\",\n      \"reply\": \"available\"\n    }\n  ],\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"id\": \"id\",\n  \"keywords\": [\n    \"keywords\"\n  ],\n  \"matches\": [\n    {\n      \"code\": \"code\",\n      \"commentId\": \"commentId\",\n      \"lookedAt\": \"lookedAt\",\n      \"outcome\": \"claimed\",\n      \"replyId\": \"replyId\"\n    }\n  ],\n  \"postId\": \"postId\",\n  \"reply\": \"reply\",\n  \"startedBy\": \"startedBy\",\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a432b59d-a667-444c-be71-a8c06e843053",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "72784e4b-ac18-48c2-b022-18edc8819e40",
+      "name": "Get a comment rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/rules/{ruleId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\",\n      \"reply\": \"available\"\n    }\n  ],\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"id\": \"id\",\n  \"keywords\": [\n    \"keywords\"\n  ],\n  \"matches\": [\n    {\n      \"code\": \"code\",\n      \"commentId\": \"commentId\",\n      \"lookedAt\": \"lookedAt\",\n      \"outcome\": \"claimed\",\n      \"replyId\": \"replyId\"\n    }\n  ],\n  \"postId\": \"postId\",\n  \"reply\": \"reply\",\n  \"startedBy\": \"startedBy\",\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "72784e4b-ac18-48c2-b022-18edc8819e40",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "115d34b5-fa2d-474a-a025-396ce9d981fc",
+      "name": "Stop a comment rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/rules/{ruleId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "115d34b5-fa2d-474a-a025-396ce9d981fc",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e2e86998-e6e3-4da5-9d07-855942ac6919",
+      "name": "Update a comment rule - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/rules/{ruleId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "ruleId": {
+            "equalTo": "ruleId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\",\n      \"reply\": \"available\"\n    }\n  ],\n  \"createdAt\": \"createdAt\",\n  \"endedReason\": \"stopped\",\n  \"id\": \"id\",\n  \"keywords\": [\n    \"keywords\"\n  ],\n  \"matches\": [\n    {\n      \"code\": \"code\",\n      \"commentId\": \"commentId\",\n      \"lookedAt\": \"lookedAt\",\n      \"outcome\": \"claimed\",\n      \"replyId\": \"replyId\"\n    }\n  ],\n  \"postId\": \"postId\",\n  \"reply\": \"reply\",\n  \"startedBy\": \"startedBy\",\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e2e86998-e6e3-4da5-9d07-855942ac6919",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "606830d7-59e7-48bc-9274-d20a907e1610",
       "name": "List feeds - default",
       "request": {
@@ -7988,6 +8405,6 @@
     }
   ],
   "meta": {
-    "total": 213
+    "total": 224
   }
 }
