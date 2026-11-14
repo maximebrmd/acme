@@ -180,12 +180,14 @@ The release that connects WordPress sites and sends articles to them
 - a channel of a website (`channels.channels.platform = 'wordpress'`):
   the release before reads every channel as a social network's, so the
   workspace's channels, and the jobs that walk every channel (analytics'
-  collection, the inbox's), fail on that row for every workspace;
+  collection, the inbox's, the warnings that a channel must be
+  reconnected soon), fail on that row for every workspace;
 - the events and notices that name one: a webhook event of a website's
   channel (`channel.connected`…, `article.published`, `article.failed`)
   and a notice that it must be reconnected, which the release before
   fails to decode where it reads them;
-- articles (`publishing.articles`, `publishing.article_calls`) and their
+- articles (`publishing.articles`, `publishing.article_calls`,
+  `publishing.article_files`) and their
   jobs (`PublishArticleV1`), which the release before ignores: an article
   waiting to go out is not sent while it runs.
 
