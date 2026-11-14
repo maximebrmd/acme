@@ -159,16 +159,14 @@ export const RoutedPlatformPublisher = Layer.effect(
               )
             );
 
-        return yield* client
-          .publish(post)
-          .pipe(
-            Effect.tapError(() =>
-              Option.match(claim, {
-                onNone: () => Effect.void,
-                onSome: giveBack,
-              })
-            )
-          );
+        return yield* client.publish(post).pipe(
+          Effect.tapError(() =>
+            Option.match(claim, {
+              onNone: () => Effect.void,
+              onSome: giveBack,
+            })
+          )
+        );
       }
     );
 
