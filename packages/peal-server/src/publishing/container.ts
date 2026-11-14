@@ -96,6 +96,7 @@ import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-works
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
 import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
+import { MeteredXPostsLive } from "#publishing/infrastructure/metered-x-posts.ts";
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedFeedNotices } from "#publishing/infrastructure/notified-feed-notices.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
@@ -525,12 +526,15 @@ export const publishingWorkers = <
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), the large ones a few at a time
  * (`limitedUploads`), and the short links the shortlinks context issues
- * (ShortLinks, ShortLinkBase), which the composition root provides with
+ * (ShortLinks, ShortLinkBase), and X's posts claimed on billing's meters
+ * (MeteredUsage, XPassThrough), which the composition root provides with
  * Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
   // The operator's X_THREADS: a part already scheduled is not sent either.
   Layer.provide(XThreadsLive),
+  // X's posts, claimed on the billing account's meter at X's rates.
+  Layer.provide(MeteredXPostsLive),
   Layer.provide(ShortLinksLinkShortener),
   Layer.provide(PlatformClientsLive),
   Layer.provide(

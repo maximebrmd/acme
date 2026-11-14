@@ -271,6 +271,18 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   failure reasons (`failureReasonOf`). Add a reason to the domain, the
   contract, the notices' events, the email catalogues and the web strings
   together.
+- X bills the server for each post. Every part the routed publisher
+  sends is claimed first through `PostMeter` (`MeteredXPostsLive`: X only,
+  `postCreate`, or `postCreateWithUrl` when the text sent holds a link by
+  `countLinks`, from billing's `XPassThrough.rates`, on the `xApi` meter);
+  refused, nothing is sent and the target fails as `paymentMethodRequired`
+  (no per-account pricing, a payment failing or a legacy plan) or
+  `xCeilingReached` (the `x` ceiling or the cap before a first paid
+  invoice), both reposted once fixed; a typed failure of the client gives
+  the claim back, an unconfirmed outcome keeps it. Each retry claims
+  again and gives back, so a meter may see pairs. On a server that does
+  not bill the meters are unmetered and X goes out as before. Tests
+  provide `PostMeter.unmetered`.
 - Platform calls go through the `PlatformPublisher` port, one at a time per
   channel through `ChannelGate`, whose calls are volatile: post content never
   lands in the cluster tables. The gates run `RoutedPlatformPublisher`, which

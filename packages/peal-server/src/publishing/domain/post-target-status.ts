@@ -59,6 +59,14 @@ export const FailureReasonSchema = Schema.Literals([
   // first as replies (X's self-serve access): the first parts are live,
   // and no repost can send the rest from this server.
   "repliesNotAllowed",
+  // The platform bills each post (X), passed through to the billing
+  // account at its rates, which has no payment method on per-account
+  // pricing: nothing was sent. Once one is added, post it again.
+  "paymentMethodRequired",
+  // X's posts would pass the billing account's monthly ceiling for X (or
+  // the cap before its first invoice is paid): nothing was sent. Raise the
+  // ceiling on the billing page, or post it again next month.
+  "xCeilingReached",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

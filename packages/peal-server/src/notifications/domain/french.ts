@@ -177,6 +177,8 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    paymentMethodRequired:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et le compte de facturation de l’espace de travail n’a pas de moyen de paiement. Rien n’a été envoyé. Ajoutez-en un sur la page de facturation, puis publiez-la à nouveau.",
     partsNotSent:
       "ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. La renvoyer depuis Peal n’est pas possible : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     planLimit:
@@ -190,6 +192,8 @@ export const french: EmailCatalog = {
     tokenExpired:
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",
+    xCeilingReached:
+      "elle aurait dépassé le plafond mensuel du compte de facturation pour X, ou ce qui peut lui être facturé avant le paiement de sa première facture. Rien n’a été envoyé. Relevez le plafond sur la page de facturation, ou publiez-la à nouveau le mois prochain.",
   },
   feedStopReasons: {
     gone: "son site indique que le flux n’existe plus.",

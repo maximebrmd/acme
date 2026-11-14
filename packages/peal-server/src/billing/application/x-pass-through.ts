@@ -16,17 +16,18 @@ import { MeterUsageStore } from "./ports/meter-usage-store.ts";
 import type { XUsageSetting } from "./ports/meter-usage-store.ts";
 
 /**
- * Whether a workspace reads its X channels' counts on a server that
- * bills, where X bills each read and Peal passes it through at X's rates
+ * X's API passed through at X's rates, on a server that bills: the rates
+ * (the rate card's, with nothing added), and whether a workspace reads its
+ * X channels' counts on a server that bills, where X bills each read and Peal passes it through at X's rates
  * (the `xApi` meter, within the billing account's `x` ceiling): off until
  * a member who manages its billing turns it on, in person, on that
  * workspace; the activity log keeps who. A server that does not bill
  * takes none (`BillingOff`): there, `X_ANALYTICS` decides alone.
  */
-export class XReads extends Context.Service<
-  XReads,
+export class XPassThrough extends Context.Service<
+  XPassThrough,
   {
-    readonly set: (
+    readonly setReads: (
       actor: Actor,
       reads: boolean
     ) => Effect.Effect<
@@ -34,11 +35,11 @@ export class XReads extends Context.Service<
       BillingOff | DatabaseError | MissingPermission | PersonRequired
     >;
     /** The workspace's setting; none: never set, so off. */
-    readonly of: (
+    readonly readsOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<XUsageSetting>, DatabaseError>;
     /** Whether the workspace reads X now. */
-    readonly on: (
+    readonly readsOn: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
@@ -47,14 +48,14 @@ export class XReads extends Context.Service<
      */
     readonly rates: XRates;
   }
->()("peal-server/billing/application/XReads") {
+>()("peal-server/billing/application/XPassThrough") {
   static readonly layer = Layer.effect(
-    XReads,
-    Effect.gen(function* XReadsLive() {
+    XPassThrough,
+    Effect.gen(function* XPassThroughLive() {
       const { enabled } = yield* BillingMode;
       const store = yield* MeterUsageStore;
 
-      const set = Effect.fn("XReads.set")(function* set(
+      const set = Effect.fn("XPassThrough.set")(function* set(
         actor: Actor,
         reads: boolean
       ) {
@@ -78,7 +79,12 @@ export class XReads extends Context.Service<
       const on = (workspaceId: WorkspaceId) =>
         of(workspaceId).pipe(Effect.map(Option.exists(({ reads }) => reads)));
 
-      return XReads.of({ of, on, rates: rateCard.x.rates, set });
+      return XPassThrough.of({
+        rates: rateCard.x.rates,
+        readsOf: of,
+        readsOn: on,
+        setReads: set,
+      });
     })
   );
 }

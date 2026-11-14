@@ -121,24 +121,26 @@ La publication n’est pas partie sur le canal.
 | `failedAt`    | chaîne         | Le moment où elle a échoué, en instant UTC                 |
 | `reason`      | chaîne         | Pourquoi, l’un des codes ci-dessous                        |
 
-| `reason`              | Ce qui s’est passé                                                                                                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contentRejected`     | La plateforme a refusé le texte ou le format de la publication.                                                                                                                    |
-| `channelDisconnected` | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                                           |
-| `channelDisabled`     | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                                   |
-| `mediaRemoved`        | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                                      |
-| `mediaRejected`       | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                              |
-| `missed`              | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                                        |
-| `notPublished`        | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                                         |
-| `rateLimited`         | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                                      |
-| `tokenExpired`        | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                                    |
-| `unavailable`         | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                              |
-| `appNotAudited`       | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                             |
-| `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                                |
-| `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                                     |
-| `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé.              |
-| `partsNotSent`        | Des parties de la publication sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre. Elle ne peut pas être republiée.           |
-| `repliesNotAllowed`   | Les premières parties sont en ligne, et X n’a pas laissé l’application de ce serveur publier la suite en réponse ([Fils](/guides/posts#threads)). Elle ne peut pas être republiée. |
+| `reason`                | Ce qui s’est passé                                                                                                                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`       | La plateforme a refusé le texte ou le format de la publication.                                                                                                                    |
+| `channelDisconnected`   | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                                           |
+| `channelDisabled`       | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                                   |
+| `mediaRemoved`          | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                                      |
+| `mediaRejected`         | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                              |
+| `missed`                | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                                        |
+| `notPublished`          | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                                         |
+| `rateLimited`           | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                                      |
+| `tokenExpired`          | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                                    |
+| `unavailable`           | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                              |
+| `appNotAudited`         | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                             |
+| `quotaExceeded`         | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                                |
+| `appBillingLimit`       | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                                     |
+| `planLimit`             | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé.              |
+| `partsNotSent`          | Des parties de la publication sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre. Elle ne peut pas être republiée.           |
+| `repliesNotAllowed`     | Les premières parties sont en ligne, et X n’a pas laissé l’application de ce serveur publier la suite en réponse ([Fils](/guides/posts#threads)). Elle ne peut pas être republiée. |
+| `paymentMethodRequired` | Sur un serveur qui facture, les publications sur X sont facturées aux tarifs de X, et le compte de facturation n’a pas de moyen de paiement. Rien n’a été envoyé.                  |
+| `xCeilingReached`       | Sur un serveur qui facture, la publication aurait dépassé le plafond mensuel du compte de facturation pour X. Rien n’a été envoyé.                                                 |
 
 [Notifications](/guides/workspace/notifications#events) dit que faire dans chaque cas.
 

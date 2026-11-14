@@ -95,7 +95,7 @@ export const AnalyticsCronsLive = Layer.mergeAll(
  * day, or on a server that bills claimed on its billing account's `xApi`
  * meter for the workspaces that turned them on (PaidReads). The channels'
  * gates run them. Need the channels context's ChannelAccess, Dns, the
- * database, and billing's BillingMode, XReads and MeteredUsage.
+ * database, and billing's BillingMode, XPassThrough and MeteredUsage.
  */
 export const PlatformMetricsReaderLive = PlatformReaders.pipe(
   Layer.provide(PaidReadsLive)

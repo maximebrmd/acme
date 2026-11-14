@@ -32,7 +32,7 @@ import { UsageReports } from "#billing/application/usage-reports.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
-import { XReads } from "#billing/application/x-reads.ts";
+import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
 import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
@@ -223,9 +223,9 @@ export const BillingMetersLive = MeteredUsageLive.pipe(
 
 /**
  * Whether each workspace reads X at X's rates on a server that bills
- * (`XReads`), for the analytics context's readers. Needs the database.
+ * (`XPassThrough`), for the analytics context's readers. Needs the database.
  */
-export const BillingXReadsLive = XReads.layer.pipe(Layer.provide(RecordsLive));
+export const BillingXPassThroughLive = XPassThrough.layer.pipe(Layer.provide(RecordsLive));
 
 // Hands the checkout the counts of what each workspace holds, once the
 // contexts that count are built (see UsageAtCheckout).
@@ -275,7 +275,7 @@ export const BillingOverviewLive = Layer.mergeAll(
   SendBillingReminders.layer,
   ReportUsage.layer,
   SpendCeilings.layer,
-  XReads.layer,
+  XPassThrough.layer,
   // Stripe's reports of meter events it took and could not count.
   ReceiveMeterErrors.layer.pipe(
     Layer.provide(

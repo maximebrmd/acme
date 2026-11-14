@@ -4,7 +4,7 @@ import { SqlClient } from "effect/sql";
 import { PaidReads } from "#analytics/application/paid-reads.ts";
 import type { PaidReadClaim } from "#analytics/application/paid-reads.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
-import { XReads } from "#billing/application/x-reads.ts";
+import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
 
@@ -34,7 +34,7 @@ const readToday = (
 /**
  * PaidReads on a server that bills, where X's reads are passed through at
  * X's rates: a workspace reads nothing unless it turned its X reads on
- * (`XReads`); then each resource first read in a UTC day claims its rate
+ * (`XPassThrough`); then each resource first read in a UTC day claims its rate
  * on the billing account's `xApi` meter (a user `userRead`, a post
  * `postRead`), and is kept, so it is not claimed again that day, as X
  * bills it once. The resources the meter has no room for (its ceiling, or
@@ -46,14 +46,14 @@ export const billedPaidReads = Layer.effect(
   PaidReads,
   Effect.gen(function* BilledPaidReads() {
     const sql = yield* SqlClient.SqlClient;
-    const xReads = yield* XReads;
+    const xPassThrough = yield* XPassThrough;
     const meters = yield* MeteredUsage;
 
     // What a resource costs on the meter: an account's read, or a post's.
     const unitsOf = (resource: string) =>
       resource.startsWith("user:")
-        ? xReads.rates.userRead
-        : xReads.rates.postRead;
+        ? xPassThrough.rates.userRead
+        : xPassThrough.rates.postRead;
 
     const claimLocked = Effect.fn("PaidReads.claimBilled")(
       function* claimLocked(claim: PaidReadClaim, day: string) {
@@ -124,7 +124,7 @@ export const billedPaidReads = Layer.effect(
       }
 
       // A workspace that did not turn its reads on reads nothing.
-      if (!(yield* xReads.on(asked.workspaceId))) {
+      if (!(yield* xPassThrough.readsOn(asked.workspaceId))) {
         return [];
       }
 

@@ -16,6 +16,8 @@ import {
   storableResult,
 } from "#publishing/domain/storable-outcome.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { MeterClaim } from "#shared/application/metered-usage.ts";
+import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { withinAllowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -25,11 +27,16 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
 
 import { LinkShortener } from "./link-shortener.ts";
 import { PlatformClients } from "./platform-client.ts";
-import type { OutgoingPost, ReplyReference } from "./platform-client.ts";
+import type {
+  OutgoingPost,
+  PlatformClient,
+  ReplyReference,
+} from "./platform-client.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
 import type { PublishRequest } from "./platform-publisher.ts";
 import { PostAllowance } from "./post-allowance.ts";
+import { PostMeter } from "./post-meter.ts";
 import { PostRepository } from "./post-repository.ts";
 
 // Nothing was sent yet: the database not answering is worth trying again.
@@ -39,6 +46,17 @@ const databaseDown = (failure: DatabaseError) =>
   );
 
 const overPlan = new BadRequest({ code: ownRefusalCodes.planLimit });
+
+// The meter refused the part: no payment method on per-account pricing
+// (none, a legacy plan, a payment failing), or X's ceiling or the cap
+// before a first paid invoice.
+const meterRefusal = ({ reason }: AllowanceReached) =>
+  new BadRequest({
+    code:
+      reason === "ceilingReached" || reason === "spendCapReached"
+        ? ownRefusalCodes.xCeilingReached
+        : ownRefusalCodes.paymentMethodRequired,
+  });
 
 // When the post was due: the time it was scheduled for.
 const dueAt = (post: Post) =>
@@ -95,7 +113,12 @@ const interrupted: PublishResult = {
  * allows sends nothing, and of the posts due in a month only the first its plan allows
  * go out, by their time. The others fail as `planLimit`, nothing sent. A
  * run resumed may have gone out already, and is checked no further; nor is
- * a part after the first, whose post is already out.
+ * a part after the first, whose post is already out. Every part sent to a
+ * platform that bills per post (X) is claimed on the billing account's
+ * meter first (`PostMeter`): refused, nothing is sent (`paymentMethodRequired`,
+ * `xCeilingReached`); refused by the platform, it is given back. A part
+ * whose outcome is unknown stays claimed, as the platform may have billed
+ * it.
  */
 export const RoutedPlatformPublisher = Layer.effect(
   PlatformPublisher,
@@ -106,6 +129,48 @@ export const RoutedPlatformPublisher = Layer.effect(
     const allowance = yield* PostAllowance;
     const threaded = yield* CurrentThreadedPlatforms;
     const shortener = yield* LinkShortener;
+    const meter = yield* PostMeter;
+
+    // Sends the part, claimed first where the platform bills per post.
+    const sendMetered = Effect.fn("Publishing.sendMetered")(
+      function* sendMetered(
+        client: PlatformClient,
+        post: OutgoingPost,
+        platform: Platform
+      ) {
+        const claim = yield* meter
+          .claim({ platform, text: post.text, workspaceId: post.workspaceId })
+          .pipe(
+            Effect.catchTags({
+              AllowanceReached: (reached) => Effect.fail(meterRefusal(reached)),
+              DatabaseError: databaseDown,
+            })
+          );
+
+        const giveBack = (given: MeterClaim) =>
+          meter
+            .giveBack(given)
+            .pipe(
+              Effect.catchTag("DatabaseError", (failure) =>
+                Effect.logWarning(
+                  "Could not give back a part the platform refused",
+                  failure
+                )
+              )
+            );
+
+        return yield* client
+          .publish(post)
+          .pipe(
+            Effect.tapError(() =>
+              Option.match(claim, {
+                onNone: () => Effect.void,
+                onSome: giveBack,
+              })
+            )
+          );
+      }
+    );
 
     // The part's text as the channel receives it: with its links' short
     // addresses when the post asks for them and the server has some. The
@@ -240,7 +305,12 @@ export const RoutedPlatformPublisher = Layer.effect(
         workspaceId: post.workspaceId,
       };
 
-      return { client: client.value, post: sent, stored: post };
+      return {
+        client: client.value,
+        platform: account.platform,
+        post: sent,
+        stored: post,
+      };
     });
 
     return PlatformPublisher.of({
@@ -253,7 +323,9 @@ export const RoutedPlatformPublisher = Layer.effect(
                 )
               : Effect.void
           ),
-          Effect.flatMap(({ client, post }) => client.publish(post)),
+          Effect.flatMap(({ client, platform, post }) =>
+            sendMetered(client, post, platform)
+          ),
           storable
         ),
       // Without the post or its channel, the earlier run cannot be checked.

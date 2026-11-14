@@ -52,7 +52,7 @@
   workspace and day). What the allowance does not cover is answered `unpaid`, post by post, and waits for its next turn: a spent allowance never halts a channel, whose posts already paid for that day are read on. On a
   server that bills, `PaidReads` is `billedPaidReads` instead (chosen
   once by `BillingMode`): nothing unless the workspace turned its X reads
-  on (billing's `XReads`), and each resource new that day claims X's rate
+  on (billing's `XPassThrough`), and each resource new that day claims X's rate
   on the `xApi` meter (`userRead` for `user:<id>`, `postRead` for a
   post) in the locked transaction, the claim's room read first; what the
   meter has no room for (no payment method, the ceiling) is `unpaid` as

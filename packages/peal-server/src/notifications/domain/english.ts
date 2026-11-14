@@ -170,6 +170,8 @@ export const english: EmailCatalog = {
     missed:
       "Peal was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    paymentMethodRequired:
+      "X bills each post, which Peal passes on at X's rates, and the workspace's billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.",
     partsNotSent:
       "its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. Sending it again from Peal is not possible: post the rest on the platform, as replies to the last part that is live.",
     planLimit:
@@ -183,6 +185,8 @@ export const english: EmailCatalog = {
     tokenExpired:
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",
+    xCeilingReached:
+      "it would have passed the billing account's monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.",
   },
   feedStopReasons: {
     gone: "its site says the feed is gone for good.",

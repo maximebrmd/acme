@@ -4,7 +4,7 @@ import { SqlClient } from "effect/sql";
 
 import { PaidReads } from "#analytics/application/paid-reads.ts";
 import { billedPaidReads } from "#analytics/infrastructure/billed-paid-reads.ts";
-import { XReads } from "#billing/application/x-reads.ts";
+import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { rateCard } from "#billing/domain/rate-card.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
@@ -18,13 +18,13 @@ const { postRead, userRead } = rateCard.x.rates;
 // Reads turned on for the workspaces in `on`.
 const readsFor = (on: Ref.Ref<ReadonlySet<WorkspaceId>>) =>
   Layer.succeed(
-    XReads,
-    XReads.of({
-      of: () => Effect.succeedNone,
-      on: (workspaceId) =>
-        Ref.get(on).pipe(Effect.map((all) => all.has(workspaceId))),
+    XPassThrough,
+    XPassThrough.of({
       rates: rateCard.x.rates,
-      set: () => Effect.die("not set in this test"),
+      readsOf: () => Effect.succeedNone,
+      readsOn: (workspaceId) =>
+        Ref.get(on).pipe(Effect.map((all) => all.has(workspaceId))),
+      setReads: () => Effect.die("not set in this test"),
     })
   );
 

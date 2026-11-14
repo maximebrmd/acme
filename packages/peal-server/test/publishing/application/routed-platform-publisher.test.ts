@@ -6,6 +6,8 @@ import { PlatformClients } from "#publishing/application/platform-client.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostMeter } from "#publishing/application/post-meter.ts";
+import type { MeteredPart } from "#publishing/application/post-meter.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
@@ -20,6 +22,9 @@ import { TikTokOptions } from "#publishing/domain/tiktok-options.ts";
 import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
+import type { MeterClaim } from "#shared/application/metered-usage.ts";
+import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
+import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -40,6 +45,9 @@ const finishedYouTube = new YouTubeOptions({
 // it is handed.
 const handed = Ref.makeUnsafe<readonly OutgoingPost[]>([]);
 
+// Whether the platform refuses what it is handed, sending nothing.
+const refusing = Ref.makeUnsafe(false);
+
 const RecordingClients = Layer.succeed(
   PlatformClients,
   PlatformClients.of({
@@ -47,8 +55,17 @@ const RecordingClients = Layer.succeed(
       Option.some({
         platform,
         publish: (post) =>
-          Ref.update(handed, (posts) => [...posts, post]).pipe(
-            Effect.as({ _tag: "unconfirmed" as const, reason: "noResponse" })
+          Ref.get(refusing).pipe(
+            Effect.flatMap((refuses) =>
+              refuses
+                ? Effect.fail(new BadRequest({ code: "synthetic-refusal" }))
+                : Ref.update(handed, (posts) => [...posts, post]).pipe(
+                    Effect.as({
+                      _tag: "unconfirmed" as const,
+                      reason: "noResponse",
+                    })
+                  )
+            )
           ),
         resume: () =>
           Effect.succeed({
@@ -97,6 +114,46 @@ const PlanTest = Layer.succeed(
   })
 );
 
+// What the billing account's meter answers a part: granted, or refused
+// for a reason; and the parts it was asked about and given back.
+const meterAnswer = Ref.makeUnsafe<Option.Option<AllowanceReason>>(
+  Option.none()
+);
+
+const metered = Ref.makeUnsafe<readonly MeteredPart[]>([]);
+
+const givenBack = Ref.makeUnsafe<readonly MeterClaim[]>([]);
+
+const MeterTest = Layer.succeed(
+  PostMeter,
+  PostMeter.of({
+    claim: (asked) =>
+      Effect.gen(function* claim() {
+        yield* Ref.update(metered, (all) => [...all, asked]);
+
+        const refusal = yield* Ref.get(meterAnswer);
+
+        if (Option.isSome(refusal)) {
+          return yield* new AllowanceReached({
+            allowed: 0,
+            meter: "xApi",
+            reason: refusal.value,
+            resetsAt: DateTime.makeUnsafe("2026-07-01T00:00:00Z"),
+            used: 0,
+          });
+        }
+
+        return Option.some({
+          at: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+          meter: "xApi" as const,
+          units: 15,
+          workspaceId: asked.workspaceId,
+        });
+      }),
+    giveBack: (claim) => Ref.update(givenBack, (all) => [...all, claim]),
+  })
+);
+
 // The publisher, for channels of this account; `threaded` is what the
 // operator set of later parts.
 const publisherFor = (
@@ -107,6 +164,7 @@ const publisherFor = (
     Layer.provide(
       Layer.mergeAll(
         PlanTest,
+        MeterTest,
         RecordingClients,
         credentialsOf(account, ["token-1"]),
         Layer.succeed(CurrentThreadedPlatforms, { takesParts: threaded }),
@@ -120,6 +178,12 @@ const publisherFor = (
 const PublisherTest = publisherFor({
   accountId: "UC-synthetic-channel",
   platform: "youtube",
+});
+
+// On X, which bills the server for each post.
+const XPublisherTest = publisherFor({
+  accountId: "synthetic-x-account",
+  platform: "x",
 });
 
 // On a platform with threads.
@@ -498,3 +562,147 @@ layer(
     })
   );
 });
+
+layer(XPublisherTest)(
+  "the adapters of a platform that bills per post",
+  (it) => {
+    // A two-part post on X, and a way to send each part.
+    const thread = Effect.gen(function* thread() {
+      const posts = yield* PostRepository;
+      const postId = yield* newId(PostIdSchema);
+      const channelId = yield* newId(ChannelIdSchema);
+      const publishedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
+
+      // Its first part went out before, so the second has one to answer.
+      const target = new PostTarget({
+        channelId,
+        id: yield* newId(PostTargetIdSchema),
+        liveParts: [
+          {
+            index: 0,
+            permalink: Option.none(),
+            platformPostId: Option.some(PlatformPostIdSchema.make("x-root-1")),
+            publishedAt,
+            round: 1,
+          },
+        ],
+        options: Option.none(),
+        postId,
+        round: 1,
+        status: {
+          _tag: "publishing",
+          cancelRequested: false,
+          startedAt: publishedAt,
+        },
+      });
+
+      yield* posts.insert(
+        createDraft(
+          postId,
+          yield* freshWorkspace,
+          new PostContent({
+            followUps: [part("See https://example.com/launch")],
+            media: [],
+            overrides: [],
+            text: "We shipped it",
+          }),
+          Option.none()
+        ),
+        [target]
+      );
+
+      const send = (sent: number) =>
+        PlatformPublisher.use((publisher) =>
+          publisher.publish({
+            channelId,
+            idempotencyKey: `a-synthetic-x-part-${String(sent)}`,
+            part: sent,
+            postId,
+            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            targetId: target.id,
+          })
+        ).pipe(
+          Effect.as("sent"),
+          Effect.catchTag("BadRequest", ({ code }) => Effect.succeed(code))
+        );
+
+      return { remove: posts.remove(postId).pipe(Effect.orDie), send };
+    });
+
+    const reset = Effect.all([
+      Ref.set(handed, []),
+      Ref.set(metered, []),
+      Ref.set(givenBack, []),
+      Ref.set(meterAnswer, Option.none()),
+      Ref.set(refusing, false),
+    ]);
+
+    it.effect(
+      "claim each part on the billing account's meter before it is sent, with its text",
+      () =>
+        Effect.gen(function* claims() {
+          yield* reset;
+
+          const { remove, send } = yield* thread;
+
+          assert.strictEqual(yield* send(0), "sent");
+          assert.strictEqual(yield* send(1), "sent");
+
+          assert.deepStrictEqual(
+            (yield* Ref.get(metered)).map(({ platform, text }) => [
+              platform,
+              text,
+            ]),
+            [
+              ["x", "We shipped it"],
+              ["x", "See https://example.com/launch"],
+            ]
+          );
+          assert.lengthOf(yield* Ref.get(handed), 2);
+          assert.lengthOf(yield* Ref.get(givenBack), 0);
+
+          yield* remove;
+        })
+    );
+
+    it.effect(
+      "send nothing past the meter: without a payment method, or at the ceiling",
+      () =>
+        Effect.gen(function* refused() {
+          yield* reset;
+
+          const { remove, send } = yield* thread;
+
+          yield* Ref.set(meterAnswer, Option.some("paymentMethodRequired"));
+
+          assert.strictEqual(yield* send(0), "paymentMethodRequired");
+
+          yield* Ref.set(meterAnswer, Option.some("ceilingReached"));
+
+          assert.strictEqual(yield* send(0), "xCeilingReached");
+
+          yield* Ref.set(meterAnswer, Option.some("spendCapReached"));
+
+          assert.strictEqual(yield* send(1), "xCeilingReached");
+          assert.lengthOf(yield* Ref.get(handed), 0);
+
+          yield* remove;
+        })
+    );
+
+    it.effect("give back a part the platform refused", () =>
+      Effect.gen(function* refusedByX() {
+        yield* reset;
+
+        const { remove, send } = yield* thread;
+
+        yield* Ref.set(refusing, true);
+
+        assert.strictEqual(yield* send(0), "synthetic-refusal");
+        assert.lengthOf(yield* Ref.get(givenBack), 1);
+
+        yield* remove;
+      })
+    );
+  }
+);
