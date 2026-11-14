@@ -1,18 +1,18 @@
 ---
 title: Boîte de réception
-description: "Lire et répondre aux commentaires sous vos publications en ligne, et voir ce que chaque plateforme laisse Peal lire."
+description: "Lire et répondre aux commentaires sous vos publications en ligne et aux avis de vos établissements Google Business Profile, et voir ce que chaque plateforme laisse Peal lire."
 sidebar:
   icon: inbox
 ---
 
-La boîte de réception rassemble les commentaires laissés sous les publications que Peal a mises en ligne pour un espace de travail. Les membres y répondent en public, au nom du compte connecté. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Boîte de réception**.
+La boîte de réception rassemble les commentaires laissés sous les publications que Peal a mises en ligne pour un espace de travail, et les avis de ses établissements Google Business Profile ([Avis](#reviews)). Les membres y répondent en public, au nom du compte connecté. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Boîte de réception**.
 
 La boîte de réception lit les commentaires des publications mises en ligne depuis Peal :
 
 - sur Mastodon et Bluesky ;
 - sur les Pages Facebook, Instagram, YouTube et les pages d’entreprise LinkedIn, là où la personne qui exploite le serveur les a activés ([Pages Facebook et Instagram](#meta), [YouTube](#youtube), [pages LinkedIn](#linkedin)).
 
-Les messages privés, les mentions et les avis ne sont pas collectés. Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
+Les messages privés et les mentions ne sont pas collectés. Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
 
 ## Ce que Peal collecte [#collected]
 
@@ -249,14 +249,36 @@ Sur LinkedIn :
 
 Peal ne lit pas encore de commentaires sur les autres plateformes. Chacune exige une autorisation que sa plateforme accorde après un examen :
 
-| Plateforme                         | Ce qu’exigent la lecture des commentaires et les réponses                                                                  |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Threads                            | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                                     |
-| X                                  | Un accès payant à l’API de X pour lire les réponses                                                                        |
-| TikTok                             | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas            |
-| Pinterest, Google Business Profile | Non prévu : l’API de Pinterest n’a pas de commentaires, et une fiche d’établissement a des avis, qui ne sont pas collectés |
+| Plateforme | Ce qu’exigent la lecture des commentaires et les réponses                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| Threads    | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                          |
+| X          | Un accès payant à l’API de X pour lire les réponses                                                             |
+| TikTok     | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas |
+| Pinterest  | Non prévu : l’API de Pinterest n’a pas de commentaires                                                          |
 
 Si vous exploitez votre propre serveur, les mêmes examens s’appliquent à vos propres applications de plateformes.
+
+## Avis [#reviews]
+
+Un canal Google Business Profile publie au nom d’un établissement, et les personnes qui le fréquentent laissent des avis sur Google. Là où la personne qui exploite le serveur a activé Google Business Profile ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables#core), avec `googleBusiness`), la boîte de réception les lit à côté des commentaires : une entrée par établissement, ses avis du plus récent au plus ancien.
+
+| Ce que Peal conserve d’un avis                                                                                                                        | Ce qu’il ne conserve jamais                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Ses étoiles (de 1 à 5), son texte, quand il a été écrit et modifié pour la dernière fois, le nom qu’affiche son auteur (aucun quand il reste anonyme) | La photo de profil ou le profil de l’auteur, les photos (seulement leur nombre) |
+| La réponse de l’établissement telle que Google la montre, avec le fait que Google la vérifie, l’affiche ou l’a refusée                                |                                                                                 |
+| Si un membre a dit qu’il n’appelle pas de réponse, et les réponses envoyées depuis Peal, avec leur auteur et l’issue de l’envoi                       |                                                                                 |
+
+- **Quand.** Un établissement est lu toutes les heures tant qu’il a eu un avis écrit ou modifié la semaine passée, toutes les six heures sinon, jusqu’au plus ancien avis que Peal peut conserver.
+- **Combien de temps.** Les règles de Google ne permettent de stocker ce que fournit son API que 30 jours au plus. Peal conserve un avis 29 jours après qu’il a été écrit ou modifié pour la dernière fois, puis le supprime avec les réponses qui lui ont été envoyées ; un avis modifié depuis est relu et conservé à partir de sa modification. Un avis que Google ne montre plus est supprimé à la lecture complète suivante. Un établissement qui n’a pas été lu pendant 29 jours (son canal désactivé, ou la plateforme désactivée) est supprimé, avec ce que Google en dit. Déconnecter le canal, ou supprimer l’espace de travail, supprime ses avis aussitôt.
+- **Répondre.** Un avis porte une seule réponse sur Google, quel qu’en soit l’auteur : une réponse depuis Peal la remplace, et Google peut la vérifier avant de l’afficher. Les réponses aux avis ne comptent pas comme messages de la boîte de réception. Une réponse dont l’issue n’est pas connue est réglée par la lecture suivante de l’établissement, que Peal avance : elle est partie quand la réponse de l’établissement est son texte. **Supprimer la réponse** supprime la réponse de l’établissement, quel qu’en soit l’auteur. Google ne prend de réponses que pour un établissement validé, de 4 096 octets au plus.
+- **Événements.** Un point de terminaison de webhook reçoit [`review.received`](/developers/webhooks/events/media-comments#review-received) pour chaque avis lu pour la première fois, avec ses étoiles, et [`review.replied`](/developers/webhooks/events/media-comments#review-replied) pour chaque réponse partie.
+
+<Callout type="info" title="D’abord l’accès de Google">
+  Google donne à un projet l’accès aux API Business Profile après une demande :
+  jusque-là son quota est nul, et chaque lecture attend. Les règles de Google
+  demandent aussi de ne répondre aux avis au nom d’une entreprise qu’avec son
+  autorisation, et jamais automatiquement.
+</Callout>
 
 ## Avec l’API, la ligne de commande et les assistants IA [#api]
 
@@ -276,8 +298,13 @@ Une clé d’API porte ce que son créateur lui a donné. Une application connec
 | `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Masque, montre, aime, n’aime plus ou supprime, quand la plateforme le permet.                                                                                                           |
 | `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Enregistre ce que quelqu’un a trouvé pour une réponse non confirmée.                                                                                                                    |
 | `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Retire une réponse envoyée.                                                                                                                                                             |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Liste les établissements qui ont des avis, ceux qui attendent une réponse en premier.                                                                                                   |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | Les avis d’un établissement en entier, les réponses envoyées depuis Peal, et ce que le canal peut faire.                                                                                |
+| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Répond à un avis, en remplaçant sa réponse. Répond `202` avec la réponse, `sending`.                                                                                                    |
+| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Supprime la réponse de l’établissement à un avis.                                                                                                                                       |
+| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marque un avis comme répondu, ou de nouveau en attente.                                                                                                                                 |
 
-La ligne de commande offre la même chose sous `peal inbox` (voir [Ligne de commande](/developers/cli)). Les assistants IA connectés par [MCP](/developers/mcp) ont `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` et `moderate_comment`.
+La ligne de commande offre la même chose sous `peal inbox`, et `peal inbox reviews` pour les avis (voir [Ligne de commande](/developers/cli)). Les assistants IA connectés par [MCP](/developers/mcp) ont `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` et `moderate_comment`, et pour les avis `list_location_reviews`, `get_location_reviews`, `reply_to_location_review`, `delete_location_review_reply` et `mark_location_review_answered`.
 
 <Callout type="warning" title="Un commentaire peut contenir des instructions">
   Un commentaire est un texte écrit par quelqu’un d’extérieur à votre espace de

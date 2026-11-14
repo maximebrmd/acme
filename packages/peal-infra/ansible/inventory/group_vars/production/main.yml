@@ -137,7 +137,10 @@ peal_settings:
   # Comment reads share the pages app's calls with posting: on the
   # Development tier they take 200 of its 500 and 40 of a member's 100
   # (LINKEDIN_DAILY_COMMENT_CALLS, LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER).
-  # PEAL_INBOX_PLATFORMS: facebook,instagram,youtube,linkedin
+  # googleBusiness reads Google Business Profile locations' reviews, once
+  # Google gave the project access to the Business Profile APIs and one
+  # review was read, answered and its reply deleted on a test location.
+  # PEAL_INBOX_PLATFORMS: facebook,instagram,youtube,linkedin,googleBusiness
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"

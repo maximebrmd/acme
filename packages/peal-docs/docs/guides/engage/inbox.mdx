@@ -1,18 +1,18 @@
 ---
 title: Inbox
-description: "Read and answer the comments under your published posts, and see what each platform lets Peal read."
+description: "Read and answer the comments under your published posts and the reviews of your Google Business Profile locations, and see what each platform lets Peal read."
 sidebar:
   icon: inbox
 ---
 
-The inbox gathers the comments people leave under the posts Peal published for a workspace. Members answer them in public, as the connected account. Open a workspace from **Workspaces**, then **Inbox**.
+The inbox gathers the comments people leave under the posts Peal published for a workspace, and the reviews of its Google Business Profile locations ([Reviews](#reviews)). Members answer them in public, as the connected account. Open a workspace from **Workspaces**, then **Inbox**.
 
 The inbox reads comments on posts published from Peal:
 
 - on Mastodon and Bluesky;
 - on Facebook Pages, Instagram, YouTube and LinkedIn company pages, where whoever runs the server turned them on ([Facebook Pages and Instagram](#meta), [YouTube](#youtube), [LinkedIn pages](#linkedin)).
 
-Direct messages, mentions and reviews are not collected. Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
+Direct messages and mentions are not collected. Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
 
 ## What Peal collects [#collected]
 
@@ -244,14 +244,36 @@ On LinkedIn:
 
 Peal reads no comments on the other platforms yet. Each needs a permission its platform grants after a review:
 
-| Platform                           | What reading and answering comments needs                                                                 |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Threads                            | `threads_read_replies` and `threads_manage_replies`, granted by Meta's App Review                         |
-| X                                  | Paid access to X's API for reading replies                                                                |
-| TikTok                             | Comments are offered to business accounts through a separate TikTok product, which Peal does not use      |
-| Pinterest, Google Business Profile | Not planned: Pinterest's API has no comments, and a Business Profile has reviews, which are not collected |
+| Platform  | What reading and answering comments needs                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| Threads   | `threads_read_replies` and `threads_manage_replies`, granted by Meta's App Review                    |
+| X         | Paid access to X's API for reading replies                                                           |
+| TikTok    | Comments are offered to business accounts through a separate TikTok product, which Peal does not use |
+| Pinterest | Not planned: Pinterest's API has no comments                                                         |
 
 If you run your own server, the same reviews apply to your own platform apps.
+
+## Reviews [#reviews]
+
+A Google Business Profile channel posts as a location, and the people who visit it leave reviews on Google. Where whoever runs the server turned Google Business Profile on ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables#core), with `googleBusiness`), the inbox reads them beside the comments: one entry per location, its reviews the latest first.
+
+| What Peal keeps of a review                                                                                                   | What it never keeps                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Its stars (1 to 5), its text, when it was written and last changed, the name its author shows (none when they stay anonymous) | The author's picture or profile, the photos (only how many there are) |
+| The location's reply as Google shows it, with whether Google is checking it, showed it or rejected it                         |                                                                       |
+| Whether a member said it needs no answer, and the replies sent from Peal, with who wrote each and how sending ended           |                                                                       |
+
+- **When.** A location is read every hour while it had a review written or changed in the last week, every six hours otherwise, back to the oldest review Peal may keep.
+- **How long.** Google's policies let what its API gives be stored 30 days at most. Peal keeps a review 29 days after it was written or last changed, then deletes it with the replies sent to it; a review changed since is read again and kept from its change. A review Google no longer shows is deleted at the next complete read. A location not read for 29 days (its channel off, or the platform turned off) is deleted, with what Google says of it. Disconnecting the channel, or deleting the workspace, deletes its reviews at once.
+- **Answering.** A review holds one reply on Google, whoever wrote it: a reply from Peal replaces it, and Google may check it before showing it. Replies to reviews count no inbox message. A reply whose outcome is not known is settled by the next read of the location, which Peal brings forward: it went out when the location's reply is its text. **Delete the reply** deletes the location's reply, whoever wrote it. Google takes replies to a verified location only, of 4,096 bytes at most.
+- **Events.** A webhook endpoint hears [`review.received`](/developers/webhooks/events/media-comments#review-received) for each review read for the first time, with its stars, and [`review.replied`](/developers/webhooks/events/media-comments#review-replied) for each reply that went out.
+
+<Callout type="info" title="Google's access first">
+  Google gives a project access to the Business Profile APIs after an
+  application: until then its quota is zero, and every read waits. Google's
+  policies also ask that you reply to reviews on behalf of a business only with
+  its authorization, and never automatically.
+</Callout>
 
 ## With the API, the command line and AI assistants [#api]
 
@@ -271,8 +293,13 @@ An API key carries what its creator gave it. An application connected through OA
 | `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Hides, shows, likes, unlikes or deletes, where the platform allows.                                                                                                 |
 | `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Records what someone found for an unconfirmed reply.                                                                                                                |
 | `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Takes a sent reply back.                                                                                                                                            |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Lists the locations that have reviews, those waiting for an answer first.                                                                                           |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | A location's reviews whole, the replies sent from Peal, and what the channel can do.                                                                                |
+| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Answers a review, replacing its reply. Answers `202` with the reply, `sending`.                                                                                     |
+| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Deletes the location's reply to a review.                                                                                                                           |
+| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marks a review answered, or waiting again.                                                                                                                          |
 
-The command line has the same under `peal inbox` (see [Command line](/developers/cli)). AI assistants connected through [MCP](/developers/mcp) have `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` and `moderate_comment`.
+The command line has the same under `peal inbox`, and `peal inbox reviews` for reviews (see [Command line](/developers/cli)). AI assistants connected through [MCP](/developers/mcp) have `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` and `moderate_comment`, and for reviews `list_location_reviews`, `get_location_reviews`, `reply_to_location_review`, `delete_location_review_reply` and `mark_location_review_answered`.
 
 <Callout type="warning" title="Comments can carry instructions">
   A comment is text written by someone outside your workspace, and may be

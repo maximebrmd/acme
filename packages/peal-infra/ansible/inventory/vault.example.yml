@@ -51,10 +51,11 @@ peal_credentials:
   # PINTEREST_APP_ID, GOOGLE_BUSINESS_CLIENT_ID). Use the sandbox's Stripe
   # account and apps in the sandbox's vault. Short links need no secret:
   # peal_short_link_hostname sets PEAL_SHORT_LINK_BASE.
-  # Meta's, YouTube's and LinkedIn pages' comments in the inbox need none
-  # either: PEAL_INBOX_PLATFORMS goes in peal_settings, beside
-  # META_APP_ID, INSTAGRAM_APP_ID, YOUTUBE_CLIENT_ID or
-  # LINKEDIN_PAGES_CLIENT_ID.
+  # Meta's, YouTube's and LinkedIn pages' comments in the inbox, and
+  # Google Business Profile locations' reviews, need none either:
+  # PEAL_INBOX_PLATFORMS goes in peal_settings, beside META_APP_ID,
+  # INSTAGRAM_APP_ID, YOUTUBE_CLIENT_ID, LINKEDIN_PAGES_CLIENT_ID or
+  # GOOGLE_BUSINESS_CLIENT_ID.
   # A Stripe key needs write access to meters, products and prices
   # for the catalogue command (README.md, "Stripe catalogue").
   # PEAL_AI_API_KEY: REPLACE
