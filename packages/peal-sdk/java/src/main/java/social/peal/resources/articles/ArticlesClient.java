@@ -64,14 +64,14 @@ public class ArticlesClient {
     }
 
     /**
-     * Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with <code>schedule</code>. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Needs post:create, and post:schedule with <code>schedule</code>.
+     * Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with <code>schedule</code>. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:create, and post:schedule with <code>schedule</code>.
      */
     public Article create(String workspaceId, NewArticle request) {
         return this.rawClient.create(workspaceId, request).body();
     }
 
     /**
-     * Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with <code>schedule</code>. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Needs post:create, and post:schedule with <code>schedule</code>.
+     * Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with <code>schedule</code>. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:create, and post:schedule with <code>schedule</code>.
      */
     public Article create(String workspaceId, NewArticle request, RequestOptions requestOptions) {
         return this.rawClient.create(workspaceId, request, requestOptions).body();
@@ -138,14 +138,14 @@ public class ArticlesClient {
     }
 
     /**
-     * Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time. Once on the site, use updateOnSite. Needs post:update.
+     * Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time; it is refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval. Once on the site, use updateOnSite. Needs post:update.
      */
     public Article update(String workspaceId, String articleId, UpdateArticlesRequest request) {
         return this.rawClient.update(workspaceId, articleId, request).body();
     }
 
     /**
-     * Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time. Once on the site, use updateOnSite. Needs post:update.
+     * Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time; it is refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval. Once on the site, use updateOnSite. Needs post:update.
      */
     public Article update(
             String workspaceId, String articleId, UpdateArticlesRequest request, RequestOptions requestOptions) {
@@ -155,14 +155,14 @@ public class ArticlesClient {
     }
 
     /**
-     * Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at <code>at</code>, or now without it, and the site makes it what <code>siteStatus</code> says. With <code>future</code>, the site publishes it at <code>at</code>, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Needs post:schedule.
+     * Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at <code>at</code>, or now without it, and the site makes it what <code>siteStatus</code> says. With <code>future</code>, the site publishes it at <code>at</code>, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article schedule(String workspaceId, String articleId, ScheduleArticlesRequest request) {
         return this.rawClient.schedule(workspaceId, articleId, request).body();
     }
 
     /**
-     * Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at <code>at</code>, or now without it, and the site makes it what <code>siteStatus</code> says. With <code>future</code>, the site publishes it at <code>at</code>, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Needs post:schedule.
+     * Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at <code>at</code>, or now without it, and the site makes it what <code>siteStatus</code> says. With <code>future</code>, the site publishes it at <code>at</code>, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article schedule(
             String workspaceId, String articleId, ScheduleArticlesRequest request, RequestOptions requestOptions) {
@@ -203,28 +203,28 @@ public class ArticlesClient {
     }
 
     /**
-     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Needs post:schedule.
+     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article retry(String workspaceId, String articleId) {
         return this.rawClient.retry(workspaceId, articleId).body();
     }
 
     /**
-     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Needs post:schedule.
+     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article retry(String workspaceId, String articleId, RequestOptions requestOptions) {
         return this.rawClient.retry(workspaceId, articleId, requestOptions).body();
     }
 
     /**
-     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Needs post:schedule.
+     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article retry(String workspaceId, String articleId, RetryArticlesRequest request) {
         return this.rawClient.retry(workspaceId, articleId, request).body();
     }
 
     /**
-     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Needs post:schedule.
+     * Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
      */
     public Article retry(
             String workspaceId, String articleId, RetryArticlesRequest request, RequestOptions requestOptions) {
@@ -265,14 +265,14 @@ public class ArticlesClient {
     }
 
     /**
-     * Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date. Its files are sent again. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     * Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date, and files it has already are not sent again; a cover or an excerpt removed is removed there. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:publish; an OAuth client needs the scope workspace:publish.
      */
     public Article updateOnSite(String workspaceId, String articleId, UpdateOnSiteArticlesRequest request) {
         return this.rawClient.updateOnSite(workspaceId, articleId, request).body();
     }
 
     /**
-     * Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date. Its files are sent again. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     * Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date, and files it has already are not sent again; a cover or an excerpt removed is removed there. Refused (ArticleRejected <code>approvalRequired</code>) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:publish; an OAuth client needs the scope workspace:publish.
      */
     public Article updateOnSite(
             String workspaceId, String articleId, UpdateOnSiteArticlesRequest request, RequestOptions requestOptions) {

@@ -12,7 +12,7 @@ public partial interface IArticlesClient
     );
 
     /// <summary>
-    /// Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with `schedule`. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Needs post:create, and post:schedule with `schedule`.
+    /// Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with `schedule`. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:create, and post:schedule with `schedule`.
     /// </summary>
     WithRawResponseTask<Article> CreateAsync(
         NewArticle request,
@@ -39,7 +39,7 @@ public partial interface IArticlesClient
     );
 
     /// <summary>
-    /// Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time. Once on the site, use updateOnSite. Needs post:update.
+    /// Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time; it is refused (ArticleRejected `approvalRequired`) while your posts need an approval. Once on the site, use updateOnSite. Needs post:update.
     /// </summary>
     WithRawResponseTask<Article> UpdateAsync(
         UpdateArticlesRequest request,
@@ -48,7 +48,7 @@ public partial interface IArticlesClient
     );
 
     /// <summary>
-    /// Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at `at`, or now without it, and the site makes it what `siteStatus` says. With `future`, the site publishes it at `at`, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Needs post:schedule.
+    /// Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at `at`, or now without it, and the site makes it what `siteStatus` says. With `future`, the site publishes it at `at`, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
     /// </summary>
     WithRawResponseTask<Article> ScheduleAsync(
         ScheduleArticlesRequest request,
@@ -66,7 +66,7 @@ public partial interface IArticlesClient
     );
 
     /// <summary>
-    /// Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Needs post:schedule.
+    /// Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
     /// </summary>
     WithRawResponseTask<Article> RetryAsync(
         RetryArticlesRequest request,
@@ -84,7 +84,7 @@ public partial interface IArticlesClient
     );
 
     /// <summary>
-    /// Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date. Its files are sent again. Needs post:publish; an OAuth client needs the scope workspace:publish.
+    /// Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date, and files it has already are not sent again; a cover or an excerpt removed is removed there. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:publish; an OAuth client needs the scope workspace:publish.
     /// </summary>
     WithRawResponseTask<Article> UpdateOnSiteAsync(
         UpdateOnSiteArticlesRequest request,
