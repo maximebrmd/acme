@@ -61,6 +61,17 @@ With `optionRefused`, Peal does not send the post again. X's message is not kept
 
 Peal does not read comments on X yet.
 
+## On Peal Cloud: billed at X's rates [#billing]
+
+X bills each call to its API, and on Peal Cloud Peal passes it on at X's published rates, with nothing added ([X, at X's rates](/guides/workspace/billing#x)). So:
+
+- an X account is connected only once the billing account has a payment method on per-account pricing;
+- each post sent to X, each part of a thread, is billed at X's rate for a post ({{x-post-en}}), or for a post with a link ({{x-post-link-en}});
+- X's counts and followers are read only once a member who manages billing turns X's reads on for the workspace, on the billing page, each read billed at X's rate, once a UTC day;
+- the billing account's monthly ceiling for X bounds all of it: a thread that would pass it is not sent at all, and the composer says so before.
+
+A post refused for billing fails without being sent (`paymentMethodRequired`, `paymentFailed`, `perAccountPricingRequired`, `xCeilingReached`), and a thread cut part way says where (`xThreadCut`). A server you run yourself bills nothing for X.
+
 ## On your own server [#self-hosting]
 
 A self-hosted server offers X once its app is registered: see [X](/self-hosting/platforms#x). Until then, **Channels** does not offer it.
