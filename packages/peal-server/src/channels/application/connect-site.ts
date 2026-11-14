@@ -44,6 +44,10 @@ export type ConnectSiteFailure =
   | SiteConnectLimited
   | SiteRefused;
 
+// The origin of an API root, as the channel keeps it.
+const originOf = (root: string) =>
+  URL.canParse(root) ? new URL(root).origin : root;
+
 // The host a site's handle (its home page, host and path) or a typed
 // address names, as the two compare.
 const hostOf = (written: string) =>
@@ -248,12 +252,18 @@ export class ConnectSite extends Context.Service<
           return yield* reconnectTo(existing.value, tokens, connected);
         }
 
-        // The same site, its home page the same, under another API root.
+        // The same site, its home page the same, under another API root
+        // on the same host: a site elsewhere naming that home page, as a
+        // copy of it does, is a site of its own.
         const moved = (yield* sitesOn(
           actor.workspaceId,
           signIn.platform,
           hostOf(connected.handle)
-        )).find((channel) => channel.handle === connected.handle);
+        )).find(
+          (channel) =>
+            channel.handle === connected.handle &&
+            originOf(channel.accountId) === originOf(site.accountId)
+        );
 
         if (moved !== undefined) {
           return yield* reconnectTo(moved, tokens, connected, site.accountId);

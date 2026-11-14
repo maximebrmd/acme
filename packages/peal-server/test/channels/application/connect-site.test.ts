@@ -45,7 +45,9 @@ const answerFor = (
     ? Effect.succeed({
         accountId: signIn.address.endsWith("/plain")
           ? "https://garden.example/?rest_route=/"
-          : root,
+          : signIn.address.startsWith("clone.example")
+            ? "https://clone.example/wp-json/"
+            : root,
         avatarUrl: Option.none(),
         displayName: Option.some("Synthetic Garden Journal"),
         handle: "garden.example",
@@ -224,6 +226,32 @@ layer(ConnectSiteTest)("connecting a website", (it) => {
       );
       assert.lengthOf(yield* repository.list(workspaceId), 1);
     })
+  );
+
+  it.effect(
+    "keeps a site on another host apart, whatever home page it names",
+    () =>
+      Effect.gen(function* clone() {
+        const workspaceId = yield* freshWorkspace;
+        const sites = yield* ConnectSite;
+        const repository = yield* ChannelRepository;
+
+        const first = yield* sites.connect(manager(workspaceId), signIn());
+
+        // A copy elsewhere still says its home is garden.example.
+        const other = yield* sites.connect(manager(workspaceId), {
+          ...signIn(),
+          address: "clone.example",
+        });
+
+        assert.notStrictEqual(other.id, first.id);
+        assert.strictEqual(other.accountId, "https://clone.example/wp-json/");
+
+        const kept = yield* repository.get(first.id);
+
+        assert.strictEqual(Option.getOrUndefined(kept)?.accountId, root);
+        assert.lengthOf(yield* repository.list(workspaceId), 2);
+      })
   );
 
   it.effect("takes 30 tries an hour from a workspace", () =>
