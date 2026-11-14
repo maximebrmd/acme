@@ -8,19 +8,29 @@ import { FollowUpChannels } from "#publishing/application/follow-up-channels.ts"
 import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
 import type { StartFollowUpRequest } from "#publishing/application/follow-up-rules.ts";
 import { FollowUps } from "#publishing/application/follow-ups.ts";
+import { PlatformClients } from "#publishing/application/platform-client.ts";
+import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import { PlatformReposts } from "#publishing/application/platform-reposts.ts";
+import type { OutgoingRepost } from "#publishing/application/platform-reposts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
+import { PostMeter } from "#publishing/application/post-meter.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
+import { RoutedFollowUpPublisher } from "#publishing/application/routed-follow-up-publisher.ts";
 import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { FeedsUnused } from "#publishing/container.ts";
 import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
+import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
 import { can } from "#shared/domain/access.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import type { PublishResult } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   FakeFollowUpCounts,
@@ -30,6 +40,7 @@ import {
   likesOf,
   resetFollowUps,
 } from "#test/publishing/fakes/fake-follow-ups.ts";
+import { RepositoryCredentials } from "#test/publishing/fakes/fake-live-post-clients.ts";
 import {
   FakeRecycling,
   resetRecycling,
@@ -111,6 +122,75 @@ const serverBehind = (gate: Layer.Layer<ApprovalGate>) =>
   );
 
 const FollowUpServer = serverBehind(ApprovalGate.open);
+
+// What the platforms' clients were handed, as the gates' side builds it.
+const sentPosts = Ref.makeUnsafe<readonly OutgoingPost[]>([]);
+const sentReposts = Ref.makeUnsafe<readonly OutgoingRepost[]>([]);
+
+const answered = (platformPostId: string): PublishResult => ({
+  _tag: "published",
+  platformPostId: PlatformPostIdSchema.make(platformPostId),
+});
+
+const RecordingClients = Layer.mergeAll(
+  Layer.succeed(
+    PlatformClients,
+    PlatformClients.of({
+      for: (platform) =>
+        Option.some({
+          platform,
+          publish: (post) =>
+            Ref.update(sentPosts, (sent) => [...sent, post]).pipe(
+              Effect.as(answered(`reply-${post.idempotencyKey}`))
+            ),
+          resume: (post) =>
+            Effect.succeed(answered(`reply-${post.idempotencyKey}`)),
+        }),
+    })
+  ),
+  Layer.succeed(
+    PlatformReposts,
+    PlatformReposts.of({
+      for: (platform) =>
+        Option.some({
+          platform,
+          repost: (repost) =>
+            Ref.update(sentReposts, (sent) => [...sent, repost]).pipe(
+              Effect.as(answered(`repost-${repost.idempotencyKey}`))
+            ),
+          resume: (repost) =>
+            Effect.succeed(answered(`repost-${repost.idempotencyKey}`)),
+        }),
+    })
+  )
+);
+
+// The server whose gates carry follow-ups out as the server does, through
+// the routed publisher, to platform clients that record what they get.
+const RoutedServer = postsServerBehind(
+  ApprovalGate.open,
+  attachableMedia(),
+  postAllowance(),
+  PostEvents.none,
+  FakeRecycling,
+  FeedsUnused,
+  ShortLinkDefaults.none,
+  Layer.mergeAll(
+    FollowUpChannels.supported,
+    FakeFollowUpCounts,
+    RoutedFollowUpPublisher.pipe(
+      Layer.provide(
+        Layer.mergeAll(
+          RecordingClients,
+          PostMeter.unmetered,
+          DrizzleFollowUpStore,
+          DrizzlePostRepository,
+          RepositoryCredentials
+        )
+      )
+    )
+  )
+);
 
 const HoldingServer = serverBehind(HoldingContributors);
 
@@ -436,6 +516,69 @@ describe("follow-up rules", () => {
             )
           );
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "carry a comment out as the account's reply to the post's last part, keyed by the follow-up",
+    () =>
+      setTime(start).pipe(
+        Effect.andThen(resetRecycling),
+        Effect.andThen(resetFollowUps),
+        Effect.andThen(Ref.set(sentPosts, [])),
+        Effect.andThen(Ref.set(sentReposts, [])),
+        Effect.andThen(
+          Effect.gen(function* routed() {
+            const workspaceId = yield* freshWorkspace;
+            const mastodon = yield* connected(workspaceId, "mastodon");
+            const postId = yield* published(workspaceId, [mastodon]);
+            const [target] = yield* targetsOf(postId);
+
+            assert.isDefined(target);
+
+            const started = yield* FollowUpRules.use((rules) =>
+              rules.start(actorIn(workspaceId), onPost(postId))
+            );
+
+            yield* likesOf(target.id, 10);
+            assert.strictEqual((yield* runDue).triggered, 2);
+
+            yield* eventually(
+              "both follow-ups went out",
+              ruleNow(workspaceId, started.rule.id).pipe(
+                Effect.map(({ followUps }) =>
+                  followUps.every(({ status }) => status._tag === "sent")
+                )
+              )
+            );
+
+            const [comment] = yield* Ref.get(sentPosts);
+            const [repost] = yield* Ref.get(sentReposts);
+            const [live] = target.liveParts;
+
+            const commentId = started.followUps.find(
+              ({ kind }) => kind === "comment"
+            )?.id;
+
+            assert.isDefined(live);
+            assert.strictEqual(comment?.text, "Thank you all for reading!");
+            assert.strictEqual(comment?.idempotencyKey, commentId);
+            assert.strictEqual(comment?.part, 1);
+            assert.deepStrictEqual(comment?.media, []);
+            assert.deepStrictEqual(
+              comment?.replyTo,
+              Option.some({
+                parent: Option.getOrThrow(live.platformPostId),
+                root: Option.getOrThrow(live.platformPostId),
+              })
+            );
+            assert.strictEqual(
+              repost?.platformPostId,
+              Option.getOrThrow(live.platformPostId)
+            );
+          }).pipe(Effect.ensuring(forgetRules), Effect.provide(RoutedServer))
+        )
       ),
     timeout
   );

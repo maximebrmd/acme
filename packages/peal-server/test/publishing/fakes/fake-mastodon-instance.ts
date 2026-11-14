@@ -125,6 +125,12 @@ const invalidToken = json({ error: "The access token is invalid" }, 401);
 const statusIdOf = (request: PlatformRequest) =>
   /^\/api\/v1\/statuses\/(?<id>\w+)$/u.exec(request.path)?.groups?.["id"];
 
+// The status a reblog names, as `/api/v1/statuses/:id/reblog` does.
+const rebloggedIdOf = (request: PlatformRequest) =>
+  /^\/api\/v1\/statuses\/(?<id>\w+)\/reblog$/u.exec(request.path)?.groups?.[
+    "id"
+  ];
+
 // The route a request takes, its ids left out.
 const routeOf = (
   request: PlatformRequest,
@@ -133,6 +139,10 @@ const routeOf = (
 ) => {
   if (isMedia) {
     return `${request.method} /api/v1/media/:id`;
+  }
+
+  if (rebloggedIdOf(request) !== undefined) {
+    return `${request.method} /api/v1/statuses/:id/reblog`;
   }
 
   return statusId === undefined
@@ -151,6 +161,9 @@ export const fakeMastodonInstance = Effect.fnUntraced(
     const validTokens = new Set(["token-1"]);
     const media = new Map<string, FakeMedia & { polls: number }>();
     const statuses: FakeStatus[] = [];
+    // The account's reblogs, by the status each reblogs, as Mastodon keeps
+    // one a status.
+    const reblogs = new Map<string, string>();
     const keys = new Map<string, FakeStatus>();
     const scripts = scripted<MastodonScript>();
 
@@ -338,6 +351,29 @@ export const fakeMastodonInstance = Effect.fnUntraced(
       }
     };
 
+    // As Mastodon's ReblogService: the account's reblog of the status, made
+    // once, the same one answered again.
+    const reblog = (request: PlatformRequest, origin: string) => {
+      const id = rebloggedIdOf(request) ?? "";
+      const reblogged = statuses.find((status) => status.id === id);
+
+      if (reblogged === undefined) {
+        return json({ error: "Record not found" }, 404);
+      }
+
+      const reblogId =
+        reblogs.get(id) ?? String(120_000_000 + reblogs.size + 1);
+
+      reblogs.set(id, reblogId);
+
+      return json({
+        id: reblogId,
+        reblog: statusJson(reblogged, origin),
+        uri: `${origin}/users/alice/statuses/${reblogId}/activity`,
+        url: null,
+      });
+    };
+
     const handle = (
       request: PlatformRequest,
       origin: string
@@ -392,6 +428,10 @@ export const fakeMastodonInstance = Effect.fnUntraced(
 
       if (onStatus !== undefined) {
         return onStatus;
+      }
+
+      if (route === "POST /api/v1/statuses/:id/reblog") {
+        return reblog(request, origin);
       }
 
       if (route === "POST /api/v1/statuses") {
@@ -451,6 +491,8 @@ export const fakeMastodonInstance = Effect.fnUntraced(
       script: (route: string, answers: readonly MastodonScript[]) => {
         scripts.push(route, answers);
       },
+      /** The account's reblogs: the status each reblogs, and its own id. */
+      reblogs: () => [...reblogs.entries()],
       /** The statuses published, in order, as they now are. */
       statuses: () => statuses.map((status) => ({ ...status })),
     };

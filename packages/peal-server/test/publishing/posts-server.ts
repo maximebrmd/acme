@@ -72,7 +72,7 @@ export const attachableVideo: MediaAssetId = MediaAssetIdSchema.make(
  * with the media posts may show from `media`, and the posts a month allows
  * from `allowance`.
  */
-export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
+export const postsServerBehind = <G, E2, R2, E, R, H, R4, RF = never>(
   gate: Layer.Layer<ApprovalGate | G, E2, R2>,
   media: Layer.Layer<AttachableMedia, E, R>,
   allowance: ReturnType<typeof postAllowance>,
@@ -87,7 +87,9 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // What channels carry of follow-up rules and the likes counted, and
   // what carries follow-ups out: by default, nothing is counted.
   followUps: Layer.Layer<
-    FollowUpChannels | FollowUpCounts | FollowUpPublisher
+    FollowUpChannels | FollowUpCounts | FollowUpPublisher,
+    never,
+    RF
   > = Layer.merge(FollowUpsUnused, FollowUpPublisher.none)
 ) =>
   publishingWorkers(
