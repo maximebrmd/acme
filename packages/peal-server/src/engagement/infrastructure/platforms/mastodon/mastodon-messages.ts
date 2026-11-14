@@ -86,6 +86,10 @@ const StatusSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   in_reply_to_id: Schema.optionalKey(Schema.NullOr(Schema.String)),
   media_attachments: Schema.optionalKey(Schema.Array(Schema.Unknown)),
+  // The accounts it mentions: with its author, who it reaches.
+  mentions: Schema.optionalKey(
+    Schema.Array(Schema.Struct({ id: Schema.NonEmptyString }))
+  ),
   visibility: Schema.String,
 });
 
@@ -180,6 +184,26 @@ const messageOf = (
         }))
       )
     : Option.none();
+
+// The accounts a status is exchanged with, besides the account's own: its
+// author and those it mentions. Mastodon keys a conversation by them
+// (one thread may hold several conversations, as two people who answered
+// a public post privately each make one).
+const exchangedWith = (status: Status, accountId: string): string =>
+  [
+    ...new Set(
+      [
+        status.account.id,
+        ...(status.mentions ?? []).map(({ id }) => id),
+      ].filter((id) => id !== accountId)
+    ),
+  ]
+    .toSorted()
+    .join(" ");
+
+// Whether a status opens its thread: it answers nothing.
+const opensThread = (status: Status) =>
+  status.in_reply_to_id === undefined || status.in_reply_to_id === null;
 
 // A resumed message nobody can tell the fate of: a person checks.
 const undecided: MessageSendOutcome = {
@@ -300,10 +324,13 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
 
       const [first] = around.value.ancestors;
 
-      // The last status started the conversation: its context is all of it.
+      // The last status started the conversation: its context is all of
+      // it, unless it answers a status no longer visible, whose other
+      // branches the read cannot reach.
       if (first === undefined) {
         return {
           complete:
+            opensThread(last) &&
             around.value.whole &&
             around.value.descendants.length < contextCeiling,
           statuses: [last, ...around.value.descendants],
@@ -321,7 +348,9 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
 
       return {
         complete:
-          whole.value.whole && whole.value.descendants.length < contextCeiling,
+          opensThread(first) &&
+          whole.value.whole &&
+          whole.value.descendants.length < contextCeiling,
         statuses: [first, ...whole.value.descendants],
       };
     });
@@ -345,12 +374,26 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
         statuses.set(last.id, last);
       }
 
+      // Only the statuses exchanged with this conversation's accounts are
+      // its messages: the thread may hold other people's.
+      const accounts = [
+        ...new Set(
+          conversation.accounts
+            .map(({ id }) => id)
+            .filter((id) => id !== accountId)
+        ),
+      ]
+        .toSorted()
+        .join(" ");
+
       const reading: ConversationReading = {
         complete: thread.complete,
         deleted: [],
         lastMessageAt,
         messages: [...statuses.values()].flatMap((status) =>
-          Option.toArray(messageOf(status, accountId))
+          exchangedWith(status, accountId) === accounts
+            ? Option.toArray(messageOf(status, accountId))
+            : []
         ),
         participants: conversation.accounts
           .filter(({ id }) => id !== accountId)

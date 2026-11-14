@@ -53,6 +53,7 @@ const status = (
   id,
   in_reply_to_id: null,
   media_attachments: [],
+  mentions: [{ acct: "studio", id: "109372" }],
   visibility: "direct",
   ...changed,
 });
@@ -157,6 +158,7 @@ describe("Mastodon's direct messages", () => {
                   status("3003", {
                     account: studio,
                     content: "<p>On our way</p>",
+                    mentions: [reader],
                     in_reply_to_id: "3002",
                   }),
                   // A public reply in the thread is no message.
@@ -232,6 +234,127 @@ describe("Mastodon's direct messages", () => {
           );
         })
       )
+  );
+
+  it.effect(
+    "keeps in a conversation only the statuses exchanged with its accounts, under a public post two people answered privately",
+    () =>
+      at(
+        Effect.gen(function* separates() {
+          const alice = { acct: "alice@social.example", id: "8001" };
+          const bob = { acct: "bob@social.example", id: "8002" };
+          const mentionsStudio = [{ acct: "studio", id: "109372" }];
+
+          const { account, platform } = yield* onServer((request) => {
+            if (request.path === "/api/v1/conversations") {
+              return json([
+                conversation(
+                  "c1",
+                  status("1001", {
+                    account: alice,
+                    in_reply_to_id: "1000",
+                    mentions: mentionsStudio,
+                  }),
+                  [alice]
+                ),
+                conversation(
+                  "c2",
+                  status("1002", {
+                    account: bob,
+                    in_reply_to_id: "1000",
+                    mentions: mentionsStudio,
+                  }),
+                  [bob]
+                ),
+              ]);
+            }
+
+            if (request.path === "/api/v1/statuses/1000/context") {
+              return json({
+                ancestors: [],
+                descendants: [
+                  status("1001", {
+                    account: alice,
+                    content: "<p>My order number is 42</p>",
+                    in_reply_to_id: "1000",
+                    mentions: mentionsStudio,
+                  }),
+                  status("1002", {
+                    account: bob,
+                    content: "<p>My home address is here</p>",
+                    in_reply_to_id: "1000",
+                    mentions: mentionsStudio,
+                  }),
+                  // The account's private answer to Bob.
+                  status("1003", {
+                    account: studio,
+                    in_reply_to_id: "1002",
+                    mentions: [bob],
+                  }),
+                ],
+              });
+            }
+
+            return json({
+              ancestors: [
+                status("1000", {
+                  account: studio,
+                  in_reply_to_id: null,
+                  visibility: "public",
+                }),
+              ],
+              descendants: [],
+            });
+          });
+
+          const batch = yield* platform.read(account, {
+            keptSince,
+            known: new Map(),
+          });
+
+          const byId = new Map(
+            batch.conversations.map((reading) => [
+              reading.platformConversationId,
+              reading,
+            ])
+          );
+
+          assert.deepStrictEqual(
+            byId
+              .get("c1")
+              ?.messages.map(({ platformMessageId }) => platformMessageId),
+            ["1001"]
+          );
+          assert.deepStrictEqual(
+            byId
+              .get("c2")
+              ?.messages.map(({ platformMessageId }) => platformMessageId),
+            ["1002", "1003"]
+          );
+          assert.isTrue(byId.get("c1")?.complete);
+        })
+      )
+  );
+
+  it.effect("reads a thread whose first status is gone as not whole", () =>
+    at(
+      Effect.gen(function* orphan() {
+        const { account, platform } = yield* onServer((request) =>
+          request.path === "/api/v1/conversations"
+            ? json([
+                conversation("c1", status("2002", { in_reply_to_id: "2001" })),
+              ])
+            : json({ ancestors: [], descendants: [] })
+        );
+
+        const batch = yield* platform.read(account, {
+          keptSince,
+          known: new Map(),
+        });
+
+        assert.isFalse(batch.conversations[0]?.complete);
+      })
+    )
   );
 
   it.effect(
