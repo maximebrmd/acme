@@ -267,14 +267,8 @@ export const InboxMessagesHandlers = HttpApiBuilder.group(
           return yield* messages
             .markRead(actor, conversationId, payload.read)
             .pipe(
-              Effect.flatMap((conversation) =>
-                messages
-                  .conversation(actor, conversation.id)
-                  .pipe(
-                    Effect.map((detail) =>
-                      toConversationView(conversation, detail.messages.length)
-                    )
-                  )
+              Effect.map((marked) =>
+                toConversationView(marked.conversation, marked.messages)
               ),
               Effect.catchTags({
                 ConversationNotFound: conversationNotFound,

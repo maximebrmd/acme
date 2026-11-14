@@ -265,7 +265,7 @@ const acting =
 const inPerson =
   "Only a member signed in in person (a session of the web app) may: an API key or an OAuth application is refused (403 `Forbidden`, `personRequired`).";
 
-const where = `Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message ${inboxMessageRetentionDays} days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off, and, within a day, a message or a conversation the platform no longer shows. Peal never starts a conversation: it answers those someone else began.`;
+const where = `Peal reads a channel's direct messages, on Mastodon and Bluesky where the server's operator turned them on, only once a member turned them on for that channel. It keeps each message ${inboxMessageRetentionDays} days after it was sent, and a conversation until its last message is that old; it deletes a channel's conversations at once when the channel is disconnected or its messages turned off; a message the platform no longer shows within a day, and a conversation once two whole listings in a row no longer show it, where Peal can read them whole (otherwise by the 30 days). Peal never starts a conversation: it answers those someone else began.`;
 
 /**
  * A workspace's direct messages: the private conversations of its

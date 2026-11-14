@@ -18,6 +18,14 @@ export interface MessagesToRead {
   readonly known: ReadonlyMap<string, string>;
   /** The oldest message Peal may keep. */
   readonly keptSince: DateTime.Utc;
+  /**
+   * The ids on the platform of the messages Peal keeps of a conversation,
+   * by its id there: what a whole read that does not show one asks after,
+   * where a deletion can make part of a thread look whole (Mastodon).
+   */
+  readonly keptOf?: (
+    platformConversationId: string
+  ) => Effect.Effect<readonly string[]>;
 }
 
 /** A message about to go out, read from its journal row. */

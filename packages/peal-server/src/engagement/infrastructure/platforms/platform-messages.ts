@@ -119,7 +119,30 @@ export const platformMessagesWith = (settings: {
 
         // A conversation not read back whole for a day is read back
         // whatever its revision says, so a deletion there is seen.
+        const byPlatformId = new Map(
+          known.map((conversation) => [
+            conversation.platformConversationId,
+            conversation.id,
+          ])
+        );
+
+        // What Peal keeps of a conversation, read when the adapter asks;
+        // none when the database does not answer, so nothing is deleted.
+        const keptOf = (platformConversationId: string) => {
+          const id = byPlatformId.get(platformConversationId);
+
+          return id === undefined
+            ? Effect.succeed([])
+            : store.messagesOf(id).pipe(
+                Effect.map((kept) =>
+                  kept.map(({ platformMessageId }) => platformMessageId)
+                ),
+                Effect.orElseSucceed((): readonly string[] => [])
+              );
+        };
+
         return yield* platforms[account.platform].read(account, {
+          keptOf,
           keptSince: request.keptSince,
           known: new Map(
             known.flatMap((conversation) =>

@@ -65,6 +65,10 @@ const maxPages = 5;
 /** What an authenticated context gives at most (the reference: 4,096 descendants). */
 const contextCeiling = 4096;
 
+// How many kept statuses a whole read that did not show them asks after,
+// one call each: more, and the read is taken as not whole.
+const orphanChecks = 10;
+
 // Mastodon keeps an Idempotency-Key for an hour; resending with it is
 // trusted for a little less, so the key cannot lapse during the resend.
 const idempotencyWindow = Duration.minutes(50);
@@ -356,6 +360,53 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
       };
     });
 
+    // Whether a status Peal keeps is gone from the instance: deleted, or no
+    // longer visible to the account. Any other answer, or none, is not.
+    const statusGone = (instance: URL, token: Redacted.Redacted, id: string) =>
+      reader
+        .execute(
+          HttpClientRequest.get(
+            new URL(`/api/v1/statuses/${encodeURIComponent(id)}`, instance)
+          ).pipe(HttpClientRequest.bearerToken(token))
+        )
+        .pipe(
+          Effect.map(
+            (response) => response.status === 404 || response.status === 410
+          ),
+          Effect.orElseSucceed(() => false)
+        );
+
+    // What a whole read did not show of what Peal keeps, asked after one
+    // by one, at most `orphanChecks`: Mastodon detaches the answers of a
+    // deleted status, which then read as threads of their own, so a branch
+    // the read did not reach is not a deletion. A status still there makes
+    // the read not whole; one gone is deleted.
+    const unseenOf = Effect.fn("MastodonMessages.unseen")(function* unseenOf(
+      instance: URL,
+      token: Redacted.Redacted,
+      kept: readonly string[],
+      seen: ReadonlySet<string>
+    ) {
+      const unseen = kept.filter((id) => !seen.has(id));
+      const deleted: string[] = [];
+
+      if (unseen.length > orphanChecks) {
+        return { deleted, whole: false };
+      }
+
+      let whole = true;
+
+      for (const id of unseen) {
+        if (yield* statusGone(instance, token, id)) {
+          deleted.push(id);
+        } else {
+          whole = false;
+        }
+      }
+
+      return { deleted, whole };
+    });
+
     const readingOf = Effect.fn("MastodonMessages.reading")(function* readingOf(
       instance: URL,
       token: Redacted.Redacted,
@@ -363,8 +414,9 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
       conversation: MastodonConversation,
       last: Status,
       lastMessageAt: DateTime.Utc,
-      keptSince: DateTime.Utc
+      request: MessagesToRead
     ) {
+      const { keptSince } = request;
       const thread = yield* threadOf(instance, token, last);
 
       // The thread's statuses, as fresh as the list's or fresher, win.
@@ -388,9 +440,19 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
         .toSorted()
         .join(" ");
 
+      const checked =
+        thread.complete && request.keptOf !== undefined
+          ? yield* unseenOf(
+              instance,
+              token,
+              yield* request.keptOf(conversation.id),
+              new Set(statuses.keys())
+            )
+          : { deleted: [], whole: thread.complete };
+
       const reading: ConversationReading = {
-        complete: thread.complete,
-        deleted: [],
+        complete: checked.whole,
+        deleted: checked.deleted,
         lastMessageAt,
         // A status sent before what Peal keeps is none of its messages:
         // the thread is read whole, and the retention deleted it.
@@ -502,7 +564,7 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
                 conversation,
                 last.value,
                 lastAt.value,
-                request.keptSince
+                request
               )
             );
           }

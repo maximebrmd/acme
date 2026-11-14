@@ -392,6 +392,46 @@ describe("Mastodon's direct messages", () => {
       )
   );
 
+  it.effect(
+    "asks after a kept status a whole read did not show: gone, it is deleted; still there, the read was not whole",
+    () =>
+      at(
+        Effect.gen(function* orphans() {
+          const { account, platform, server } = yield* onServer((request) => {
+            if (request.path === "/api/v1/conversations") {
+              return json([conversation("c1", status("3003"))]);
+            }
+
+            // The first status was deleted: its answers now open threads.
+            if (request.path === "/api/v1/statuses/3003/context") {
+              return json({ ancestors: [], descendants: [] });
+            }
+
+            if (request.path === "/api/v1/statuses/3002") {
+              return json(status("3002"));
+            }
+
+            return json({ error: "Record not found" }, 404);
+          });
+
+          const batch = yield* platform.read(account, {
+            keptOf: () => Effect.succeed(["3001", "3002", "3003"]),
+            keptSince,
+            known: new Map([["c1", "3002"]]),
+          });
+
+          const [reading] = batch.conversations;
+
+          assert.isFalse(reading?.complete ?? true);
+          assert.deepStrictEqual(reading?.deleted, ["3001"]);
+          assert.includeMembers(
+            server.requests().map(({ path }) => path),
+            ["/api/v1/statuses/3001", "/api/v1/statuses/3002"]
+          );
+        })
+      )
+  );
+
   it.effect("reads a thread whose first status is gone as not whole", () =>
     at(
       Effect.gen(function* orphan() {

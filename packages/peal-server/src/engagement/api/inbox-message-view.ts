@@ -157,7 +157,7 @@ export const toConversationDetailView = (
   detail: ConversationDetail
 ): InboxConversationDetail => ({
   abilities: { ...detail.abilities },
-  conversation: toConversationView(detail.conversation, detail.messages.length),
+  conversation: toConversationView(detail.conversation, detail.total),
   messages: detail.messages.map(toDirectMessageView),
   nextCursor: detail.older.pipe(
     Option.map(encodeMessageCursor),

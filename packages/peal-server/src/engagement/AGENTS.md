@@ -411,15 +411,25 @@
   hourly otherwise. The adapter is given the revisions Peal holds and
   reads back only the conversations that changed, and those not read back
   for a day (`dueForCheck`, `checkedAt`), so a deletion is seen within a
-  day. A listing that reached its end (`listedWhole`) deletes the kept
-  conversations it did not list (`dropUnlisted`); one cut at its page cap
+  day. A listing that reached its end (`listedWhole`, non-empty) marks
+  the kept conversations it did not list (`unlisted_at`), clears those it
+  lists, and deletes those the whole listing before missed too, unless a
+  message to one is on its way (`dropUnlisted`): one listing alone never
+  deletes, as a conversation moving up while it pages is on no page, and
+  an empty one says nothing. Bluesky's listing ends at a page wholly older
+  than what Peal keeps, as Mastodon's. One cut at its page cap
   deletes none and is counted (`peal.engagement.messages.listing_truncated`,
   alert `peal-messages-listing-truncated`).
   Each adapter checks the read's deadline before each read-back, so a
   read never holds the gate long past it; `reconcileMessages`
   decides (a message the platform says was deleted goes at once; only a
   `complete` read takes one it did not see, sent since the read's start,
-  for deleted). The record runs under the box's lock in one transaction,
+  for deleted; no reading sent before `keptSince` is ever kept, so a
+  thread read whole brings back nothing the retention deleted). Mastodon
+  asks after each kept status a whole read did not show
+  (`GET /api/v1/statuses/:id`, at most 10, `keptOf`): gone, it is in
+  `deleted`; still there (a branch detached by a deleted status), the
+  read is not `complete`. The record runs under the box's lock in one transaction,
   and tells `message.received` (ids) and the `MessagesReceived` notice
   (the channel's handle and a count, once a conversation and UTC day, to
   `engagement:message`, emailed under `comments`) only for messages
@@ -481,9 +491,10 @@
   gone. The
   gate claims the call first (`claimCall`).
 - Retention: each message is deleted `conversationsKeptFor` (30 days)
-  after it was sent, a settled outgoing message 30 days after it settled,
-  and a conversation once its last message is that old and nothing of it
-  is on its way (`PurgeMessages`,
+  after it was sent, a settled outgoing message (`sent`, `failed` or
+  left `unconfirmed`) 30 days after it settled, and a conversation once
+  its last message is that old and nothing of it is `sending`
+  (`direct_messages_sent`, `outgoing_messages_settled`; `PurgeMessages`,
   `engagement.messages-retention` hourly at 57; a failed run is counted,
   `peal.engagement.messages.retention_failures`, alert
   `peal-messages-retention-failing`); a channel gone, on any platform,

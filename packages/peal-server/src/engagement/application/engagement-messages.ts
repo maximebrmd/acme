@@ -87,6 +87,8 @@ export interface ConversationDetail {
   readonly window: ReplyWindow;
   /** Where the page of older messages starts; none on the oldest. */
   readonly older: Option.Option<MessageCursor>;
+  /** How many messages it keeps in all, past the page too. */
+  readonly total: number;
 }
 
 /** A page of a workspace's conversations, and where the next starts. */
@@ -178,7 +180,7 @@ export class EngagementMessages extends Context.Service<
       actor: Actor,
       conversationId: string,
       read: boolean
-    ) => Effect.Effect<Conversation, ConversationNotFound | Refused>;
+    ) => Effect.Effect<ConversationSummary, ConversationNotFound | Refused>;
   }
 >()("peal-server/engagement/application/EngagementMessages") {
   static readonly layer = Layer.effect(
@@ -349,6 +351,7 @@ export class EngagementMessages extends Context.Service<
                 : Option.none(),
             platform: channel.pipe(Option.map((found) => found.platform)),
             sent: yield* store.outgoingOf(summary.conversation.id),
+            total: summary.messages,
             window: Option.match(platform, {
               onNone: () => ({ closesAt: Option.none(), open: false }),
               onSome: (on) =>
@@ -615,7 +618,13 @@ export class EngagementMessages extends Context.Service<
             return yield* new ConversationNotFound({ conversationId });
           }
 
-          return changed.value;
+          // Marking changes no message: the count read before holds.
+          const marked: ConversationSummary = {
+            conversation: changed.value,
+            messages: summary.messages,
+          };
+
+          return marked;
         }
       );
 

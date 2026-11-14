@@ -72,6 +72,14 @@ const convo = (
   ...changed,
 });
 
+// A conversation whose last message is older than what Peal keeps.
+const old = (id: string) =>
+  convo(id, {
+    lastMessage: message(`${id}-last`, reader, {
+      sentAt: "2026-09-01T09:00:00.000Z",
+    }),
+  });
+
 const sentBody = jsonBodyOf(
   Schema.Struct({
     convoId: Schema.String,
@@ -221,6 +229,40 @@ describe("Bluesky's direct messages", () => {
               { attachments: 0, fromAccount: true, id: "m3" },
               { attachments: 1, fromAccount: false, id: "m1" },
             ]
+          );
+        })
+      )
+  );
+
+  it.effect(
+    "stops listing at a page wholly older than what Peal keeps, the listing whole",
+    () =>
+      at(
+        Effect.gen(function* stops() {
+          const { account, platform, server } = yield* onNetwork((request) => {
+            if (request.path !== "/xrpc/chat.bsky.convo.listConvos") {
+              return json({ messages: [] });
+            }
+
+            return request.query.get("cursor") === "p2"
+              ? json({ convos: [old("c8"), old("c9")], cursor: "p3" })
+              : json({ convos: [convo("c1")], cursor: "p2" });
+          });
+
+          const batch = yield* platform.read(account, {
+            keptSince,
+            known: new Map([["c1", "rev-c1"]]),
+          });
+
+          assert.isFalse(batch.halted);
+          assert.isTrue(batch.listedWhole);
+          assert.lengthOf(
+            server
+              .requests()
+              .filter(
+                ({ path }) => path === "/xrpc/chat.bsky.convo.listConvos"
+              ),
+            2
           );
         })
       )

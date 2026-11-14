@@ -31,7 +31,8 @@ export type PartnerScope = typeof PartnerScopeSchema.Type;
  * the activity log, which in a workspace without members nobody else
  * reads. Never what
  * only people do: members and invitations, API keys, billing changes,
- * deleting through the workspace itself.
+ * deleting through the workspace itself; nor the direct messages, which
+ * only an owner lets a key into, and a partner's workspace has no owner.
  */
 export const partnerKeyPermissions: readonly Permission[] = [
   "activity:read",
@@ -44,8 +45,6 @@ export const partnerKeyPermissions: readonly Permission[] = [
   "channel:disconnect",
   "engagement:read",
   "engagement:reply",
-  "engagement:message",
-  "engagement:readMessages",
   "media:read",
   "media:upload",
   "media:delete",

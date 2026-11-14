@@ -181,6 +181,40 @@ describe("the direct messages endpoints", () => {
   });
 
   it.effect(
+    "mark a conversation for a key that may answer, and count every message it holds",
+    () => {
+      const { talk, world } = worldWithConversation();
+      const second = directMessage(2, {}, talk);
+
+      world.state.messages.set(second.id, second);
+
+      return at(
+        Effect.gen(function* marks() {
+          const client = yield* clientAs(world, ["engagement:message"]);
+
+          const marked = yield* client.inboxMessages.setConversationRead({
+            params: { ...params, conversationId: talk.id },
+            payload: { read: true },
+          });
+
+          assert.isFalse(marked.unread);
+          assert.strictEqual(marked.messages, 2);
+
+          const editor = yield* clientAs(world, permissionsFor("editor"));
+
+          const detail = yield* editor.inboxMessages.getConversation({
+            params: { ...params, conversationId: talk.id },
+            query: { limit: 1 },
+          });
+
+          assert.lengthOf(detail.messages, 1);
+          assert.strictEqual(detail.conversation.messages, 2);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
     "send a message, journalled, and refuse a second on its way",
     () => {
       const { talk, world } = worldWithConversation();

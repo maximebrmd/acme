@@ -391,7 +391,19 @@ export const blueskyMessages = Effect.fn("BlueskyMessages.make")(
 
         cursor = Option.fromUndefinedOr(answer.cursor);
 
-        if (Option.isNone(cursor)) {
+        // The list runs from the latest activity: a page wholly older
+        // than what Peal keeps ends what it may hold, as the last does.
+        const pastKept = answer.convos.every(
+          (listed) =>
+            !Option.fromUndefinedOr(listed.lastMessage).pipe(
+              Option.flatMap(sentAtOf),
+              Option.exists((at) =>
+                DateTime.isGreaterThanOrEqualTo(at, request.keptSince)
+              )
+            )
+        );
+
+        if (Option.isNone(cursor) || pastKept) {
           const batch: MessagesBatch = {
             conversations: readings,
             halted: false,
