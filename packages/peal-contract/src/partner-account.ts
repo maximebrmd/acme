@@ -122,6 +122,7 @@ export const partnerKeyPermissions = [
   "channel:disconnect",
   "engagement:read",
   "engagement:reply",
+  "engagement:message",
   "media:read",
   "media:upload",
   "media:delete",
