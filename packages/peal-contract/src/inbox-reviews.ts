@@ -212,8 +212,15 @@ export const InboxReviewThreadDetailSchema = Schema.Struct({
 export type InboxReviewThreadDetail = typeof InboxReviewThreadDetailSchema.Type;
 
 export const NewInboxReviewReplySchema = Schema.Struct({
+  // No NUL: a reply holding one is a malformed request (400).
   text: Schema.String.check(
-    Schema.isBetweenLength(1, maxInboxReviewReplyBytes)
+    Schema.isBetweenLength(1, maxInboxReviewReplyBytes),
+    Schema.makeFilter(
+      (text: string) => !text.includes(String.fromCodePoint(0)),
+      {
+        expected: "a text without a NUL character",
+      }
+    )
   ),
 }).annotate({ identifier: "NewInboxReviewReply" });
 

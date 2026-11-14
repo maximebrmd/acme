@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Result, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import { TestClock } from "effect/testing";
@@ -9,6 +9,7 @@ import {
   InboxActionUnavailable,
   InboxReviewNotFound,
   InboxReviewThreadNotFound,
+  NewInboxReviewReplySchema,
   ReplyInvalid,
   ReplyPending,
 } from "peal-contract";
@@ -316,4 +317,11 @@ describe("the reviews endpoints", () => {
       });
     }
   );
+
+  it("refuse a reply holding a NUL as a malformed request, before any use case", () => {
+    const decode = Schema.decodeUnknownResult(NewInboxReviewReplySchema);
+
+    assert.isTrue(Result.isFailure(decode({ text: "a\u0000b" })));
+    assert.isTrue(Result.isSuccess(decode({ text: "Thank you!" })));
+  });
 });

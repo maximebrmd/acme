@@ -28,6 +28,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, UserId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { storableText } from "#shared/domain/platform-text.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { AbilityUnavailable } from "./ability-unavailable.ts";
@@ -48,6 +49,10 @@ import { ReviewNotFound } from "./review-not-found.ts";
 import { ReviewReplyNeedsPerson } from "./review-reply-needs-person.ts";
 import { ReviewReplyPending } from "./review-reply-pending.ts";
 import { ReviewThreadNotFound } from "./review-thread-not-found.ts";
+
+// The longest text a reply is cleaned to before it is counted: past
+// Google's 4,096 bytes, so the count still refuses what is too long.
+const maxReviewReplyLength = 10_000;
 
 /** The most threads a page lists. */
 export const maxReviewThreadsPerPage = 100;
@@ -298,7 +303,9 @@ export class EngagementReviews extends Context.Service<
           return yield* new ReviewReplyNeedsPerson({ reviewId });
         }
 
-        const said = text.trim();
+        // Cleaned as any text kept is: no control character a platform,
+        // a terminal or the database would act on.
+        const said = storableText(text, maxReviewReplyLength).trim();
 
         if (said === "") {
           return yield* new ReplyEmpty();

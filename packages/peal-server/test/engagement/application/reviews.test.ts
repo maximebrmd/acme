@@ -438,6 +438,31 @@ const journalled = (world: ReviewWorld) =>
     );
   });
 
+describe("a reply's text", () => {
+  it.effect(
+    "is kept without a control character a platform or a terminal would act on",
+    () => {
+      const world = withReview();
+
+      return at(
+        Effect.gen(function* cleans() {
+          yield* collect;
+
+          const reply = yield* EngagementReviews.use((reviews) =>
+            reviews.reply(
+              editor,
+              onlyReview(world).id,
+              `Thanks${String.fromCodePoint(0x1b)}[2J for${String.fromCodePoint(0)} coming`
+            )
+          );
+
+          assert.strictEqual(reply.text, "Thanks[2J for coming");
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
+
 describe("replying to reviews in person", () => {
   it.effect(
     "refuses an API key and an application a reply or a deleted reply, and lets them read and mark",
