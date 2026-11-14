@@ -92,7 +92,14 @@ release before it misreads:
   (`partsNotSupported`) once the post is live, and the channel ends
   **Failed**, the post partly published, never sent again from Peal.
   Scheduling a draft with one refuses it (`tooManyParts`), which the
-  member sees.
+  member sees, and a recycling rule whose source has one ends at its
+  next occurrence (`contentRejected`), for good;
+- the flags of first comments (`post_targets.first_comment`,
+  `parts_left_out`) and the listing index (`post_targets_listed`, on
+  `listed_at`): the release before lists only published targets, so a
+  post whose first comment failed is no longer followed by analytics or
+  the inbox while it runs, and one a member published without its
+  comment reads as published, which it is.
 
 1. **Posts still to go out that ask a poll:**
 
@@ -115,12 +122,22 @@ release before it misreads:
      "SELECT p.id, p.workspace_id, p.status, r.id AS rule FROM publishing.posts p LEFT JOIN publishing.recycling_rules r ON r.source_post_id = p.id AND r.status IN ('active', 'paused') WHERE p.poll IS NOT NULL AND (p.status = 'draft' OR r.id IS NOT NULL)"
    ```
 
-4. **Checks 1 or 2 list a post:** do not roll back yet. Wait until those
+4. **Recycling rules whose source has a first comment:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT DISTINCT r.id AS rule, r.workspace_id, r.status FROM publishing.recycling_rules r JOIN publishing.posts p ON p.id = r.source_post_id JOIN publishing.post_targets t ON t.post_id = p.id JOIN channels.channels c ON c.id = t.channel_id WHERE r.status IN ('active', 'paused') AND jsonb_array_length(p.follow_ups) > 0 AND c.platform IN ('facebook', 'instagram', 'linkedin', 'youtube')"
+   ```
+
+5. **Checks 1 or 2 list a post:** do not roll back yet. Wait until those
    posts have gone out, or have their workspace take them back to draft,
    then run the checks again. Never change the rows by hand.
 
-5. **Check 3 lists a post:** while the release before runs, a draft
-   scheduled with a poll goes out without it, and an active rule's next
-   occurrence too. Have the workspaces of the active rules listed pause
-   them and tell those of the drafts listed not to schedule them until
-   this release is back, as for per-channel posts above.
+6. **Checks 3 or 4 list a post or a rule:** while the release before
+   runs, a draft scheduled with a poll goes out without it, an active
+   rule's next occurrence too, and a rule whose source has a first
+   comment ends. Have the workspaces of the active rules listed pause
+   them (`PATCH …/recycling/{ruleId}` with `"paused": true`, or **Pause**
+   in the web app) and keep the paused ones paused, and tell those of the
+   drafts listed not to schedule them until this release is back, as for
+   per-channel posts above.

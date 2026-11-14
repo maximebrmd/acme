@@ -176,6 +176,11 @@ export const useViolationText = (
           length,
           maximum,
         }),
+      pollChoiceRepeated: ({ channelId, choice }) =>
+        t("violation.pollChoiceRepeated", {
+          channel: channelName(channelId),
+          choice,
+        }),
       pollDurationOutOfRange: ({
         channelId,
         durationMinutes,

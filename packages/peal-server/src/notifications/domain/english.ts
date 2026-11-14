@@ -175,7 +175,7 @@ export const english: EmailCatalog = {
     planLimit:
       "the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.",
     quotaExceeded:
-      "the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.",
+      "the platform's daily allowance stayed used up (its uploads, or on YouTube the quota a first comment also spends), for this Peal server or for the account, and Peal stopped waiting.",
     rateLimited:
       "the platform kept turning requests away, and Peal stopped trying.",
     repliesNotAllowed:

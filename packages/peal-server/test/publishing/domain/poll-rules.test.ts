@@ -84,7 +84,7 @@ describe("a poll", () => {
 
     expect(
       violationsOf(
-        asking(new Poll({ choices: ["Fine", long, " "], durationMinutes: 60 })),
+        asking(new Poll({ choices: ["Fine", long, ""], durationMinutes: 60 })),
         [x, mastodon]
       )
     ).toStrictEqual([
@@ -142,6 +142,26 @@ describe("a poll", () => {
         { _tag: "pollMultipleChoice", ...threads },
       ]
     );
+  });
+
+  it("refuses a choice that repeats one before it", () => {
+    expect(
+      violationsOf(
+        asking(
+          new Poll({ choices: ["Tea", "Coffee", "Tea"], durationMinutes: 60 })
+        ),
+        [mastodon]
+      )
+    ).toStrictEqual([{ _tag: "pollChoiceRepeated", ...mastodon, choice: 3 }]);
+  });
+
+  it("keeps choices without the spaces around them", () => {
+    expect(
+      Schema.decodeUnknownSync(Poll)({
+        choices: [" Tea ", "Coffee  "],
+        durationMinutes: 60,
+      }).choices
+    ).toStrictEqual(["Tea", "Coffee"]);
   });
 
   it("goes with no file", () => {

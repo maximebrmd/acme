@@ -566,6 +566,7 @@ const commentedPost = Effect.gen(function* commentedPost() {
   const posts = yield* PostRepository;
   const postId = yield* newId(PostIdSchema);
   const channelId = yield* newId(ChannelIdSchema);
+
   const target = createTarget(
     yield* newId(PostTargetIdSchema),
     postId,

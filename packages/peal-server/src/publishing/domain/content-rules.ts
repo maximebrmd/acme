@@ -780,6 +780,14 @@ export const pollViolationsOn = (
           ]
         : [];
     }),
+    ...poll.choices.flatMap((choice, index): readonly ContentViolation[] =>
+      choice.trim() !== "" &&
+      poll.choices
+        .slice(0, index)
+        .some((before) => before.trim() === choice.trim())
+        ? [{ _tag: "pollChoiceRepeated", ...channel, choice: index + 1 }]
+        : []
+    ),
     ...(duration._tag === "range" &&
     (poll.durationMinutes < duration.minimumMinutes ||
       poll.durationMinutes > duration.maximumMinutes)

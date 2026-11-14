@@ -256,7 +256,7 @@ describe(PostDetailView, () => {
     const french = await renderPost("fr", shown);
 
     expect(english).toContain("YouTube made the video private");
-    expect(english).toContain("daily allowance of uploads stayed used up");
+    expect(english).toContain("daily allowance stayed used up");
     expect(french).toContain("YouTube a rendu la vidéo privée");
   });
 

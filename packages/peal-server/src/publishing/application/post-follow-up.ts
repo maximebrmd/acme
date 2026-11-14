@@ -177,6 +177,7 @@ export class PostFollowUp extends Context.Service<
           Effect.gen(function* record() {
             const { post, target } = yield* lockBoth(actor, postId, targetId);
             const now = yield* DateTime.now;
+
             const next = yield* Effect.fromResult(
               transition(target, post, now)
             );

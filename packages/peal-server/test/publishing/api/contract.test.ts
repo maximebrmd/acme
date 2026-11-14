@@ -267,6 +267,12 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     platform: "x",
     unit: "codePoints",
   },
+  pollChoiceRepeated: {
+    _tag: "pollChoiceRepeated",
+    channelId,
+    choice: 2,
+    platform: "mastodon",
+  },
   pollDurationOutOfRange: {
     _tag: "pollDurationOutOfRange",
     channelId,
@@ -360,6 +366,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   commentsTurnedOff: true,
   pollChoiceCount: true,
   pollChoiceLength: true,
+  pollChoiceRepeated: true,
   pollDurationOutOfRange: true,
   pollMultipleChoice: true,
   pollNotSupported: true,

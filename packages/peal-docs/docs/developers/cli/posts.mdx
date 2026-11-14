@@ -133,6 +133,7 @@ peal posts unschedule <post-id>
 peal posts cancel <post-id>
 peal posts remove-target <post-id> <target-id>
 peal posts repost <post-id> <target-id>
+peal posts leave-out-rest <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
 peal posts unpublish <post-id> --channel <channel-id> --yes
@@ -160,6 +161,7 @@ peal posts duplicate <post-id>
 - `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
 - `peal posts remove-target` takes one channel off a post that waits for its time, scheduled or awaiting approval: it goes out on its other channels and never on this one (`peal posts show` lists the target ids). The last channel is refused: cancel the post instead. Where your posts need an approval, the post waits for one again.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
+- `peal posts leave-out-rest` publishes a post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. Its first part is live, and nothing more is sent there.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/guides/posts) for how posts end.
 - `peal posts unpublish` deletes a published post from its platforms, for everyone, every part of a thread ([Unpublish a post](/guides/posts/published#unpublish)): from one channel with `--channel` (its id, its exact handle, or its platform and handle, as in `--channel "bluesky studio.example"`; a handle two of the post's channels share is refused, listing them), or from every channel it can be. It cannot be undone: it asks first, unless `--yes`, and with `--json` it needs `--yes`. `--wait <seconds>`, with `--channel`, waits for the deletion to end. `peal posts changes` lists what was asked of the post once live, and `peal posts list --removed` the posts removed from a channel.
 - `peal posts edit` replaces the text of a published post on one channel, on Mastodon and Google Business Profile ([Edit a published post](/guides/posts/published#edit-live)): `--channel` names it as `peal posts unpublish` does, `--text` is the new text, `--part <n>` the part of a thread (from 0, the post itself). Only the text changes, and the change is public at once. `--wait <seconds>` waits for the edit to end; `peal posts changes` says how it went.

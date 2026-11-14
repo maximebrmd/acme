@@ -24,8 +24,11 @@ export const maxPollChoiceLength = 200;
  */
 export const maxPollDurationMinutes = 43_829;
 
-/** One answer a poll offers. */
-export const PollChoiceSchema = Schema.String.check(
+/**
+ * One answer a poll offers, kept without the spaces around it, so the
+ * choice measured is the choice sent.
+ */
+export const PollChoiceSchema = Schema.Trim.check(
   Schema.isMaxLength(maxPollChoiceLength),
   isWithoutNul
 );

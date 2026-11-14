@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Option, Result } from "effect";
 
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { previewOn } from "#publishing/domain/channel-preview.ts";
 import {
   checkPublishable,
   partViolationsOn,
@@ -334,5 +335,20 @@ describe("a first comment on a video made for kids", () => {
     expect(
       violations.some(({ _tag }) => _tag === "commentsTurnedOff")
     ).toBeFalsy();
+  });
+});
+
+describe("a first comment's preview", () => {
+  it("counts it by the comment's rules, as it is checked", () => {
+    const instagram = channel("6", "instagram");
+
+    const [comment] = previewOn(
+      thread("A caption", part("#one #two")),
+      instagram,
+      []
+    ).parts;
+
+    expect(comment?.media.maximum).toBe(0);
+    expect(comment?.hashtags.maximum).toBeUndefined();
   });
 });

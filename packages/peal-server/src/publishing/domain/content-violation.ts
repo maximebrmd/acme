@@ -106,6 +106,11 @@ export const ContentViolationSchema = Schema.Union([
     maximum: Schema.Int,
     unit: TextUnitSchema,
   }),
+  // A choice, by its place from 1, says the same as one before it.
+  Schema.TaggedStruct("pollChoiceRepeated", {
+    ...onChannel,
+    choice: Schema.Int,
+  }),
   // The poll stays open longer or shorter than the platform takes.
   Schema.TaggedStruct("pollDurationOutOfRange", {
     ...onChannel,

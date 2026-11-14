@@ -80,9 +80,27 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   the post's newest comments (`commentAmong`: the only one by the account
   since `startedAt` less a minute with the same text, `found` or
   `unknown`, never `absent`; a list a next page may extend past the
-  attempt's start settles nothing). A comment that fails after the post
-  went live leaves the target failed with its live post, the post
-  `partiallyPublished`, and a repost sends the comment alone. None of the
+  attempt's start settles nothing). A comment's refusal fails the part
+  alone, never the token: only LinkedIn's 401 in its own words, YouTube's
+  401 and Meta's invalid token (not a missing permission) are refused
+  tokens; a LinkedIn 403 (a content administrator, whom LinkedIn does not
+  let comment: `comment.needs`, `commentNeeds` in the capabilities) is
+  `permissionDenied`, its 429 waits a minute, and a LinkedIn comment is
+  kept by its URN. A comment that fails after the post went live leaves
+  the target failed with its live post, the post `partiallyPublished`
+  (its notice says only the comment did not go out: `PostFailed.notSent`),
+  and a repost sends the comment alone. The router marks such a target
+  `post_targets.first_comment` before it sends the comment
+  (`markFirstComment`), so `PublishedTargets` lists it by its first live
+  part from then on (`listed_at`, kept by `listedOf`, on the
+  `post_targets_listed` index), whatever the comment became.
+  `PostFollowUp.leaveOutRest` (`withoutRest`) publishes a failed or
+  unconfirmed target whose first part is live as that part,
+  `partsLeftOut`, sending nothing; it serves threads too. A post scheduled
+  with a first comment where the server sends comments no more is refused
+  at part 0 (`firstCommentsOff`), never sent without its comment.
+  Scheduling refuses a first comment on a YouTube video made for kids
+  (`commentsTurnedOff`). None of the
   four platforms deletes or edits a live post from Peal; the day one does,
   its adapter must delete the comment with the comment call
   (`first-comment-live-post.test.ts` fails first).
@@ -92,6 +110,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   whose duration is its own: `platformDecides`) bounds it, and
   `pollViolationsOn` (run by `checkPublishable`) refuses it elsewhere
   (`pollNotSupported`) and past each bound, a file beside it included.
+  Choices are trimmed when decoded (`Schema.Trim`), so the choice
+  measured is the one sent, and a repeated one is `pollChoiceRepeated`.
   The approval subject and the duplicate digest add it only when there is
   one; copies, signatures, recycling variants, media removal and the
   export keep it, as every `new PostContent` must (it defaults to none).

@@ -111,6 +111,9 @@ describe("what a platform refuses in a poll", () => {
       { _tag: "withMedia" },
     ]);
     expect(
+      pollProblemsOn("mastodon", { ...yesNo, choices: ["A", "B", "A"] }, 0)
+    ).toStrictEqual([{ _tag: "choiceRepeated", choice: 3 }]);
+    expect(
       pollProblemsOn("threads", { ...yesNo, choices: ["Alone"] }, 0)
     ).toStrictEqual([{ _tag: "choiceCount", maximum: 4, minimum: 2 }]);
   });

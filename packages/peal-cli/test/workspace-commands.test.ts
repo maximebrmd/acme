@@ -598,7 +598,7 @@ describe("peal posts", () => {
       assert.include(shown, quotaTargetId);
       assert.include(
         shown,
-        "failed: quotaExceeded (the platform's daily upload allowance stayed spent: post it again after it resets)"
+        "failed: quotaExceeded (the platform's daily allowance (its uploads, or YouTube's quota a first comment spends too) stayed spent: post it again after it resets)"
       );
       assert.include(
         shown,

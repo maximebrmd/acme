@@ -58,6 +58,7 @@ const problemText = (
       length === 0
         ? t("choiceEmpty", { channel, choice })
         : t("choiceTooLong", { channel, choice, length, maximum }),
+    choiceRepeated: ({ choice }) => t("choiceRepeated", { channel, choice }),
     duration: ({ maximum, minimum }) =>
       t("duration", { channel, maximum, minimum }),
     multipleChoice: () => t("multipleChoice", { channel }),

@@ -207,6 +207,8 @@ const brokenRule = (violation: ContentViolation): string =>
       length === 0
         ? `poll choice ${String(choice)} is empty`
         : `poll choice ${String(choice)} has ${String(length)} ${units[unit]}, and the platform takes ${String(maximum)}`,
+    pollChoiceRepeated: ({ choice }) =>
+      `poll choice ${String(choice)} says the same as one before it`,
     pollDurationOutOfRange: ({
       durationMinutes,
       maximumMinutes,
