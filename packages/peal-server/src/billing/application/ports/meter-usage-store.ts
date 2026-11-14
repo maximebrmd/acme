@@ -56,6 +56,18 @@ export class MeterUsageStore extends Context.Service<
       holder: WorkspaceId,
       month: DateTime.Utc
     ) => Effect.Effect<readonly MeterRow[], DatabaseError>;
+    /**
+     * The holder's rows of the months from `from` to before `before`,
+     * holding nothing: what the cap on an unpaid balance adds up.
+     */
+    readonly between: (
+      holder: WorkspaceId,
+      from: DateTime.Utc,
+      before: DateTime.Utc
+    ) => Effect.Effect<
+      readonly (MeterRow & { readonly month: DateTime.Utc })[],
+      DatabaseError
+    >;
     /** The ceilings the holder set. */
     readonly ceilings: (
       holder: WorkspaceId

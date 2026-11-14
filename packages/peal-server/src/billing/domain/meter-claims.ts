@@ -161,6 +161,41 @@ export const spendOf = (
     0
   );
 
+/**
+ * What earlier months billed, in cents: each month's meters priced apart,
+ * as each was invoiced for its own month.
+ */
+export const spendOfMonths = (
+  months: readonly (MeterCount & { readonly month: DateTime.Utc })[],
+  card: RateCard = rateCard
+): number => {
+  const byMonth = new Map<number, MeterCount[]>();
+
+  for (const { meter, month, used } of months) {
+    const key = DateTime.toEpochMillis(month);
+
+    byMonth.set(key, [...(byMonth.get(key) ?? []), { meter, used }]);
+  }
+
+  return [...byMonth.values()].reduce(
+    (sum, counts) => sum + spendOf(counts, card),
+    0
+  );
+};
+
+/**
+ * The first month whose meters a subscription that never paid still owes:
+ * the month it began (its current period's when Stripe gave no start).
+ */
+export const unpaidSinceOf = (subscription: {
+  readonly currentPeriodStart: Option.Option<DateTime.Utc>;
+  readonly startedAt: Option.Option<DateTime.Utc>;
+}): Option.Option<DateTime.Utc> =>
+  subscription.startedAt.pipe(
+    Option.orElse(() => subscription.currentPeriodStart),
+    Option.map(meterMonthOf)
+  );
+
 // The most billable units of `meter` whose price, unrounded, stays within
 // `cents`: a unit that rounds to nothing still costs its share.
 const billableWithin = (meter: Meter, cents: number, card: RateCard) => {
@@ -171,16 +206,43 @@ const billableWithin = (meter: Meter, cents: number, card: RateCard) => {
     : Math.floor((cents * price.per) / price.cents);
 };
 
+/** What bounds a meter this month, as `mostUnits` reads it. */
+export interface MeterTermsAsked {
+  /** The group's ceiling in cents, or none where the meter has none. */
+  readonly ceiling: Option.Option<number>;
+  /** The holder's counts this month, of every meter. */
+  readonly counts: readonly MeterCount[];
+  readonly freeTier: boolean;
+  /** The cap on what is billed and unpaid, until a first invoice is paid. */
+  readonly spendCap: Option.Option<number>;
+  readonly standing: MeterStanding;
+  /**
+   * What the months before this one billed since the subscription began,
+   * in cents, while no invoice was paid: unpaid still, so the cap counts
+   * it (0 once one was paid, or without a cap).
+   */
+  readonly unpaidBefore: number;
+}
+
+/** The most units of a meter, and what set it. */
+export interface MeterBound {
+  /** `cap` when the cap on what is unpaid left less than the ceiling. */
+  readonly by: "cap" | "ceiling" | "included";
+  readonly most: number;
+}
+
 /**
- * The most units of `meter` the account may use this month: its included
- * units, and for per-account pricing, those past them that what bounds it
- * pays for: the group's ceiling (its own group's other meters counted),
- * and until a first invoice is paid the cap across every meter
- * (`spendCap`, every other meter counted); none for no end. A meter whose
- * price is not confirmed (`unconfirmedMeters`) bills nothing past its
- * allowance, whatever the ceiling.
+ * The most units of `meter` the account may use this month and what set
+ * it: its included units, and for per-account pricing, those past them
+ * that what bounds it pays for: the group's ceiling (its own group's other
+ * meters counted), and until a first invoice is paid the cap across every
+ * meter on what is billed and unpaid (`spendCap`: every other meter
+ * counted, and what the months before billed since the subscription
+ * began, `unpaidBefore`); none for no end. A meter whose price is not
+ * confirmed (`unconfirmedMeters`) bills nothing past its allowance,
+ * whatever the ceiling.
  */
-export const mostUnits = (
+export const meterBound = (
   meter: Meter,
   {
     ceiling,
@@ -188,19 +250,14 @@ export const mostUnits = (
     freeTier,
     spendCap,
     standing,
-  }: {
-    readonly ceiling: Option.Option<number>;
-    readonly counts: readonly MeterCount[];
-    readonly freeTier: boolean;
-    readonly spendCap: Option.Option<number>;
-    readonly standing: MeterStanding;
-  },
+    unpaidBefore,
+  }: MeterTermsAsked,
   card: RateCard = rateCard
-): Option.Option<number> => {
+): Option.Option<MeterBound> => {
   const included = includedUnits(meter, standing, freeTier, card);
 
   if (standing !== "payAsYouGo" || unconfirmedMeters.includes(meter)) {
-    return Option.some(included);
+    return Option.some({ by: "included", most: included });
   }
 
   const group = spendGroupOf(meter);
@@ -224,20 +281,36 @@ export const mostUnits = (
   );
 
   const byCap = spendCap.pipe(
-    Option.map((cents) => cents - spendOf(others, card))
+    Option.map((cents) => cents - unpaidBefore - spendOf(others, card))
   );
 
-  const room = [...Option.toArray(byGroup), ...Option.toArray(byCap)];
+  // The tightest of the two; the ceiling's words when they are equal.
+  const tightest: Option.Option<{
+    readonly by: "cap" | "ceiling";
+    readonly room: number;
+  }> = Option.match(byCap, {
+    onNone: () => byGroup.pipe(Option.map((room) => ({ by: "ceiling", room }))),
+    onSome: (capRoom) =>
+      Option.isSome(byGroup) && byGroup.value <= capRoom
+        ? Option.some({ by: "ceiling", room: byGroup.value })
+        : Option.some({ by: "cap", room: capRoom }),
+  });
 
-  if (room.length === 0) {
-    return Option.none();
-  }
-
-  return Option.some(
-    card.meters[meter].allowance +
-      billableWithin(meter, Math.min(...room), card)
+  return tightest.pipe(
+    Option.map(({ by, room }) => ({
+      by,
+      most: card.meters[meter].allowance + billableWithin(meter, room, card),
+    }))
   );
 };
+
+/** The most units of `meter` the account may use this month (`meterBound`). */
+export const mostUnits = (
+  meter: Meter,
+  asked: MeterTermsAsked,
+  card: RateCard = rateCard
+): Option.Option<number> =>
+  meterBound(meter, asked, card).pipe(Option.map(({ most }) => most));
 
 /** Why a meter refuses, by standing. */
 export const reasons = {
@@ -247,17 +320,19 @@ export const reasons = {
   payAsYouGo: "ceilingReached",
 } as const satisfies { readonly [S in MeterStanding]: AllowanceReason };
 
+/**
+ * Why a meter refuses past its bound: the cap on what is unpaid in words
+ * of its own, else its standing's.
+ */
+export const refusalOf = (
+  bound: MeterBound,
+  standing: MeterStanding
+): AllowanceReason =>
+  bound.by === "cap" ? "spendCapReached" : reasons[standing];
+
 /** What a claim may do, as its holder's month stands. */
-export interface ClaimAsked {
-  /** The group's ceiling in cents, or none where the meter has none. */
-  readonly ceiling: Option.Option<number>;
-  /** The holder's counts this month, of every meter. */
-  readonly counts: readonly MeterCount[];
-  readonly freeTier: boolean;
+export interface ClaimAsked extends MeterTermsAsked {
   readonly meter: Meter;
-  /** The cap across every meter until a first invoice is paid. */
-  readonly spendCap: Option.Option<number>;
-  readonly standing: MeterStanding;
   readonly units: number;
 }
 
@@ -276,10 +351,11 @@ export interface ClaimRefused {
 /**
  * Whether `units` more of a meter are granted: within the units included,
  * or for per-account pricing past them, unless that would pass what
- * bounds it (`mostUnits`). Past what is included, an account without a
+ * bounds it (`meterBound`). Past what is included, an account without a
  * payment method is told to add one, a legacy plan that its plan holds no
  * more, a past due one that its payment failed, and one that pays that it
- * reached its ceiling.
+ * reached its ceiling, or the cap on what is unpaid until its first
+ * invoice is paid.
  */
 export const decideClaim = (
   asked: ClaimAsked,
@@ -289,15 +365,15 @@ export const decideClaim = (
 
   const used = counts.find((count) => count.meter === meter)?.used ?? 0;
   const after = used + units;
-  const most = mostUnits(meter, asked, card);
+  const bound = meterBound(meter, asked, card);
 
-  if (Option.isNone(most) || after <= most.value) {
+  if (Option.isNone(bound) || after <= bound.value.most) {
     return Result.succeed({ used: after });
   }
 
   return Result.fail({
-    allowed: most.value,
-    reason: reasons[standing],
+    allowed: bound.value.most,
+    reason: refusalOf(bound.value, standing),
     used,
   });
 };
@@ -339,6 +415,7 @@ export const meterMonthsOf = (
     month,
     spendCap,
     standing,
+    unpaidBefore,
   }: {
     readonly ceilings: ReadonlyMap<SpendGroup, number>;
     readonly counts: readonly MeterCount[];
@@ -347,6 +424,7 @@ export const meterMonthsOf = (
     readonly month: DateTime.Utc;
     readonly spendCap: Option.Option<number>;
     readonly standing: MeterStanding;
+    readonly unpaidBefore: number;
   },
   card: RateCard = rateCard
 ): readonly MeterMonth[] =>
@@ -374,7 +452,7 @@ export const meterMonthsOf = (
       meter,
       most: mostUnits(
         meter,
-        { ceiling, counts, freeTier, spendCap, standing },
+        { ceiling, counts, freeTier, spendCap, standing, unpaidBefore },
         card
       ),
       resetsAt: meterResetsAt(month),

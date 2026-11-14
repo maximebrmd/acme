@@ -127,7 +127,11 @@ export const usageLimitReason = ({
   }
 
   if (reason === "ceilingReached") {
-    return `${held} An owner or an admin raises the account's monthly ceiling at ${billingUrl} (until the account's first invoice is paid, what its meters bill a month is capped whatever the ceiling), or wait until then.`;
+    return `${held} An owner or an admin raises the account's monthly ceiling at ${billingUrl}, or wait until then.`;
+  }
+
+  if (reason === "spendCapReached") {
+    return `${held} No invoice of the account was paid yet, and until the account's first invoice is paid, what its meters bill is capped whatever its ceilings: the cap lifts once that invoice is paid (${billingUrl}), or wait until then.`;
   }
 
   if (reason === "notEnabled") {

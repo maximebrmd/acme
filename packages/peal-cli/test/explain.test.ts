@@ -238,4 +238,20 @@ describe("a meter's refusal, explained", () => {
       )
     ).toContain(`raises the account's monthly ceiling at ${billingUrl}`);
   });
+
+  it("tells the cap until a first invoice is paid in words of its own", () => {
+    const capped = refusalOf(
+      new UsageAllowanceReached({
+        allowed: 0,
+        billingUrl,
+        meter: "outboundMessages",
+        reason: "spendCapReached",
+        resetsAt,
+        used: 0,
+      })
+    );
+
+    expect(capped).toContain("until the account's first invoice is paid");
+    expect(capped).not.toContain("monthly ceiling");
+  });
 });

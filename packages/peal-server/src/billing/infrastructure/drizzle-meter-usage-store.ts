@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -47,6 +47,15 @@ const toCeiling = (row: CeilingRow) =>
       cents: row.cents,
       group,
       setAt: DateTime.fromDateUnsafe(row.setAt),
+    }))
+  );
+
+// A row with the month it counts.
+const withMonth = (row: UsageRow) =>
+  toRow(row).pipe(
+    Effect.map((counted) => ({
+      ...counted,
+      month: DateTime.fromDateUnsafe(row.month),
     }))
   );
 
@@ -145,6 +154,28 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
           Effect.withSpan("MeterUsageStore.ofMonth")
         );
 
+    const between = (
+      holder: WorkspaceId,
+      from: DateTime.Utc,
+      before: DateTime.Utc
+    ) =>
+      db
+        .select()
+        .from(meterUsage)
+        .where(
+          and(
+            eq(meterUsage.holderWorkspaceId, holder),
+            gte(meterUsage.month, DateTime.toDateUtc(from)),
+            lt(meterUsage.month, DateTime.toDateUtc(before))
+          )
+        )
+        .orderBy(asc(meterUsage.month), asc(meterUsage.meter))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.flatMap(Effect.forEach(withMonth)),
+          Effect.withSpan("MeterUsageStore.between")
+        );
+
     const ceilings = (holder: WorkspaceId) =>
       db
         .select()
@@ -212,21 +243,13 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
           .orderBy(asc(meterUsage.month), asc(meterUsage.meter))
           .pipe(
             Effect.mapError(failed),
-            Effect.flatMap(
-              Effect.forEach((row) =>
-                toRow(row).pipe(
-                  Effect.map((counted) => ({
-                    ...counted,
-                    month: DateTime.fromDateUnsafe(row.month),
-                  }))
-                )
-              )
-            )
+            Effect.flatMap(Effect.forEach(withMonth))
           ),
       }).pipe(Effect.withSpan("MeterUsageStore.allOf"));
 
     return MeterUsageStore.of({
       allOf,
+      between,
       ceilings,
       eraseWorkspace,
       hold,

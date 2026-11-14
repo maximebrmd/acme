@@ -18,12 +18,15 @@ import {
   meterEventIdentifier,
   meterMonthOf,
   meterResetsAt,
+  meterBound,
   reasons,
+  refusalOf,
   spendCapOf,
+  spendOfMonths,
   standingOfEntitlements,
   metersOf,
-  mostUnits,
   spendGroupOf,
+  unpaidSinceOf,
 } from "#billing/domain/meter-claims.ts";
 import type { MeterStanding } from "#billing/domain/meter-claims.ts";
 import {
@@ -54,9 +57,11 @@ const heldWith = (meter: Meter): readonly Meter[] =>
 /** Where a holder stands for its meters, and the customer that pays. */
 interface Payer {
   readonly customer: Option.Option<string>;
-  /** What every meter bills a month at most, until an invoice is paid. */
+  /** What every meter bills and is unpaid at most, until an invoice is paid. */
   readonly spendCap: Option.Option<number>;
   readonly standing: MeterStanding;
+  /** What the months before this one billed since then, unpaid, in cents. */
+  readonly unpaidBefore: number;
 }
 
 /**
@@ -85,12 +90,34 @@ const BilledMeteredUsageLive = Layer.effect(
     const { eventNames } = yield* UsageBilling;
     const { transaction } = yield* TransactionRunner;
 
+    // What the months before `month` billed since the subscription
+    // began, while no invoice was paid: all of it is still unpaid.
+    const unpaidBeforeOf = Effect.fn("MeteredUsage.unpaidBeforeOf")(
+      function* unpaidBeforeOf(
+        holder: WorkspaceId,
+        since: Option.Option<DateTime.Utc>,
+        month: DateTime.Utc
+      ) {
+        if (Option.isNone(since) || !DateTime.isLessThan(since.value, month)) {
+          return 0;
+        }
+
+        return spendOfMonths(yield* store.between(holder, since.value, month));
+      }
+    );
+
     const payerOf = Effect.fn("MeteredUsage.payerOf")(function* payerOf(
-      holder: WorkspaceId
+      holder: WorkspaceId,
+      month: DateTime.Utc
     ) {
       const held = yield* subscriptions.ofWorkspaces([holder]);
       const entitlements = entitlementsOf(held.get(holder) ?? []);
       const standing = standingOfEntitlements(entitlements);
+
+      const spendCap =
+        standing === "payAsYouGo"
+          ? spendCapOf(entitlements.verified)
+          : Option.none<number>();
 
       const payer: Payer = {
         // Only per-account pricing reports what passes an allowance (a
@@ -101,11 +128,15 @@ const BilledMeteredUsageLive = Layer.effect(
                 Option.map(({ stripeCustomerId }) => stripeCustomerId)
               )
             : Option.none(),
-        spendCap:
-          standing === "payAsYouGo"
-            ? spendCapOf(entitlements.verified)
-            : Option.none(),
+        spendCap,
         standing,
+        unpaidBefore: Option.isSome(spendCap)
+          ? yield* unpaidBeforeOf(
+              holder,
+              entitlements.subscription.pipe(Option.flatMap(unpaidSinceOf)),
+              month
+            )
+          : 0,
       };
 
       return payer;
@@ -209,7 +240,7 @@ const BilledMeteredUsageLive = Layer.effect(
       return yield* transaction(
         Effect.gen(function* claiming() {
           const { freeTier, holder } = yield* holders.heldBy(workspaceId);
-          const payer = yield* payerOf(holder);
+          const payer = yield* payerOf(holder, month);
 
           // Every meter's rows while a cap spans them all.
           const rows = yield* store.hold(
@@ -231,6 +262,7 @@ const BilledMeteredUsageLive = Layer.effect(
             spendCap: payer.spendCap,
             standing: payer.standing,
             units,
+            unpaidBefore: payer.unpaidBefore,
           });
 
           if (Result.isFailure(decided)) {
@@ -307,7 +339,7 @@ const BilledMeteredUsageLive = Layer.effect(
       yield* transaction(
         Effect.gen(function* givingBack() {
           const { holder } = yield* holders.heldBy(given.workspaceId);
-          const payer = yield* payerOf(holder);
+          const payer = yield* payerOf(holder, month);
           const rows = yield* store.hold(holder, month, [given.meter]);
           const bound = rateCard.meters[given.meter].allowance;
 
@@ -360,25 +392,29 @@ const BilledMeteredUsageLive = Layer.effect(
       const now = yield* DateTime.now;
       const month = meterMonthOf(now);
       const { freeTier, holder } = yield* holders.heldBy(workspaceId);
-      const payer = yield* payerOf(holder);
+      const payer = yield* payerOf(holder, month);
       const counts = yield* store.ofMonth(holder, month);
       const ceiling = yield* ceilingOf(holder, meter);
 
-      const asked = {
+      const bound = meterBound(meter, {
         ceiling,
         counts,
         freeTier,
         spendCap: payer.spendCap,
         standing: payer.standing,
-      };
+        unpaidBefore: payer.unpaidBefore,
+      });
 
       const meterState: MeterState = {
         allowance: includedUnits(meter, payer.standing, freeTier),
-        allowed: mostUnits(meter, asked),
+        allowed: bound.pipe(Option.map(({ most }) => most)),
         ceiling: payer.standing === "payAsYouGo" ? ceiling : Option.some(0),
         meter,
         paymentMethod: payer.standing !== "free",
-        pastAllowed: reasons[payer.standing],
+        pastAllowed: Option.match(bound, {
+          onNone: () => reasons[payer.standing],
+          onSome: (found) => refusalOf(found, payer.standing),
+        }),
         price: rateCard.prices.usd.meters[meter],
         priceConfirmed: !unconfirmedMeters.includes(meter),
         resetsAt: meterResetsAt(month),

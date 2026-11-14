@@ -695,6 +695,7 @@ export const NoMetersTest = Layer.succeed(
   MeterUsageStore,
   MeterUsageStore.of({
     allOf: () => Effect.succeed({ ceilings: [], months: [] }),
+    between: () => Effect.succeed([]),
     ceilings: () => Effect.succeed([]),
     eraseWorkspace: () => Effect.void,
     hold: () => Effect.die("no meter is claimed in this test"),

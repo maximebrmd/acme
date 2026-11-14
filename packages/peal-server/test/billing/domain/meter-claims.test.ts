@@ -38,6 +38,7 @@ const asked = (changes: Partial<ClaimAsked>): ClaimAsked => ({
   spendCap: Option.none(),
   standing: "payAsYouGo",
   units: 1,
+  unpaidBefore: 0,
   ...changes,
 });
 
@@ -206,6 +207,7 @@ describe("meter claims", () => {
       freeTier: true,
       spendCap: Option.none(),
       standing: "payAsYouGo" as const,
+      unpaidBefore: 0,
     };
 
     const alone = mostUnits("xApi", {
@@ -242,16 +244,70 @@ describe("meter claims", () => {
     expect(Result.isSuccess(ofX(10))).toBeTruthy();
     expect(Result.isFailure(ofX(20))).toBeTruthy();
 
-    // Messages, which have no ceiling, stop there too.
+    // The cap, not a ceiling, refused it: in words of its own.
+    expect(ofX(20)).toStrictEqual(
+      Result.fail({ allowed: 10, reason: "spendCapReached", used: 0 })
+    );
+
+    // Messages, which have no ceiling, stop there too, for the same reason.
     expect(
       decideClaim(asked({ counts, spendCap: cap, units: 200 }))
     ).toStrictEqual(
       Result.fail({
         allowed: messages.allowance + billed + 100,
-        reason: "ceilingReached",
+        reason: "spendCapReached",
         used: messages.allowance + billed,
       })
     );
+  });
+
+  it("says the ceiling refused when it is lower than the cap", () => {
+    expect(
+      decideClaim(
+        asked({
+          ceiling: Option.some(1),
+          meter: "xApi",
+          spendCap: Option.some(unverifiedThreshold),
+          units: 20,
+        })
+      )
+    ).toStrictEqual(
+      Result.fail({ allowed: 10, reason: "ceilingReached", used: 0 })
+    );
+  });
+
+  it("caps what is billed and unpaid since the subscription began, not each month alone", () => {
+    // Earlier months billed all but one cent of the cap, still unpaid.
+    const ofX = (units: number) =>
+      decideClaim(
+        asked({
+          ceiling: Option.some(1_000_000),
+          meter: "xApi",
+          spendCap: Option.some(unverifiedThreshold),
+          units,
+          unpaidBefore: unverifiedThreshold - 1,
+        })
+      );
+
+    expect(Result.isSuccess(ofX(10))).toBeTruthy();
+    expect(ofX(20)).toStrictEqual(
+      Result.fail({ allowed: 10, reason: "spendCapReached", used: 0 })
+    );
+
+    // Once an invoice is paid there is no cap, and the months before
+    // count for nothing.
+    expect(
+      Result.isSuccess(
+        decideClaim(
+          asked({
+            ceiling: Option.some(1_000_000),
+            meter: "xApi",
+            units: 20,
+            unpaidBefore: unverifiedThreshold,
+          })
+        )
+      )
+    ).toBeTruthy();
   });
 
   it("grants a past due account its allowance and nothing past it", () => {
@@ -290,6 +346,7 @@ describe("meter claims", () => {
         freeTier: true,
         spendCap: Option.none(),
         standing: "payAsYouGo",
+        unpaidBefore: 0,
       })
     ).toStrictEqual(Option.some(x.allowance));
   });
@@ -323,17 +380,19 @@ describe("meter claims", () => {
       freeTier: true,
       meters: ["xApi"],
       month: DateTime.makeUnsafe("2026-11-01T00:00:00Z"),
-      spendCap: Option.none(),
+      spendCap: Option.some(unverifiedThreshold),
       standing: "payAsYouGo",
+      unpaidBefore: unverifiedThreshold - 3,
     });
 
     expect(xMonth?.most).toStrictEqual(
       mostUnits("xApi", {
         ceiling: Option.some(meterCharge("xApi", 50)),
-        counts: [{ meter: "xApi", used: 5 }],
+        counts,
         freeTier: true,
-        spendCap: Option.none(),
+        spendCap: Option.some(unverifiedThreshold),
         standing: "payAsYouGo",
+        unpaidBefore: unverifiedThreshold - 3,
       })
     );
   });

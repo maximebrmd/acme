@@ -15,7 +15,13 @@
   default ceiling (per billing account, across the workspaces it pays
   for), the assistant's margin, storage, the API's rate limits and X's
   rates. What is not decided yet (the assistant's figures are
-  placeholders) sits together in `awaitingDecision`. Prices are
+  placeholders) sits together in `awaitingDecision`. X's rates are
+  X's published pay-per-use prices, passed through with nothing added
+  (no margin field), with the UTC day they were read (`ratesReadOn`):
+  read docs.x.com/x-api/getting-started/pricing again before each
+  release that touches them, never write one from memory. A group's
+  meters are confirmed together (`unconfirmedMeters`: both of the
+  assistant's or neither), as one ceiling bounds them. Prices are
   computed by its pure functions (`accountsCharge`, `meterCharge`,
   `stripeTiersOf`…), never written by hand. The contract copies it
   (`peal-contract/rate-card`), kept equal by
@@ -203,12 +209,21 @@
   while it bills nothing. A release before T7 does not decode the new
   ledger counters or the negative report values: do not roll back past it
   once a server that bills has written them.
-- What bounds a meter past its allowance (`mostUnits`), for `payAsYouGo`
-  only: the group's ceiling, its own group's meters counted; until a
-  first invoice is paid, `spendCapOf` (`unverifiedThreshold`, $100) across
-  every meter, whatever the ceilings (the claim then holds every meter's
-  rows); and a meter in `unconfirmedMeters` bills nothing past its
-  allowance at all. A past due subscription (`pastDue`) gets the
+- What bounds a meter past its allowance (`meterBound`, `mostUnits`),
+  for `payAsYouGo` only: the group's ceiling, its own group's meters
+  counted; until a first invoice is paid, `spendCapOf`
+  (`unverifiedThreshold`, $100) on what is billed and unpaid, whatever
+  the ceilings: every meter this month (the claim then holds every
+  meter's rows) and what the months before billed since the
+  subscription began (`unpaidBefore`, `MeterUsageStore.between` from
+  `unpaidSinceOf`, read without a hold: those months are closed), so a
+  late start does not get the cap twice; and a meter in
+  `unconfirmedMeters` bills nothing past its allowance at all. The cap's
+  refusal is `spendCapReached`, never `ceilingReached`
+  (`refusalOf`), messages and ads included. `GET …/billing` tells a
+  meter's `most` past its allowance only to the billing workspace: any
+  other reads the allowance at most (`meterView`), as the rest is what
+  the ceiling pays for. A past due subscription (`pastDue`) gets the
   allowances and nothing past them (`paymentFailed`); a legacy plan the
   same (`planAllowance`), and keeps its plan's daily assistant
   (`AssistantAllowance.metered`). `pausedOf` refuses what spends a meter
@@ -232,9 +247,10 @@
 - `SpendCeilings.set` (`PUT …/billing/ceilings/:group`, in
   `billingActions`): billing:manage in person, on the billing workspace
   (`BilledElsewhere`), never on a server that does not bill; it may
-  always be lowered, below what the month spent too; a group whose meters
-  are all unconfirmed takes none (`CeilingNotOffered`, answered
-  `SpendCeilingNotOffered` 409). The row names
+  always be lowered, below what the month spent too; a group with a
+  meter unconfirmed takes none (`CeilingNotOffered`, answered
+  `SpendCeilingNotOffered` 409), as the billing page shows its form
+  only once all are. The row names
   nobody; the activity log keeps who. `GET …/billing` answers `meters`
   (`meterMonthsOf`, `shownMeters`: X joins with its pass-through), their
   money (`estimate`, in the total `estimate` too) to the billing

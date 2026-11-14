@@ -523,13 +523,51 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
           Effect.flip
         );
 
-        assert.strictEqual(capped.reason, "ceilingReached");
+        assert.strictEqual(capped.reason, "spendCapReached");
 
         // Paid once: no cap but the ceilings.
         yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${paid}`.pipe(
           Effect.orDie
         );
         yield* claimOf(paid, "outboundMessages");
+
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect(
+    "cap what is billed and unpaid since the subscription began, the months before this one included",
+    () =>
+      Effect.gen(function* unpaid() {
+        const sql = yield* SqlClient.SqlClient;
+        const { workspaceId: paid } = yield* paying;
+        const now = yield* DateTime.now;
+
+        yield* sql`UPDATE billing.subscriptions SET started_at = ${DateTime.toDateUtc(DateTime.subtract(now, { months: 1 }))} WHERE workspace_id = ${paid}`.pipe(
+          Effect.orDie
+        );
+
+        // Two months ago, before the subscription began: not its bill.
+        yield* seed(
+          paid,
+          "outboundMessages",
+          messages.allowance + unverifiedThreshold * 100,
+          2
+        );
+        yield* claimOf(paid, "xApi", 10);
+
+        // Last month, billed and not paid yet: the whole threshold.
+        yield* seed(
+          paid,
+          "outboundMessages",
+          messages.allowance + unverifiedThreshold * 100,
+          1
+        );
+
+        const capped = yield* claimOf(paid, "xApi", 10).pipe(Effect.flip);
+
+        assert.strictEqual(capped.reason, "spendCapReached");
+        assert.strictEqual(capped.allowed, 0);
 
         yield* cleanUp([paid]);
       })

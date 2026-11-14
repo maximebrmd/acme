@@ -13,7 +13,9 @@ import {
   meterMonthOf,
   meterMonthsOf,
   spendCapOf,
+  spendOfMonths,
   standingOfEntitlements,
+  unpaidSinceOf,
 } from "#billing/domain/meter-claims.ts";
 import type { MeterMonth } from "#billing/domain/meter-claims.ts";
 import {
@@ -221,6 +223,24 @@ export class BillingOverview extends Context.Service<
 
         const standing = standingOfEntitlements(current);
 
+        const spendCap =
+          standing === "payAsYouGo"
+            ? spendCapOf(current.verified)
+            : Option.none<number>();
+
+        // What the months before billed and is unpaid, which the cap counts.
+        const since = current.subscription.pipe(
+          Option.flatMap(unpaidSinceOf),
+          Option.filter(
+            (first) =>
+              Option.isSome(spendCap) && DateTime.isLessThan(first, month)
+          )
+        );
+
+        const unpaidBefore = Option.isSome(since)
+          ? spendOfMonths(yield* meterStore.between(holder, since.value, month))
+          : 0;
+
         return {
           billing: holder === workspaceId,
           months: meterMonthsOf({
@@ -230,11 +250,9 @@ export class BillingOverview extends Context.Service<
             counts,
             freeTier,
             month,
-            spendCap:
-              standing === "payAsYouGo"
-                ? spendCapOf(current.verified)
-                : Option.none(),
+            spendCap,
             standing,
+            unpaidBefore,
           }),
         };
       });
