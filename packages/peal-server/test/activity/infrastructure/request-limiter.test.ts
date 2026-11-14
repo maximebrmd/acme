@@ -5,9 +5,12 @@ import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
+import type { LimitHolder } from "#activity/application/request-limiter.ts";
 import { RequestPolicy } from "#activity/application/request-policy.ts";
+import { RequestStandings } from "#activity/application/request-standings.ts";
 import { requestPolicy } from "#activity/domain/rate-limit.ts";
 import { DrizzleRequestCounts } from "#activity/infrastructure/drizzle-request-counts.ts";
+import { DrizzleRequestLimitOverrides } from "#activity/infrastructure/drizzle-request-limit-overrides.ts";
 import { SubjectDigestLive } from "#activity/infrastructure/request-policy.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
@@ -18,12 +21,20 @@ const LimiterTest = RequestLimiter.layer.pipe(
     Layer.mergeAll(
       DrizzleRequestCounts,
       SubjectDigestLive,
+      DrizzleRequestLimitOverrides,
+      RequestStandings.unbilled,
       Layer.succeed(RequestPolicy, requestPolicy(3))
     )
   ),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
 );
+
+// On a server that does not bill, no holder is read.
+const unbilledHolder: LimitHolder = {
+  key: "workspace:unread",
+  workspaces: Effect.die("A server that does not bill reads no holder"),
+};
 
 // A credential no other test counts for.
 const newSubject = () => `key:${randomUUID()}`;
@@ -45,7 +56,7 @@ layer(LimiterTest)("the request limiter, on Postgres", (it) => {
       yield* TestClock.setTime(yield* startOfTest);
 
       const standings = yield* Effect.forEach([1, 2, 3, 4, 5], () =>
-        limiter.admit(subject)
+        limiter.admit(subject, unbilledHolder)
       );
 
       assert.deepStrictEqual(
@@ -64,7 +75,7 @@ layer(LimiterTest)("the request limiter, on Postgres", (it) => {
       // The next window starts the count again.
       yield* TestClock.adjust("42 seconds");
 
-      const next = yield* limiter.admit(subject);
+      const next = yield* limiter.admit(subject, unbilledHolder);
 
       assert.deepStrictEqual(
         [next.allowed, next.remaining, next.resetAfterSeconds],
@@ -80,9 +91,11 @@ layer(LimiterTest)("the request limiter, on Postgres", (it) => {
 
       yield* TestClock.setTime(yield* startOfTest);
 
-      yield* Effect.forEach([1, 2, 3, 4], () => limiter.admit(one));
+      yield* Effect.forEach([1, 2, 3, 4], () =>
+        limiter.admit(one, unbilledHolder)
+      );
 
-      const other = yield* limiter.admit(newSubject());
+      const other = yield* limiter.admit(newSubject(), unbilledHolder);
 
       assert.isTrue(other.allowed);
       assert.strictEqual(other.remaining, 2);
@@ -97,7 +110,9 @@ layer(LimiterTest)("the request limiter, on Postgres", (it) => {
       yield* TestClock.setTime(yield* startOfTest);
 
       const standings = yield* Effect.all(
-        Array.from({ length: 12 }, () => limiter.admit(subject)),
+        Array.from({ length: 12 }, () =>
+          limiter.admit(subject, unbilledHolder)
+        ),
         { concurrency: "unbounded" }
       );
 
@@ -112,13 +127,15 @@ layer(LimiterTest)("the request limiter, on Postgres", (it) => {
       const start = yield* startOfTest;
 
       yield* TestClock.setTime(start);
-      yield* Effect.forEach([1, 2, 3, 4], () => limiter.admit(subject));
+      yield* Effect.forEach([1, 2, 3, 4], () =>
+        limiter.admit(subject, unbilledHolder)
+      );
 
       // Within the hour, the count is kept: the window is still refused.
       yield* TestClock.setTime(start + 30_000);
       yield* limiter.purge;
 
-      assert.isFalse((yield* limiter.admit(subject)).allowed);
+      assert.isFalse((yield* limiter.admit(subject, unbilledHolder)).allowed);
 
       // Past it, the row is gone.
       yield* TestClock.setTime(start + 2 * 3_600_000);

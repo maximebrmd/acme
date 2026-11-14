@@ -11,7 +11,7 @@ import type { AccessDenied } from "#workspace/domain/membership.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 import { memberOf } from "./principal.ts";
-import { pastLimit, limitHeaders } from "./rate-limit.ts";
+import { limitHeaders, pastLimit, refusalMessage } from "./rate-limit.ts";
 import { contentChangeOf, journalled } from "./security.ts";
 
 /**
@@ -140,7 +140,7 @@ export const mcpAuthentication = ({
           if (Option.isSome(limited)) {
             return jsonRpcError(
               429,
-              `Too many requests: this credential may send ${String(limited.value.limit)} every ${String(limited.value.windowSeconds)} seconds. Try again in ${String(limited.value.resetAfterSeconds)} seconds.`,
+              refusalMessage(limited.value),
               Object.fromEntries(limitHeaders(limited.value))
             );
           }

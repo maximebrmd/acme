@@ -1,9 +1,13 @@
 import { Duration, Effect, Layer, Option } from "effect";
 
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
-import { RequestPolicy } from "#activity/application/request-policy.ts";
+import type { LimitHolder } from "#activity/application/request-limiter.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { PartnerStore } from "#workspace/application/partner-store.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { limitSubjectOf } from "#workspace/domain/limit-subject.ts";
+import type { Principal } from "#workspace/domain/principal.ts";
 
 /**
  * How long a request waits to be counted: a database that is slow, or a
@@ -13,23 +17,72 @@ export const countingTimeout = Duration.seconds(2);
 
 /**
  * The rate limit, counted by the activity context. A count the database
- * cannot keep is logged, and the request goes through.
+ * cannot keep is logged, and the request goes through. Whose standing
+ * decides the limit, on a server that bills: an API key's workspace; a
+ * partner key's partner's home workspace, whose plan its customers share;
+ * an OAuth application's workspace when its token is bound to one, else
+ * every workspace its user belongs to (the most generous counts, as one
+ * credential has one count), read only when the limiter's cache does not
+ * hold it.
  */
 export const CountedRequestLimits = Layer.effect(
   RequestLimits,
   Effect.gen(function* CountedRequestLimits() {
     const limiter = yield* RequestLimiter;
-    const policy = yield* RequestPolicy;
+    const partners = yield* PartnerStore;
+    const directory = yield* MemberDirectory;
+
+    const holderOf = (principal: Principal): LimitHolder => {
+      if (principal._tag === "ApiKeyPrincipal") {
+        return {
+          key: `workspace:${principal.workspaceId}`,
+          workspaces: Effect.succeed([principal.workspaceId]),
+        };
+      }
+
+      if (principal._tag === "PartnerKeyPrincipal") {
+        return {
+          key: `partner:${principal.partnerId}`,
+          workspaces: partners
+            .get(principal.partnerId)
+            .pipe(
+              Effect.map((partner) =>
+                Option.toArray(partner).map(({ workspaceId }) => workspaceId)
+              )
+            ),
+        };
+      }
+
+      const bound = principal.oauth.pipe(
+        Option.flatMap(({ workspaceId }) => workspaceId)
+      );
+
+      return Option.match(bound, {
+        onNone: () => ({
+          key: `user:${principal.userId}`,
+          workspaces: directory.account(principal.userId).pipe(
+            Effect.map((account) =>
+              Option.toArray(account).flatMap(({ workspaces }) =>
+                workspaces.map(({ id }) => id)
+              )
+            ),
+            Effect.mapError(({ cause }) => new DatabaseError({ cause }))
+          ),
+        }),
+        onSome: (workspaceId) => ({
+          key: `workspace:${workspaceId}`,
+          workspaces: Effect.succeed([workspaceId]),
+        }),
+      });
+    };
 
     return RequestLimits.of({
       admit: (principal) =>
         Option.match(limitSubjectOf(principal), {
           onNone: () => Effect.succeedNone,
           onSome: (subject) =>
-            limiter.admit(subject).pipe(
-              Effect.map((standing) =>
-                Option.some({ ...standing, policy: policy.name })
-              ),
+            limiter.admit(subject, holderOf(principal)).pipe(
+              Effect.map(Option.some),
               Effect.timeoutOrElse({
                 duration: countingTimeout,
                 orElse: () =>

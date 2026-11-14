@@ -22,6 +22,7 @@ import { RecordSubscription } from "#billing/application/record-subscription.ts"
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
+import { ApiStandings } from "#billing/application/api-standings.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
@@ -168,6 +169,8 @@ const AccountDaysLive = AccountDays.layer.pipe(
  */
 export const BillingLive = Layer.mergeAll(
   WorkspaceEntitlements.layerShared,
+  // What the API's rate limit reads of each workspace's standing.
+  ApiStandings.layer.pipe(Layer.provide(WorkspaceEntitlements.layerShared)),
   AccountPlanPoolsLive,
   RecordSubscription.layer,
   CheckoutOrders.layer,

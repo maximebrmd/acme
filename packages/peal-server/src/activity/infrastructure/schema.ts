@@ -81,3 +81,24 @@ export const events = activitySchema.table(
     index("events_user").on(table.userId),
   ]
 );
+
+/**
+ * The rate limits staff set for workspaces (`setRequestLimit` in the staff
+ * audit log, which keeps who and why): a workspace's own, in place of its
+ * standing's, read on a server that bills only. Names nobody. A row goes
+ * with its workspace (ActivityRecords).
+ */
+export const requestLimits = activitySchema.table(
+  "request_limits",
+  {
+    requestsPerMinute: integer("requests_per_minute").notNull(),
+    setAt: instant("set_at").notNull(),
+    workspaceId: uuid("workspace_id").primaryKey(),
+  },
+  (table) => [
+    check(
+      "request_limits_requests_per_minute",
+      sql`${table.requestsPerMinute} > 0`
+    ),
+  ]
+);

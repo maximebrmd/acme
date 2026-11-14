@@ -5,6 +5,7 @@ import type { ActivityRecord } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { ActivityEvents } from "./activity-events.ts";
+import { RequestLimitOverrides } from "./request-limit-overrides.ts";
 
 /**
  * What the activity logs keep about a workspace or a user, for the
@@ -14,7 +15,7 @@ import { ActivityEvents } from "./activity-events.ts";
 export class ActivityRecords extends Context.Service<
   ActivityRecords,
   {
-    /** Deletes the workspace's log. */
+    /** Deletes the workspace's log, and the rate limit staff set for it. */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
@@ -39,9 +40,13 @@ export class ActivityRecords extends Context.Service<
     ActivityRecords,
     Effect.gen(function* ActivityRecordsLive() {
       const events = yield* ActivityEvents;
+      const overrides = yield* RequestLimitOverrides;
 
       return ActivityRecords.of({
-        eraseWorkspace: (workspaceId) => events.eraseWorkspace(workspaceId),
+        eraseWorkspace: (workspaceId) =>
+          events
+            .eraseWorkspace(workspaceId)
+            .pipe(Effect.andThen(overrides.remove(workspaceId))),
         exportUser: (userId) =>
           events.madeBy(userId).pipe(
             Effect.map((made) =>

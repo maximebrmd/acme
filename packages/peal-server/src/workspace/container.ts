@@ -216,7 +216,11 @@ export const WorkspaceLive = Layer.mergeAll(
   Layer.provideMerge(EmailedAccountMail),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
-  Layer.provideMerge(CountedRequestLimits),
+  Layer.provideMerge(
+    CountedRequestLimits.pipe(
+      Layer.provide(Layer.merge(MemberDirectoryLive, DrizzlePartnerStore))
+    )
+  ),
   Layer.provideMerge(LoggedActivityJournal),
   Layer.provideMerge(AuthSettings.layer)
 );

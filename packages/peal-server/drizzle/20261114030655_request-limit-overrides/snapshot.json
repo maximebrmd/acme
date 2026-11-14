@@ -1,0 +1,112 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b8ccc7da-2ac8-4bf4-a901-314881c357bb",
+  "prevIds": [
+    "ab1aaff6-828f-4f1e-85a4-91aaf59f3d4f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "activity",
+        "request_limits"
+      ],
+      "writes": [
+        "s|tbl|activity.request_limits",
+        "n|tbl|activity.request_limits",
+        "e|tbl|activity.request_limits",
+        "n|rel|activity.request_limits",
+        "n|type|activity.request_limits",
+        "n|rel|activity.request_limits_pkey"
+      ],
+      "reads": [
+        "n|sch|activity"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "name": "request_limits",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "table": "request_limits",
+        "name": "requests_per_minute",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "table": "request_limits",
+        "name": "set_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "table": "request_limits",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "table": "request_limits",
+        "name": "request_limits_pkey",
+        "columns": [
+          "workspace_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "activity",
+        "table": "request_limits",
+        "name": "request_limits_requests_per_minute",
+        "value": "\"requests_per_minute\" > 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}
