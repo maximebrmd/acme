@@ -187,6 +187,14 @@ export const NoticeEventSchema = Schema.Union([
     postId: PostIdSchema,
     threadId: Uuid7Schema,
   }),
+  // Someone sent `count` direct messages to the channel's account, read
+  // for the first time, in the conversation engagement keeps. The channel
+  // and a count: never who wrote, nor what.
+  Schema.TaggedStruct("MessagesReceived", {
+    channel: NoticeChannelSchema,
+    conversationId: Uuid7Schema,
+    count: Schema.Int,
+  }),
   // The channel's authorization stopped working: nothing is posted until it
   // is reconnected.
   Schema.TaggedStruct("ChannelReconnectRequired", {
@@ -356,6 +364,8 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
     ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
     CommentsReceived: () => Option.some<EmailKind>("comments"),
+    // The inbox's other activity, under the same preference.
+    MessagesReceived: () => Option.some<EmailKind>("comments"),
     FeedStopped: () => Option.some<EmailKind>("feedStopped"),
     PostApprovalRequested: () => Option.some<EmailKind>("postReview"),
     PostApproved: () => Option.some<EmailKind>("postReview"),
@@ -394,6 +404,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     ChannelReconnectRequired: (): Permission => "channel:connect",
     ChannelReconnectSoon: (): Permission => "channel:connect",
     CommentsReceived: (): Permission => "engagement:reply",
+    MessagesReceived: (): Permission => "engagement:message",
     FeedStopped: (): Permission => "post:schedule",
     PostApprovalRequested: (): Permission => "post:approve",
     PostApproved: (): Permission => "post:schedule",
@@ -423,6 +434,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     ChannelReconnectRequired: () => false,
     ChannelReconnectSoon: () => false,
     CommentsReceived: () => true,
+    MessagesReceived: () => false,
     FeedStopped: () => true,
     PostApprovalRequested: () => true,
     PostApproved: () => true,
@@ -451,8 +463,8 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
  * billing's; to manage webhooks, for an endpoint's.
  */
 export const readerPermissionOf = (event: NoticeEvent): Permission => {
-  // Comments are read with a permission of their own.
-  if (event._tag === "CommentsReceived") {
+  // Comments and messages are read with a permission of their own.
+  if (event._tag === "CommentsReceived" || event._tag === "MessagesReceived") {
     return "engagement:read";
   }
 
@@ -547,6 +559,8 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
     CommentsReceived: ({ threadId }) => `/app/${workspaceId}/inbox/${threadId}`,
+    MessagesReceived: ({ conversationId }) =>
+      `/app/${workspaceId}/inbox/messages/${conversationId}`,
     FeedStopped: ({ feedId }) =>
       `/app/${workspaceId}/settings/feeds?feed=${feedId}`,
     PostApprovalRequested: ({ postId }) =>

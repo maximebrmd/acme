@@ -74,6 +74,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     postId,
     threadId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c0de"),
   },
+  MessagesReceived: {
+    _tag: "MessagesReceived",
+    channel,
+    conversationId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c0df"),
+    count: 2,
+  },
   FeedStopped: {
     _tag: "FeedStopped",
     feedId: Uuid7Schema.make("00000000-0000-7000-8000-00000000fe01"),

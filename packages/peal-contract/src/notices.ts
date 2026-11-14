@@ -141,6 +141,14 @@ export const NoticeEventSchema = Schema.Union([
     postId: Schema.String,
     threadId: Schema.String,
   }),
+  // Someone sent direct messages to the channel's account, read for the
+  // first time: `count` of them in the conversation. Never who wrote, nor
+  // what.
+  Schema.TaggedStruct("MessagesReceived", {
+    channel: NoticeChannelSchema,
+    conversationId: Schema.String,
+    count: Schema.Int,
+  }),
   // The channel's authorization stopped working: reconnect it to post again.
   Schema.TaggedStruct("ChannelReconnectRequired", {
     channel: NoticeChannelSchema,

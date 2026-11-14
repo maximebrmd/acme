@@ -716,6 +716,12 @@ export type NoticeEventRecord =
       readonly threadId: string;
     }
   | {
+      readonly _tag: "MessagesReceived";
+      readonly channel: NoticeChannelRecord;
+      readonly conversationId: string;
+      readonly count: number;
+    }
+  | {
       readonly _tag: "PostCommented";
       readonly by: string;
       readonly postId: string;

@@ -148,6 +148,11 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         inbox(threadId, t("event.CommentsReceived", { count, workspace })),
       FeedStopped: ({ feedId, reason }) =>
         feed(feedId, t("event.FeedStopped", { reason, workspace })),
+      MessagesReceived: ({ conversationId, count }) =>
+        inbox(
+          `messages/${conversationId}`,
+          t("event.MessagesReceived", { channel, count, workspace })
+        ),
       PostApprovalRequested: ({ postId, scheduledAt }) =>
         post(
           postId,

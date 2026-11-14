@@ -103,6 +103,11 @@ export interface EmailCatalog {
    * writes its own plural with `{count}`.
    */
   readonly commentsReceived: EmailMessages;
+  /**
+   * Someone sent `{count}` direct messages to the channel `{handle}` on
+   * `{platform}`: never who, nor what.
+   */
+  readonly messagesReceived: EmailMessages;
   /** A channel's token expires at `{expiresAt}` and cannot be renewed. */
   readonly channelReconnectSoon: EmailMessages;
   /** Why a post did not go out, as `{reason}` in `postFailed`'s body. */
