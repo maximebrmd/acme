@@ -293,7 +293,8 @@ export class EngagementMessages extends Context.Service<
       );
 
       // Changes a conversation as it stands under its channel's lock,
-      // which the collection takes too.
+      // which the collection takes too. One that went meanwhile (its
+      // channel, its time) stays gone: none, and nothing is written back.
       const changedUnderLock = (
         found: Conversation,
         change: (current: Conversation) => Conversation
@@ -301,16 +302,17 @@ export class EngagementMessages extends Context.Service<
         Effect.gen(function* changing() {
           yield* store.lockBox(found.channelId);
 
-          const current = (yield* store.conversation(found.id)).pipe(
-            Option.map((summary) => summary.conversation),
-            Option.getOrElse(() => found)
-          );
+          const current = yield* store.conversation(found.id);
 
-          const changed = change(current);
+          if (Option.isNone(current)) {
+            return Option.none<Conversation>();
+          }
+
+          const changed = change(current.value.conversation);
 
           yield* store.saveConversations([changed]);
 
-          return changed;
+          return Option.some(changed);
         });
 
       const send = Effect.fn("EngagementMessages.send")(function* send(
@@ -517,11 +519,17 @@ export class EngagementMessages extends Context.Service<
           const summary = yield* summaryOf(actor, conversationId);
           const at = yield* DateTime.now;
 
-          return yield* transaction(
+          const changed = yield* transaction(
             changedUnderLock(summary.conversation, (current) =>
               markConversationRead(current, read, at)
             )
           );
+
+          if (Option.isNone(changed)) {
+            return yield* new ConversationNotFound({ conversationId });
+          }
+
+          return changed.value;
         }
       );
 
