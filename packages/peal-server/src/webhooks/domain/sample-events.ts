@@ -298,7 +298,7 @@ const samples: Samples = {
     type: "post.unscheduled",
   }),
   "review.received": (workspaceId) => ({
-    data: { ...review(workspaceId), rating: 5, receivedAt: at },
+    data: { ...review(workspaceId), receivedAt: at },
     type: "review.received",
   }),
   "review.replied": (workspaceId) => ({

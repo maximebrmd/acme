@@ -137,7 +137,7 @@ Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal
 
 ## review.received [#review-received]
 
-Peal a lu un avis pour la première fois sur un établissement au nom duquel publie un canal Google Business Profile (voir [Boîte de réception](/guides/engage/inbox#reviews)). L’événement ne porte que des identifiants et les étoiles : ce que dit l’avis et qui l’a écrit se lisent par l’API, avec `engagement:read`.
+Peal a lu un avis pour la première fois sur un établissement au nom duquel publie un canal Google Business Profile (voir [Boîte de réception](/guides/engage/inbox#reviews)). L’événement ne porte que des identifiants : les étoiles de l’avis, ce qu’il dit et qui l’a écrit se lisent par l’API, car Google ne permet de stocker ce que fournit son API que 30 jours au plus et un événement est conservé avec ses livraisons, avec `engagement:read`.
 
 | Champ         | Type   | Ce qu’il contient                              |
 | ------------- | ------ | ---------------------------------------------- |
@@ -145,7 +145,6 @@ Peal a lu un avis pour la première fois sur un établissement au nom duquel pub
 | `channelId`   | chaîne | Le canal dont l’établissement a reçu l’avis    |
 | `threadId`    | chaîne | Le fil : les avis de cet établissement         |
 | `reviewId`    | chaîne | L’avis                                         |
-| `rating`      | entier | Ses étoiles, de 1 à 5                          |
 | `receivedAt`  | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC |
 
 ```json title="review.received"
@@ -160,7 +159,6 @@ Peal a lu un avis pour la première fois sur un établissement au nom duquel pub
     "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
     "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
     "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
-    "rating": 4,
     "receivedAt": "2026-11-14T09:27:04.000Z"
   }
 }

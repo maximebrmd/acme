@@ -137,16 +137,15 @@ A reply to a comment went out from Peal, as the channel's account. A reply that 
 
 ## review.received [#review-received]
 
-Peal read a review for the first time on a location a Google Business Profile channel posts as (see [Inbox](/guides/engage/inbox#reviews)). The event carries ids and the stars only: what the review says and who wrote it are read through the API, with `engagement:read`.
+Peal read a review for the first time on a location a Google Business Profile channel posts as (see [Inbox](/guides/engage/inbox#reviews)). The event carries ids only: the review's stars, what it says and who wrote it are read through the API, as Google lets what its API gives be stored 30 days at most and an event is kept with its deliveries, with `engagement:read`.
 
-| Field         | Type    | What it holds                            |
-| ------------- | ------- | ---------------------------------------- |
-| `workspaceId` | string  | The workspace                            |
-| `channelId`   | string  | The channel whose location was reviewed  |
-| `threadId`    | string  | The thread: the reviews of that location |
-| `reviewId`    | string  | The review                               |
-| `rating`      | integer | Its stars, from 1 to 5                   |
-| `receivedAt`  | string  | When Peal read it, as an instant in UTC  |
+| Field         | Type   | What it holds                            |
+| ------------- | ------ | ---------------------------------------- |
+| `workspaceId` | string | The workspace                            |
+| `channelId`   | string | The channel whose location was reviewed  |
+| `threadId`    | string | The thread: the reviews of that location |
+| `reviewId`    | string | The review                               |
+| `receivedAt`  | string | When Peal read it, as an instant in UTC  |
 
 ```json title="review.received"
 {
@@ -160,7 +159,6 @@ Peal read a review for the first time on a location a Google Business Profile ch
     "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
     "threadId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d0f",
     "reviewId": "019a8163-2c40-7e1b-a3d5-6f7a8b9c0d10",
-    "rating": 4,
     "receivedAt": "2026-11-14T09:27:04.000Z"
   }
 }

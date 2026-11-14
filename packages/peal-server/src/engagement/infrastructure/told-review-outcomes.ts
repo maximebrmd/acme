@@ -14,8 +14,10 @@ const logged = (what: string) =>
 /**
  * Tells the workspace's endpoints, through the webhooks context, in the
  * transaction that records it: one `review.received` per review read for
- * the first time, with its stars, and one `review.replied` per reply that
- * went out. Events carry ids, never what a review says or who wrote it. A
+ * the first time, and one `review.replied` per reply that
+ * went out. Events carry ids, never a review's stars, what it says or
+ * who wrote it: what Google gives is kept 29 days at most, and an event
+ * stays with its deliveries longer. A
  * bug in telling is logged and never undoes what was read or sent; the
  * database failing does.
  */
@@ -29,7 +31,6 @@ export const ToldReviewOutcomes = Layer.effect(
         event: {
           data: {
             channelId: thread.channelId,
-            rating: review.rating,
             receivedAt: review.receivedAt,
             reviewId: review.id,
             threadId: thread.id,

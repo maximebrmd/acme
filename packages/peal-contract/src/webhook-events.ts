@@ -483,15 +483,11 @@ export const WebhookPayloadSchema = Schema.Union([
     }),
     type: Schema.Literal("comment.replied"),
   }),
-  // Peal read a review of a location for the first time, with its stars.
-  // Ids only: what it says and who wrote it are read through the API.
+  // Peal read a review of a location for the first time. Ids only: its
+  // stars, what it says and who wrote it are read through the API.
   Schema.Struct({
     ...envelope,
-    data: Schema.Struct({
-      ...review,
-      rating: Schema.Int,
-      receivedAt: Schema.String,
-    }),
+    data: Schema.Struct({ ...review, receivedAt: Schema.String }),
     type: Schema.Literal("review.received"),
   }),
   // A reply to the review went out from Peal, as the location.

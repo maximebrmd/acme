@@ -336,7 +336,7 @@
   directory lists (`ReviewLocations`), reads the threads due, hourly while
   a review changed in the last week, six-hourly otherwise, and records a
   read under the thread's lock in one transaction, telling
-  `review.received` (ids and stars) through `ReviewOutcomes`.
+  `review.received` (ids only: never stars nor text, as an event outlives the 29 days) through `ReviewOutcomes`.
 - A reply to a review is a state on Google (one reply, `PUT …/reply`
   replaces it), so `SendReviewReplyV1` (payload `replyId`, activity
   `send`, persisted contract) sends, and a run that finds the call set out

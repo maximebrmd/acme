@@ -363,13 +363,9 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("comment.replied"),
   }),
-  // Peal read a review of a location for the first time, with its stars.
+  // Peal read a review of a location for the first time: ids only.
   Schema.Struct({
-    data: Schema.Struct({
-      ...review,
-      rating: Schema.Int,
-      receivedAt: Schema.DateTimeUtc,
-    }),
+    data: Schema.Struct({ ...review, receivedAt: Schema.DateTimeUtc }),
     type: Schema.Literal("review.received"),
   }),
   // A reply to the review went out from Peal, as the location.
