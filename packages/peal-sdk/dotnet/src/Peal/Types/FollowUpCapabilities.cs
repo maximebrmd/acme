@@ -11,6 +11,9 @@ public record FollowUpCapabilities : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("commentNeeds")]
+    public FollowUpCapabilitiesCommentNeeds? CommentNeeds { get; set; }
+
     [JsonPropertyName("commentTextLimits")]
     public IEnumerable<TextLimit>? CommentTextLimits { get; set; }
 

@@ -258,6 +258,25 @@ class ContentViolation_PartsNeedReconnect(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class ContentViolation_CommentsTurnedOff(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["commentsTurnedOff"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "commentsTurnedOff"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    field: str
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class ContentViolation_PollNotSupported(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["pollNotSupported"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -308,6 +327,25 @@ class ContentViolation_PollChoiceLength(UniversalBaseModel):
     length: int
     maximum: int
     unit: TextUnit
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollChoiceRepeated(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollChoiceRepeated"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollChoiceRepeated"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    choice: int
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -708,9 +746,11 @@ ContentViolation = typing_extensions.Annotated[
         ContentViolation_TooManyMedia,
         ContentViolation_TooManyParts,
         ContentViolation_PartsNeedReconnect,
+        ContentViolation_CommentsTurnedOff,
         ContentViolation_PollNotSupported,
         ContentViolation_PollChoiceCount,
         ContentViolation_PollChoiceLength,
+        ContentViolation_PollChoiceRepeated,
         ContentViolation_PollDurationOutOfRange,
         ContentViolation_PollMultipleChoice,
         ContentViolation_PollWithMedia,

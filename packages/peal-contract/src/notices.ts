@@ -97,7 +97,9 @@ export const NoticeEventSchema = Schema.Union([
   Schema.TaggedStruct("PostFailed", {
     channel: Schema.NullOr(NoticeChannelSchema),
     notSent: Schema.optionalKey(
-      Schema.Literals(["firstComment", "laterParts"])
+      Schema.Literals(["firstComment", "laterParts"]).annotate({
+        identifier: "PostPartsNotSent",
+      })
     ),
     postId: Schema.String,
     reason: FailureReasonSchema,

@@ -46,6 +46,8 @@ public final class PostTarget {
 
     private final Optional<String> removedAt;
 
+    private final Optional<Boolean> partsLeftOut;
+
     private final int round;
 
     private final PostTargetStatus status;
@@ -68,6 +70,7 @@ public final class PostTarget {
             Optional<String> permalink,
             Optional<String> publishedAt,
             Optional<String> removedAt,
+            Optional<Boolean> partsLeftOut,
             int round,
             PostTargetStatus status,
             Optional<Boolean> thumbnailNotSet,
@@ -84,6 +87,7 @@ public final class PostTarget {
         this.permalink = permalink;
         this.publishedAt = publishedAt;
         this.removedAt = removedAt;
+        this.partsLeftOut = partsLeftOut;
         this.round = round;
         this.status = status;
         this.thumbnailNotSet = thumbnailNotSet;
@@ -162,6 +166,11 @@ public final class PostTarget {
             return Optional.empty();
         }
         return removedAt;
+    }
+
+    @JsonProperty("partsLeftOut")
+    public Optional<Boolean> getPartsLeftOut() {
+        return partsLeftOut;
     }
 
     @JsonProperty("round")
@@ -252,6 +261,7 @@ public final class PostTarget {
                 && permalink.equals(other.permalink)
                 && publishedAt.equals(other.publishedAt)
                 && removedAt.equals(other.removedAt)
+                && partsLeftOut.equals(other.partsLeftOut)
                 && round == other.round
                 && status.equals(other.status)
                 && thumbnailNotSet.equals(other.thumbnailNotSet)
@@ -272,6 +282,7 @@ public final class PostTarget {
                 this.permalink,
                 this.publishedAt,
                 this.removedAt,
+                this.partsLeftOut,
                 this.round,
                 this.status,
                 this.thumbnailNotSet,
@@ -360,6 +371,10 @@ public final class PostTarget {
 
         _FinalStage removedAt(Nullable<String> removedAt);
 
+        _FinalStage partsLeftOut(Optional<Boolean> partsLeftOut);
+
+        _FinalStage partsLeftOut(Boolean partsLeftOut);
+
         _FinalStage thumbnailNotSet(Optional<Boolean> thumbnailNotSet);
 
         _FinalStage thumbnailNotSet(Boolean thumbnailNotSet);
@@ -387,6 +402,8 @@ public final class PostTarget {
         private Optional<UnconfirmedReason> unconfirmedReason = Optional.empty();
 
         private Optional<Boolean> thumbnailNotSet = Optional.empty();
+
+        private Optional<Boolean> partsLeftOut = Optional.empty();
 
         private Optional<String> removedAt = Optional.empty();
 
@@ -421,6 +438,7 @@ public final class PostTarget {
             permalink(other.getPermalink());
             publishedAt(other.getPublishedAt());
             removedAt(other.getRemovedAt());
+            partsLeftOut(other.getPartsLeftOut());
             round(other.getRound());
             status(other.getStatus());
             thumbnailNotSet(other.getThumbnailNotSet());
@@ -498,6 +516,19 @@ public final class PostTarget {
         @JsonSetter(value = "thumbnailNotSet", nulls = Nulls.SKIP)
         public _FinalStage thumbnailNotSet(Optional<Boolean> thumbnailNotSet) {
             this.thumbnailNotSet = thumbnailNotSet;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage partsLeftOut(Boolean partsLeftOut) {
+            this.partsLeftOut = Optional.ofNullable(partsLeftOut);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "partsLeftOut", nulls = Nulls.SKIP)
+        public _FinalStage partsLeftOut(Optional<Boolean> partsLeftOut) {
+            this.partsLeftOut = partsLeftOut;
             return this;
         }
 
@@ -691,6 +722,7 @@ public final class PostTarget {
                     permalink,
                     publishedAt,
                     removedAt,
+                    partsLeftOut,
                     round,
                     status,
                     thumbnailNotSet,
@@ -711,6 +743,7 @@ public final class PostTarget {
                     || key.equalsIgnoreCase("permalink")
                     || key.equalsIgnoreCase("publishedAt")
                     || key.equalsIgnoreCase("removedAt")
+                    || key.equalsIgnoreCase("partsLeftOut")
                     || key.equalsIgnoreCase("round")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("thumbnailNotSet")

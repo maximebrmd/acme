@@ -22,9 +22,11 @@ class ContentViolation extends JsonSerializableType
      *   |'tooManyMedia'
      *   |'tooManyParts'
      *   |'partsNeedReconnect'
+     *   |'commentsTurnedOff'
      *   |'pollNotSupported'
      *   |'pollChoiceCount'
      *   |'pollChoiceLength'
+     *   |'pollChoiceRepeated'
      *   |'pollDurationOutOfRange'
      *   |'pollMultipleChoice'
      *   |'pollWithMedia'
@@ -63,9 +65,11 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationTooManyMedia
      *   |ContentViolationTooManyParts
      *   |ContentViolationPartsNeedReconnect
+     *   |ContentViolationCommentsTurnedOff
      *   |ContentViolationPollNotSupported
      *   |ContentViolationPollChoiceCount
      *   |ContentViolationPollChoiceLength
+     *   |ContentViolationPollChoiceRepeated
      *   |ContentViolationPollDurationOutOfRange
      *   |ContentViolationPollMultipleChoice
      *   |ContentViolationPollWithMedia
@@ -105,9 +109,11 @@ class ContentViolation extends JsonSerializableType
      *   |'tooManyMedia'
      *   |'tooManyParts'
      *   |'partsNeedReconnect'
+     *   |'commentsTurnedOff'
      *   |'pollNotSupported'
      *   |'pollChoiceCount'
      *   |'pollChoiceLength'
+     *   |'pollChoiceRepeated'
      *   |'pollDurationOutOfRange'
      *   |'pollMultipleChoice'
      *   |'pollWithMedia'
@@ -142,9 +148,11 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationTooManyMedia
      *   |ContentViolationTooManyParts
      *   |ContentViolationPartsNeedReconnect
+     *   |ContentViolationCommentsTurnedOff
      *   |ContentViolationPollNotSupported
      *   |ContentViolationPollChoiceCount
      *   |ContentViolationPollChoiceLength
+     *   |ContentViolationPollChoiceRepeated
      *   |ContentViolationPollDurationOutOfRange
      *   |ContentViolationPollMultipleChoice
      *   |ContentViolationPollWithMedia
@@ -331,6 +339,18 @@ class ContentViolation extends JsonSerializableType
     }
 
     /**
+     * @param ContentViolationCommentsTurnedOff $commentsTurnedOff
+     * @return ContentViolation
+     */
+    public static function commentsTurnedOff(ContentViolationCommentsTurnedOff $commentsTurnedOff): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'commentsTurnedOff',
+            'value' => $commentsTurnedOff,
+        ]);
+    }
+
+    /**
      * @param ContentViolationPollNotSupported $pollNotSupported
      * @return ContentViolation
      */
@@ -363,6 +383,18 @@ class ContentViolation extends JsonSerializableType
         return new ContentViolation([
             'type' => 'pollChoiceLength',
             'value' => $pollChoiceLength,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationPollChoiceRepeated $pollChoiceRepeated
+     * @return ContentViolation
+     */
+    public static function pollChoiceRepeated(ContentViolationPollChoiceRepeated $pollChoiceRepeated): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'pollChoiceRepeated',
+            'value' => $pollChoiceRepeated,
         ]);
     }
 
@@ -871,6 +903,28 @@ class ContentViolation extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isCommentsTurnedOff(): bool
+    {
+        return $this->value instanceof ContentViolationCommentsTurnedOff && $this->type === 'commentsTurnedOff';
+    }
+
+    /**
+     * @return ContentViolationCommentsTurnedOff
+     */
+    public function asCommentsTurnedOff(): ContentViolationCommentsTurnedOff
+    {
+        if (!($this->value instanceof ContentViolationCommentsTurnedOff && $this->type === 'commentsTurnedOff')) {
+            throw new Exception(
+                "Expected commentsTurnedOff; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isPollNotSupported(): bool
     {
         return $this->value instanceof ContentViolationPollNotSupported && $this->type === 'pollNotSupported';
@@ -928,6 +982,28 @@ class ContentViolation extends JsonSerializableType
         if (!($this->value instanceof ContentViolationPollChoiceLength && $this->type === 'pollChoiceLength')) {
             throw new Exception(
                 "Expected pollChoiceLength; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPollChoiceRepeated(): bool
+    {
+        return $this->value instanceof ContentViolationPollChoiceRepeated && $this->type === 'pollChoiceRepeated';
+    }
+
+    /**
+     * @return ContentViolationPollChoiceRepeated
+     */
+    public function asPollChoiceRepeated(): ContentViolationPollChoiceRepeated
+    {
+        if (!($this->value instanceof ContentViolationPollChoiceRepeated && $this->type === 'pollChoiceRepeated')) {
+            throw new Exception(
+                "Expected pollChoiceRepeated; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -1402,6 +1478,10 @@ class ContentViolation extends JsonSerializableType
                 $value = $this->asPartsNeedReconnect()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'commentsTurnedOff':
+                $value = $this->asCommentsTurnedOff()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'pollNotSupported':
                 $value = $this->asPollNotSupported()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -1412,6 +1492,10 @@ class ContentViolation extends JsonSerializableType
                 break;
             case 'pollChoiceLength':
                 $value = $this->asPollChoiceLength()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pollChoiceRepeated':
+                $value = $this->asPollChoiceRepeated()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'pollDurationOutOfRange':
@@ -1561,6 +1645,9 @@ class ContentViolation extends JsonSerializableType
             case 'partsNeedReconnect':
                 $args['value'] = ContentViolationPartsNeedReconnect::jsonDeserialize($data);
                 break;
+            case 'commentsTurnedOff':
+                $args['value'] = ContentViolationCommentsTurnedOff::jsonDeserialize($data);
+                break;
             case 'pollNotSupported':
                 $args['value'] = ContentViolationPollNotSupported::jsonDeserialize($data);
                 break;
@@ -1569,6 +1656,9 @@ class ContentViolation extends JsonSerializableType
                 break;
             case 'pollChoiceLength':
                 $args['value'] = ContentViolationPollChoiceLength::jsonDeserialize($data);
+                break;
+            case 'pollChoiceRepeated':
+                $args['value'] = ContentViolationPollChoiceRepeated::jsonDeserialize($data);
                 break;
             case 'pollDurationOutOfRange':
                 $args['value'] = ContentViolationPollDurationOutOfRange::jsonDeserialize($data);

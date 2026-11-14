@@ -202,7 +202,7 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
     Schema.Struct({
       // Who on the account may comment, where the platform restricts it:
       // on a LinkedIn page, the page's administrator.
-      commentNeeds: Schema.optionalKey(Schema.Literals(["pageAdministrator"])),
+      commentNeeds: Schema.optionalKey(Schema.Literal("pageAdministrator")),
       commentTextLimits: Schema.optionalKey(Schema.Array(TextLimitSchema)),
       kind: Schema.Literals(["thread", "comment"]),
       maxCount: Schema.Int,

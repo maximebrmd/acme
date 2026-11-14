@@ -680,6 +680,51 @@ func (p *PostImport) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	leaveOutRestPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	leaveOutRestPostsRequestFieldPostID      = big.NewInt(1 << 1)
+	leaveOutRestPostsRequestFieldTargetID    = big.NewInt(1 << 2)
+)
+
+type LeaveOutRestPostsRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	PostID      string `json:"-" url:"-"`
+	TargetID    string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (l *LeaveOutRestPostsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LeaveOutRestPostsRequest) SetWorkspaceID(workspaceID string) {
+	l.WorkspaceID = workspaceID
+	l.require(leaveOutRestPostsRequestFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LeaveOutRestPostsRequest) SetPostID(postID string) {
+	l.PostID = postID
+	l.require(leaveOutRestPostsRequestFieldPostID)
+}
+
+// SetTargetID sets the TargetID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LeaveOutRestPostsRequest) SetTargetID(targetID string) {
+	l.TargetID = targetID
+	l.require(leaveOutRestPostsRequestFieldTargetID)
+}
+
+var (
 	listPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	listPostsRequestFieldFrom        = big.NewInt(1 << 1)
 	listPostsRequestFieldTo          = big.NewInt(1 << 2)
@@ -2530,9 +2575,11 @@ type ContentViolation struct {
 	TooManyMedia            *ContentViolationTooManyMedia
 	TooManyParts            *ContentViolationTooManyParts
 	PartsNeedReconnect      *ContentViolationPartsNeedReconnect
+	CommentsTurnedOff       *ContentViolationCommentsTurnedOff
 	PollNotSupported        *ContentViolationPollNotSupported
 	PollChoiceCount         *ContentViolationPollChoiceCount
 	PollChoiceLength        *ContentViolationPollChoiceLength
+	PollChoiceRepeated      *ContentViolationPollChoiceRepeated
 	PollDurationOutOfRange  *ContentViolationPollDurationOutOfRange
 	PollMultipleChoice      *ContentViolationPollMultipleChoice
 	PollWithMedia           *ContentViolationPollWithMedia
@@ -2653,6 +2700,13 @@ func (c *ContentViolation) GetPartsNeedReconnect() *ContentViolationPartsNeedRec
 	return c.PartsNeedReconnect
 }
 
+func (c *ContentViolation) GetCommentsTurnedOff() *ContentViolationCommentsTurnedOff {
+	if c == nil {
+		return nil
+	}
+	return c.CommentsTurnedOff
+}
+
 func (c *ContentViolation) GetPollNotSupported() *ContentViolationPollNotSupported {
 	if c == nil {
 		return nil
@@ -2672,6 +2726,13 @@ func (c *ContentViolation) GetPollChoiceLength() *ContentViolationPollChoiceLeng
 		return nil
 	}
 	return c.PollChoiceLength
+}
+
+func (c *ContentViolation) GetPollChoiceRepeated() *ContentViolationPollChoiceRepeated {
+	if c == nil {
+		return nil
+	}
+	return c.PollChoiceRepeated
 }
 
 func (c *ContentViolation) GetPollDurationOutOfRange() *ContentViolationPollDurationOutOfRange {
@@ -2890,6 +2951,12 @@ func (c *ContentViolation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.PartsNeedReconnect = value
+	case "commentsTurnedOff":
+		value := new(ContentViolationCommentsTurnedOff)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.CommentsTurnedOff = value
 	case "pollNotSupported":
 		value := new(ContentViolationPollNotSupported)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -2908,6 +2975,12 @@ func (c *ContentViolation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.PollChoiceLength = value
+	case "pollChoiceRepeated":
+		value := new(ContentViolationPollChoiceRepeated)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.PollChoiceRepeated = value
 	case "pollDurationOutOfRange":
 		value := new(ContentViolationPollDurationOutOfRange)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -3064,6 +3137,9 @@ func (c ContentViolation) MarshalJSON() ([]byte, error) {
 	if c.PartsNeedReconnect != nil {
 		return internal.MarshalJSONWithExtraProperty(c.PartsNeedReconnect, "_tag", "partsNeedReconnect")
 	}
+	if c.CommentsTurnedOff != nil {
+		return internal.MarshalJSONWithExtraProperty(c.CommentsTurnedOff, "_tag", "commentsTurnedOff")
+	}
 	if c.PollNotSupported != nil {
 		return internal.MarshalJSONWithExtraProperty(c.PollNotSupported, "_tag", "pollNotSupported")
 	}
@@ -3072,6 +3148,9 @@ func (c ContentViolation) MarshalJSON() ([]byte, error) {
 	}
 	if c.PollChoiceLength != nil {
 		return internal.MarshalJSONWithExtraProperty(c.PollChoiceLength, "_tag", "pollChoiceLength")
+	}
+	if c.PollChoiceRepeated != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PollChoiceRepeated, "_tag", "pollChoiceRepeated")
 	}
 	if c.PollDurationOutOfRange != nil {
 		return internal.MarshalJSONWithExtraProperty(c.PollDurationOutOfRange, "_tag", "pollDurationOutOfRange")
@@ -3147,9 +3226,11 @@ type ContentViolationVisitor interface {
 	VisitTooManyMedia(*ContentViolationTooManyMedia) error
 	VisitTooManyParts(*ContentViolationTooManyParts) error
 	VisitPartsNeedReconnect(*ContentViolationPartsNeedReconnect) error
+	VisitCommentsTurnedOff(*ContentViolationCommentsTurnedOff) error
 	VisitPollNotSupported(*ContentViolationPollNotSupported) error
 	VisitPollChoiceCount(*ContentViolationPollChoiceCount) error
 	VisitPollChoiceLength(*ContentViolationPollChoiceLength) error
+	VisitPollChoiceRepeated(*ContentViolationPollChoiceRepeated) error
 	VisitPollDurationOutOfRange(*ContentViolationPollDurationOutOfRange) error
 	VisitPollMultipleChoice(*ContentViolationPollMultipleChoice) error
 	VisitPollWithMedia(*ContentViolationPollWithMedia) error
@@ -3210,6 +3291,9 @@ func (c *ContentViolation) Accept(visitor ContentViolationVisitor) error {
 	if c.PartsNeedReconnect != nil {
 		return visitor.VisitPartsNeedReconnect(c.PartsNeedReconnect)
 	}
+	if c.CommentsTurnedOff != nil {
+		return visitor.VisitCommentsTurnedOff(c.CommentsTurnedOff)
+	}
 	if c.PollNotSupported != nil {
 		return visitor.VisitPollNotSupported(c.PollNotSupported)
 	}
@@ -3218,6 +3302,9 @@ func (c *ContentViolation) Accept(visitor ContentViolationVisitor) error {
 	}
 	if c.PollChoiceLength != nil {
 		return visitor.VisitPollChoiceLength(c.PollChoiceLength)
+	}
+	if c.PollChoiceRepeated != nil {
+		return visitor.VisitPollChoiceRepeated(c.PollChoiceRepeated)
 	}
 	if c.PollDurationOutOfRange != nil {
 		return visitor.VisitPollDurationOutOfRange(c.PollDurationOutOfRange)
@@ -3320,6 +3407,9 @@ func (c *ContentViolation) validate() error {
 	if c.PartsNeedReconnect != nil {
 		fields = append(fields, "partsNeedReconnect")
 	}
+	if c.CommentsTurnedOff != nil {
+		fields = append(fields, "commentsTurnedOff")
+	}
 	if c.PollNotSupported != nil {
 		fields = append(fields, "pollNotSupported")
 	}
@@ -3328,6 +3418,9 @@ func (c *ContentViolation) validate() error {
 	}
 	if c.PollChoiceLength != nil {
 		fields = append(fields, "pollChoiceLength")
+	}
+	if c.PollChoiceRepeated != nil {
+		fields = append(fields, "pollChoiceRepeated")
 	}
 	if c.PollDurationOutOfRange != nil {
 		fields = append(fields, "pollDurationOutOfRange")
@@ -3895,6 +3988,140 @@ func (c *ContentViolationAspectRatioUnsupportedMinimum) Accept(visitor ContentVi
 		return visitor.VisitNonFiniteNumber(c.NonFiniteNumber)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+var (
+	contentViolationCommentsTurnedOffFieldChannelID = big.NewInt(1 << 0)
+	contentViolationCommentsTurnedOffFieldPart      = big.NewInt(1 << 1)
+	contentViolationCommentsTurnedOffFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationCommentsTurnedOffFieldField     = big.NewInt(1 << 3)
+)
+
+type ContentViolationCommentsTurnedOff struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+	Field     string   `json:"field" url:"field"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationCommentsTurnedOff) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationCommentsTurnedOff) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationCommentsTurnedOff) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationCommentsTurnedOff) GetField() string {
+	if c == nil {
+		return ""
+	}
+	return c.Field
+}
+
+func (c *ContentViolationCommentsTurnedOff) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationCommentsTurnedOff) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationCommentsTurnedOff) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationCommentsTurnedOffFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationCommentsTurnedOff) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationCommentsTurnedOffFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationCommentsTurnedOff) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationCommentsTurnedOffFieldPlatform)
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationCommentsTurnedOff) SetField(field string) {
+	c.Field = field
+	c.require(contentViolationCommentsTurnedOffFieldField)
+}
+
+func (c *ContentViolationCommentsTurnedOff) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationCommentsTurnedOff
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationCommentsTurnedOff(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationCommentsTurnedOff) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationCommentsTurnedOff
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationCommentsTurnedOff) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 var (
@@ -6126,6 +6353,140 @@ func (c *ContentViolationPollChoiceLength) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContentViolationPollChoiceLength) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contentViolationPollChoiceRepeatedFieldChannelID = big.NewInt(1 << 0)
+	contentViolationPollChoiceRepeatedFieldPart      = big.NewInt(1 << 1)
+	contentViolationPollChoiceRepeatedFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationPollChoiceRepeatedFieldChoice    = big.NewInt(1 << 3)
+)
+
+type ContentViolationPollChoiceRepeated struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+	Choice    int      `json:"choice" url:"choice"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationPollChoiceRepeated) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationPollChoiceRepeated) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationPollChoiceRepeated) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationPollChoiceRepeated) GetChoice() int {
+	if c == nil {
+		return 0
+	}
+	return c.Choice
+}
+
+func (c *ContentViolationPollChoiceRepeated) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationPollChoiceRepeated) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceRepeated) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationPollChoiceRepeatedFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceRepeated) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationPollChoiceRepeatedFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceRepeated) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationPollChoiceRepeatedFieldPlatform)
+}
+
+// SetChoice sets the Choice field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationPollChoiceRepeated) SetChoice(choice int) {
+	c.Choice = choice
+	c.require(contentViolationPollChoiceRepeatedFieldChoice)
+}
+
+func (c *ContentViolationPollChoiceRepeated) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationPollChoiceRepeated
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationPollChoiceRepeated(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationPollChoiceRepeated) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationPollChoiceRepeated
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationPollChoiceRepeated) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -13591,10 +13952,11 @@ var (
 	postTargetFieldPermalink         = big.NewInt(1 << 8)
 	postTargetFieldPublishedAt       = big.NewInt(1 << 9)
 	postTargetFieldRemovedAt         = big.NewInt(1 << 10)
-	postTargetFieldRound             = big.NewInt(1 << 11)
-	postTargetFieldStatus            = big.NewInt(1 << 12)
-	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 13)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 14)
+	postTargetFieldPartsLeftOut      = big.NewInt(1 << 11)
+	postTargetFieldRound             = big.NewInt(1 << 12)
+	postTargetFieldStatus            = big.NewInt(1 << 13)
+	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 14)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 15)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
@@ -13620,6 +13982,7 @@ type PostTarget struct {
 	Permalink         *string            `json:"permalink,omitempty" url:"permalink,omitempty"`
 	PublishedAt       *string            `json:"publishedAt,omitempty" url:"publishedAt,omitempty"`
 	RemovedAt         *string            `json:"removedAt,omitempty" url:"removedAt,omitempty"`
+	PartsLeftOut      *bool              `json:"partsLeftOut,omitempty" url:"partsLeftOut,omitempty"`
 	Round             int                `json:"round" url:"round"`
 	Status            PostTargetStatus   `json:"status" url:"status"`
 	ThumbnailNotSet   *bool              `json:"thumbnailNotSet,omitempty" url:"thumbnailNotSet,omitempty"`
@@ -13707,6 +14070,13 @@ func (p *PostTarget) GetRemovedAt() *string {
 		return nil
 	}
 	return p.RemovedAt
+}
+
+func (p *PostTarget) GetPartsLeftOut() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.PartsLeftOut
 }
 
 func (p *PostTarget) GetRound() int {
@@ -13828,6 +14198,13 @@ func (p *PostTarget) SetPublishedAt(publishedAt *string) {
 func (p *PostTarget) SetRemovedAt(removedAt *string) {
 	p.RemovedAt = removedAt
 	p.require(postTargetFieldRemovedAt)
+}
+
+// SetPartsLeftOut sets the PartsLeftOut field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetPartsLeftOut(partsLeftOut *bool) {
+	p.PartsLeftOut = partsLeftOut
+	p.require(postTargetFieldPartsLeftOut)
 }
 
 // SetRound sets the Round field and marks it as non-optional;

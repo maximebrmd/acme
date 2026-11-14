@@ -161,6 +161,19 @@ pub enum ContentViolation {
         platform: Platform,
     },
 
+    #[serde(rename = "commentsTurnedOff")]
+    #[non_exhaustive]
+    CommentsTurnedOff {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(default)]
+        field: String,
+    },
+
     #[serde(rename = "pollNotSupported")]
     #[non_exhaustive]
     PollNotSupported {
@@ -205,6 +218,19 @@ pub enum ContentViolation {
         #[serde(default)]
         maximum: i64,
         unit: TextUnit,
+    },
+
+    #[serde(rename = "pollChoiceRepeated")]
+    #[non_exhaustive]
+    PollChoiceRepeated {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(default)]
+        choice: i64,
     },
 
     #[serde(rename = "pollDurationOutOfRange")]
@@ -649,6 +675,15 @@ impl ContentViolation {
         }
     }
 
+    pub fn comments_turned_off(channel_id: String, platform: Platform, field: String) -> Self {
+        Self::CommentsTurnedOff {
+            channel_id,
+            part: None,
+            platform,
+            field,
+        }
+    }
+
     pub fn poll_not_supported(channel_id: String, platform: Platform) -> Self {
         Self::PollNotSupported {
             channel_id,
@@ -690,6 +725,15 @@ impl ContentViolation {
             length,
             maximum,
             unit,
+        }
+    }
+
+    pub fn poll_choice_repeated(channel_id: String, platform: Platform, choice: i64) -> Self {
+        Self::PollChoiceRepeated {
+            channel_id,
+            part: None,
+            platform,
+            choice,
         }
     }
 
@@ -1107,6 +1151,20 @@ impl ContentViolation {
         }
     }
 
+    pub fn comments_turned_off_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        field: String,
+    ) -> Self {
+        Self::CommentsTurnedOff {
+            channel_id,
+            part: Some(part),
+            platform,
+            field,
+        }
+    }
+
     pub fn poll_not_supported_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
         Self::PollNotSupported {
             channel_id,
@@ -1150,6 +1208,20 @@ impl ContentViolation {
             length,
             maximum,
             unit,
+        }
+    }
+
+    pub fn poll_choice_repeated_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        choice: i64,
+    ) -> Self {
+        Self::PollChoiceRepeated {
+            channel_id,
+            part: Some(part),
+            platform,
+            choice,
         }
     }
 

@@ -27,6 +27,7 @@ public class PlatformsTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
                   "commentTextLimits": [
                     {
                       "maximum": 1,
@@ -416,6 +417,7 @@ public class PlatformsTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
                   "commentTextLimits": [
                     {
                       "maximum": 1,
@@ -831,6 +833,7 @@ public class PlatformsTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
                   "commentTextLimits": [
                     {
                       "maximum": 1,

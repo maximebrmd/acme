@@ -2257,8 +2257,9 @@ func (n *NoticeEventPostCommented) String() string {
 
 var (
 	noticeEventPostFailedFieldChannel = big.NewInt(1 << 0)
-	noticeEventPostFailedFieldPostID  = big.NewInt(1 << 1)
-	noticeEventPostFailedFieldReason  = big.NewInt(1 << 2)
+	noticeEventPostFailedFieldNotSent = big.NewInt(1 << 1)
+	noticeEventPostFailedFieldPostID  = big.NewInt(1 << 2)
+	noticeEventPostFailedFieldReason  = big.NewInt(1 << 3)
 )
 
 // noticeEventPostFailedNullableFields maps the wire names of NoticeEventPostFailed's nullable fields (required or optional) to their field bits.
@@ -2267,9 +2268,10 @@ var noticeEventPostFailedNullableFields = map[string]*big.Int{
 }
 
 type NoticeEventPostFailed struct {
-	Channel *NoticeChannel `json:"channel,omitempty" url:"channel,omitempty"`
-	PostID  string         `json:"postId" url:"postId"`
-	Reason  FailureReason  `json:"reason" url:"reason"`
+	Channel *NoticeChannel    `json:"channel,omitempty" url:"channel,omitempty"`
+	NotSent *PostPartsNotSent `json:"notSent,omitempty" url:"notSent,omitempty"`
+	PostID  string            `json:"postId" url:"postId"`
+	Reason  FailureReason     `json:"reason" url:"reason"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2283,6 +2285,13 @@ func (n *NoticeEventPostFailed) GetChannel() *NoticeChannel {
 		return nil
 	}
 	return n.Channel
+}
+
+func (n *NoticeEventPostFailed) GetNotSent() *PostPartsNotSent {
+	if n == nil {
+		return nil
+	}
+	return n.NotSent
 }
 
 func (n *NoticeEventPostFailed) GetPostID() string {
@@ -2320,6 +2329,13 @@ func (n *NoticeEventPostFailed) require(field *big.Int) {
 func (n *NoticeEventPostFailed) SetChannel(channel *NoticeChannel) {
 	n.Channel = channel
 	n.require(noticeEventPostFailedFieldChannel)
+}
+
+// SetNotSent sets the NotSent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostFailed) SetNotSent(notSent *PostPartsNotSent) {
+	n.NotSent = notSent
+	n.require(noticeEventPostFailedFieldNotSent)
 }
 
 // SetPostID sets the PostID field and marks it as non-optional;
@@ -3698,6 +3714,28 @@ func (n *NoticePage) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", n)
+}
+
+type PostPartsNotSent string
+
+const (
+	PostPartsNotSentFirstComment PostPartsNotSent = "firstComment"
+	PostPartsNotSentLaterParts   PostPartsNotSent = "laterParts"
+)
+
+func NewPostPartsNotSentFromString(s string) (PostPartsNotSent, error) {
+	switch s {
+	case "firstComment":
+		return PostPartsNotSentFirstComment, nil
+	case "laterParts":
+		return PostPartsNotSentLaterParts, nil
+	}
+	var t PostPartsNotSent
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostPartsNotSent) Ptr() *PostPartsNotSent {
+	return &p
 }
 
 type RecyclingNoticeReason string

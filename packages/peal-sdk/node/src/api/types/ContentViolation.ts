@@ -16,9 +16,11 @@ export type ContentViolation =
     | Peal.ContentViolation.TooManyMedia
     | Peal.ContentViolation.TooManyParts
     | Peal.ContentViolation.PartsNeedReconnect
+    | Peal.ContentViolation.CommentsTurnedOff
     | Peal.ContentViolation.PollNotSupported
     | Peal.ContentViolation.PollChoiceCount
     | Peal.ContentViolation.PollChoiceLength
+    | Peal.ContentViolation.PollChoiceRepeated
     | Peal.ContentViolation.PollDurationOutOfRange
     | Peal.ContentViolation.PollMultipleChoice
     | Peal.ContentViolation.PollWithMedia
@@ -91,6 +93,10 @@ export namespace ContentViolation {
         _tag: "partsNeedReconnect";
     }
 
+    export interface CommentsTurnedOff extends Peal.ContentViolationCommentsTurnedOff {
+        _tag: "commentsTurnedOff";
+    }
+
     export interface PollNotSupported extends Peal.ContentViolationPollNotSupported {
         _tag: "pollNotSupported";
     }
@@ -101,6 +107,10 @@ export namespace ContentViolation {
 
     export interface PollChoiceLength extends Peal.ContentViolationPollChoiceLength {
         _tag: "pollChoiceLength";
+    }
+
+    export interface PollChoiceRepeated extends Peal.ContentViolationPollChoiceRepeated {
+        _tag: "pollChoiceRepeated";
     }
 
     export interface PollDurationOutOfRange extends Peal.ContentViolationPollDurationOutOfRange {

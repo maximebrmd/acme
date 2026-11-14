@@ -14,6 +14,7 @@ export interface PostTarget {
     permalink: string | null;
     publishedAt: string | null;
     removedAt: string | null;
+    partsLeftOut?: boolean | undefined;
     round: number;
     status: Peal.PostTargetStatus;
     thumbnailNotSet?: boolean | undefined;

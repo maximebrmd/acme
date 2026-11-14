@@ -14,6 +14,12 @@ class NoticeEventPostFailed extends JsonSerializableType
     public ?NoticeChannel $channel;
 
     /**
+     * @var ?value-of<PostPartsNotSent> $notSent
+     */
+    #[JsonProperty('notSent')]
+    public ?string $notSent;
+
+    /**
      * @var string $postId
      */
     #[JsonProperty('postId')]
@@ -30,12 +36,14 @@ class NoticeEventPostFailed extends JsonSerializableType
      *   postId: string,
      *   reason: value-of<FailureReason>,
      *   channel?: ?NoticeChannel,
+     *   notSent?: ?value-of<PostPartsNotSent>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->channel = $values['channel'] ?? null;
+        $this->notSent = $values['notSent'] ?? null;
         $this->postId = $values['postId'];
         $this->reason = $values['reason'];
     }

@@ -3356,6 +3356,83 @@ client.posts().confirm(
 </dl>
 </details>
 
+<details><summary><code>client.posts.leaveOutRest(workspaceId, postId, targetId) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().leaveOutRest(
+    "workspaceId",
+    "postId",
+    "targetId",
+    LeaveOutRestPostsRequest
+        .builder()
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetId:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.unpublishTarget(workspaceId, postId, targetId) -> LivePostChange</code></summary>
 <dl>
 <dd>

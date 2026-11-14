@@ -81,6 +81,7 @@ require_relative "peal/posts/types/unschedule_posts_request"
 require_relative "peal/posts/types/repost_posts_request"
 require_relative "peal/posts/types/remove_target_posts_request"
 require_relative "peal/posts/types/confirm_posts_request"
+require_relative "peal/posts/types/leave_out_rest_posts_request"
 require_relative "peal/posts/types/unpublish_target_posts_request"
 require_relative "peal/posts/types/live_post_edit"
 require_relative "peal/posts/types/unpublish_posts_request"
@@ -589,6 +590,7 @@ module Peal
     autoload :ContentViolationAspectRatioUnsupportedMaximum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_maximum")
     autoload :ContentViolationAspectRatioUnsupportedMinimum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_minimum")
     autoload :ContentViolationAspectRatioUnsupported, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported")
+    autoload :ContentViolationCommentsTurnedOff, ::File.join(__dir__, "peal/types/content_violation_comments_turned_off")
     autoload :ContentViolationEmpty, ::File.join(__dir__, "peal/types/content_violation_empty")
     autoload :ContentViolationForbiddenCharacters, ::File.join(__dir__, "peal/types/content_violation_forbidden_characters")
     autoload :ContentViolationMediaRequired, ::File.join(__dir__, "peal/types/content_violation_media_required")
@@ -607,6 +609,7 @@ module Peal
     autoload :ContentViolationPollChoiceCount, ::File.join(__dir__, "peal/types/content_violation_poll_choice_count")
     autoload :TextUnit, ::File.join(__dir__, "peal/types/text_unit")
     autoload :ContentViolationPollChoiceLength, ::File.join(__dir__, "peal/types/content_violation_poll_choice_length")
+    autoload :ContentViolationPollChoiceRepeated, ::File.join(__dir__, "peal/types/content_violation_poll_choice_repeated")
     autoload :ContentViolationPollDurationOutOfRange, ::File.join(__dir__, "peal/types/content_violation_poll_duration_out_of_range")
     autoload :ContentViolationPollMultipleChoice, ::File.join(__dir__, "peal/types/content_violation_poll_multiple_choice")
     autoload :ContentViolationPollNotSupported, ::File.join(__dir__, "peal/types/content_violation_poll_not_supported")
@@ -668,6 +671,7 @@ module Peal
     autoload :FieldType, ::File.join(__dir__, "peal/types/field_type")
     autoload :LookupName, ::File.join(__dir__, "peal/types/lookup_name")
     autoload :FieldDescription, ::File.join(__dir__, "peal/types/field_description")
+    autoload :FollowUpCapabilitiesCommentNeeds, ::File.join(__dir__, "peal/types/follow_up_capabilities_comment_needs")
     autoload :FollowUpCapabilitiesKind, ::File.join(__dir__, "peal/types/follow_up_capabilities_kind")
     autoload :TextLimit, ::File.join(__dir__, "peal/types/text_limit")
     autoload :FollowUpCapabilities, ::File.join(__dir__, "peal/types/follow_up_capabilities")
@@ -898,6 +902,7 @@ module Peal
     autoload :NoticeEventPostApproved, ::File.join(__dir__, "peal/types/notice_event_post_approved")
     autoload :NoticeEventPostChangesRequested, ::File.join(__dir__, "peal/types/notice_event_post_changes_requested")
     autoload :NoticeEventPostCommented, ::File.join(__dir__, "peal/types/notice_event_post_commented")
+    autoload :PostPartsNotSent, ::File.join(__dir__, "peal/types/post_parts_not_sent")
     autoload :NoticeEventPostFailed, ::File.join(__dir__, "peal/types/notice_event_post_failed")
     autoload :NoticeEventPostPublished, ::File.join(__dir__, "peal/types/notice_event_post_published")
     autoload :NoticeEventPostUnconfirmed, ::File.join(__dir__, "peal/types/notice_event_post_unconfirmed")

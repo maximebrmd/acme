@@ -78,6 +78,10 @@ public final class ContentViolation {
         return new ContentViolation(new PartsNeedReconnectValue(value));
     }
 
+    public static ContentViolation commentsTurnedOff(ContentViolationCommentsTurnedOff value) {
+        return new ContentViolation(new CommentsTurnedOffValue(value));
+    }
+
     public static ContentViolation pollNotSupported(ContentViolationPollNotSupported value) {
         return new ContentViolation(new PollNotSupportedValue(value));
     }
@@ -88,6 +92,10 @@ public final class ContentViolation {
 
     public static ContentViolation pollChoiceLength(ContentViolationPollChoiceLength value) {
         return new ContentViolation(new PollChoiceLengthValue(value));
+    }
+
+    public static ContentViolation pollChoiceRepeated(ContentViolationPollChoiceRepeated value) {
+        return new ContentViolation(new PollChoiceRepeatedValue(value));
     }
 
     public static ContentViolation pollDurationOutOfRange(ContentViolationPollDurationOutOfRange value) {
@@ -214,6 +222,10 @@ public final class ContentViolation {
         return value instanceof PartsNeedReconnectValue;
     }
 
+    public boolean isCommentsTurnedOff() {
+        return value instanceof CommentsTurnedOffValue;
+    }
+
     public boolean isPollNotSupported() {
         return value instanceof PollNotSupportedValue;
     }
@@ -224,6 +236,10 @@ public final class ContentViolation {
 
     public boolean isPollChoiceLength() {
         return value instanceof PollChoiceLengthValue;
+    }
+
+    public boolean isPollChoiceRepeated() {
+        return value instanceof PollChoiceRepeatedValue;
     }
 
     public boolean isPollDurationOutOfRange() {
@@ -393,6 +409,13 @@ public final class ContentViolation {
         return Optional.empty();
     }
 
+    public Optional<ContentViolationCommentsTurnedOff> getCommentsTurnedOff() {
+        if (isCommentsTurnedOff()) {
+            return Optional.of(((CommentsTurnedOffValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<ContentViolationPollNotSupported> getPollNotSupported() {
         if (isPollNotSupported()) {
             return Optional.of(((PollNotSupportedValue) value).value);
@@ -410,6 +433,13 @@ public final class ContentViolation {
     public Optional<ContentViolationPollChoiceLength> getPollChoiceLength() {
         if (isPollChoiceLength()) {
             return Optional.of(((PollChoiceLengthValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationPollChoiceRepeated> getPollChoiceRepeated() {
+        if (isPollChoiceRepeated()) {
+            return Optional.of(((PollChoiceRepeatedValue) value).value);
         }
         return Optional.empty();
     }
@@ -595,11 +625,15 @@ public final class ContentViolation {
 
         T visitPartsNeedReconnect(ContentViolationPartsNeedReconnect partsNeedReconnect);
 
+        T visitCommentsTurnedOff(ContentViolationCommentsTurnedOff commentsTurnedOff);
+
         T visitPollNotSupported(ContentViolationPollNotSupported pollNotSupported);
 
         T visitPollChoiceCount(ContentViolationPollChoiceCount pollChoiceCount);
 
         T visitPollChoiceLength(ContentViolationPollChoiceLength pollChoiceLength);
+
+        T visitPollChoiceRepeated(ContentViolationPollChoiceRepeated pollChoiceRepeated);
 
         T visitPollDurationOutOfRange(ContentViolationPollDurationOutOfRange pollDurationOutOfRange);
 
@@ -655,9 +689,11 @@ public final class ContentViolation {
         @JsonSubTypes.Type(TooManyMediaValue.class),
         @JsonSubTypes.Type(TooManyPartsValue.class),
         @JsonSubTypes.Type(PartsNeedReconnectValue.class),
+        @JsonSubTypes.Type(CommentsTurnedOffValue.class),
         @JsonSubTypes.Type(PollNotSupportedValue.class),
         @JsonSubTypes.Type(PollChoiceCountValue.class),
         @JsonSubTypes.Type(PollChoiceLengthValue.class),
+        @JsonSubTypes.Type(PollChoiceRepeatedValue.class),
         @JsonSubTypes.Type(PollDurationOutOfRangeValue.class),
         @JsonSubTypes.Type(PollMultipleChoiceValue.class),
         @JsonSubTypes.Type(PollWithMediaValue.class),
@@ -1202,6 +1238,46 @@ public final class ContentViolation {
         }
     }
 
+    @JsonTypeName("commentsTurnedOff")
+    @JsonIgnoreProperties("_tag")
+    private static final class CommentsTurnedOffValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationCommentsTurnedOff value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private CommentsTurnedOffValue() {}
+
+        private CommentsTurnedOffValue(ContentViolationCommentsTurnedOff value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitCommentsTurnedOff(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof CommentsTurnedOffValue && equalTo((CommentsTurnedOffValue) other);
+        }
+
+        private boolean equalTo(CommentsTurnedOffValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
     @JsonTypeName("pollNotSupported")
     @JsonIgnoreProperties("_tag")
     private static final class PollNotSupportedValue implements Value {
@@ -1308,6 +1384,46 @@ public final class ContentViolation {
         }
 
         private boolean equalTo(PollChoiceLengthValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pollChoiceRepeated")
+    @JsonIgnoreProperties("_tag")
+    private static final class PollChoiceRepeatedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationPollChoiceRepeated value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PollChoiceRepeatedValue() {}
+
+        private PollChoiceRepeatedValue(ContentViolationPollChoiceRepeated value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPollChoiceRepeated(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PollChoiceRepeatedValue && equalTo((PollChoiceRepeatedValue) other);
+        }
+
+        private boolean equalTo(PollChoiceRepeatedValue other) {
             return value.equals(other.value);
         }
 

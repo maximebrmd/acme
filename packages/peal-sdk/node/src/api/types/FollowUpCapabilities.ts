@@ -3,12 +3,17 @@
 import * as Peal from "../index.js";
 
 export interface FollowUpCapabilities {
+    commentNeeds?: FollowUpCapabilities.CommentNeeds | undefined;
     commentTextLimits?: Peal.TextLimit[] | undefined;
     kind: FollowUpCapabilities.Kind;
     maxCount: number;
 }
 
 export namespace FollowUpCapabilities {
+    export const CommentNeeds = {
+            PageAdministrator: "pageAdministrator"
+        } as const;
+    export type CommentNeeds = typeof CommentNeeds[keyof typeof CommentNeeds];
     export const Kind = {
             Thread: "thread",
             Comment: "comment"

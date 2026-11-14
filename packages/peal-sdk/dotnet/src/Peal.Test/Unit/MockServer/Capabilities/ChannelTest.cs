@@ -30,6 +30,7 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
                   "commentTextLimits": [
                     {
                       "maximum": 1,
@@ -449,6 +450,7 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
                   "commentTextLimits": [
                     {
                       "maximum": 1,

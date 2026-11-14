@@ -6,11 +6,17 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .follow_up_capabilities_comment_needs import FollowUpCapabilitiesCommentNeeds
 from .follow_up_capabilities_kind import FollowUpCapabilitiesKind
 from .text_limit import TextLimit
 
 
 class FollowUpCapabilities(UniversalBaseModel):
+    comment_needs: typing_extensions.Annotated[
+        typing.Optional[FollowUpCapabilitiesCommentNeeds],
+        FieldMetadata(alias="commentNeeds"),
+        pydantic.Field(alias="commentNeeds"),
+    ] = None
     comment_text_limits: typing_extensions.Annotated[
         typing.Optional[typing.List[TextLimit]],
         FieldMetadata(alias="commentTextLimits"),

@@ -1390,21 +1390,30 @@ func (c *ChannelCapabilities) String() string {
 }
 
 var (
-	followUpCapabilitiesFieldCommentTextLimits = big.NewInt(1 << 0)
-	followUpCapabilitiesFieldKind              = big.NewInt(1 << 1)
-	followUpCapabilitiesFieldMaxCount          = big.NewInt(1 << 2)
+	followUpCapabilitiesFieldCommentNeeds      = big.NewInt(1 << 0)
+	followUpCapabilitiesFieldCommentTextLimits = big.NewInt(1 << 1)
+	followUpCapabilitiesFieldKind              = big.NewInt(1 << 2)
+	followUpCapabilitiesFieldMaxCount          = big.NewInt(1 << 3)
 )
 
 type FollowUpCapabilities struct {
-	CommentTextLimits []*TextLimit             `json:"commentTextLimits,omitempty" url:"commentTextLimits,omitempty"`
-	Kind              FollowUpCapabilitiesKind `json:"kind" url:"kind"`
-	MaxCount          int                      `json:"maxCount" url:"maxCount"`
+	CommentNeeds      *FollowUpCapabilitiesCommentNeeds `json:"commentNeeds,omitempty" url:"commentNeeds,omitempty"`
+	CommentTextLimits []*TextLimit                      `json:"commentTextLimits,omitempty" url:"commentTextLimits,omitempty"`
+	Kind              FollowUpCapabilitiesKind          `json:"kind" url:"kind"`
+	MaxCount          int                               `json:"maxCount" url:"maxCount"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpCapabilities) GetCommentNeeds() *FollowUpCapabilitiesCommentNeeds {
+	if f == nil {
+		return nil
+	}
+	return f.CommentNeeds
 }
 
 func (f *FollowUpCapabilities) GetCommentTextLimits() []*TextLimit {
@@ -1442,6 +1451,13 @@ func (f *FollowUpCapabilities) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	f.explicitFields = next
+}
+
+// SetCommentNeeds sets the CommentNeeds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpCapabilities) SetCommentNeeds(commentNeeds *FollowUpCapabilitiesCommentNeeds) {
+	f.CommentNeeds = commentNeeds
+	f.require(followUpCapabilitiesFieldCommentNeeds)
 }
 
 // SetCommentTextLimits sets the CommentTextLimits field and marks it as non-optional;
@@ -1505,6 +1521,25 @@ func (f *FollowUpCapabilities) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
+}
+
+type FollowUpCapabilitiesCommentNeeds string
+
+const (
+	FollowUpCapabilitiesCommentNeedsPageAdministrator FollowUpCapabilitiesCommentNeeds = "pageAdministrator"
+)
+
+func NewFollowUpCapabilitiesCommentNeedsFromString(s string) (FollowUpCapabilitiesCommentNeeds, error) {
+	switch s {
+	case "pageAdministrator":
+		return FollowUpCapabilitiesCommentNeedsPageAdministrator, nil
+	}
+	var t FollowUpCapabilitiesCommentNeeds
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpCapabilitiesCommentNeeds) Ptr() *FollowUpCapabilitiesCommentNeeds {
+	return &f
 }
 
 type FollowUpCapabilitiesKind string
