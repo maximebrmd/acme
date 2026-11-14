@@ -27,6 +27,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventMessagesReceived }, key: "MESSAGES_RECEIVED"
 
+      member -> { Peal::Types::NoticeEventMessagesTurnedOff }, key: "MESSAGES_TURNED_OFF"
+
       member -> { Peal::Types::NoticeEventChannelReconnectRequired }, key: "CHANNEL_RECONNECT_REQUIRED"
 
       member -> { Peal::Types::NoticeEventChannelReconnectSoon }, key: "CHANNEL_RECONNECT_SOON"
