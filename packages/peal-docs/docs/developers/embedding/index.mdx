@@ -45,10 +45,11 @@ A partner account belongs to a workspace of yours, its home workspace: the one y
 Then set it up under **Settings**, then **Partner**, in the web app:
 
 <Steps>
-  <Step title="Name and logo">
+  <Step title="Name, logo and accent colour">
     What your customers read on the hosted pages: a name of 80 characters at
-    most, and the HTTPS address of a logo, which their browser loads from your
-    server.
+    most, the HTTPS address of a logo, which their browser loads from your
+    server, and an accent colour, drawn as a line along the top of the page's
+    card, above your logo.
   </Step>
   <Step title="Return origins">
     The origins a hosted page may send your customers back to, such as
@@ -62,6 +63,10 @@ Then set it up under **Settings**, then **Partner**, in the web app:
     each. The key is shown once: put it in your backend's secrets.
   </Step>
 </Steps>
+
+### Accent colour [#accent]
+
+The accent colour is six hexadecimal digits, such as `#415EEE` (`accentColor` in `PATCH /api/workspaces/{workspaceId}/partner`, `null` to remove it). Peal's pages are light, and the colour is drawn as a line that must be seen, so it needs a contrast of at least 3:1 with white and with the page's background (`#FAFAF9`), the bar WCAG sets for such a line. A lighter colour, or anything else than `#RRGGBB`, answers 422 `PartnerDetailsInvalid` with `field` `accentColor`, and nothing is saved. Buttons and text keep Peal's colours, so they stay readable whatever colour you choose.
 
 ### Partner keys [#keys]
 
@@ -211,7 +216,7 @@ The answer's `url` is shown once: Peal keeps only a digest of the token it holds
 ### What your customer sees [#hosted-page]
 
 <Steps>
-  <Step title="Your name and logo">
+  <Step title="Your name, logo and accent colour">
     With one sentence: you ask to connect their account of that platform, to
     publish there for them. For Mastodon the page asks for their server, for
     Bluesky their handle.

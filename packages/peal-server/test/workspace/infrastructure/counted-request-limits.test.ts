@@ -36,6 +36,7 @@ const Fakes = Layer.mergeAll(
       Effect.succeed(
         Option.some(
           new Partner({
+            accentColor: Option.none(),
             createdAt: DateTime.makeUnsafe(0),
             id: partnerId,
             logoUrl: Option.none(),

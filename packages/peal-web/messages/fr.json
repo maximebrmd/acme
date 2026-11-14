@@ -2588,7 +2588,7 @@
       "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
       "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
       "partnerClosed": "Ce serveur ouvre les comptes partenaires par son équipe : demandez-en un aux personnes qui l’exploitent.",
-      "partnerInvalid": "Une valeur ne peut pas être conservée. Vérifiez le nom, l’adresse du logo (HTTPS) et les origines : chacune comme https://hôte, sans rien après, 20 au plus.",
+      "partnerInvalid": "Une valeur ne peut pas être conservée. Vérifiez le nom, l’adresse du logo (HTTPS), la couleur d’accent (#RRGGBB, assez foncée pour se lire sur du blanc) et les origines : chacune comme https://hôte, sans rien après, 20 au plus.",
       "partnerOwnsWorkspaces": "Le compte partenaire d’un espace de travail que cela supprimerait possède encore des espaces de travail. Supprimez chacun par l’API partenaire d’abord."
     },
     "cancellation": {
@@ -2709,6 +2709,8 @@
       "accountTitle": "Ce que voient vos clients",
       "logo": "Adresse du logo",
       "logoHint": "Une adresse HTTPS, affichée depuis là sur les pages hébergées. Laissez vide pour n’afficher que le nom.",
+      "accent": "Couleur d’accent",
+      "accentHint": "Six chiffres hexadécimaux, comme #415EEE, tracés en une ligne au-dessus de votre logo sur les pages hébergées. Elle doit garder un contraste de 3:1 avec le blanc, pour être vue. Laissez vide pour l’apparence de Peal.",
       "origins": "Origines de retour",
       "originsHint": "Une par ligne, comme https://app.example.com : schéma, hôte et port, sans rien après. Une page hébergée ne renvoie vos clients qu’à une adresse située sur l’une d’elles, exactement.",
       "save": "Enregistrer",

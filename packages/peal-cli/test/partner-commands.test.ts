@@ -178,6 +178,7 @@ describe("peal partner", () => {
 
       assert.include(shown, "Partner account of Studio:");
       assert.match(shown, /Name\s+Studio Suite/u);
+      assert.match(shown, /Accent colour\s+#166534/u);
       assert.match(shown, /Return origins\s+https:\/\/app\.example\.test/u);
       assert.match(shown, /Workspaces\s+2/u);
       assert.match(shown, /Channels\s+5/u);

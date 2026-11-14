@@ -19,6 +19,7 @@ import {
   maxWorkspaceNameLength,
   maxWorkspacePageSize,
   MediaContentTypeSchema,
+  minAccentContrast,
   partnerKeyPermissions,
   PartnerScopeSchema,
   PermissionSchema,
@@ -47,6 +48,7 @@ import {
   defaultWorkspacePageSize as serverDefaultPageSize,
   maxWorkspacePageSize as serverMaxPageSize,
 } from "#workspace/application/partner-workspaces.ts";
+import { minAccentContrast as domainMinAccentContrast } from "#workspace/domain/accent-color.ts";
 import {
   maxExternalIdLength as domainMaxExternalIdLength,
   maxWorkspaceNameLength as domainMaxWorkspaceNameLength,
@@ -92,6 +94,7 @@ describe("the contract", () => {
       maxReturnOrigins,
       maxWorkspaceNameLength,
       maxWorkspacePageSize,
+      minAccentContrast,
     }).toStrictEqual({
       creationKeyLifetimeHours: Duration.toHours(creationKeyLifetime),
       defaultWorkspacePageSize: serverDefaultPageSize,
@@ -103,6 +106,7 @@ describe("the contract", () => {
       maxReturnOrigins: domainMaxReturnOrigins,
       maxWorkspaceNameLength: domainMaxWorkspaceNameLength,
       maxWorkspacePageSize: serverMaxPageSize,
+      minAccentContrast: domainMinAccentContrast,
     });
   });
 

@@ -222,6 +222,7 @@ export const HostedConnectHandlers = HttpApiBuilder.group(
           return {
             expiresAt: hosted.expiresAt,
             host: {
+              accentColor: Option.getOrNull(hosted.host.accentColor),
               logoUrl: Option.getOrNull(hosted.host.logoUrl),
               name: hosted.host.name,
             },

@@ -36,6 +36,7 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
       assert.deepStrictEqual(opened, {
         expiresAt: link.expiresAt,
         host: {
+          accentColor: "#166534",
           logoUrl: "https://cdn.example.test/logo.png",
           name: "Partner Suite",
         },

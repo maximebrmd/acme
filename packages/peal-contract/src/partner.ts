@@ -30,6 +30,13 @@ export const maxPartnerNameLength = 80;
 
 export const maxPartnerLogoUrlLength = 2048;
 
+/**
+ * The least contrast a partner's accent colour keeps with the white card
+ * of a hosted page and the page around it (WCAG 2's 3:1 for a line that
+ * must be seen).
+ */
+export const minAccentContrast = 3;
+
 /** How many return origins a partner registers at most. */
 export const maxReturnOrigins = 20;
 
@@ -49,6 +56,9 @@ export const creationKeyLifetimeHours = 24;
 
 /** A partner account, as its people and its keys read it. */
 export const PartnerSchema = Schema.Struct({
+  // Drawn as a line beside the logo on the hosted pages, as `#RRGGBB`;
+  // null for Peal's own look.
+  accentColor: Schema.NullOr(Schema.String),
   createdAt: Schema.DateTimeUtc,
   id: Schema.String,
   // Shown on the hosted pages, from its own address.

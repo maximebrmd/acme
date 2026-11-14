@@ -81,6 +81,7 @@ const CreatedLinkSchema = Schema.Struct({
 
 const HostedSchema = Schema.Struct({
   host: Schema.Struct({
+    accentColor: Schema.NullOr(Schema.String),
     logoUrl: Schema.NullOr(Schema.String),
     name: Schema.String,
   }),
@@ -320,6 +321,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             `/api/workspaces/${home}/partner`,
             {
               body: {
+                accentColor: "#166534",
                 logoUrl: "https://cdn.example.test/logo.png",
                 returnOrigins: [
                   "https://app.example.test",
@@ -340,6 +342,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             saved.logoUrl,
             "https://cdn.example.test/logo.png"
           );
+          assert.strictEqual(saved.accentColor, "#166534");
           assert.deepStrictEqual(saved.returnOrigins, [
             "https://app.example.test",
             "http://localhost:4000",
@@ -353,6 +356,9 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             { returnOrigins: ["myapp://callback"] },
             { logoUrl: "http://cdn.example.test/logo.png" },
             { name: "  " },
+            // Not `#RRGGBB`, or lost on Peal's light pages.
+            { accentColor: "#fff" },
+            { accentColor: "#FFCA00" },
           ]) {
             const refused = yield* app.request(
               `/api/workspaces/${home}/partner`,
@@ -1229,6 +1235,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           yield* app.request(`/api/workspaces/${home}/partner`, {
             body: {
+              accentColor: "#415eee",
               logoUrl: "https://cdn.example.test/logo.png",
               returnOrigins: ["https://app.example.test"],
             },
@@ -1282,6 +1289,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.strictEqual(opened.status, 200);
           assert.deepStrictEqual(yield* bodyOf(HostedSchema, opened), {
             host: {
+              accentColor: "#415EEE",
               logoUrl: "https://cdn.example.test/logo.png",
               name: "links Suite",
             },
@@ -1437,7 +1445,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           // Under the workspace's own name, and back to nowhere.
           assert.deepStrictEqual(opened, {
-            host: { logoUrl: null, name: "Ordinary links" },
+            host: { accentColor: null, logoUrl: null, name: "Ordinary links" },
             input: "instance",
             platform: "mastodon",
             returnTo: null,

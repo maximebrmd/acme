@@ -2588,7 +2588,7 @@
       "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
       "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes.",
       "partnerClosed": "This server opens partner accounts through its staff: ask the people who run it for one.",
-      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS) and the origins: each as https://host, with nothing after, 20 at most.",
+      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS), the accent colour (#RRGGBB, dark enough to read on white) and the origins: each as https://host, with nothing after, 20 at most.",
       "partnerOwnsWorkspaces": "The partner account of a workspace this would delete still owns workspaces. Delete each through the partner API first."
     },
     "cancellation": {
@@ -2709,6 +2709,8 @@
       "accountTitle": "What your customers see",
       "logo": "Logo address",
       "logoHint": "An HTTPS address, shown from there on the hosted pages. Leave it empty to show the name alone.",
+      "accent": "Accent colour",
+      "accentHint": "Six hexadecimal digits, as #415EEE, drawn as a line above your logo on the hosted pages. It must keep 3:1 contrast with white, so it is seen. Leave it empty for Peal’s own look.",
       "origins": "Return origins",
       "originsHint": "One a line, as https://app.example.com: scheme, host and port, with nothing after. A hosted page sends your customers back only to an address on one of these, exactly.",
       "save": "Save",

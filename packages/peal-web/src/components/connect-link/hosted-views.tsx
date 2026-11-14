@@ -17,7 +17,21 @@ import type { HostedErrorKey } from "#connect-link/hosted-api.ts";
 // name, the logo and the handle the link's host chose, which are shown as
 // text and as an image from its own address, never as markup.
 
-/** The frame of a hosted page: who asks, then what the page says. */
+// The host's accent colour, when it is one the server keeps (`#RRGGBB`,
+// checked against Peal's light surfaces there): anything else draws
+// nothing, so the value never reaches a style as more than a colour.
+const accentOf = (host: HostedLink["host"] | null): string | null =>
+  host?.accentColor !== null &&
+  host?.accentColor !== undefined &&
+  /^#[0-9A-F]{6}$/iu.test(host.accentColor)
+    ? host.accentColor
+    : null;
+
+/**
+ * The frame of a hosted page: who asks, then what the page says. The
+ * host's accent colour is a line along the card's top, above its logo
+ * (DESIGN.md, "Hosted pages"): never text, nor a button.
+ */
 export const HostedCard = ({
   children,
   host,
@@ -26,27 +40,34 @@ export const HostedCard = ({
   readonly children: ReactNode;
   readonly host: HostedLink["host"] | null;
   readonly title: string;
-}) => (
-  <div className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-lg border p-6">
-    {host === null ? null : (
-      <div className="flex items-center gap-3">
-        <Avatar>
-          {host.logoUrl === null ? null : (
-            <AvatarImage
-              src={host.logoUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-          )}
-          <AvatarFallback>{host.name.slice(0, 1)}</AvatarFallback>
-        </Avatar>
-        <span className="font-medium">{host.name}</span>
-      </div>
-    )}
-    <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-    {children}
-  </div>
-);
+}) => {
+  const accent = accentOf(host);
+
+  return (
+    <div
+      className={`mx-auto flex w-full max-w-sm flex-col gap-6 rounded-lg border p-6${accent === null ? "" : " border-t-4 border-t-(--host-accent)"}`}
+      style={accent === null ? undefined : { "--host-accent": accent }}
+    >
+      {host === null ? null : (
+        <div className="flex items-center gap-3">
+          <Avatar>
+            {host.logoUrl === null ? null : (
+              <AvatarImage
+                src={host.logoUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <AvatarFallback>{host.name.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{host.name}</span>
+        </div>
+      )}
+      <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+      {children}
+    </div>
+  );
+};
 
 /** A link to somewhere else than Peal: the address its host registered. */
 export const ReturnLink = ({

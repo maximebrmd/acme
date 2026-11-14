@@ -18,6 +18,7 @@ import { loadMessages } from "#i18n/messages.ts";
 const link: HostedLink = {
   expiresAt: DateTime.makeUnsafe("2026-11-17T09:00:00Z"),
   host: {
+    accentColor: "#166534",
     logoUrl: "https://cdn.example.test/logo.png",
     name: "Partner Suite",
   },
@@ -58,6 +59,25 @@ const welcome = async (locale: "en" | "fr", shown: HostedLink, value = "") => {
 };
 
 describe("a connect link's page", () => {
+  it("draws the host's accent colour as a line above its logo", async () => {
+    const html = await welcome("en", link);
+
+    expect(html).toContain("--host-accent:#166534");
+  });
+
+  it("draws no line without an accent colour, nor for one that is not #RRGGBB", async () => {
+    const pages = await Promise.all(
+      [null, "red;background:url(x)", "#FFF"].map(
+        async (accentColor) =>
+          await welcome("en", { ...link, host: { ...link.host, accentColor } })
+      )
+    );
+
+    expect(
+      pages.filter((html) => html.includes("--host-accent"))
+    ).toStrictEqual([]);
+  });
+
   it("says who asks for which account, and that the password stays theirs", async () => {
     const html = await welcome("en", link);
 
@@ -93,7 +113,11 @@ describe("a connect link's page", () => {
   it("shows a name its host chose as text, never as markup", async () => {
     const html = await welcome("en", {
       ...link,
-      host: { logoUrl: null, name: '<img src=x onerror="alert(1)">' },
+      host: {
+        accentColor: null,
+        logoUrl: null,
+        name: '<img src=x onerror="alert(1)">',
+      },
     });
 
     expect(html).not.toContain("<img src=x");

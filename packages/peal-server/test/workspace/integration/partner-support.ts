@@ -14,6 +14,7 @@ import type { Person } from "./harness.ts";
 // themselves (PEAL_PARTNER_SELF_SERVICE).
 
 export const PartnerSchema = Schema.Struct({
+  accentColor: Schema.NullOr(Schema.String),
   id: Schema.String,
   logoUrl: Schema.NullOr(Schema.String),
   name: Schema.String,

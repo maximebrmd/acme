@@ -126,6 +126,7 @@ const AccountForm = ({
   const update = useAtomSet(updatePartner, { mode: "promiseExit" });
   const [name, setName] = useState(partner.name);
   const [logoUrl, setLogoUrl] = useState(partner.logoUrl ?? "");
+  const [accentColor, setAccentColor] = useState(partner.accentColor ?? "");
   const [origins, setOrigins] = useState(originsText(partner.returnOrigins));
   const [error, setError] = useState<SettingsErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -137,6 +138,7 @@ const AccountForm = ({
       const exit = await update({
         params: { workspaceId },
         payload: {
+          accentColor: accentColor.trim() === "" ? null : accentColor.trim(),
           logoUrl: logoUrl.trim() === "" ? null : logoUrl.trim(),
           name: name.trim(),
           returnOrigins: originsOf(origins),
@@ -172,6 +174,15 @@ const AccountForm = ({
         hint={t("logoHint")}
         value={logoUrl}
         onChange={setLogoUrl}
+      />
+      <FormField
+        id="partner-accent"
+        type="text"
+        autoComplete="off"
+        label={t("accent")}
+        hint={t("accentHint")}
+        value={accentColor}
+        onChange={setAccentColor}
       />
       <div className="flex flex-col gap-2">
         <Label htmlFor={originsId}>{t("origins")}</Label>

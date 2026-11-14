@@ -20,6 +20,7 @@ import type { Partner } from "#workspace/domain/partner.ts";
 // What the API and the MCP tools answer of partner accounts.
 
 export const partnerView = (partner: Partner): PartnerView => ({
+  accentColor: Option.getOrNull(partner.accentColor),
   createdAt: partner.createdAt,
   id: partner.id,
   logoUrl: Option.getOrNull(partner.logoUrl),

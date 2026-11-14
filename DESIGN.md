@@ -163,6 +163,14 @@ their workspaces under it.
   right, in cards grouped under a heading, with what cannot be undone last.
 - **The composer** writes one text with a tab per channel, counts each
   platform's limit, and shows a preview beside it.
+- **Hosted pages** (a connect link's page, which a partner's customers
+  open) are one white card on `background`, headed by who asks: the
+  partner's logo and name. A partner's accent colour is a 4 px line along
+  the card's top, above the logo, and nothing else: never text, an icon,
+  a fill or a button, which keep Peal's colours. The server takes only
+  `#RRGGBB` with at least 3:1 contrast against `card` and `background`
+  (WCAG's bar for a line that must be seen), so lavender- or yellow-like
+  colours are refused.
 
 ## Docs
 

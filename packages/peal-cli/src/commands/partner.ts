@@ -53,6 +53,7 @@ const show = Command.make(
     for (const line of columns([
       ["  Name", partner.name],
       ["  Logo", partner.logoUrl ?? "–"],
+      ["  Accent colour", partner.accentColor ?? "–"],
       [
         "  Return origins",
         partner.returnOrigins.length === 0

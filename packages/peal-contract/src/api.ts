@@ -2123,6 +2123,7 @@ export {
   maxReturnOrigins,
   maxWorkspaceNameLength,
   maxWorkspacePageSize,
+  minAccentContrast,
   NewCustomerWorkspaceSchema,
   PartnerApi,
   PartnerOverviewSchema,

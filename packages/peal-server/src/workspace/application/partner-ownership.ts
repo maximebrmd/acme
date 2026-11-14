@@ -21,6 +21,7 @@ export interface PlanPool {
 
 /** How a workspace's hosted pages name who asks. */
 export interface Presentation {
+  readonly accentColor: Option.Option<string>;
   readonly logoUrl: Option.Option<string>;
   readonly name: string;
 }
@@ -251,13 +252,14 @@ export class PartnerOwnership extends Context.Service<
           const partner = yield* partnerOf(workspaceId);
 
           if (Option.isSome(partner)) {
-            const { logoUrl, name }: Partner = partner.value;
+            const { accentColor, logoUrl, name }: Partner = partner.value;
 
-            return Option.some<Presentation>({ logoUrl, name });
+            return Option.some<Presentation>({ accentColor, logoUrl, name });
           }
 
           return (yield* workspaces.nameOf(workspaceId)).pipe(
             Option.map((name): Presentation => ({
+              accentColor: Option.none(),
               logoUrl: Option.none(),
               name,
             }))

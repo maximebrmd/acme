@@ -1153,6 +1153,7 @@ const usedLink: ConnectLink = {
 
 /** The studio's partner account, and what it owns. */
 export const studioPartner: Partner = {
+  accentColor: "#166534",
   createdAt: at("2026-10-01T09:00:00Z"),
   id: "0190f3a0-0000-7000-8000-00000000e001",
   logoUrl: "https://cdn.example.test/logo.png",

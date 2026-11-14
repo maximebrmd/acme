@@ -28,12 +28,16 @@ export const PartnerNameSchema = Schema.Trim.check(
  * A partner account: a product that embeds Peal, and owns one workspace
  * for each of its own customers. It belongs to its home workspace, whose
  * members manage it and whose plan every workspace it owns shares. Its
- * name and logo are what its customers see on the hosted pages; its return
+ * name, logo and accent colour are what its customers see on the hosted
+ * pages; its return
  * origins are the only places those pages send them back to.
  */
 export class Partner extends Schema.Class<Partner>(
   "peal-server/workspace/domain/Partner"
 )({
+  // A line in this colour beside its logo on the hosted pages, as
+  // `parseAccentColor` keeps it; none for Peal's own look.
+  accentColor: Schema.Option(Schema.NonEmptyString),
   createdAt: Schema.DateTimeUtc,
   id: PartnerIdSchema,
   // Shown from its own address, in the customer's browser: Peal never
@@ -76,6 +80,7 @@ export const openPartner = (
   now: DateTime.Utc
 ): Partner =>
   new Partner({
+    accentColor: Option.none(),
     createdAt: now,
     id,
     logoUrl: Option.none(),
@@ -87,6 +92,8 @@ export const openPartner = (
 
 /** What its people may change of a partner account. */
 export interface PartnerChange {
+  /** None removes the accent colour. */
+  readonly accentColor?: Option.Option<string>;
   /** None removes the logo. */
   readonly logoUrl?: Option.Option<string>;
   readonly name?: string;
@@ -100,6 +107,7 @@ export const changePartner = (
   now: DateTime.Utc
 ): Partner =>
   new Partner({
+    accentColor: change.accentColor ?? partner.accentColor,
     createdAt: partner.createdAt,
     id: partner.id,
     logoUrl: change.logoUrl ?? partner.logoUrl,

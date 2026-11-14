@@ -31,6 +31,7 @@ const freshPartner = Effect.gen(function* freshPartner() {
   yield* sql`INSERT INTO workspace.partners (id, workspace_id, name, return_origins, created_at, updated_at) VALUES (${id}, ${workspaceId}, ${"Synthetic Suite"}, ${"{}"}, ${now}, ${now})`;
 
   return new Partner({
+    accentColor: Option.none(),
     createdAt: day("2026-11-01"),
     id,
     logoUrl: Option.none(),

@@ -45,10 +45,11 @@ Un compte partenaire appartient à l’un de vos espaces de travail, son espace 
 Réglez-le ensuite sous **Paramètres**, puis **Partenaire**, dans l’application web :
 
 <Steps>
-  <Step title="Nom et logo">
+  <Step title="Nom, logo et couleur d’accent">
     Ce que vos clients lisent sur les pages hébergées : un nom de 80 caractères
-    au plus, et l’adresse HTTPS d’un logo, que leur navigateur charge depuis
-    votre serveur.
+    au plus, l’adresse HTTPS d’un logo, que leur navigateur charge depuis votre
+    serveur, et une couleur d’accent, tracée en une ligne en haut de la carte de
+    la page, au-dessus de votre logo.
   </Step>
   <Step title="Origines de retour">
     Les origines vers lesquelles une page hébergée peut renvoyer vos clients,
@@ -64,6 +65,10 @@ Réglez-le ensuite sous **Paramètres**, puis **Partenaire**, dans l’applicati
     secrets de votre serveur.
   </Step>
 </Steps>
+
+### Couleur d’accent [#accent]
+
+La couleur d’accent tient en six chiffres hexadécimaux, comme `#415EEE` (`accentColor` dans `PATCH /api/workspaces/{workspaceId}/partner`, `null` pour la retirer). Les pages de Peal sont claires et la couleur est tracée en une ligne qui doit se voir : elle demande un contraste d’au moins 3:1 avec le blanc et avec le fond de la page (`#FAFAF9`), le seuil que fixent les WCAG pour une telle ligne. Une couleur plus claire, ou autre chose que `#RRGGBB`, reçoit 422 `PartnerDetailsInvalid` avec `field` `accentColor`, et rien n’est enregistré. Les boutons et le texte gardent les couleurs de Peal, et restent lisibles quelle que soit la couleur choisie.
 
 ### Clés partenaires [#keys]
 
@@ -213,7 +218,7 @@ L’`url` de la réponse est affichée une seule fois : Peal ne garde qu’une e
 ### Ce que voit votre client [#hosted-page]
 
 <Steps>
-  <Step title="Votre nom et votre logo">
+  <Step title="Votre nom, votre logo et votre couleur d’accent">
     Avec une phrase : vous demandez à connecter son compte de cette plateforme,
     pour y publier pour lui. Pour Mastodon la page demande son serveur, pour
     Bluesky son identifiant.

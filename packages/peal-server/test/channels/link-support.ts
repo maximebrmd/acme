@@ -83,6 +83,7 @@ export const LinksTest = ConnectLinks.layer.pipe(
       ),
       LinkHosts.layerTest(
         {
+          accentColor: Option.some("#166534"),
           logoUrl: Option.some("https://cdn.example.test/logo.png"),
           name: "Partner Suite",
         },

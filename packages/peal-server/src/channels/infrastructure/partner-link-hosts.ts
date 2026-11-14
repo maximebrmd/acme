@@ -19,13 +19,15 @@ export const PartnerLinkHosts = Layer.effect(
       allowsReturnTo: (workspaceId, returnUrl) =>
         ownership.allowsReturnTo(workspaceId, returnUrl),
       of: (workspaceId) =>
-        ownership
-          .presentedAs(workspaceId)
-          .pipe(
-            Effect.map(
-              Option.map(({ logoUrl, name }): LinkHost => ({ logoUrl, name }))
-            )
-          ),
+        ownership.presentedAs(workspaceId).pipe(
+          Effect.map(
+            Option.map(({ accentColor, logoUrl, name }): LinkHost => ({
+              accentColor,
+              logoUrl,
+              name,
+            }))
+          )
+        ),
     });
   })
 );

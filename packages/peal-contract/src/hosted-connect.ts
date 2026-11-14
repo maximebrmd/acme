@@ -31,8 +31,10 @@ export const HostedLinkInputSchema = Schema.Literals([
 export const HostedLinkSchema = Schema.Struct({
   expiresAt: Schema.DateTimeUtc,
   // Who asks: the workspace's partner, as its customers know it, or the
-  // workspace itself. The logo is shown from its own address.
+  // workspace itself. The logo is shown from its own address, the accent
+  // colour (`#RRGGBB`, or null) as a line beside it.
   host: Schema.Struct({
+    accentColor: Schema.NullOr(Schema.String),
     logoUrl: Schema.NullOr(Schema.String),
     name: Schema.String,
   }),

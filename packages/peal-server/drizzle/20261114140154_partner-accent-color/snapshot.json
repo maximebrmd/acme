@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "643ae43b-79e6-41e2-8c7a-92a7b1b4e467",
+  "prevIds": [
+    "0f406c84-447d-45d0-ac3f-0a9933564aba"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "workspace",
+        "partners",
+        "accent_color"
+      ],
+      "writes": [
+        "s|col|workspace.partners.accent_color",
+        "n|col|workspace.partners.accent_color",
+        "e|col|workspace.partners.accent_color"
+      ],
+      "reads": [
+        "n|tbl|workspace.partners",
+        "n|sch|workspace"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "workspace",
+        "table": "partners",
+        "name": "accent_color",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

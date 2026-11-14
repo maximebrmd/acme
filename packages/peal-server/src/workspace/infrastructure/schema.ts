@@ -37,13 +37,15 @@ export const securityPolicies = workspaceSchema.table("security_policies", {
 /**
  * One row per partner account, which belongs to its home workspace.
  *
- * - `name` and `logo_url` are what its customers see on the hosted pages.
+ * - `name`, `logo_url` and `accent_color` (`#RRGGBB`) are what its
+ *   customers see on the hosted pages.
  * - `return_origins` are the origins those pages may send a customer back
  *   to, as browsers write them (`https://app.example.com`).
  */
 export const partners = workspaceSchema.table(
   "partners",
   {
+    accentColor: text("accent_color"),
     createdAt: instant("created_at").notNull(),
     id: uuid("id").primaryKey(),
     logoUrl: text("logo_url"),
