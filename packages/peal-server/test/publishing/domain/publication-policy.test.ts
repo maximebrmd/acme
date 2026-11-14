@@ -228,6 +228,25 @@ describe(decide, () => {
     );
   });
 
+  it("fails X's parts the billing account's meter refused, at once, in words of their own", () => {
+    expect(
+      decide(new BadRequest({ code: "paymentMethodRequired" }), after())
+    ).toStrictEqual(giveUp("paymentMethodRequired", "paymentMethodRequired"));
+    expect(
+      decide(new BadRequest({ code: "xCeilingReached" }), after())
+    ).toStrictEqual(giveUp("xCeilingReached", "xCeilingReached"));
+
+    for (const code of [
+      "paymentFailed",
+      "perAccountPricingRequired",
+      "xThreadCut",
+    ] as const) {
+      expect(decide(new BadRequest({ code }), after())).toStrictEqual(
+        giveUp(code, code)
+      );
+    }
+  });
+
   describe.each(Object.values(operatorRefusalCodes))(
     "a platform that refuses the server's app until it is paid for (%s)",
     (code) => {

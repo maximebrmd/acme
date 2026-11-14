@@ -113,6 +113,27 @@ const page = pricingPage(locale, t);
         ))
       }
     </ul>
+    <div class="mt-6 max-w-3xl rounded-2xl border border-neutral-200 p-5">
+      <h3 class="font-semibold">{t.meters.x.title}</h3>
+      <p class="mt-2 text-sm text-neutral-600">{t.meters.x.lead}</p>
+      <table class="mt-4 w-full text-sm">
+        <caption class="sr-only">{t.meters.x.title}</caption>
+        <tbody>
+          {
+            page.x.rates.map((rate) => (
+              <tr class="border-t border-neutral-200">
+                <th class="py-2 pr-4 text-left font-medium" scope="row">
+                  {rate.name}
+                </th>
+                <td class="py-2 text-right tabular-nums">{rate.price.text}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+      <p class="mt-4 text-sm text-neutral-600">{page.x.ceiling}</p>
+      <p class="mt-2 text-sm text-neutral-600">{page.x.readOn}</p>
+    </div>
   </section>
 
   <section class="mx-auto grid max-w-6xl gap-8 px-6 py-8 lg:grid-cols-2">

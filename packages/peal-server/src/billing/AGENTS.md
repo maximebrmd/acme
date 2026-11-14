@@ -15,7 +15,13 @@
   default ceiling (per billing account, across the workspaces it pays
   for), the assistant's margin, storage, the API's rate limits and X's
   rates. What is not decided yet (the assistant's figures are
-  placeholders) sits together in `awaitingDecision`. Prices are
+  placeholders) sits together in `awaitingDecision`. X's rates are
+  X's published pay-per-use prices, passed through with nothing added
+  (no margin field), with the UTC day they were read (`ratesReadOn`):
+  read docs.x.com/x-api/getting-started/pricing again before each
+  release that touches them, never write one from memory. A group's
+  meters are confirmed together (`unconfirmedMeters`: both of the
+  assistant's or neither), as one ceiling bounds them. Prices are
   computed by its pure functions (`accountsCharge`, `meterCharge`,
   `stripeTiersOf`…), never written by hand. The contract copies it
   (`peal-contract/rate-card`), kept equal by
@@ -170,8 +176,9 @@
   to the catalogue (`ensureItems`: adds a missing line, moves an item
   whose price lost its lookup key, without proration), sets its threshold
   again while no invoice is paid, and records the first paid invoice
-  (`paidInvoices`, `subscriptions.paid_invoice_at`), removing the
-  threshold first. Account-days and reports are purged 400 days on (the
+  (`paidInvoices` with `settledByCredit`: one settled from the customer's
+  credit balance counts, one of nothing does not;
+  `subscriptions.paid_invoice_at`), removing the threshold first. Account-days and reports are purged 400 days on (the
   snapshot), go with the workspace's export (`accountDays`,
   `usageReports`) and erasure, which deletes unsent reports too (a rise in
   the minutes before a billing workspace is erased is not on its final
@@ -203,12 +210,21 @@
   while it bills nothing. A release before T7 does not decode the new
   ledger counters or the negative report values: do not roll back past it
   once a server that bills has written them.
-- What bounds a meter past its allowance (`mostUnits`), for `payAsYouGo`
-  only: the group's ceiling, its own group's meters counted; until a
-  first invoice is paid, `spendCapOf` (`unverifiedThreshold`, $100) across
-  every meter, whatever the ceilings (the claim then holds every meter's
-  rows); and a meter in `unconfirmedMeters` bills nothing past its
-  allowance at all. A past due subscription (`pastDue`) gets the
+- What bounds a meter past its allowance (`meterBound`, `mostUnits`),
+  for `payAsYouGo` only: the group's ceiling, its own group's meters
+  counted; until a first invoice is paid, `spendCapOf`
+  (`unverifiedThreshold`, $100) on what is billed and unpaid, whatever
+  the ceilings: every meter this month (the claim then holds every
+  meter's rows) and what the months before billed since the
+  subscription began (`unpaidBefore`, `MeterUsageStore.between` from
+  `unpaidSinceOf`, read without a hold: those months are closed), so a
+  late start does not get the cap twice; and a meter in
+  `unconfirmedMeters` bills nothing past its allowance at all. The cap's
+  refusal is `spendCapReached`, never `ceilingReached`
+  (`refusalOf`), messages and ads included. `GET …/billing` tells a
+  meter's `most` past its allowance only to the billing workspace: any
+  other reads the allowance at most (`meterView`), as the rest is what
+  the ceiling pays for. A past due subscription (`pastDue`) gets the
   allowances and nothing past them (`paymentFailed`); a legacy plan the
   same (`planAllowance`), and keeps its plan's daily assistant
   (`AssistantAllowance.metered`). `pausedOf` refuses what spends a meter
@@ -232,16 +248,41 @@
 - `SpendCeilings.set` (`PUT …/billing/ceilings/:group`, in
   `billingActions`): billing:manage in person, on the billing workspace
   (`BilledElsewhere`), never on a server that does not bill; it may
-  always be lowered, below what the month spent too; a group whose meters
-  are all unconfirmed takes none (`CeilingNotOffered`, answered
-  `SpendCeilingNotOffered` 409). The row names
+  always be lowered, below what the month spent too; a group with a
+  meter unconfirmed takes none (`CeilingNotOffered`, answered
+  `SpendCeilingNotOffered` 409), as the billing page shows its form
+  only once all are. The row names
   nobody; the activity log keeps who. `GET …/billing` answers `meters`
-  (`meterMonthsOf`, `shownMeters`: X joins with its pass-through), their
+  (`meterMonthsOf`, `shownMeters`, X's last), their
   money (`estimate`, in the total `estimate` too) to the billing
   workspace's members only, `priceConfirmed` false for
   `unconfirmedMeters` (the rate card's `awaitingDecision`), which every
   surface shows as coming. Meters and ceilings go with the export
   (`meterMonths`, `spendCeilings`) and the erasure.
+- X is passed through at X's rates (README D4, D6), on a server that
+  bills only: `xApi` has no allowance, a payment method is needed, and
+  the billing account's `x` ceiling ($25 by default) bounds it. Its
+  reads are a switch per workspace (`XPassThrough`, `billing.x_usage_settings`:
+  reads, set_at, no row is off; the activity log keeps who), set by
+  billing:manage in person (`PUT …/billing/x`, in `billingActions`) on any
+  workspace of the account, answered as `x` on `GET …/billing`, kept in
+  the export (`xReads`) and erased with the workspace. A server that does
+  not bill answers `BillingNotEnabled` and reads none of it. A claim
+  whose X spend reaches 80% or 100% of the `x` ceiling
+  (`ceilingSharesReached`) tells the billing managers (`XSpendCeiling`,
+  keyed `x-ceiling:<holder>:<YYYY-MM>:<ceiling>:<percent>`, so a raised
+  ceiling is announced again, always emailed); a claim refused at the
+  ceiling tells the 100% one after its transaction rolled back, so a
+  ceiling never quite reached is told too, never for a ceiling of
+  nothing. Reads that do not fit claim the whole first for that refusal.
+- What X bills that is not passed through, Peal's own cost, unmetered:
+  the post lookups that confirm an unanswered post on resume (up to 20
+  posts, `postRead` each), alt text (`POST /2/media/metadata`), deleting
+  a live post, and the account read when X is connected
+  (`GET /2/users/me`, before the second `paidFor`). Reads are
+  deduplicated per workspace, X's per app: one X account in two
+  workspaces of an account is claimed twice a day, X bills it once;
+  accepted.
 - Sandbox runbook for the meters (the owner, test mode, never in tests):
   on a `payAsYouGo` subscription with a test clock, send 10,001 replies'
   worth (seed `meter_usage` at 10,000, then reply once) and read the

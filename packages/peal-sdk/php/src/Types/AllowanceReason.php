@@ -9,4 +9,5 @@ enum AllowanceReason: string
     case NotEnabled = "notEnabled";
     case PlanAllowance = "planAllowance";
     case PaymentFailed = "paymentFailed";
+    case SpendCapReached = "spendCapReached";
 }

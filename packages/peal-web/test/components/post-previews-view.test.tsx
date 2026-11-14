@@ -72,6 +72,18 @@ const shown = (
   status,
 });
 
+// The previews of a post X's meter would refuse, for `reason`.
+const warned = async (reason: "ceilingReached" | "paymentFailed") =>
+  await render("en", {
+    asked: "one",
+    latest: 1,
+    shown: {
+      channels: [],
+      warnings: [{ _tag: "xNotBilled", channelIds: ["x-1"], reason }],
+    },
+    status: "shown",
+  });
+
 describe(PostPreviewsView, () => {
   it("asks for a channel while none is chosen", async () => {
     await expect(
@@ -171,5 +183,14 @@ describe(PostPreviewsView, () => {
     await expect(
       render("en", shown([preview({})]), { shortenLinks: true })
     ).resolves.toContain("they are shortened when the post goes out");
+  });
+
+  it("warns of X's posts the billing account cannot pay for, in their reason's words", async () => {
+    await expect(warned("ceilingReached")).resolves.toContain(
+      "monthly ceiling for X"
+    );
+    await expect(warned("paymentFailed")).resolves.toContain(
+      "last payment failed"
+    );
   });
 });

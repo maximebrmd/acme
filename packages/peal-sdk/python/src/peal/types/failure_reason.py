@@ -20,6 +20,11 @@ FailureReason = typing.Union[
         "planLimit",
         "partsNotSent",
         "repliesNotAllowed",
+        "paymentMethodRequired",
+        "xCeilingReached",
+        "paymentFailed",
+        "perAccountPricingRequired",
+        "xThreadCut",
     ],
     typing.Any,
 ]

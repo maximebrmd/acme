@@ -21,4 +21,5 @@ export interface Billing {
     usage: Peal.Usage;
     vatRate: number;
     withdrawableUntil: string | null;
+    x?: (Peal.XUsage | null) | undefined;
 }

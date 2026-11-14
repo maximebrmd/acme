@@ -51,6 +51,7 @@ import type { ReactElement } from "react";
 import { ladderOf, nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
 import { MeterTable } from "#components/billing/meter-table.tsx";
+import type { XReadsControl } from "#components/billing/meter-table.tsx";
 
 /** What the person asked for, while it is under way. */
 export type BillingAction =
@@ -116,6 +117,8 @@ export interface BillingViewProps {
   readonly step: BillingStep;
   /** The terms of service, where the operator publishes them. */
   readonly termsUrl: string | null;
+  /** Who may turn this workspace's X reads on or off. */
+  readonly xReads?: XReadsControl;
 }
 
 // The limits the usage card lists once billing is on: the accounts have a
@@ -1200,7 +1203,11 @@ export const BillingView = (props: BillingViewProps) => {
         <AddPaymentMethod {...props} refusal={refusal} />
       ) : null}
       <Ladder billing={billing} />
-      <MeterTable billing={billing} canManage={canManage} />
+      <MeterTable
+        billing={billing}
+        canManage={canManage}
+        {...(props.xReads === undefined ? {} : { xReads: props.xReads })}
+      />
       <Usage billing={billing} limits={usageLimits} />
     </div>
   );

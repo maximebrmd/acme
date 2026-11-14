@@ -12,6 +12,7 @@ import { optionsOn } from "#publishing/domain/channel-options.ts";
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { channelOf, previewOn } from "#publishing/domain/channel-preview.ts";
 import type { ChannelPreview } from "#publishing/domain/channel-preview.ts";
+import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import {
   contentOn,
@@ -19,6 +20,7 @@ import {
 } from "#publishing/domain/duplicate-window.ts";
 import type { Duplicate } from "#publishing/domain/duplicate-window.ts";
 import { referencedMedia } from "#publishing/domain/named-media.ts";
+import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { scheduleGrace } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
@@ -26,6 +28,7 @@ import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { Queue, QueueNoRoom } from "#publishing/domain/queue.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type {
@@ -44,6 +47,7 @@ import { ContentFingerprints } from "./content-fingerprints.ts";
 import { freeSlotOf, queueNamed } from "./placement.ts";
 import type { Placement } from "./placement.ts";
 import { PostAllowance } from "./post-allowance.ts";
+import { PostMeter } from "./post-meter.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
 import type { DroppedChannels, PresetAsk } from "./post-presets.ts";
 import { PostRepository } from "./post-repository.ts";
@@ -114,6 +118,12 @@ export interface PostCheck {
   };
   /** The limit of the plan it would pass, when it has a time. */
   readonly planLimit: Option.Option<PlanLimitReached>;
+  /**
+   * Its channels on a platform that bills each post (X) the billing
+   * account cannot pay for now, and why, when it has a time: it is still
+   * made, and they fail when due unless that changes (a warning).
+   */
+  readonly unbilled: Option.Option<UnbilledChannels>;
   /** The slot it would take, when it is added to a queue. */
   readonly queueSlot: Option.Option<QueueSlotCheck>;
   /** Whether its time can be kept, when it has one. */
@@ -123,6 +133,50 @@ export interface PostCheck {
   /** What is wrong with it whatever the channel. */
   readonly violations: readonly ContentViolation[];
 }
+
+/** Channels on X its billing account cannot pay for, and why. */
+export interface UnbilledChannels {
+  readonly channelIds: readonly ChannelId[];
+  readonly reason: AllowanceReason;
+}
+
+/**
+ * The post's channels on X whose parts the billing account's meter has no
+ * room for now, all its X parts counted together (`PostMeter.fits`); none
+ * when it has room, has no X channel, or the server does not bill.
+ */
+export const unbilledOn = Effect.fn("PostChecks.unbilledOn")(
+  function* unbilledOn(
+    workspaceId: WorkspaceId,
+    channels: readonly ChannelOnPlatform[],
+    content: PostContent
+  ) {
+    const onX = channels.filter(({ platform }) => platform === "x");
+
+    if (onX.length === 0) {
+      return Option.none<UnbilledChannels>();
+    }
+
+    const meter = yield* PostMeter;
+
+    const refused = yield* meter.fits(
+      onX.flatMap(({ channelId }) =>
+        partsOn(content, channelId).map(({ text }) => ({
+          platform: "x" as const,
+          text,
+          workspaceId,
+        }))
+      )
+    );
+
+    return refused.pipe(
+      Option.map(({ reason }): UnbilledChannels => ({
+        channelIds: onX.map(({ channelId }) => channelId),
+        reason,
+      }))
+    );
+  }
+);
 
 /** Whether nothing the check found would refuse the post. */
 export const isSendable = (check: PostCheck): boolean =>
@@ -180,6 +234,7 @@ export class PostChecks extends Context.Service<
       const attachable = yield* AttachableMedia;
       const fingerprints = yield* ContentFingerprints;
       const gate = yield* ApprovalGate;
+      const meter = yield* PostMeter;
       const ports = yield* Effect.context<Ports>();
 
       // The first limit of the plan a post at `at` would pass, as
@@ -413,6 +468,14 @@ export class PostChecks extends Context.Service<
           onSome: (instant) => planLimitAt(actor.workspaceId, instant),
         });
 
+        // As the plan's room, how things stand now: a warning, never a
+        // refusal, as a ceiling may be raised before the post is due.
+        const unbilled = Option.isSome(at)
+          ? yield* unbilledOn(actor.workspaceId, channels, content).pipe(
+              Effect.provideService(PostMeter, meter)
+            )
+          : Option.none<UnbilledChannels>();
+
         // Read without a transaction, so nothing is held: as the plan's
         // room, it says how things stand now.
         const duplicates = yield* Option.match(at, {
@@ -464,6 +527,7 @@ export class PostChecks extends Context.Service<
             }))
           ),
           schedule,
+          unbilled,
           unknownChannels,
           unknownMedia,
           violations: general,

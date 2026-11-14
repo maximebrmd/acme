@@ -49,7 +49,26 @@
   publishing's capabilities read too), and claim each read first from
   `PaidReads` (`analytics.paid_reads`: one row a workspace, platform, day
   and resource, under an advisory lock; `X_ANALYTICS_DAILY_READS` a
-  workspace and day). What the allowance does not cover is answered `unpaid`, post by post, and waits for its next turn: a spent allowance never halts a channel, whose posts already paid for that day are read on. A new
+  workspace and day). What the allowance does not cover is answered `unpaid`, post by post, and waits for its next turn: a spent allowance never halts a channel, whose posts already paid for that day are read on. On a
+  server that bills, `PaidReads` is `billedPaidReads` instead (chosen
+  once by `BillingMode`): a workspace that did not turn its X reads on
+  (billing's `XReads`) is skipped as `paused` before anything is claimed
+  (`PaidReads.reads`, asked by both X readers), and each resource new that
+  day claims X's rate on the `xApi` meter (`userRead` for `user:<id>`,
+  `postRead` for a post) in the locked transaction, the claim's room read
+  first; where not all fit, the whole is claimed first, so its refusal
+  tells the billing managers the ceiling is reached, then what fits. What
+  the meter has no room for (no payment method, the ceiling) is `unpaid`
+  as above. X bills only what it returns: what a claim counted fresh
+  (`PaidReadsCovered.fresh`) and X did not return (a refusal, a failed
+  call, a token refused, a post gone) goes back through `PaidReads.release`
+  (the rows of the claim's day deleted, under the lock claims take, its
+  units given back in the claim's month, in one transaction; what X
+  returned before a call failed or a token was refused stays billed);
+  where the server does not bill, release does nothing, as the operator's
+  allowance always counted it. `X_ANALYTICS` stays the operator's switch
+  on both, and `X_ANALYTICS_DAILY_READS` applies only where the
+  server does not bill. A new
   platform that bills reads goes through `PaidReads` and `BilledReads`.
 - Platforms without a reader (Google Business Profile, and LinkedIn
   profiles) answer

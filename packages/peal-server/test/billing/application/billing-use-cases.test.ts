@@ -575,6 +575,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
           meteredPosts: [],
           plan: "business",
           spendCeilings: [],
+          xReads: null,
           subscriptions: [
             {
               cancelAtPeriodEnd: false,
@@ -635,6 +636,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
           meteredPosts: [],
           plan: "free",
           spendCeilings: [],
+          xReads: null,
           subscriptions: [],
           usage: [],
           usageReports: [],
@@ -798,6 +800,7 @@ layer(recordsWith(true))(
           meteredPosts: [],
           plan: "free",
           spendCeilings: [],
+          xReads: null,
           subscriptions: [],
           usage: [],
           usageReports: [],

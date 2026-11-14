@@ -11,6 +11,7 @@ import {
 } from "peal-contract";
 import type {
   PlanLimitReached,
+  UsageAllowanceReached,
   ConnectCallback,
   ConnectFailureReason,
   ConnectOutcome as ConnectOutcomeView,
@@ -31,6 +32,8 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { allowanceRefusal } from "#shared/api/allowance-reached.ts";
+import type { AllowanceRefusal } from "#shared/api/allowance-reached.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
@@ -53,7 +56,7 @@ const callbackOf = (payload: ConnectCallback): AuthorizationCallback => ({
 // How starting fails, whether to connect an account or to reconnect one.
 type BeginRefusal = Exclude<
   StartFailure,
-  { readonly _tag: "PlanLimitReached" }
+  { readonly _tag: "AllowanceReached" | "PlanLimitReached" }
 >;
 
 // Every way starting a connection can fail but the plan, as the contract
@@ -82,19 +85,29 @@ const beginFailure = (failure: BeginRefusal) =>
     PlatformUnavailable: () => Effect.fail(new PlatformUnreachable()),
   });
 
-// Connecting a new account also needs room in the plan.
+// Connecting a new account also needs room in the plan, and, for a
+// platform passed through at its rates (X), per-account pricing.
 const startFailureWith =
-  (limitReached: LimitRefusal) =>
+  (limitReached: LimitRefusal, allowanceReached: AllowanceRefusal) =>
   (
     failure: StartFailure
   ): Effect.Effect<
     never,
-    ConnectFailed | Forbidden | PlanLimitReached | PlatformUnreachable,
+    | ConnectFailed
+    | Forbidden
+    | PlanLimitReached
+    | PlatformUnreachable
+    | UsageAllowanceReached,
     CurrentMember
-  > =>
-    failure._tag === "PlanLimitReached"
-      ? limitReached(failure)
+  > => {
+    if (failure._tag === "PlanLimitReached") {
+      return limitReached(failure);
+    }
+
+    return failure._tag === "AllowanceReached"
+      ? allowanceReached(failure)
       : beginFailure(failure);
+  };
 
 // Reconnecting adds no channel, so the plan never refuses it.
 const reconnectFailure = (
@@ -113,7 +126,8 @@ type Refusal = Effect.Effect<
   | ConnectFailed
   | Forbidden
   | PlanLimitReached
-  | PlatformUnreachable,
+  | PlatformUnreachable
+  | UsageAllowanceReached,
   CurrentMember
 >;
 
@@ -122,6 +136,7 @@ const completeFailureWith =
   (startFailure: ReturnType<typeof startFailureWith>) =>
   (failure: CompleteConnectFailure): Refusal =>
     Match.valueTags(failure, {
+      AllowanceReached: startFailure,
       AuthorizationDenied: () => refused("denied"),
       AuthorizationFailed: startFailure,
       ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
@@ -143,6 +158,7 @@ const chooseFailureWith =
   (startFailure: ReturnType<typeof startFailureWith>) =>
   (failure: ChooseFailure): Refusal =>
     Match.valueTags(failure, {
+      AllowanceReached: startFailure,
       AuthorizationFailed: startFailure,
       ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
       DatabaseError: startFailure,
@@ -187,7 +203,12 @@ export const ChannelsHandlers = HttpApiBuilder.group(
     const disconnectChannel = yield* DisconnectChannel;
     const settings = yield* ChannelSettings;
     const connectChannel = yield* ConnectChannel;
-    const startFailure = startFailureWith(yield* limitRefusal);
+
+    const startFailure = startFailureWith(
+      yield* limitRefusal,
+      yield* allowanceRefusal
+    );
+
     const completeFailure = completeFailureWith(startFailure);
     const chooseFailure = chooseFailureWith(startFailure);
 

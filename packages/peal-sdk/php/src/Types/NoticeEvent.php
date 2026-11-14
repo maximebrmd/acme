@@ -23,6 +23,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'TrialEnding'
      *   |'PaymentMethodNeeded'
      *   |'AllowanceReached'
+     *   |'XSpendCeiling'
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
@@ -53,6 +54,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventTrialEnding
      *   |NoticeEventPaymentMethodNeeded
      *   |NoticeEventAllowanceReached
+     *   |NoticeEventXSpendCeiling
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
@@ -84,6 +86,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'TrialEnding'
      *   |'PaymentMethodNeeded'
      *   |'AllowanceReached'
+     *   |'XSpendCeiling'
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
@@ -110,6 +113,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventTrialEnding
      *   |NoticeEventPaymentMethodNeeded
      *   |NoticeEventAllowanceReached
+     *   |NoticeEventXSpendCeiling
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
@@ -295,6 +299,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'AllowanceReached',
             'value' => $allowanceReached,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventXSpendCeiling $xSpendCeiling
+     * @return NoticeEvent
+     */
+    public static function xSpendCeiling(NoticeEventXSpendCeiling $xSpendCeiling): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'XSpendCeiling',
+            'value' => $xSpendCeiling,
         ]);
     }
 
@@ -717,6 +733,28 @@ class NoticeEvent extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isXSpendCeiling(): bool
+    {
+        return $this->value instanceof NoticeEventXSpendCeiling && $this->type === 'XSpendCeiling';
+    }
+
+    /**
+     * @return NoticeEventXSpendCeiling
+     */
+    public function asXSpendCeiling(): NoticeEventXSpendCeiling
+    {
+        if (!($this->value instanceof NoticeEventXSpendCeiling && $this->type === 'XSpendCeiling')) {
+            throw new Exception(
+                "Expected XSpendCeiling; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isSubscriptionRenewing(): bool
     {
         return $this->value instanceof NoticeEventSubscriptionRenewing && $this->type === 'SubscriptionRenewing';
@@ -988,6 +1026,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asAllowanceReached()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'XSpendCeiling':
+                $value = $this->asXSpendCeiling()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'SubscriptionRenewing':
                 $value = $this->asSubscriptionRenewing()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -1101,6 +1143,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'AllowanceReached':
                 $args['value'] = NoticeEventAllowanceReached::jsonDeserialize($data);
+                break;
+            case 'XSpendCeiling':
+                $args['value'] = NoticeEventXSpendCeiling::jsonDeserialize($data);
                 break;
             case 'SubscriptionRenewing':
                 $args['value'] = NoticeEventSubscriptionRenewing::jsonDeserialize($data);

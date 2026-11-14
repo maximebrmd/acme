@@ -160,6 +160,12 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       meter,
       resetsAt,
     }),
+    XSpendCeiling: ({ ceiling, percent, resetsAt }): NoticeEventRecord => ({
+      _tag: "XSpendCeiling",
+      ceiling,
+      percent,
+      resetsAt,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
       endsAt,

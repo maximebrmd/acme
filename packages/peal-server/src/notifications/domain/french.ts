@@ -177,6 +177,8 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    paymentMethodRequired:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et le compte de facturation de l’espace de travail n’a pas de moyen de paiement. Rien n’a été envoyé. Ajoutez-en un sur la page de facturation, puis publiez-la à nouveau.",
     partsNotSent:
       "ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. La renvoyer depuis Peal n’est pas possible : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     planLimit:
@@ -190,6 +192,14 @@ export const french: EmailCatalog = {
     tokenExpired:
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",
+    xCeilingReached:
+      "elle aurait dépassé le plafond mensuel du compte de facturation pour X, ou ce qui peut lui être facturé avant le paiement de sa première facture. Rien n’a été envoyé. Relevez le plafond sur la page de facturation, ou publiez-la à nouveau le mois prochain.",
+    paymentFailed:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et le dernier paiement du compte de facturation a échoué : rien ne part au-delà de l’inclus tant qu’il n’est pas réglé. Rien n’a été envoyé. Mettez à jour le moyen de paiement depuis la page de facturation, puis publiez-la à nouveau.",
+    perAccountPricingRequired:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et l’abonnement de l’espace de travail est antérieur au tarif par compte, qui seul facture l’usage de X. Rien n’a été envoyé. Passez au tarif par compte sur la page de facturation, puis publiez-la à nouveau.",
+    xThreadCut:
+      "le fil a été coupé : ses premières parties sont en ligne, et le compteur de X a refusé la suivante, car le compte de facturation ne peut pas être facturé pour elle maintenant (pas de moyen de paiement, un paiement en échec, un abonnement antérieur au tarif par compte, ou son plafond mensuel pour X : la page de facturation dit lequel). Dès qu’il le peut, envoyez la suite à nouveau, ou gardez les parties en ligne comme publication.",
   },
   feedStopReasons: {
     gone: "son site indique que le flux n’existe plus.",
@@ -425,6 +435,20 @@ export const french: EmailCatalog = {
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "{workspaceName} a utilisé ses {meter} du mois",
+  },
+  xCeilingNearing: {
+    action: "Ouvrir la page de facturation",
+    body: "Le compte de facturation de {workspaceName} a dépensé {percent} % de son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Une fois le plafond atteint, les publications sur X et la lecture des chiffres de X s’arrêtent jusqu’au {resetsAt}. Relevez le plafond sur la page de facturation s’il vous en faut davantage.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "{workspaceName} a dépensé {percent} % de son plafond X",
+  },
+  xCeilingReached: {
+    action: "Relever le plafond",
+    body: "Le compte de facturation de {workspaceName} a atteint son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Jusqu’au {resetsAt}, les publications sur X échouent sans être envoyées et les chiffres de X ne sont pas lus ; les autres plateformes continuent. Relevez le plafond sur la page de facturation pour continuer dès maintenant.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "{workspaceName} a atteint son plafond X",
   },
   meters: {
     assistantImages: "images de l’assistant de rédaction",

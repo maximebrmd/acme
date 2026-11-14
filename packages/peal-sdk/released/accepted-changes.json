@@ -84,5 +84,15 @@
     "change": "On a server that bills, POST …/inbox/comments/{commentId}/replies and POST …/ads/boosts may answer 402 UsageAllowanceReached once the billing account used the inbox messages or managed ads its month allows without a payment method, or on a legacy plan, or while its payment fails",
     "kind": "behaviour",
     "reason": "Outbound messages and managed ads are meters of the billing account (T7). Reading, publishing and running boosts are never metered; a reply sent again under its Idempotency-Key answers the reply it made."
+  },
+  {
+    "change": "On a server that bills, POST …/channels/connect/{platform}, …/callback and …/accounts answer 402 UsageAllowanceReached (meter xApi) to connect an X account when the billing account is not on per-account pricing that pays (paymentMethodRequired without a payment method, paymentFailed while its payment fails, planAllowance on a plan from before per-account pricing)",
+    "kind": "behaviour",
+    "reason": "X bills each call to its API, which Peal passes through at X's published rates, with nothing added: only a billing account that can be billed connects an X account. Reconnecting is never refused, existing channels stay, and a server that does not bill refuses nothing."
+  },
+  {
+    "change": "On a server that bills, a post's target on X may fail, nothing sent, with the failure reasons paymentMethodRequired, paymentFailed, perAccountPricingRequired or xCeilingReached, and a thread on X refused at a later part with xThreadCut, where it went out before; X's reads are billed only for a workspace that turned them on (PUT …/billing/x), and stop at the account's x ceiling",
+    "kind": "behaviour",
+    "reason": "X's posts and reads are billed at X's rates on the xApi meter, within the billing account's monthly ceiling for X. A server that does not bill publishes and reads X as before."
   }
 ]

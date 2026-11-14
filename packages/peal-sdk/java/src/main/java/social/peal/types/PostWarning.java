@@ -34,12 +34,20 @@ public final class PostWarning {
         return new PostWarning(new QueueChannelsDroppedValue(value));
     }
 
+    public static PostWarning xNotBilled(PostWarningXNotBilled value) {
+        return new PostWarning(new XNotBilledValue(value));
+    }
+
     public boolean isChannelsDropped() {
         return value instanceof ChannelsDroppedValue;
     }
 
     public boolean isQueueChannelsDropped() {
         return value instanceof QueueChannelsDroppedValue;
+    }
+
+    public boolean isXNotBilled() {
+        return value instanceof XNotBilledValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +64,13 @@ public final class PostWarning {
     public Optional<PostWarningQueueChannelsDropped> getQueueChannelsDropped() {
         if (isQueueChannelsDropped()) {
             return Optional.of(((QueueChannelsDroppedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<PostWarningXNotBilled> getXNotBilled() {
+        if (isXNotBilled()) {
+            return Optional.of(((XNotBilledValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +108,17 @@ public final class PostWarning {
 
         T visitQueueChannelsDropped(PostWarningQueueChannelsDropped queueChannelsDropped);
 
+        T visitXNotBilled(PostWarningXNotBilled xNotBilled);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ChannelsDroppedValue.class), @JsonSubTypes.Type(QueueChannelsDroppedValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(ChannelsDroppedValue.class),
+        @JsonSubTypes.Type(QueueChannelsDroppedValue.class),
+        @JsonSubTypes.Type(XNotBilledValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +190,46 @@ public final class PostWarning {
         }
 
         private boolean equalTo(QueueChannelsDroppedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostWarning{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("xNotBilled")
+    @JsonIgnoreProperties("_tag")
+    private static final class XNotBilledValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private PostWarningXNotBilled value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private XNotBilledValue() {}
+
+        private XNotBilledValue(PostWarningXNotBilled value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitXNotBilled(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof XNotBilledValue && equalTo((XNotBilledValue) other);
+        }
+
+        private boolean equalTo(XNotBilledValue other) {
             return value.equals(other.value);
         }
 

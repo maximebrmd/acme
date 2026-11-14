@@ -26,9 +26,12 @@ export class FakeMetersLedger extends Context.Service<
  * with `reason` (`paymentMethodRequired` without a payment method).
  */
 export const fakeMeters = ({
+  afterClaim = Effect.void,
   allowed,
   paymentMethod = true,
 }: {
+  /** What a granted claim waits for once counted, before it answers. */
+  readonly afterClaim?: Effect.Effect<void>;
   readonly allowed: Option.Option<number>;
   readonly paymentMethod?: boolean;
 }) =>
@@ -75,6 +78,8 @@ export const fakeMeters = ({
               claims: [...now.claims, made],
               used: new Map([...now.used, [meter, used + units]]),
             }));
+
+            yield* afterClaim;
 
             return made;
           }

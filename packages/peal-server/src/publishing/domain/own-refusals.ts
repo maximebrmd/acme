@@ -15,12 +15,28 @@ export const ownRefusalCodes = {
   // A BadRequest: a part after the first on a platform that takes a post
   // alone. Scheduling refuses it: this is the router's last check.
   partsNotSupported: "partsNotSupported",
+  // A BadRequest: the platform bills each post, passed through to the
+  // billing account (X), which has no payment method: nothing was sent.
+  paymentMethodRequired: "paymentMethodRequired",
+  // A BadRequest: the same, but the billing account's last payment failed:
+  // nothing past what is included until it goes through. Nothing was sent.
+  paymentFailed: "paymentFailed",
+  // A BadRequest: the same, but the account is on a plan from before
+  // per-account pricing, which bills no use: nothing was sent.
+  perAccountPricingRequired: "perAccountPricingRequired",
   // A BadRequest: the workspace's plan has no room for the post when it is
   // due, as after a trial or on a smaller plan.
   planLimit: "planLimit",
   // A BadRequest: a part after the first has no post to reply to, as Peal
   // knows no id for the part before it, or for the first.
   replyTargetUnknown: "replyTargetUnknown",
+  // A BadRequest: X's posts would pass the billing account's monthly
+  // ceiling for X, or the cap before its first invoice is paid: nothing
+  // was sent.
+  xCeilingReached: "xCeilingReached",
+  // A BadRequest: a later part of a thread on X the meter refused, its
+  // first parts live: the thread was cut there.
+  xThreadCut: "xThreadCut",
 } as const;
 
 /**

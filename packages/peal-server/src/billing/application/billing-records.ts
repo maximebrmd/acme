@@ -298,6 +298,7 @@ export class BillingRecords extends Context.Service<
             spendCeilings: metersKept.ceilings.map(
               ({ cents, group, setAt }) => ({ cents, group, setAt })
             ),
+            xReads: Option.getOrNull(metersKept.xUsage),
             subscriptions: held.map((subscription) => ({
               cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
               currentPeriodEnd: Option.getOrNull(subscription.currentPeriodEnd),

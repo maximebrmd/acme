@@ -11,6 +11,7 @@ class PostWarning extends JsonSerializableType
      * @var (
      *    'channelsDropped'
      *   |'queueChannelsDropped'
+     *   |'xNotBilled'
      *   |'_unknown'
      * ) $type
      */
@@ -20,6 +21,7 @@ class PostWarning extends JsonSerializableType
      * @var (
      *    PostWarningChannelsDropped
      *   |PostWarningQueueChannelsDropped
+     *   |PostWarningXNotBilled
      *   |mixed
      * ) $value
      */
@@ -30,11 +32,13 @@ class PostWarning extends JsonSerializableType
      *   type: (
      *    'channelsDropped'
      *   |'queueChannelsDropped'
+     *   |'xNotBilled'
      *   |'_unknown'
      * ),
      *   value: (
      *    PostWarningChannelsDropped
      *   |PostWarningQueueChannelsDropped
+     *   |PostWarningXNotBilled
      *   |mixed
      * ),
      * } $values
@@ -67,6 +71,18 @@ class PostWarning extends JsonSerializableType
         return new PostWarning([
             'type' => 'queueChannelsDropped',
             'value' => $queueChannelsDropped,
+        ]);
+    }
+
+    /**
+     * @param PostWarningXNotBilled $xNotBilled
+     * @return PostWarning
+     */
+    public static function xNotBilled(PostWarningXNotBilled $xNotBilled): PostWarning
+    {
+        return new PostWarning([
+            'type' => 'xNotBilled',
+            'value' => $xNotBilled,
         ]);
     }
 
@@ -115,6 +131,28 @@ class PostWarning extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isXNotBilled(): bool
+    {
+        return $this->value instanceof PostWarningXNotBilled && $this->type === 'xNotBilled';
+    }
+
+    /**
+     * @return PostWarningXNotBilled
+     */
+    public function asXNotBilled(): PostWarningXNotBilled
+    {
+        if (!($this->value instanceof PostWarningXNotBilled && $this->type === 'xNotBilled')) {
+            throw new Exception(
+                "Expected xNotBilled; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -140,6 +178,10 @@ class PostWarning extends JsonSerializableType
                 break;
             case 'queueChannelsDropped':
                 $value = $this->asQueueChannelsDropped()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'xNotBilled':
+                $value = $this->asXNotBilled()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -183,6 +225,9 @@ class PostWarning extends JsonSerializableType
                 break;
             case 'queueChannelsDropped':
                 $args['value'] = PostWarningQueueChannelsDropped::jsonDeserialize($data);
+                break;
+            case 'xNotBilled':
+                $args['value'] = PostWarningXNotBilled::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

@@ -8,6 +8,7 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .allowance_reason import AllowanceReason
 
 
 class PostWarning_ChannelsDropped(UniversalBaseModel):
@@ -54,6 +55,26 @@ class PostWarning_QueueChannelsDropped(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class PostWarning_XNotBilled(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["xNotBilled"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "xNotBilled"
+    channel_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    ]
+    reason: AllowanceReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 PostWarning = typing_extensions.Annotated[
-    typing.Union[PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped], pydantic.Field(discriminator="type")
+    typing.Union[PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped, PostWarning_XNotBilled],
+    pydantic.Field(discriminator="type"),
 ]

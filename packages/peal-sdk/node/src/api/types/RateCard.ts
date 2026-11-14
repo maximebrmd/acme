@@ -45,6 +45,7 @@ export namespace RateCard {
     export interface X {
         defaultCeiling: number;
         rates: X.Rates;
+        ratesReadOn: string;
     }
 
     export namespace X {

@@ -55,6 +55,21 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         assert.deepInclude(ceiling.body, { _tag: "BillingNotEnabled" });
 
+        // X is not passed through: its reads are the operator's switch, and
+        // no workspace turns them on.
+        assert.isNull(billing.x ?? null);
+
+        const xReads = yield* app.request(
+          `/api/workspaces/${workspaceId}/billing/x`,
+          {
+            body: { reads: true },
+            headers: { cookie: owner.cookies },
+            method: "PUT",
+          }
+        );
+
+        assert.deepInclude(xReads.body, { _tag: "BillingNotEnabled" });
+
         // Its usage, counted all the same, without a plan.
         const usage = yield* app.request(
           `/api/workspaces/${workspaceId}/usage?from=2026-11-01&to=2026-11-07`,

@@ -128,6 +128,9 @@ export const RateCardSchema = Schema.Struct({
       postRead: Schema.Int,
       userRead: Schema.Int,
     }),
+    // The UTC day the rates were read on X's developer pricing page, which
+    // carries no date of its own.
+    ratesReadOn: Schema.String,
   }),
 }).annotate({ identifier: "RateCard" });
 
@@ -238,6 +241,7 @@ export const rateCard: RateCard = {
       postRead: 5,
       userRead: 10,
     },
+    ratesReadOn: "2026-11-14",
   },
 };
 

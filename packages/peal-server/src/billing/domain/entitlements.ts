@@ -1,10 +1,12 @@
 import { Effect, Option, Schema } from "effect";
 
+import type { AllowanceReason } from "#shared/domain/allowance-reached.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
 import { PlanSchema } from "#shared/domain/plan.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 
+import { meterStandingOf, reasons } from "./meter-claims.ts";
 import { allowancesOf, largerPlan, unlimited } from "./plans.ts";
 import type { Allowances } from "./plans.ts";
 import { rateCard } from "./rate-card.ts";
@@ -48,6 +50,28 @@ export class Entitlements extends Schema.Class<Entitlements>(
   /** One limit of its plan that depends on nothing it holds. */
   allowanceOf(limit: CountedLimit): Allowance {
     return this.allowancesFor(0)[limit];
+  }
+
+  /**
+   * Why its billing account cannot use a meter passed through at a
+   * platform's rates (X's, `xApi`), which only per-account pricing that
+   * pays bills: none on per-account pricing, nor on a server that does
+   * not bill; otherwise the meter's refusal for its standing (no payment
+   * method, a payment failing, a legacy plan).
+   */
+  passThroughRefusal(): Option.Option<AllowanceReason> {
+    if (Option.isNone(this.plan)) {
+      return Option.none();
+    }
+
+    const standing = meterStandingOf({
+      plan: this.plan,
+      status: this.subscription.pipe(Option.map(({ status }) => status)),
+    });
+
+    return standing === "payAsYouGo"
+      ? Option.none()
+      : Option.some(reasons[standing]);
   }
 
   /**

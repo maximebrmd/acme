@@ -257,6 +257,28 @@ export const SpendCeilingSchema = Schema.Struct({
 
 export type SpendCeiling = typeof SpendCeilingSchema.Type;
 
+/** Whether a workspace reads its X channels' counts at X's rates. */
+export const XReadsPayloadSchema = Schema.Struct({
+  reads: Schema.Boolean,
+}).annotate({ identifier: "XReadsPayload" });
+
+export type XReadsPayload = typeof XReadsPayloadSchema.Type;
+
+/**
+ * A workspace's use of X's API on a server that bills, which X bills per
+ * call and Peal passes through at X's published rates (the rate card's
+ * `x.rates`, in thousandths of a dollar), within the billing account's
+ * `x` ceiling: publishing to an X channel always counts, reading its
+ * counts only when `reads` is on. `setAt` says when it last changed
+ * (null: never, so off).
+ */
+export const XUsageSchema = Schema.Struct({
+  reads: Schema.Boolean,
+  setAt: Schema.NullOr(Schema.DateTimeUtc),
+}).annotate({ identifier: "XUsage" });
+
+export type XUsage = typeof XUsageSchema.Type;
+
 /**
  * A workspace's billing. On a server that bills, a workspace is on the
  * free tier (`free`: 2 connected accounts across its billing account, no
@@ -321,6 +343,10 @@ export const BillingSchema = Schema.Struct({
   vatRate: Schema.Int,
   // Until when a consumer may withdraw from the subscription.
   withdrawableUntil: Schema.NullOr(Schema.DateTimeUtc),
+  // The workspace's use of X's API, passed through at X's rates; null on
+  // a server that does not bill, where X's reads are the operator's
+  // switch. Older servers leave it out.
+  x: Schema.optionalKey(Schema.NullOr(XUsageSchema)),
 }).annotate({ identifier: "Billing" });
 
 export type Billing = typeof BillingSchema.Type;

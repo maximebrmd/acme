@@ -4,10 +4,13 @@ import { assert, layer } from "@effect/vitest";
 import { Context, DateTime, Effect, Layer, Option, Ref, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { PaidReads } from "#analytics/application/paid-reads.ts";
+import { billedPaidReads } from "#analytics/infrastructure/billed-paid-reads.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
+import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
 import { meterCharge, rateCard } from "#billing/domain/rate-card.ts";
@@ -506,6 +509,62 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
   );
 
   it.effect(
+    "tell the billing managers once a month when X's spend reaches 80% of its ceiling, and when it reaches the ceiling",
+    () =>
+      Effect.gen(function* xNotices() {
+        const ceilings = yield* SpendCeilings;
+        const sql = yield* SqlClient.SqlClient;
+        const { payer, workspaceId: paid } = yield* paying;
+
+        // Paid once, so only the ceiling bounds it: $1.00, 1,000 units.
+        yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${paid}`.pipe(
+          Effect.orDie
+        );
+        yield* ceilings.set(ownerOf(paid, payer), "x", 100);
+
+        const xTold = Told.use(Ref.get).pipe(
+          Effect.map((all) =>
+            all.flatMap(({ key, notice }) =>
+              notice._tag === "XSpendCeiling" && key.includes(paid)
+                ? [notice.percent]
+                : []
+            )
+          )
+        );
+
+        yield* claimOf(paid, "xApi", 790);
+
+        assert.deepStrictEqual(yield* xTold, []);
+
+        yield* claimOf(paid, "xApi", 10);
+
+        assert.deepStrictEqual(yield* xTold, [80]);
+
+        yield* claimOf(paid, "xApi", 190);
+
+        const refused = yield* claimOf(paid, "xApi", 20).pipe(Effect.flip);
+
+        assert.strictEqual(refused.reason, "ceilingReached");
+        yield* claimOf(paid, "xApi", 15).pipe(Effect.flip);
+        assert.deepStrictEqual(yield* xTold, [80, 100]);
+
+        // A ceiling raised is announced again as it is reached.
+        yield* ceilings.set(ownerOf(paid, payer), "x", 200);
+        yield* claimOf(paid, "xApi", 610);
+
+        assert.deepStrictEqual(yield* xTold, [80, 100, 80]);
+
+        // A ceiling of nothing is never "reached": no notice.
+        yield* ceilings.set(ownerOf(paid, payer), "x", 0);
+        yield* claimOf(paid, "xApi", 15).pipe(Effect.flip);
+
+        assert.deepStrictEqual(yield* xTold, [80, 100, 80]);
+
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect(
     "cap what every meter bills at the threshold until a first invoice is paid, whatever the ceiling",
     () =>
       Effect.gen(function* unverified() {
@@ -523,13 +582,51 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
           Effect.flip
         );
 
-        assert.strictEqual(capped.reason, "ceilingReached");
+        assert.strictEqual(capped.reason, "spendCapReached");
 
         // Paid once: no cap but the ceilings.
         yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${paid}`.pipe(
           Effect.orDie
         );
         yield* claimOf(paid, "outboundMessages");
+
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect(
+    "cap what is billed and unpaid since the subscription began, the months before this one included",
+    () =>
+      Effect.gen(function* unpaid() {
+        const sql = yield* SqlClient.SqlClient;
+        const { workspaceId: paid } = yield* paying;
+        const now = yield* DateTime.now;
+
+        yield* sql`UPDATE billing.subscriptions SET started_at = ${DateTime.toDateUtc(DateTime.subtract(now, { months: 1 }))} WHERE workspace_id = ${paid}`.pipe(
+          Effect.orDie
+        );
+
+        // Two months ago, before the subscription began: not its bill.
+        yield* seed(
+          paid,
+          "outboundMessages",
+          messages.allowance + unverifiedThreshold * 100,
+          2
+        );
+        yield* claimOf(paid, "xApi", 10);
+
+        // Last month, billed and not paid yet: the whole threshold.
+        yield* seed(
+          paid,
+          "outboundMessages",
+          messages.allowance + unverifiedThreshold * 100,
+          1
+        );
+
+        const capped = yield* claimOf(paid, "xApi", 10).pipe(Effect.flip);
+
+        assert.strictEqual(capped.reason, "spendCapReached");
+        assert.strictEqual(capped.allowed, 0);
 
         yield* cleanUp([paid]);
       })
@@ -578,6 +675,86 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
         );
 
         yield* cleanUp([paid]);
+      })
+  );
+});
+
+// X's reads with every workspace reading X, on the meters above.
+const XReadsOnTest = Layer.succeed(
+  XPassThrough,
+  XPassThrough.of({
+    rates: rateCard.x.rates,
+    readsOf: () => Effect.succeedNone,
+    readsOn: () => Effect.succeed(true),
+    setReads: () => Effect.die("not set in this test"),
+  })
+);
+
+layer(
+  billedPaidReads.pipe(
+    Layer.provideMerge(XReadsOnTest),
+    Layer.provideMerge(metersOn(true))
+  )
+)("X's reads on the meters of a server that bills", (it) => {
+  it.effect(
+    "claim each new read in the reader's transaction, tell the ceiling reached, and give back what X did not return",
+    () =>
+      Effect.gen(function* reads() {
+        const ceilings = yield* SpendCeilings;
+        const paid = yield* PaidReads;
+        const sql = yield* SqlClient.SqlClient;
+        const { payer, workspaceId } = yield* paying;
+
+        yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${workspaceId}`.pipe(
+          Effect.orDie
+        );
+        // One cent: two posts' reads.
+        yield* ceilings.set(ownerOf(workspaceId, payer), "x", 1);
+
+        const covered = yield* paid.claim({
+          platform: "x",
+          resources: ["1", "2", "3"],
+          workspaceId,
+        });
+
+        assert.deepStrictEqual(covered.resources, ["1", "2"]);
+        assert.deepStrictEqual(
+          (yield* keptOf(workspaceId)).meters.find(
+            ({ meter }) => meter === "xApi"
+          )?.used,
+          2 * rateCard.x.rates.postRead
+        );
+
+        // The whole was refused first: the billing managers were told.
+        const told = yield* Told.use(Ref.get);
+
+        assert.isTrue(
+          told.some(
+            ({ key, notice }) =>
+              notice._tag === "XSpendCeiling" &&
+              notice.percent === 100 &&
+              key.includes(workspaceId)
+          )
+        );
+
+        yield* paid.release({
+          at: covered.at,
+          platform: "x",
+          resources: ["2"],
+          workspaceId,
+        });
+
+        assert.strictEqual(
+          (yield* keptOf(workspaceId)).meters.find(
+            ({ meter }) => meter === "xApi"
+          )?.used,
+          rateCard.x.rates.postRead
+        );
+
+        yield* sql`DELETE FROM analytics.paid_reads WHERE workspace_id = ${workspaceId}`.pipe(
+          Effect.orDie
+        );
+        yield* cleanUp([workspaceId]);
       })
   );
 });
