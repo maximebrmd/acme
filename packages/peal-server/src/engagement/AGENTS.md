@@ -351,7 +351,7 @@
   not there. An outcome left unknown is `unconfirmed`, brings its
   location's read forward, and the read settles it (`settleByReading`:
   sent when the location's reply is its text, trimmed; `notSent`
-  otherwise): no person confirms it. One reply a review is on its way or
+  otherwise), from a read that began after the reply's call ended; one its location's reads do not reach is read back alone an hour on (`settleUnconfirmed`, gate `CheckReviewReply`, sending nothing): no person confirms it. One reply a review is on its way or
   unconfirmed at a time (`review_replies_pending`). Withdrawing deletes
   the location's reply, whoever wrote it, and marks Peal's sent replies
   `withdrawn`. Google takes 4,096 UTF-8 bytes (`maxReviewReplyBytes`) and

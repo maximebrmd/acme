@@ -174,6 +174,11 @@ export class ReviewStore extends Context.Service<
       calledBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly ReviewReply[], DatabaseError>;
+    /** At most `limit` replies left unconfirmed at `settledBefore` or earlier. */
+    readonly unconfirmedReplies: (
+      settledBefore: DateTime.Utc,
+      limit: number
+    ) => Effect.Effect<readonly ReviewReply[], DatabaseError>;
     /** Deletes the channel's thread with its reviews and replies, at once. */
     readonly channelGone: (
       channelId: ChannelId

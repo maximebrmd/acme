@@ -708,6 +708,25 @@ export const DrizzleReviewStore = Layer.effect(
       }
     );
 
+    const unconfirmedReplies = Effect.fn("ReviewStore.unconfirmedReplies")(
+      function* unconfirmedReplies(settledBefore: DateTime.Utc, limit: number) {
+        const rows = yield* db
+          .select()
+          .from(reviewReplies)
+          .where(
+            and(
+              eq(reviewReplies.status, "unconfirmed"),
+              lte(reviewReplies.settledAt, date(settledBefore))
+            )
+          )
+          .orderBy(asc(reviewReplies.settledAt), asc(reviewReplies.id))
+          .limit(limit)
+          .pipe(Effect.mapError(failed));
+
+        return yield* Effect.all(rows.map(replyOf));
+      }
+    );
+
     const channelGone = Effect.fn("ReviewStore.channelGone")(
       function* channelGone(channelId: string) {
         const deleted = yield* db
@@ -781,6 +800,7 @@ export const DrizzleReviewStore = Layer.effect(
       saveThread,
       strandedReplies,
       thread,
+      unconfirmedReplies,
     });
   })
 ).pipe(Layer.provide(Digest.layerWebCrypto));

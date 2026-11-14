@@ -5,6 +5,7 @@ import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
 import { ReviewReplyIdSchema } from "#engagement/domain/review-reply-id.ts";
 import { ReviewReplyFailureSchema } from "#engagement/domain/review-reply.ts";
 import type { ReviewSendOutcome } from "#engagement/domain/review-reply.ts";
+import { OwnerReplySchema } from "#engagement/domain/review.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
 export { ReviewSendOutcomeSchema } from "#engagement/domain/review-reply.ts";
@@ -39,6 +40,18 @@ export const ReviewActionOutcomeSchema = Schema.Union([
 export type ReviewActionOutcome = typeof ReviewActionOutcomeSchema.Type;
 
 /**
+ * What reading one review back found: the location's reply as it stands
+ * (none when it has none), the review gone, or nothing Peal can tell.
+ */
+export const ReviewReplyCheckSchema = Schema.Union([
+  Schema.TaggedStruct("found", { reply: Schema.Option(OwnerReplySchema) }),
+  Schema.TaggedStruct("gone", {}),
+  Schema.TaggedStruct("unknown", {}),
+]);
+
+export type ReviewReplyCheck = typeof ReviewReplyCheckSchema.Type;
+
+/**
  * Answers reviews on their platform as the location, through the
  * channel's gate: one call at a time with its publishing.
  *
@@ -57,6 +70,14 @@ export class ReviewReplySender extends Context.Service<
     readonly resume: (
       request: ReviewReplyRequest
     ) => Effect.Effect<ReviewSendOutcome>;
+    /**
+     * Reads the review of an unconfirmed reply back, sending nothing: the
+     * reply's fate, settled within hours rather than at a read of the
+     * whole location.
+     */
+    readonly check: (
+      request: ReviewReplyRequest
+    ) => Effect.Effect<ReviewReplyCheck>;
     /** Deletes the location's reply to the review, whoever wrote it. */
     readonly withdraw: (
       request: ReviewWithdrawal

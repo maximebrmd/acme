@@ -5,7 +5,10 @@ import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
-import type { ReviewActionOutcome } from "#engagement/application/ports/review-reply-sender.ts";
+import type {
+  ReviewActionOutcome,
+  ReviewReplyCheck,
+} from "#engagement/application/ports/review-reply-sender.ts";
 import type {
   ReviewsBatch,
   ReviewsReadFailure,
@@ -109,6 +112,11 @@ export interface ReviewPlatform {
     account: ChannelAccount,
     platformReviewId: string
   ) => Effect.Effect<ReviewActionOutcome>;
+  /** Reads one review back, sending nothing. */
+  readonly check: (
+    account: ChannelAccount,
+    platformReviewId: string
+  ) => Effect.Effect<ReviewReplyCheck>;
 }
 
 // Google's StarRating, and the state of a reply's moderation.
@@ -675,7 +683,69 @@ export const googleBusinessReviews = Effect.fn("googleBusinessReviews")(
         )
       );
 
-    const platform: ReviewPlatform = { read, resume, send, withdraw };
+    const unknown: ReviewReplyCheck = { _tag: "unknown" };
+
+    const check = (
+      account: ChannelAccount,
+      platformReviewId: string
+    ): Effect.Effect<ReviewReplyCheck> =>
+      access
+        .withToken(account.channelId, ({ accessToken }) =>
+          Effect.gen(function* checking() {
+            const sent = yield* http
+              .execute(
+                HttpClientRequest.get(url(platformReviewId)).pipe(
+                  HttpClientRequest.bearerToken(accessToken)
+                )
+              )
+              .pipe(Effect.result);
+
+            if (sent._tag === "Failure") {
+              return unknown;
+            }
+
+            if (!isSuccess(sent.success)) {
+              const refusal = yield* refusalOf(sent.success);
+
+              if (refusal === "token") {
+                return yield* new TokenRejected();
+              }
+
+              const gone: ReviewReplyCheck = { _tag: "gone" };
+
+              return refusal === "gone" ? gone : unknown;
+            }
+
+            const found = yield* reviewBodyOf(sent.success).pipe(Effect.option);
+
+            if (Option.isNone(found)) {
+              return unknown;
+            }
+
+            const { reviewReply } = found.value;
+
+            if (reviewReply === undefined) {
+              const none: ReviewReplyCheck = {
+                _tag: "found",
+                reply: Option.none(),
+              };
+
+              return none;
+            }
+
+            // A reply Peal cannot read tells nothing.
+            return Option.match(ownerReplyOf(reviewReply), {
+              onNone: () => unknown,
+              onSome: (reply): ReviewReplyCheck => ({
+                _tag: "found",
+                reply: Option.some(reply),
+              }),
+            });
+          })
+        )
+        .pipe(Effect.orElseSucceed(() => unknown));
+
+    const platform: ReviewPlatform = { check, read, resume, send, withdraw };
 
     return platform;
   }

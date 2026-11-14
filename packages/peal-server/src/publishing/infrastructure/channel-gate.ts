@@ -37,6 +37,7 @@ import type {
 } from "#engagement/application/ports/reply-sender.ts";
 import {
   ReviewActionOutcomeSchema,
+  ReviewReplyCheckSchema,
   ReviewReplyRequestSchema,
   ReviewReplySender,
   ReviewSendOutcomeSchema,
@@ -44,6 +45,7 @@ import {
 } from "#engagement/application/ports/review-reply-sender.ts";
 import type {
   ReviewActionOutcome,
+  ReviewReplyCheck,
   ReviewReplyRequest,
   ReviewSendOutcome,
 } from "#engagement/application/ports/review-reply-sender.ts";
@@ -170,6 +172,10 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: ReviewReplyRequestSchema },
     success: ReviewSendOutcomeSchema,
   }),
+  Rpc.make("CheckReviewReply", {
+    payload: { request: ReviewReplyRequestSchema },
+    success: ReviewReplyCheckSchema,
+  }),
   Rpc.make("WithdrawReviewReply", {
     payload: { request: ReviewWithdrawalSchema },
     success: ReviewActionOutcomeSchema,
@@ -208,6 +214,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
       ReadAccount: ({ payload }) => metrics.account(payload.request),
       ReadComments: ({ payload }) => comments.read(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
+      CheckReviewReply: ({ payload }) => reviewReplies.check(payload.request),
       ReadReviews: ({ payload }) => reviews.read(payload.request),
       RemoveLivePost: ({ payload }) => live.remove(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
@@ -244,6 +251,7 @@ export const UnreadReviews = Layer.mergeAll(
   Layer.succeed(
     ReviewReplySender,
     ReviewReplySender.of({
+      check: () => Effect.succeed({ _tag: "unknown" }),
       resume: () =>
         Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" }),
       send: () =>
@@ -614,6 +622,9 @@ export const GatedLivePostClients = Layer.effect(
 const noReviews = (): Effect.Effect<never, ReviewsReadFailure> =>
   Effect.fail(new PlatformUnavailable());
 
+// A read back the gate did not take, or lost: nothing is settled from it.
+const unknownCheck: ReviewReplyCheck = { _tag: "unknown" };
+
 const notSentReply = () =>
   Effect.succeed<ReviewSendOutcome>({
     _tag: "failed",
@@ -706,6 +717,14 @@ export const GatedReviews = Layer.effectContext(
       Context.add(
         ReviewReplySender,
         ReviewReplySender.of({
+          check: (request: ReviewReplyRequest) =>
+            gateFor(request.channelId)
+              .CheckReviewReply({ request })
+              .pipe(
+                Effect.retry(taken),
+                Effect.orElseSucceed(() => unknownCheck),
+                Effect.catchDefect(() => Effect.succeed(unknownCheck))
+              ),
           resume: (request: ReviewReplyRequest) =>
             sending(
               gateFor(request.channelId).ResumeReviewReply({ request }),

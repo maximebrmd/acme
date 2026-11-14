@@ -10,7 +10,10 @@ import {
 import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
 import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
 import { SendReviewReply } from "#engagement/application/send-review-reply.ts";
-import { beginReviewReply } from "#engagement/domain/review-reply.ts";
+import {
+  beginReviewReply,
+  settleReviewReply,
+} from "#engagement/domain/review-reply.ts";
 import type { ReviewReading } from "#engagement/domain/review.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
@@ -663,6 +666,7 @@ describe("a reply's job", () => {
             }),
           ]);
 
+          yield* TestClock.adjust("1 hour");
           yield* CollectReviews.use((collecting) =>
             collecting.run(DateTime.addDuration(reviewedAt, "1 hour"))
           );
@@ -730,6 +734,96 @@ describe("a reply's job", () => {
             1
           );
           assert.deepStrictEqual(world.state.cancelled, [reply.id]);
+          assert.strictEqual(
+            world.state.replies.get(reply.id)?.status._tag,
+            "unconfirmed"
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
+
+describe("an unconfirmed reply", () => {
+  it.effect(
+    "is settled within hours by reading its one review, when the location's reads do not list it",
+    () => {
+      const world = located();
+
+      world.state.sending = { _tag: "unconfirmed", reason: "noResponse" };
+
+      return at(
+        Effect.gen(function* checks() {
+          const reply = yield* journalled(world);
+
+          yield* SendReviewReply.use((sending) => sending.run(reply.id));
+
+          // Reads that stop before reaching the review.
+          world.state.read = reading([], false);
+          world.state.checking = {
+            _tag: "found",
+            reply: Option.some({
+              moderation: Option.none(),
+              text: "Thank you!",
+              updatedAt: reviewedAt,
+            }),
+          };
+
+          yield* TestClock.adjust("2 hours");
+          yield* CollectReviews.use((collecting) =>
+            collecting.run(DateTime.addDuration(reviewedAt, "2 hours"))
+          );
+
+          assert.deepStrictEqual(
+            world.state.checked.map(({ replyId }) => replyId),
+            [reply.id]
+          );
+          assert.strictEqual(
+            world.state.replies.get(reply.id)?.status._tag,
+            "sent"
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "is not settled by a read that began before it became unconfirmed",
+    () => {
+      const world = located();
+
+      return at(
+        Effect.gen(function* stale() {
+          const reply = yield* journalled(world);
+
+          // The reply's call ends while the read is on its way, after it
+          // began: what the read found predates the call.
+          world.state.read = () =>
+            Effect.sync(() => {
+              world.state.replies.set(
+                reply.id,
+                Result.getOrThrow(
+                  settleReviewReply(
+                    reply,
+                    { _tag: "unconfirmed", reason: "noResponse" },
+                    DateTime.addDuration(reviewedAt, "61 minutes")
+                  )
+                )
+              );
+
+              return {
+                averageRating: Option.none(),
+                complete: true,
+                reviews: [reviewReading(1)],
+                totalReviewCount: Option.some(1),
+              };
+            });
+
+          yield* TestClock.adjust("1 hour");
+          yield* CollectReviews.use((collecting) =>
+            collecting.run(DateTime.addDuration(reviewedAt, "1 hour"))
+          );
+
           assert.strictEqual(
             world.state.replies.get(reply.id)?.status._tag,
             "unconfirmed"

@@ -431,6 +431,53 @@ describe("Google Business Profile's reviews", () => {
   );
 
   it.effect(
+    "reads one review back, sending nothing: its reply, none, the review gone, or nothing it can tell",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* checks() {
+          const { account, api, platform } = yield* onGoogle();
+
+          api.add(
+            review(1, {
+              reply: { comment: "Thanks!", updateTime: "2026-11-14T09:00:00Z" },
+            }),
+            review(2)
+          );
+
+          const replied = yield* platform.check(account, reviewName(1));
+
+          assert.deepStrictEqual(
+            replied._tag === "found"
+              ? replied.reply.pipe(Option.map(({ text }) => text))
+              : undefined,
+            Option.some("Thanks!")
+          );
+          assert.deepStrictEqual(
+            yield* platform.check(account, reviewName(2)),
+            {
+              _tag: "found",
+              reply: Option.none(),
+            }
+          );
+          assert.deepStrictEqual(
+            yield* platform.check(account, `${fakeLocation}/reviews/gone`),
+            { _tag: "gone" }
+          );
+
+          api.lose(`GET /v4/${reviewName(1)}`);
+
+          assert.deepStrictEqual(
+            yield* platform.check(account, reviewName(1)),
+            {
+              _tag: "unknown",
+            }
+          );
+          assert.isFalse(api.requests().some(({ method }) => method !== "GET"));
+        })
+      )
+  );
+
+  it.effect(
     "deletes the location's reply, and takes a reply already gone for done",
     () =>
       Effect.scoped(

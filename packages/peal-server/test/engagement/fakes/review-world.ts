@@ -12,6 +12,7 @@ import { ReviewReplyJobs } from "#engagement/application/ports/review-reply-jobs
 import { ReviewReplySender } from "#engagement/application/ports/review-reply-sender.ts";
 import type {
   ReviewActionOutcome,
+  ReviewReplyCheck,
   ReviewReplyRequest,
   ReviewWithdrawal,
 } from "#engagement/application/ports/review-reply-sender.ts";
@@ -55,6 +56,8 @@ export const locationChannel: EngagedChannel = {
 
 export interface ReviewWorldState {
   readonly cancelled: ReviewReplyId[];
+  checking: ReviewReplyCheck;
+  readonly checked: ReviewReplyRequest[];
   readonly channels: Map<ChannelId, EngagedChannel>;
   readonly claims: Map<string, DateTime.Utc>;
   readonly jobs: ReviewReplyId[];
@@ -95,6 +98,8 @@ export const makeReviewWorld = (
 ) => {
   const state: ReviewWorldState = {
     cancelled: [],
+    checked: [],
+    checking: { _tag: "unknown" },
     channels: new Map(),
     claims: new Map(),
     jobs: [],
@@ -408,6 +413,14 @@ export const makeReviewWorld = (
           state.threads.set(thread.id, thread);
         }
       }),
+    unconfirmedReplies: (settledBefore, limit) =>
+      Effect.sync(() =>
+        repliesWhere(
+          (reply) =>
+            reply.status._tag === "unconfirmed" &&
+            millis(reply.status.at) <= millis(settledBefore)
+        ).slice(0, limit)
+      ),
     strandedReplies: (writtenBefore, calledBefore, limit) =>
       Effect.sync(() =>
         repliesWhere(
@@ -471,6 +484,12 @@ export const makeReviewWorld = (
     Layer.succeed(
       ReviewReplySender,
       ReviewReplySender.of({
+        check: (request) =>
+          Effect.sync(() => {
+            state.checked.push(request);
+
+            return state.checking;
+          }),
         resume: (request) =>
           Effect.sync(() => {
             state.resumed.push(request);

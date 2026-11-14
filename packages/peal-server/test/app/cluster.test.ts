@@ -276,6 +276,7 @@ const ChannelJobsTest = Layer.mergeAll(
     CollectReviews.of({
       run: () =>
         Effect.succeed({
+          checked: 0,
           deferred: 0,
           followed: 0,
           left: 0,

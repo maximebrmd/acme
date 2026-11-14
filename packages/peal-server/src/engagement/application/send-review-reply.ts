@@ -14,11 +14,13 @@ import type { ReviewReplyId } from "#engagement/domain/review-reply-id.ts";
 import {
   beginReviewReply,
   reviewReplyAttempted,
+  settleByReading,
   settleReviewReply,
 } from "#engagement/domain/review-reply.ts";
 import type { ReviewSendOutcome } from "#engagement/domain/review-reply.ts";
 import { postponeReviewRead } from "#engagement/domain/review-thread.ts";
 import { withOwnerReply } from "#engagement/domain/review.ts";
+import type { OwnerReply } from "#engagement/domain/review.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
@@ -38,6 +40,16 @@ export const reviewRepliesSettled = Metric.counter(
 
 // The stranded replies one run hands over: there are few, if any.
 const strandedPerRun = 100;
+
+// The unconfirmed replies one run reads back.
+const unconfirmedPerRun = 50;
+
+/**
+ * How long an unconfirmed reply waits for a read of its location before
+ * its review alone is read back: the location's next read, brought
+ * forward, usually settles it first.
+ */
+export const checkUnconfirmedAfter = Duration.hours(1);
 
 /**
  * How a run of the job left its reply: `settled` with an outcome, or
@@ -69,6 +81,15 @@ export class SendReviewReply extends Context.Service<
      * in the same transaction. Answers how many.
      */
     readonly settleStranded: Effect.Effect<number, DatabaseError>;
+    /**
+     * Reads back the review of each reply left `unconfirmed`
+     * `checkUnconfirmedAfter` ago or more, sending nothing, and settles it
+     * from what the review holds (`settleByReading`), so a reply whose
+     * location's reads do not reach its review is settled within hours.
+     * One the platform cannot tell about waits for the next run. Answers
+     * how many were settled.
+     */
+    readonly settleUnconfirmed: Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/engagement/application/SendReviewReply") {
   static readonly layer = Layer.effect(
@@ -202,7 +223,76 @@ export class SendReviewReply extends Context.Service<
         return settled;
       }).pipe(Effect.withSpan("SendReviewReply.settleStranded"));
 
-      return SendReviewReply.of({ run, settleStranded });
+      // Settles an unconfirmed reply from its review as read back now.
+      const settleFrom = Effect.fn("SendReviewReply.settleFrom")(
+        function* settleFrom(
+          replyId: ReviewReplyId,
+          found: Option.Option<OwnerReply>
+        ) {
+          const now = yield* DateTime.now;
+          const reply = yield* store.reply(replyId);
+
+          if (Option.isNone(reply)) {
+            return false;
+          }
+
+          yield* store.lockThread(reply.value.threadId);
+
+          const settled = settleByReading(reply.value, found, now);
+          const summary = yield* store.thread(reply.value.threadId);
+
+          if (
+            Result.isFailure(settled) ||
+            Option.isNone(summary) ||
+            !(yield* store.advanceReply(settled.success, reply.value))
+          ) {
+            return false;
+          }
+
+          if (settled.success.status._tag === "sent") {
+            const review = yield* store.review(settled.success.reviewId);
+
+            yield* store.saveReviews(
+              Option.toArray(review).map((kept) => withOwnerReply(kept, found))
+            );
+            yield* store.recount(reply.value.threadId);
+          }
+
+          yield* outcomes.replied(summary.value.thread, settled.success);
+
+          return true;
+        }
+      );
+
+      const settleUnconfirmed = Effect.gen(function* settleUnconfirmed() {
+        const now = yield* DateTime.now;
+
+        const waiting = yield* store.unconfirmedReplies(
+          DateTime.subtractDuration(now, checkUnconfirmedAfter),
+          unconfirmedPerRun
+        );
+
+        let settled = 0;
+
+        for (const reply of waiting) {
+          const check = yield* sender.check({
+            channelId: reply.channelId,
+            replyId: reply.id,
+          });
+
+          if (check._tag === "unknown") {
+            continue;
+          }
+
+          const found = check._tag === "found" ? check.reply : Option.none();
+
+          settled += (yield* transaction(settleFrom(reply.id, found))) ? 1 : 0;
+        }
+
+        return settled;
+      }).pipe(Effect.withSpan("SendReviewReply.settleUnconfirmed"));
+
+      return SendReviewReply.of({ run, settleStranded, settleUnconfirmed });
     })
   );
 }

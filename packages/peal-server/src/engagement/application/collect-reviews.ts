@@ -51,6 +51,8 @@ export interface ReviewsReport {
   readonly deferred: number;
   /** Replies no job settled, handed to the next read. */
   readonly stranded: number;
+  /** Unconfirmed replies settled by reading their review back. */
+  readonly checked: number;
   /** Locations still due when the run ended. */
   readonly left: number;
 }
@@ -102,6 +104,7 @@ export const reviewsUnfinished = Metric.counter(
 );
 
 const emptyReport: ReviewsReport = {
+  checked: 0,
   deferred: 0,
   followed: 0,
   left: 0,
@@ -178,7 +181,8 @@ export class CollectReviews extends Context.Service<
       const record = Effect.fn("CollectReviews.record")(function* record(
         thread: ReviewThread,
         batch: ReviewsBatch,
-        at: DateTime.Utc
+        at: DateTime.Utc,
+        readSince: DateTime.Utc
       ) {
         yield* store.lockThread(thread.id);
 
@@ -222,7 +226,13 @@ export class CollectReviews extends Context.Service<
         for (const reply of yield* store.repliesOf(thread.id)) {
           const found = shown.get(reply.reviewId);
 
-          if (reply.status._tag !== "unconfirmed" || found === undefined) {
+          // Only from a read that began after the reply's call ended: an
+          // older one may predate it.
+          if (
+            reply.status._tag !== "unconfirmed" ||
+            found === undefined ||
+            !DateTime.isGreaterThan(readSince, reply.status.at)
+          ) {
             continue;
           }
 
@@ -302,6 +312,8 @@ export class CollectReviews extends Context.Service<
             return "unreached" as const;
           }
 
+          const readSince = yield* DateTime.now;
+
           const read = yield* source
             .read({ channelId: thread.channelId, keptSince: keptSince(at) })
             .pipe(Effect.result);
@@ -333,7 +345,9 @@ export class CollectReviews extends Context.Service<
             Effect.as("deferred" as const)
           );
 
-          return yield* transaction(record(thread, read.success, at)).pipe(
+          return yield* transaction(
+            record(thread, read.success, at, readSince)
+          ).pipe(
             Effect.as("read" as const),
             Effect.catchTag("DatabaseError", () => putOffFailed),
             Effect.catchDefect(() => putOffFailed)
@@ -349,6 +363,7 @@ export class CollectReviews extends Context.Service<
         }
 
         const stranded = yield* sending.settleStranded;
+        const checked = yield* sending.settleUnconfirmed;
         const followed = yield* followAll(at);
         const deadline = DateTime.addDuration(at, pace.budget);
         const halted = yield* Ref.make(false);
@@ -387,6 +402,7 @@ export class CollectReviews extends Context.Service<
         }
 
         const report: ReviewsReport = {
+          checked,
           deferred,
           followed,
           left,

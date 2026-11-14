@@ -6,6 +6,7 @@ import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts
 import { ReviewReplySender } from "#engagement/application/ports/review-reply-sender.ts";
 import type {
   ReviewActionOutcome,
+  ReviewReplyCheck,
   ReviewReplyRequest,
   ReviewWithdrawal,
 } from "#engagement/application/ports/review-reply-sender.ts";
@@ -196,11 +197,44 @@ export const platformReviewsWith = (settings: {
           )
         );
 
+      const check = (request: ReviewReplyRequest) =>
+        Effect.gen(function* checking() {
+          const unknown: ReviewReplyCheck = { _tag: "unknown" };
+          const reply = yield* store.reply(request.replyId);
+
+          const review = yield* Option.match(reply, {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: ({ reviewId }) => store.review(reviewId),
+          });
+
+          if (Option.isNone(review)) {
+            const gone: ReviewReplyCheck = { _tag: "gone" };
+
+            return gone;
+          }
+
+          const reached = yield* reach(request.channelId).pipe(Effect.option);
+
+          if (Option.isNone(reached) || Option.isNone(reached.value)) {
+            return unknown;
+          }
+
+          return yield* google.check(
+            reached.value.value,
+            review.value.platformReviewId
+          );
+        }).pipe(
+          Effect.catchTag("DatabaseError", () =>
+            Effect.succeed<ReviewReplyCheck>({ _tag: "unknown" })
+          )
+        );
+
       return Layer.mergeAll(
         Layer.succeed(ReviewSource, ReviewSource.of({ read })),
         Layer.succeed(
           ReviewReplySender,
           ReviewReplySender.of({
+            check,
             resume: (request) => sending(request, "resume"),
             send: (request) => sending(request, "send"),
             withdraw,
