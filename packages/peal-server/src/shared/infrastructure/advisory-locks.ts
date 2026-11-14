@@ -1,7 +1,6 @@
 import { Effect, Option, Schedule, Schema, Semaphore } from "effect";
 import type { Scope } from "effect";
 import { SqlClient } from "effect/sql";
-import type { SqlConnection } from "effect/sql";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 
@@ -14,6 +13,9 @@ const tryLockQuery =
   "SELECT pg_try_advisory_lock(hashtext($1), hashtext($2)) AS locked";
 
 const unlockQuery = "SELECT pg_advisory_unlock(hashtext($1), hashtext($2))";
+
+// A connection of the pool, as `SqlClient.reserve` gives it.
+type Connection = Effect.Success<SqlClient.SqlClient["reserve"]>;
 
 const decodeLocked = Schema.decodeUnknownEffect(
   Schema.Tuple([Schema.Struct({ locked: Schema.Boolean })])
@@ -68,7 +70,7 @@ export const advisoryLocks = (namespace: string, heldAtOnce: number) =>
  * that waits for its turn keeps waiting through an outage.
  */
 export const advisoryLocksOver = <E>(
-  reserve: Effect.Effect<SqlConnection.Connection, E, Scope.Scope>,
+  reserve: Effect.Effect<Connection, E, Scope.Scope>,
   namespace: string,
   heldAtOnce: number
 ) => {
