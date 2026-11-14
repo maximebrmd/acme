@@ -72,7 +72,10 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   Grafana (`peal_runtime` mounts `telegram-slack.yaml` only with
   `SLACK_ALERTS_WEBHOOK_URL`, and `release.yml` refuses, before it changes
   anything, a `host.env` that names it while `credentials.env` lacks the
-  webhook, on which Grafana would not start): with its webhooks unset, every rendered
+  webhook, on which Grafana would not start, and a commit that lacks a file
+  of the release folder `host.env` names for a mount, such as one older than
+  the last `site.yml`, on which Docker would mount an empty folder): with
+  its webhooks unset, every rendered
   file stays as it was, which `tests/test_uptime.py` checks. The platform
   watch (`files/platform_watch.py`, the standard library's alone, tested in
   `tests/test_platform_watch.py` on synthetic pages, never the internet)
