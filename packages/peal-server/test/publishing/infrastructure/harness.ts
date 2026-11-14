@@ -34,6 +34,7 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
+import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import { publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
@@ -42,6 +43,7 @@ import { Schedule } from "#publishing/domain/schedule.ts";
 import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
 import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
+import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -161,6 +163,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
       Layer.mergeAll(
         DrizzleChannelDefaultsStore,
         DrizzleChannelSetStore,
+        DrizzleFollowUpStore,
         DrizzleSignatureStore,
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
@@ -175,6 +178,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         ReferencesTest,
         AccountRules.none,
         ApprovalGate.open,
+        RecyclingActors.none,
         PostEvents.none,
         DrizzleLivePostChangeStore,
         LivePostEvents.none

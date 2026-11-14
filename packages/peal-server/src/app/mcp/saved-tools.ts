@@ -27,6 +27,13 @@ import {
   SignatureScopeSchema,
   RecyclingRuleSchema,
   RecyclingStatusSchema,
+  FollowUpRuleSchema,
+  FollowUpRuleStatusSchema,
+  followUpWindowDays,
+  maxFollowUpCommentLength,
+  maxFollowUpsPerChannelDay,
+  maxLikesThreshold,
+  minLikesThreshold,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -399,10 +406,102 @@ export const StopRecyclingRule = Tool.make("stop_recycling_rule", {
   )
   .annotate(Tool.Title, "Stop a recycling rule");
 
+const followUpRuleId = Schema.String.annotate({
+  description: "The follow-up rule's id, as list_follow_up_rules answers it.",
+});
+
+const followsUp = `A follow-up rule acts on the workspace's own posts only, from the channel's own account, by itself: once a post it acts on has \`likes\` likes on a channel, as Peal's analytics last counted them (hourly for two days, then daily; it never asks a platform for more), it publishes its \`comment\` under the post as the account's own reply, and reposts the post when \`repost\` is set, once each, within ${String(followUpWindowDays)} days of the post going live there, ${String(maxFollowUpsPerChannelDay)} a channel and day at most. Comments go out on Bluesky, Mastodon and X, reposts on Bluesky and Mastodon; \`channels\` says what each channel can carry and why not. It never likes, follows or messages anyone. Where the approval policy holds its starter's posts, it waits for a member to approve it in the web app. \`followUps\` says what it did.`;
+
+const likes = Schema.Int.check(
+  Schema.isBetween({ maximum: maxLikesThreshold, minimum: minLikesThreshold })
+).annotate({
+  description: `The likes a post must have: ${String(minLikesThreshold)} to ${String(maxLikesThreshold)}.`,
+});
+
+const comment = Schema.String.check(
+  Schema.isMaxLength(maxFollowUpCommentLength)
+).annotate({
+  description:
+    "The comment to publish under the post, as the account's own reply: within each platform's length (Bluesky 300 characters, Mastodon 500, X 280 as X counts).",
+});
+
+export const ListFollowUpRules = Tool.make("list_follow_up_rules", {
+  dependencies: [CurrentMember],
+  description: `Lists the workspace's follow-up rules, oldest first, those of the post \`postId\` or with \`status\` alone when given: each with what it acts on, its likes, comment and repost, its approval, what each channel can carry, and its latest follow-ups with what became of each. ${followsUp}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    postId: Schema.optionalKey(Schema.String),
+    status: Schema.optionalKey(FollowUpRuleStatusSchema),
+  }),
+  success: Schema.Struct({ rules: Schema.Array(FollowUpRuleSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List follow-up rules");
+
+export const GetFollowUpRule = Tool.make("get_follow_up_rule", {
+  dependencies: [CurrentMember],
+  description: `Answers a follow-up rule of the workspace, what its channels can carry and its latest follow-ups. ${followsUp}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ ruleId: followUpRuleId }),
+  success: FollowUpRuleSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get a follow-up rule");
+
+export const StartFollowUpRule = Tool.make("start_follow_up_rule", {
+  dependencies: [CurrentMember],
+  description: `Starts a follow-up rule on one post (\`postId\`) or on every post a channel publishes from now on (\`channelId\`), exactly one of them, with a \`comment\`, \`repost\` or both. ${followsUp} What it publishes is public, goes out without anyone being asked each time, and cannot be taken back from Peal: start one only when the user asked for it, with their own words for the comment. A post or a channel has one rule going on at a time. Needs a role that schedules posts.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(Schema.String),
+    comment: Schema.optionalKey(comment),
+    likes,
+    postId: Schema.optionalKey(Schema.String),
+    repost: Schema.optionalKey(Schema.Boolean),
+  }),
+  success: FollowUpRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Start a follow-up rule");
+
+export const UpdateFollowUpRule = Tool.make("update_follow_up_rule", {
+  dependencies: [CurrentMember],
+  description: `Changes a follow-up rule's \`likes\`, \`comment\` (null takes it away) or \`repost\`, or pauses it (\`paused\` true) or sets it going again (false); what is left out stays. What it sent stays as it is. ${followsUp}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    comment: Schema.optionalKey(Schema.NullOr(comment)),
+    likes: Schema.optionalKey(likes),
+    paused: Schema.optionalKey(Schema.Boolean),
+    repost: Schema.optionalKey(Schema.Boolean),
+    ruleId: followUpRuleId,
+  }),
+  success: FollowUpRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Update a follow-up rule");
+
+export const StopFollowUpRule = Tool.make("stop_follow_up_rule", {
+  dependencies: [CurrentMember],
+  description:
+    "Stops a follow-up rule for good: what it armed and did not send is given up, and what it sent stays on the platforms. Do it only when the user asked. Needs a role that schedules posts.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ ruleId: followUpRuleId }),
+  success: Schema.Struct({ stopped: Schema.String }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Stop a follow-up rule");
+
 /**
  * The tools that read and change what a workspace saves to write its posts
  * with: its signatures, its channel sets, its channels' default options
- * and its queues, and reads and stops the rules that repeat its posts.
+ * and its queues, reads and stops the rules that repeat its posts, and
+ * keeps the rules that follow its posts up.
  */
 export const SavedTools = Toolkit.make(
   ListSignatures,
@@ -423,5 +522,10 @@ export const SavedTools = Toolkit.make(
   DeleteQueue,
   ListRecyclingRules,
   GetRecyclingRule,
-  StopRecyclingRule
+  StopRecyclingRule,
+  ListFollowUpRules,
+  GetFollowUpRule,
+  StartFollowUpRule,
+  UpdateFollowUpRule,
+  StopFollowUpRule
 );

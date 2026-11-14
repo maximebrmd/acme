@@ -9,11 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::PostNotRecyclableEncoded }, key: "POST_NOT_RECYCLABLE"
+      member -> { Peal::Types::FollowUpRuleTakenEncoded }, key: "FOLLOW_UP_RULE_TAKEN"
 
-      member -> { Peal::Types::RecyclingRuleEndedEncoded }, key: "RECYCLING_RULE_ENDED"
-
-      member -> { Peal::Types::TooManyRecyclingRulesEncoded }, key: "TOO_MANY_RECYCLING_RULES"
+      member -> { Peal::Types::TooManyFollowUpRulesEncoded }, key: "TOO_MANY_FOLLOW_UP_RULES"
     end
   end
 end

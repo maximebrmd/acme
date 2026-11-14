@@ -723,3 +723,112 @@ export const channelDefaults = publishing.table(
   },
   (table) => [index("channel_defaults_workspace").on(table.workspaceId)]
 );
+
+/**
+ * A rule that acts by itself on the workspace's own posts once they have
+ * enough likes (the domain's `FollowUpRule`): on one post (`scope` `post`,
+ * `post_id`) or on every post a channel publishes after it started
+ * (`channel`, `channel_id`), the `likes` it waits for, the `comment` it
+ * publishes under the post (written by a member, null for none) and
+ * whether it reposts. `approval` is the domain's JSON (`notNeeded`,
+ * `pending`, or `approved` with who and when); `status` is `active`,
+ * `paused` or `ended`, with `status_at` and `ended_reason`. Who started it
+ * as a post keeps it (`started_by`, `started_via`). One rule that has not
+ * ended a post, and one a channel.
+ */
+export const followUpRules = publishing.table(
+  "follow_up_rules",
+  {
+    approval: jsonb("approval").notNull(),
+    channelId: uuid("channel_id"),
+    comment: text("comment"),
+    createdAt: instant("created_at").notNull(),
+    endedReason: text("ended_reason"),
+    id: uuid("id").primaryKey(),
+    likes: integer("likes").notNull(),
+    postId: uuid("post_id").references(() => posts.id, {
+      onDelete: "cascade",
+    }),
+    repost: boolean("repost").notNull(),
+    scope: text("scope").notNull(),
+    startedBy: uuid("started_by"),
+    startedVia: jsonb("started_via").notNull(),
+    status: text("status").notNull(),
+    statusAt: instant("status_at"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("follow_up_rules_post")
+      .on(table.postId)
+      .where(sql`${table.status} <> 'ended' AND ${table.scope} = 'post'`),
+    uniqueIndex("follow_up_rules_channel")
+      .on(table.channelId)
+      .where(sql`${table.status} <> 'ended' AND ${table.scope} = 'channel'`),
+    // A workspace's rules, oldest first: ids are UUIDv7s.
+    index("follow_up_rules_workspace_id").on(table.workspaceId, table.id),
+    check(
+      "follow_up_rules_scope",
+      sql`(${table.scope} = 'post' AND ${table.postId} IS NOT NULL AND ${table.channelId} IS NULL) OR (${table.scope} = 'channel' AND ${table.channelId} IS NOT NULL AND ${table.postId} IS NULL)`
+    ),
+  ]
+);
+
+/**
+ * What a rule armed on one published target (the domain's `FollowUp`): a
+ * `comment` or a `repost`, one of each kind a target whatever the rules
+ * but for those given up (`cancelled`), so a post is never followed up
+ * twice the same way. `status` is the
+ * state's tag, `state` the domain's JSON of it (ids, counts, instants and
+ * a platform's code, never text); `until` is an armed one's window
+ * (null for one waiting, whose window its state holds),
+ * `triggered_at` when its threshold was reached, for the channel's day,
+ * and `call_claimed_at` when a gate last claimed its call, which keeps it
+ * from being handed over while the call runs.
+ */
+export const followUps = publishing.table(
+  "follow_ups",
+  {
+    armedAt: instant("armed_at").notNull(),
+    attempt: integer("attempt").notNull().default(0),
+    callClaimedAt: instant("call_claimed_at"),
+    channelId: uuid("channel_id").notNull(),
+    id: uuid("id").primaryKey(),
+    kind: text("kind").notNull(),
+    postId: uuid("post_id").notNull(),
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => followUpRules.id, { onDelete: "cascade" }),
+    state: jsonb("state").notNull(),
+    status: text("status").notNull(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => postTargets.id, { onDelete: "cascade" }),
+    triggeredAt: instant("triggered_at"),
+    until: instant("until"),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    // One live follow-up of each kind a target: one given up stays in its
+    // rule's history and leaves the kind to a later rule.
+    uniqueIndex("follow_ups_target_kind")
+      .on(table.targetId, table.kind)
+      .where(sql`${table.status} <> 'cancelled'`),
+    // The run's read: armed ones, by id.
+    index("follow_ups_armed")
+      .on(table.id)
+      .where(sql`${table.status} = 'armed'`),
+    // Those waiting for their channel to be connected again, by id.
+    index("follow_ups_waiting")
+      .on(table.id)
+      .where(sql`${table.status} = 'waiting'`),
+    // The channel's day.
+    index("follow_ups_channel_triggered")
+      .on(table.channelId, table.triggeredAt)
+      .where(sql`${table.triggeredAt} IS NOT NULL`),
+    // Those still on their way, for the handover.
+    index("follow_ups_sending")
+      .on(table.triggeredAt)
+      .where(sql`${table.status} = 'sending'`),
+    index("follow_ups_rule").on(table.ruleId, table.id),
+  ]
+);

@@ -651,4 +651,53 @@ layer(ListingTest)("the published targets", (it) => {
         }).pipe(Effect.ensuring(deletePost(postId)));
       })
   );
+
+  it.effect(
+    "name the channels a post is for, whatever became of it there, to its own workspace alone",
+    () =>
+      Effect.gen(function* channelsOf() {
+        const { channelId, ids, postId, workspaceId } = yield* insertPost([
+          {
+            finishedAt: "2045-02-07T10:00:00.000Z",
+            platformPostId: "110000000000000601",
+            status: "published",
+          },
+          { finishedAt: null, platformPostId: null, status: "pending" },
+          {
+            finishedAt: "2045-02-07T10:05:00.000Z",
+            platformPostId: "110000000000000603",
+            status: "published",
+          },
+        ]);
+
+        const [, waiting, removed] = ids;
+
+        if (waiting === undefined || removed === undefined) {
+          return yield* Effect.die("Three targets were made");
+        }
+
+        return yield* Effect.gen(function* checks() {
+          const published = yield* PublishedTargets;
+          const posts = yield* PostRepository;
+
+          yield* posts.markRemoved(removed, utc("2045-02-08T08:00:00.000Z"));
+
+          const targets = yield* posts.targets(postId);
+
+          const channelOf = (targetId: PostTargetId) =>
+            targets.find(({ id }) => id === targetId)?.channelId;
+
+          assert.sameMembers(
+            [...(yield* published.channelsOf(workspaceId, postId))],
+            [channelId, channelOf(waiting)]
+          );
+
+          // Another workspace names none of them.
+          assert.deepStrictEqual(
+            yield* published.channelsOf(yield* freshWorkspace, postId),
+            []
+          );
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
+  );
 });

@@ -19,29 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.PostNotRecyclable"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.FollowUpRuleTaken"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.PostNotRecyclable value)
+    public ConflictErrorBody(ConflictErrorBody.FollowUpRuleTaken value)
     {
-        Type = "PostNotRecyclable";
+        Type = "FollowUpRuleTaken";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.RecyclingRuleEnded"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyFollowUpRules"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.RecyclingRuleEnded value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyFollowUpRules value)
     {
-        Type = "RecyclingRuleEnded";
-        Value = value.Value;
-    }
-
-    /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyRecyclingRules"/>.
-    /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyRecyclingRules value)
-    {
-        Type = "TooManyRecyclingRules";
+        Type = "TooManyFollowUpRules";
         Value = value.Value;
     }
 
@@ -57,86 +48,64 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "PostNotRecyclable"
+    /// Returns true if <see cref="Type"/> is "FollowUpRuleTaken"
     /// </summary>
-    public bool IsPostNotRecyclable => Type == "PostNotRecyclable";
+    public bool IsFollowUpRuleTaken => Type == "FollowUpRuleTaken";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "RecyclingRuleEnded"
+    /// Returns true if <see cref="Type"/> is "TooManyFollowUpRules"
     /// </summary>
-    public bool IsRecyclingRuleEnded => Type == "RecyclingRuleEnded";
+    public bool IsTooManyFollowUpRules => Type == "TooManyFollowUpRules";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyRecyclingRules"
+    /// Returns the value as a <see cref="Peal.FollowUpRuleTakenEncoded"/> if <see cref="Type"/> is 'FollowUpRuleTaken', otherwise throws an exception.
     /// </summary>
-    public bool IsTooManyRecyclingRules => Type == "TooManyRecyclingRules";
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.PostNotRecyclableEncoded"/> if <see cref="Type"/> is 'PostNotRecyclable', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostNotRecyclable'.</exception>
-    public Peal.PostNotRecyclableEncoded AsPostNotRecyclable() =>
-        IsPostNotRecyclable
-            ? (Peal.PostNotRecyclableEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FollowUpRuleTaken'.</exception>
+    public Peal.FollowUpRuleTakenEncoded AsFollowUpRuleTaken() =>
+        IsFollowUpRuleTaken
+            ? (Peal.FollowUpRuleTakenEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'PostNotRecyclable'"
+                "ConflictErrorBody.Type is not 'FollowUpRuleTaken'"
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.RecyclingRuleEndedEncoded"/> if <see cref="Type"/> is 'RecyclingRuleEnded', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.TooManyFollowUpRulesEncoded"/> if <see cref="Type"/> is 'TooManyFollowUpRules', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingRuleEnded'.</exception>
-    public Peal.RecyclingRuleEndedEncoded AsRecyclingRuleEnded() =>
-        IsRecyclingRuleEnded
-            ? (Peal.RecyclingRuleEndedEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyFollowUpRules'.</exception>
+    public Peal.TooManyFollowUpRulesEncoded AsTooManyFollowUpRules() =>
+        IsTooManyFollowUpRules
+            ? (Peal.TooManyFollowUpRulesEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'RecyclingRuleEnded'"
-            );
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyRecyclingRulesEncoded"/> if <see cref="Type"/> is 'TooManyRecyclingRules', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyRecyclingRules'.</exception>
-    public Peal.TooManyRecyclingRulesEncoded AsTooManyRecyclingRules() =>
-        IsTooManyRecyclingRules
-            ? (Peal.TooManyRecyclingRulesEncoded)Value!
-            : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'TooManyRecyclingRules'"
+                "ConflictErrorBody.Type is not 'TooManyFollowUpRules'"
             );
 
     public T Match<T>(
-        Func<Peal.PostNotRecyclableEncoded, T> onPostNotRecyclable,
-        Func<Peal.RecyclingRuleEndedEncoded, T> onRecyclingRuleEnded,
-        Func<Peal.TooManyRecyclingRulesEncoded, T> onTooManyRecyclingRules,
+        Func<Peal.FollowUpRuleTakenEncoded, T> onFollowUpRuleTaken,
+        Func<Peal.TooManyFollowUpRulesEncoded, T> onTooManyFollowUpRules,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "PostNotRecyclable" => onPostNotRecyclable(AsPostNotRecyclable()),
-            "RecyclingRuleEnded" => onRecyclingRuleEnded(AsRecyclingRuleEnded()),
-            "TooManyRecyclingRules" => onTooManyRecyclingRules(AsTooManyRecyclingRules()),
+            "FollowUpRuleTaken" => onFollowUpRuleTaken(AsFollowUpRuleTaken()),
+            "TooManyFollowUpRules" => onTooManyFollowUpRules(AsTooManyFollowUpRules()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.PostNotRecyclableEncoded> onPostNotRecyclable,
-        Action<Peal.RecyclingRuleEndedEncoded> onRecyclingRuleEnded,
-        Action<Peal.TooManyRecyclingRulesEncoded> onTooManyRecyclingRules,
+        Action<Peal.FollowUpRuleTakenEncoded> onFollowUpRuleTaken,
+        Action<Peal.TooManyFollowUpRulesEncoded> onTooManyFollowUpRules,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "PostNotRecyclable":
-                onPostNotRecyclable(AsPostNotRecyclable());
+            case "FollowUpRuleTaken":
+                onFollowUpRuleTaken(AsFollowUpRuleTaken());
                 break;
-            case "RecyclingRuleEnded":
-                onRecyclingRuleEnded(AsRecyclingRuleEnded());
-                break;
-            case "TooManyRecyclingRules":
-                onTooManyRecyclingRules(AsTooManyRecyclingRules());
+            case "TooManyFollowUpRules":
+                onTooManyFollowUpRules(AsTooManyFollowUpRules());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -145,13 +114,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.PostNotRecyclableEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.FollowUpRuleTakenEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsPostNotRecyclable(out Peal.PostNotRecyclableEncoded? value)
+    public bool TryAsFollowUpRuleTaken(out Peal.FollowUpRuleTakenEncoded? value)
     {
-        if (Type == "PostNotRecyclable")
+        if (Type == "FollowUpRuleTaken")
         {
-            value = (Peal.PostNotRecyclableEncoded)Value!;
+            value = (Peal.FollowUpRuleTakenEncoded)Value!;
             return true;
         }
         value = null;
@@ -159,27 +128,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.RecyclingRuleEndedEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyFollowUpRulesEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsRecyclingRuleEnded(out Peal.RecyclingRuleEndedEncoded? value)
+    public bool TryAsTooManyFollowUpRules(out Peal.TooManyFollowUpRulesEncoded? value)
     {
-        if (Type == "RecyclingRuleEnded")
+        if (Type == "TooManyFollowUpRules")
         {
-            value = (Peal.RecyclingRuleEndedEncoded)Value!;
-            return true;
-        }
-        value = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyRecyclingRulesEncoded"/> and returns true if successful.
-    /// </summary>
-    public bool TryAsTooManyRecyclingRules(out Peal.TooManyRecyclingRulesEncoded? value)
-    {
-        if (Type == "TooManyRecyclingRules")
-        {
-            value = (Peal.TooManyRecyclingRulesEncoded)Value!;
+            value = (Peal.TooManyFollowUpRulesEncoded)Value!;
             return true;
         }
         value = null;
@@ -188,14 +143,11 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotRecyclable value) =>
-        new(value);
-
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.RecyclingRuleEnded value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.FollowUpRuleTaken value) =>
         new(value);
 
     public static implicit operator ConflictErrorBody(
-        ConflictErrorBody.TooManyRecyclingRules value
+        ConflictErrorBody.TooManyFollowUpRules value
     ) => new(value);
 
     [Serializable]
@@ -239,21 +191,15 @@ public record ConflictErrorBody
 
             var value = discriminator switch
             {
-                "PostNotRecyclable" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.PostNotRecyclableEncoded?>(options)
+                "FollowUpRuleTaken" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.FollowUpRuleTakenEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.PostNotRecyclableEncoded"
+                            "Failed to deserialize Peal.FollowUpRuleTakenEncoded"
                         ),
-                "RecyclingRuleEnded" => json.Deserialize<Peal.RecyclingRuleEndedEncoded?>(options)
-                    ?? throw new JsonException(
-                        "Failed to deserialize Peal.RecyclingRuleEndedEncoded"
-                    ),
-                "TooManyRecyclingRules" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyRecyclingRulesEncoded?>(
-                        options
-                    )
+                "TooManyFollowUpRules" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyFollowUpRulesEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyRecyclingRulesEncoded"
+                            "Failed to deserialize Peal.TooManyFollowUpRulesEncoded"
                         ),
                 _ => json.Deserialize<object?>(options),
             };
@@ -269,9 +215,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "PostNotRecyclable" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "RecyclingRuleEnded" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyRecyclingRules" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FollowUpRuleTaken" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyFollowUpRules" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -301,62 +246,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for PostNotRecyclable
+    /// Discriminated union type for FollowUpRuleTaken
     /// </summary>
     [Serializable]
-    public struct PostNotRecyclable
+    public struct FollowUpRuleTaken
     {
-        public PostNotRecyclable(Peal.PostNotRecyclableEncoded value)
+        public FollowUpRuleTaken(Peal.FollowUpRuleTakenEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.PostNotRecyclableEncoded Value { get; set; }
+        internal Peal.FollowUpRuleTakenEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.PostNotRecyclable(
-            Peal.PostNotRecyclableEncoded value
+        public static implicit operator ConflictErrorBody.FollowUpRuleTaken(
+            Peal.FollowUpRuleTakenEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for RecyclingRuleEnded
+    /// Discriminated union type for TooManyFollowUpRules
     /// </summary>
     [Serializable]
-    public struct RecyclingRuleEnded
+    public struct TooManyFollowUpRules
     {
-        public RecyclingRuleEnded(Peal.RecyclingRuleEndedEncoded value)
+        public TooManyFollowUpRules(Peal.TooManyFollowUpRulesEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.RecyclingRuleEndedEncoded Value { get; set; }
+        internal Peal.TooManyFollowUpRulesEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.RecyclingRuleEnded(
-            Peal.RecyclingRuleEndedEncoded value
-        ) => new(value);
-    }
-
-    /// <summary>
-    /// Discriminated union type for TooManyRecyclingRules
-    /// </summary>
-    [Serializable]
-    public struct TooManyRecyclingRules
-    {
-        public TooManyRecyclingRules(Peal.TooManyRecyclingRulesEncoded value)
-        {
-            Value = value;
-        }
-
-        internal Peal.TooManyRecyclingRulesEncoded Value { get; set; }
-
-        public override string ToString() => Value.ToString() ?? "null";
-
-        public static implicit operator ConflictErrorBody.TooManyRecyclingRules(
-            Peal.TooManyRecyclingRulesEncoded value
+        public static implicit operator ConflictErrorBody.TooManyFollowUpRules(
+            Peal.TooManyFollowUpRulesEncoded value
         ) => new(value);
     }
 }

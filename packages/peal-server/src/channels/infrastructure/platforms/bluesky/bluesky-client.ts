@@ -15,6 +15,10 @@ import { Option } from "effect";
 import {
   blueskyChatScopes,
   blueskyGateScopes,
+  blueskyRepostScope,
+  createsRecords,
+  grantsBlueskyChat,
+  repostCollection,
 } from "#shared/domain/bluesky-scopes.ts";
 import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 
@@ -22,7 +26,8 @@ import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.t
  * What Peal asks Bluesky accounts for: to create and delete posts, to
  * create the gates that say who may reply to a thread and whether a post
  * may be quoted (`blueskyGateScopes`), upload images and videos, and check
- * video upload limits. `atproto` is required.
+ * video upload limits. `atproto` is required. The repost's and the chat's
+ * scopes are asked apart (`blueskySignInScope`).
  */
 export const blueskyScope = [
   "atproto",
@@ -43,7 +48,40 @@ export const blueskyScope = [
  * Protocol's consent takes every scope asked or none.
  */
 export const blueskyScopeWith = (chat: boolean): string =>
-  chat ? [blueskyScope, ...blueskyChatScopes].join(" ") : blueskyScope;
+  [blueskyScope, blueskyRepostScope, ...(chat ? blueskyChatScopes : [])].join(
+    " "
+  );
+
+/**
+ * What one sign-in asks, within the most the client may ask (`most`, its
+ * metadata's): publishing's scopes; the repost's for a member who starts a
+ * follow-up rule that reposts there (`reposts`), or a reconnect of a
+ * channel that granted it; the chat's for a member who turns the
+ * channel's messages on (`messages`), or a reconnect of a channel that
+ * granted them. So a reconnect never takes away what a channel granted,
+ * and a first sign-in's consent is no wider than publishing needs.
+ */
+export const blueskySignInScope = (
+  most: string,
+  ask: { readonly messages?: boolean; readonly reposts?: boolean },
+  granted: Option.Option<readonly string[]>
+): string => {
+  const allowed = new Set(most.split(" "));
+  const had = Option.getOrElse(granted, () => []);
+
+  const reposts =
+    ask.reposts === true || createsRecords(had, [repostCollection]);
+
+  const chat = ask.messages === true || grantsBlueskyChat(had);
+
+  return [
+    blueskyScope,
+    ...(reposts ? [blueskyRepostScope] : []),
+    ...(chat ? blueskyChatScopes : []),
+  ]
+    .filter((scope) => scope === blueskyScope || allowed.has(scope))
+    .join(" ");
+};
 
 /** Where the web app's callback page is, and the client documents. */
 export const blueskyPaths = {

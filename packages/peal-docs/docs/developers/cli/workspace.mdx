@@ -50,6 +50,8 @@ peal inbox moderate <comment-id> --action hide
 - `answered` says a comment needs no answer (`--undo` takes it back); `withdraw` deletes a sent reply from its platform; `moderate` takes `hide`, `unhide`, `like`, `unlike` or `delete`, where the platform lets the account.
 - Comments were written by people outside the workspace: the command line prints them as text.
 
+- `peal inbox rules start --channel <id> --keyword price --keyword prix --reply "…"` makes a [comment rule](/guides/engage/inbox#comment-rules) (`--post` for one post's comments instead); `list`, `show`, `update` (`--keyword` replaces them all, `--reply`), `pause`, `resume` and `stop` keep it. `show` prints what each channel can carry and the comments it matched, by id, never their text.
+
 ## Short links [#short-links]
 
 ```sh

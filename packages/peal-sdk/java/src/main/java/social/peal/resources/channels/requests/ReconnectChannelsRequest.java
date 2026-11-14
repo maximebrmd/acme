@@ -17,23 +17,34 @@ import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
 import social.peal.resources.channels.types.ReconnectChannelsRequestMessages;
+import social.peal.resources.channels.types.ReconnectChannelsRequestReposts;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ReconnectChannelsRequest.Builder.class)
 public final class ReconnectChannelsRequest {
     private final Optional<ReconnectChannelsRequestMessages> messages;
 
+    private final Optional<ReconnectChannelsRequestReposts> reposts;
+
     private final Map<String, Object> additionalProperties;
 
     private ReconnectChannelsRequest(
-            Optional<ReconnectChannelsRequestMessages> messages, Map<String, Object> additionalProperties) {
+            Optional<ReconnectChannelsRequestMessages> messages,
+            Optional<ReconnectChannelsRequestReposts> reposts,
+            Map<String, Object> additionalProperties) {
         this.messages = messages;
+        this.reposts = reposts;
         this.additionalProperties = additionalProperties;
     }
 
     @JsonProperty("messages")
     public Optional<ReconnectChannelsRequestMessages> getMessages() {
         return messages;
+    }
+
+    @JsonProperty("reposts")
+    public Optional<ReconnectChannelsRequestReposts> getReposts() {
+        return reposts;
     }
 
     @java.lang.Override
@@ -48,12 +59,12 @@ public final class ReconnectChannelsRequest {
     }
 
     private boolean equalTo(ReconnectChannelsRequest other) {
-        return messages.equals(other.messages);
+        return messages.equals(other.messages) && reposts.equals(other.reposts);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.messages);
+        return Objects.hash(this.messages, this.reposts);
     }
 
     @java.lang.Override
@@ -69,12 +80,15 @@ public final class ReconnectChannelsRequest {
     public static final class Builder {
         private Optional<ReconnectChannelsRequestMessages> messages = Optional.empty();
 
+        private Optional<ReconnectChannelsRequestReposts> reposts = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         public Builder from(ReconnectChannelsRequest other) {
             messages(other.getMessages());
+            reposts(other.getReposts());
             return this;
         }
 
@@ -89,13 +103,24 @@ public final class ReconnectChannelsRequest {
             return this;
         }
 
+        @JsonSetter(value = "reposts", nulls = Nulls.SKIP)
+        public Builder reposts(Optional<ReconnectChannelsRequestReposts> reposts) {
+            this.reposts = reposts;
+            return this;
+        }
+
+        public Builder reposts(ReconnectChannelsRequestReposts reposts) {
+            this.reposts = Optional.ofNullable(reposts);
+            return this;
+        }
+
         public ReconnectChannelsRequest build() {
-            return new ReconnectChannelsRequest(messages, additionalProperties);
+            return new ReconnectChannelsRequest(messages, reposts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("messages")) {
+            if (key.equalsIgnoreCase("messages") || key.equalsIgnoreCase("reposts")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -18,6 +18,8 @@ import type {
   ImageProviderRefused,
   ImportUnreadable,
   MediaSourceFailure,
+  CommentRuleRefusal,
+  FollowUpRefusal,
   NotRecyclableReason,
   PostNotPromotable,
   TextProviderAddressRefused,
@@ -150,6 +152,33 @@ const urlRefusals: Readonly<Record<WebhookUrlRefused["reason"], string>> = {
   tooLong: "The address is longer than 2048 characters.",
   unknownHost:
     "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why a comment rule was refused, as the user puts it right.
+const commentRuleRefusals: Readonly<Record<CommentRuleRefusal, string>> = {
+  channels:
+    "No channel can carry the rule's reply, or it is too long for one that could: each channel says why. Nothing was saved.",
+  emptyReply: "The reply is empty: give it some text.",
+  keywords:
+    "Give 1 to 10 keywords of 60 characters at most, each with some letters or digits.",
+  noChannel:
+    "The rule answers on no channel of the inbox: a post's rule needs a post that went out, on a channel the inbox reads.",
+};
+
+// Why a follow-up rule was refused, as the user puts it right.
+const followUpRefusals: Readonly<Record<FollowUpRefusal, string>> = {
+  channels:
+    "No channel can carry what the rule asks, or its comment is too long for one that could: each channel says, kind by kind. Nothing was saved.",
+  emptyComment:
+    "The comment is empty: give it some text, or take --comment away.",
+  noAction: "The rule does nothing: give --comment, --repost or both.",
+  noChannel:
+    "The rule acts on no channel of the workspace: peal channels list shows them.",
+  windowPassed:
+    "Nothing of the post is left to publish, and no channel it went out on can still be followed up: its seven days passed, it failed, or no channel there can carry the rule.",
+  alreadyFollowedUp:
+    "Another rule already follows the post up this way: stop it first (peal follow-ups stop).",
+  postCancelled: "The post was cancelled: nothing of it can be followed up.",
 };
 
 // Why a post cannot repeat, as the user puts it right.
@@ -760,6 +789,46 @@ const reasonOf =
         refused(
           "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
         ),
+      CommentRuleEnded: ({ reason }) =>
+        refused(
+          `The comment rule ended (${reason}) and changes no more: peal inbox rules start makes another.`
+        ),
+      CommentRuleNotFound: () =>
+        refused(
+          "The workspace has no such comment rule: peal inbox rules list shows them."
+        ),
+      CommentRuleNotPossible: ({ channels, reason }) =>
+        refused(
+          [
+            commentRuleRefusals[reason],
+            ...channels.map(
+              ({ channelId, platform, reply }) =>
+                `  ${platform} ${channelId}: ${reply}`
+            ),
+          ].join("\n")
+        ),
+      FollowUpNotPossible: ({ channels, reason }) =>
+        refused(
+          [
+            followUpRefusals[reason],
+            ...channels.map(
+              ({ channelId, comment, platform, repost }) =>
+                `  ${platform} ${channelId}: comment ${comment}, repost ${repost}`
+            ),
+          ].join("\n")
+        ),
+      FollowUpRuleEnded: ({ reason }) =>
+        refused(
+          `The follow-up rule ended (${reason}) and changes no more: peal follow-ups start makes another.`
+        ),
+      FollowUpRuleNotFound: () =>
+        refused(
+          "The workspace has no such follow-up rule: peal follow-ups list shows them."
+        ),
+      FollowUpRuleTaken: ({ ruleId }) =>
+        refused(
+          `Rule ${ruleId} already follows this post or channel up: change it with peal follow-ups update, or stop it first.`
+        ),
       RecyclingEndsTooSoon: ({ firstDueAt }) =>
         refused(
           `The rule's --until or --count leaves no post to make: the next would be due at ${DateTime.formatIso(firstDueAt)}. Nothing was changed.`
@@ -883,6 +952,14 @@ const reasonOf =
       TooManyQueues: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
+        ),
+      TooManyCommentRules: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} comment rules going, the most it may: stop one first, with peal inbox rules stop.`
+        ),
+      TooManyFollowUpRules: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} follow-up rules going, the most it may: stop one first, with peal follow-ups stop.`
         ),
       TooManyRecyclingRules: ({ allowed }) =>
         refused(

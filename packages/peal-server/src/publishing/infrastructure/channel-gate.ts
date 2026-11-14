@@ -79,6 +79,10 @@ import type {
   ReviewsReadFailure,
 } from "#engagement/application/ports/review-source.ts";
 import {
+  FollowUpPublisher,
+  FollowUpRequestSchema,
+} from "#publishing/application/follow-up-publisher.ts";
+import {
   EditOutcomeSchema,
   EditRequestSchema,
   LivePostClients,
@@ -225,6 +229,16 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: EditRequestSchema },
     success: EditOutcomeSchema,
   }),
+  Rpc.make("SendFollowUp", {
+    error: PublishFailureSchema,
+    payload: { request: FollowUpRequestSchema },
+    success: PublishResultSchema,
+  }),
+  Rpc.make("ResumeFollowUp", {
+    error: PublishFailureSchema,
+    payload: { request: FollowUpRequestSchema },
+    success: PublishResultSchema,
+  }),
 ]);
 
 /**
@@ -243,6 +257,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
     const messages = yield* MessageSource;
     const messageSender = yield* MessageSender;
     const live = yield* LivePostClients;
+    const followUps = yield* FollowUpPublisher;
 
     return ChannelGate.of({
       EditLivePost: ({ payload }) => live.edit(payload.request),
@@ -256,9 +271,11 @@ export const ChannelGateLive = ChannelGate.toLayer(
       ReadReviews: ({ payload }) => reviews.read(payload.request),
       RemoveLivePost: ({ payload }) => live.remove(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
+      ResumeFollowUp: ({ payload }) => followUps.resume(payload.request),
       ResumeMessage: ({ payload }) => messageSender.resume(payload.request),
       ResumeReply: ({ payload }) => replies.resume(payload.request),
       ResumeReviewReply: ({ payload }) => reviewReplies.resume(payload.request),
+      SendFollowUp: ({ payload }) => followUps.send(payload.request),
       SendMessage: ({ payload }) => messageSender.send(payload.request),
       SendReply: ({ payload }) => replies.send(payload.request),
       SendReviewReply: ({ payload }) => reviewReplies.send(payload.request),
@@ -410,6 +427,57 @@ export const GatedPlatformPublisher = Layer.effect(
         gated(gateFor(request.channelId).Publish({ request }), notSent),
       resume: (request) =>
         gated(gateFor(request.channelId).Resume({ request }), notChecked),
+    });
+  })
+);
+
+/**
+ * The FollowUpPublisher the follow-ups' jobs use: each call goes through
+ * its channel's gate, in turn with the channel's publishing, answering as
+ * the publishing calls do (`GatedPlatformPublisher`): a call the gate did
+ * not take was not sent, one it lost may have gone out. Provide
+ * ChannelGateLive, with the real publisher, beside it.
+ */
+export const GatedFollowUpPublisher = Layer.effect(
+  FollowUpPublisher,
+  Effect.gen(function* GatedFollowUpPublisher() {
+    const gateFor = yield* ChannelGate.client;
+
+    type GateCall = ReturnType<ReturnType<typeof gateFor>["SendFollowUp"]>;
+
+    const gated = (
+      call: GateCall,
+      notTaken: () => Effect.Effect<PublishResult, PublishFailure>
+    ) =>
+      call.pipe(
+        Effect.retry({
+          schedule: notTakenRetry,
+          times: 4,
+          while: (error) =>
+            error._tag === "MailboxFull" ||
+            error._tag === "EntityNotAssignedToRunner",
+        }),
+        Effect.catchTags({
+          AlreadyProcessingMessage: () =>
+            Effect.succeed<PublishResult>({
+              _tag: "unconfirmed",
+              reason: "noResponse",
+            }),
+          EntityNotAssignedToRunner: notTaken,
+          MailboxFull: notTaken,
+          PersistenceError: notTaken,
+        }),
+        Effect.catchDefect(unknownOutcome)
+      );
+
+    return FollowUpPublisher.of({
+      resume: (request) =>
+        gated(
+          gateFor(request.channelId).ResumeFollowUp({ request }),
+          notChecked
+        ),
+      send: (request) =>
+        gated(gateFor(request.channelId).SendFollowUp({ request }), notSent),
     });
   })
 );

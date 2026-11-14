@@ -4,6 +4,7 @@ import { ClusterCron } from "effect/cluster";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
+import { CommentRules } from "#engagement/application/comment-rules.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import {
   messagesRetentionFailures,
@@ -18,7 +19,8 @@ import { SendReply } from "#engagement/application/send-reply.ts";
 /**
  * Every ten minutes, at minutes 2, 12, 22…: follows the posts that went
  * live since the last run and reads the comments of the threads due,
- * through each channel's gate. A run stops reading 8 minutes after its
+ * through each channel's gate, then runs the keyword rules over what came
+ * in (`CommentRules.runDue`). A run stops reading 8 minutes after its
  * scheduled time, before the next one, and says what it left; one more
  * than 8 minutes late is skipped: the next one reads what it would have.
  *
@@ -46,6 +48,14 @@ const CollectCommentsCron = ClusterCron.make({
 
     if (Object.values(report).some((count) => count > 0)) {
       yield* Effect.logInfo("Collected comments", report);
+    }
+
+    // The keyword rules answer what came in: each reply through the
+    // inbox's own journal and job, never a call of the run's.
+    const answered = yield* CommentRules.use((rules) => rules.runDue);
+
+    if (answered.looked > 0 || answered.ended > 0) {
+      yield* Effect.logInfo("Ran the comment rules", answered);
     }
   }).pipe(
     Effect.catchCause((cause) =>

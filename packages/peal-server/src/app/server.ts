@@ -21,6 +21,7 @@ import {
   analyticsCollection,
   AnalyticsLive,
   AnalyticsRecordsLive,
+  PostLikesLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
 import { ApiAnswersLive } from "#app/answers.ts";
@@ -71,6 +72,7 @@ import {
   InboxApiLive,
   InboxMessagesApiLive,
   InboxReviewsApiLive,
+  InboxRulesApiLive,
   EngagementRecordsLive,
   EngagementWorkersLive,
   InboxWaitingLive,
@@ -108,6 +110,7 @@ import {
   PublishingLive,
   QueuesApiLive,
   RecyclingApiLive,
+  FollowUpsApiLive,
   FeedsApiLive,
   SignaturesApiLive,
   TagsApiLive,
@@ -189,6 +192,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   InboxApiLive,
   InboxMessagesApiLive,
   InboxReviewsApiLive,
+  InboxRulesApiLive,
   ContractRequestsDeskApiLive,
   BillingAccountsDeskApiLive,
   TagsApiLive,
@@ -196,6 +200,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelSetsApiLive,
   QueuesApiLive,
   RecyclingApiLive,
+  FollowUpsApiLive,
   FeedsApiLive,
   ChannelDefaultsApiLive,
   AdsApiLive,
@@ -348,6 +353,8 @@ const PublishingContextLive = PublishingLive.pipe(
       MediaContextLive,
       ReviewGateContextLive,
       AnalyticsRecordsLive,
+      // The likes follow-up rules wait for, as analytics read them.
+      PostLikesLive,
       EngagementRecordsContextLive,
       PostBoostsLive,
       ShortLinkSettingsLive

@@ -3,7 +3,12 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { FollowedPost } from "#engagement/domain/thread.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostTargetId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  PostTargetId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
 /**
  * Where a listing of published posts starts: at `publishedAt`, or for
@@ -22,6 +27,15 @@ export interface FollowCursor {
 export class FollowedPosts extends Context.Service<
   FollowedPosts,
   {
+    /**
+     * The channels a post of the workspace is for, before it is out as
+     * after: what a rule on the post may act on. None for another
+     * workspace's.
+     */
+    readonly channelsOf: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<readonly ChannelId[], DatabaseError>;
     readonly from: (
       cursor: FollowCursor,
       limit: number

@@ -10,12 +10,16 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import type { FeedNotices } from "#publishing/application/feed-notices.ts";
 import type { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import type { FeedSource } from "#publishing/application/feed-source.ts";
+import type { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
+import type { FollowUpCounts } from "#publishing/application/follow-up-counts.ts";
+import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import type { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import {
   FeedsUnused,
+  FollowUpsUnused,
   publishingBehind,
   publishingWorkers,
   RecyclingUnused,
@@ -68,7 +72,7 @@ export const attachableVideo: MediaAssetId = MediaAssetIdSchema.make(
  * with the media posts may show from `media`, and the posts a month allows
  * from `allowance`.
  */
-export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
+export const postsServerBehind = <G, E2, R2, E, R, H, R4, RF = never>(
   gate: Layer.Layer<ApprovalGate | G, E2, R2>,
   media: Layer.Layer<AttachableMedia, E, R>,
   allowance: ReturnType<typeof postAllowance>,
@@ -79,13 +83,21 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // What reads feeds, and who hears one stopped.
   feeds: Layer.Layer<FeedNotices | FeedPictures | FeedSource> = FeedsUnused,
   // The workspaces' short links default: by default, off everywhere.
-  defaults: Layer.Layer<ShortLinkDefaults> = ShortLinkDefaults.none
+  defaults: Layer.Layer<ShortLinkDefaults> = ShortLinkDefaults.none,
+  // What channels carry of follow-up rules and the likes counted, and
+  // what carries follow-ups out: by default, nothing is counted.
+  followUps: Layer.Layer<
+    FollowUpChannels | FollowUpCounts | FollowUpPublisher,
+    never,
+    RF
+  > = Layer.merge(FollowUpsUnused, FollowUpPublisher.none)
 ) =>
   publishingWorkers(
     FakePlatformPublisher,
     UnreadMetrics,
     UnreadComments,
-    FakeLivePostClients
+    FakeLivePostClients,
+    followUps
   ).pipe(
     Layer.provideMerge(
       publishingBehind(
@@ -96,7 +108,8 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
         // used, and FakeRemovals deletes, holds and hears.
         Layer.mergeAll(RepositoryCredentials, FakeHolds, RecordedLiveEvents),
         recycling,
-        feeds
+        feeds,
+        followUps
       )
     ),
     Layer.provideMerge(FakeLivePostClients),

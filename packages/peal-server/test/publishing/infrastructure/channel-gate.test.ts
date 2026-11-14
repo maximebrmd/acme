@@ -6,6 +6,7 @@ import { MetricsReader } from "#analytics/application/metrics-reader.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
+import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import {
@@ -164,6 +165,7 @@ const serverOn = (platform: Platform) =>
             adaptersOf(platform),
             LivePostClients.none,
             UnreadReviews,
+            FollowUpPublisher.none,
             UnreadMessages
           )
         )
@@ -254,9 +256,11 @@ describe("the channel's gate, with every context that calls through it", () => {
       "ReadReviews",
       "RemoveLivePost",
       "Resume",
+      "ResumeFollowUp",
       "ResumeMessage",
       "ResumeReply",
       "ResumeReviewReply",
+      "SendFollowUp",
       "SendMessage",
       "SendReply",
       "SendReviewReply",

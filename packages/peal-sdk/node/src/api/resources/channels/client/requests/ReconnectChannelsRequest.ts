@@ -13,4 +13,5 @@ export interface ReconnectChannelsRequest {
     workspaceId: string;
     channelId: string;
     messages?: Peal.ReconnectChannelsRequestMessages;
+    reposts?: Peal.ReconnectChannelsRequestReposts;
 }

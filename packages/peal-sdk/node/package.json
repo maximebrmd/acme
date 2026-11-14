@@ -403,6 +403,28 @@
       },
       "default": "./dist/cjs/api/resources/recycling/exports.js"
     },
+    "./followUps": {
+      "import": {
+        "types": "./dist/esm/api/resources/followUps/exports.d.mts",
+        "default": "./dist/esm/api/resources/followUps/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/followUps/exports.d.ts",
+        "default": "./dist/cjs/api/resources/followUps/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/followUps/exports.js"
+    },
+    "./inboxRules": {
+      "import": {
+        "types": "./dist/esm/api/resources/inboxRules/exports.d.mts",
+        "default": "./dist/esm/api/resources/inboxRules/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/inboxRules/exports.d.ts",
+        "default": "./dist/cjs/api/resources/inboxRules/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/inboxRules/exports.js"
+    },
     "./feeds": {
       "import": {
         "types": "./dist/esm/api/resources/feeds/exports.d.mts",

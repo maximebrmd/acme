@@ -5272,11 +5272,510 @@ func (c CommentProblem) Ptr() *CommentProblem {
 	return &c
 }
 
+var (
+	commentRuleEndedEncodedFieldTag       = big.NewInt(1 << 0)
+	commentRuleEndedEncodedFieldCode      = big.NewInt(1 << 1)
+	commentRuleEndedEncodedFieldMessage   = big.NewInt(1 << 2)
+	commentRuleEndedEncodedFieldRequestID = big.NewInt(1 << 3)
+	commentRuleEndedEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type CommentRuleEndedEncoded struct {
+	Tag       CommentRuleEndedEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                    `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                    `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                    `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    CommentRuleEndReason       `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommentRuleEndedEncoded) GetTag() CommentRuleEndedEncodedTag {
+	if c == nil {
+		return ""
+	}
+	return c.Tag
+}
+
+func (c *CommentRuleEndedEncoded) GetCode() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Code
+}
+
+func (c *CommentRuleEndedEncoded) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *CommentRuleEndedEncoded) GetRequestID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.RequestID
+}
+
+func (c *CommentRuleEndedEncoded) GetReason() CommentRuleEndReason {
+	if c == nil {
+		return ""
+	}
+	return c.Reason
+}
+
+func (c *CommentRuleEndedEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommentRuleEndedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleEndedEncoded) SetTag(tag CommentRuleEndedEncodedTag) {
+	c.Tag = tag
+	c.require(commentRuleEndedEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleEndedEncoded) SetCode(code *string) {
+	c.Code = code
+	c.require(commentRuleEndedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleEndedEncoded) SetMessage(message *string) {
+	c.Message = message
+	c.require(commentRuleEndedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleEndedEncoded) SetRequestID(requestID *string) {
+	c.RequestID = requestID
+	c.require(commentRuleEndedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleEndedEncoded) SetReason(reason CommentRuleEndReason) {
+	c.Reason = reason
+	c.require(commentRuleEndedEncodedFieldReason)
+}
+
+func (c *CommentRuleEndedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommentRuleEndedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommentRuleEndedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommentRuleEndedEncoded) MarshalJSON() ([]byte, error) {
+	type embed CommentRuleEndedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommentRuleEndedEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CommentRuleEndedEncodedTag string
+
+const (
+	CommentRuleEndedEncodedTagCommentRuleEnded CommentRuleEndedEncodedTag = "CommentRuleEnded"
+)
+
+func NewCommentRuleEndedEncodedTagFromString(s string) (CommentRuleEndedEncodedTag, error) {
+	switch s {
+	case "CommentRuleEnded":
+		return CommentRuleEndedEncodedTagCommentRuleEnded, nil
+	}
+	var t CommentRuleEndedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CommentRuleEndedEncodedTag) Ptr() *CommentRuleEndedEncodedTag {
+	return &c
+}
+
+var (
+	commentRuleNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	commentRuleNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	commentRuleNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type CommentRuleNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommentRuleNotFoundEncoded) GetCode() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Code
+}
+
+func (c *CommentRuleNotFoundEncoded) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *CommentRuleNotFoundEncoded) GetRequestID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.RequestID
+}
+
+func (c *CommentRuleNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommentRuleNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotFoundEncoded) SetCode(code *string) {
+	c.Code = code
+	c.require(commentRuleNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotFoundEncoded) SetMessage(message *string) {
+	c.Message = message
+	c.require(commentRuleNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotFoundEncoded) SetRequestID(requestID *string) {
+	c.RequestID = requestID
+	c.require(commentRuleNotFoundEncodedFieldRequestID)
+}
+
+func (c *CommentRuleNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommentRuleNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommentRuleNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommentRuleNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed CommentRuleNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommentRuleNotFoundEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	commentRuleNotPossibleEncodedFieldTag       = big.NewInt(1 << 0)
+	commentRuleNotPossibleEncodedFieldCode      = big.NewInt(1 << 1)
+	commentRuleNotPossibleEncodedFieldMessage   = big.NewInt(1 << 2)
+	commentRuleNotPossibleEncodedFieldRequestID = big.NewInt(1 << 3)
+	commentRuleNotPossibleEncodedFieldChannels  = big.NewInt(1 << 4)
+	commentRuleNotPossibleEncodedFieldReason    = big.NewInt(1 << 5)
+)
+
+type CommentRuleNotPossibleEncoded struct {
+	Tag       CommentRuleNotPossibleEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                          `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                          `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                          `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Channels  []*ChannelCommentRule            `json:"channels" url:"channels"`
+	Reason    CommentRuleRefusal               `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetTag() CommentRuleNotPossibleEncodedTag {
+	if c == nil {
+		return ""
+	}
+	return c.Tag
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetCode() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Code
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetRequestID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.RequestID
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetChannels() []*ChannelCommentRule {
+	if c == nil {
+		return nil
+	}
+	return c.Channels
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetReason() CommentRuleRefusal {
+	if c == nil {
+		return ""
+	}
+	return c.Reason
+}
+
+func (c *CommentRuleNotPossibleEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommentRuleNotPossibleEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetTag(tag CommentRuleNotPossibleEncodedTag) {
+	c.Tag = tag
+	c.require(commentRuleNotPossibleEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetCode(code *string) {
+	c.Code = code
+	c.require(commentRuleNotPossibleEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetMessage(message *string) {
+	c.Message = message
+	c.require(commentRuleNotPossibleEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetRequestID(requestID *string) {
+	c.RequestID = requestID
+	c.require(commentRuleNotPossibleEncodedFieldRequestID)
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetChannels(channels []*ChannelCommentRule) {
+	c.Channels = channels
+	c.require(commentRuleNotPossibleEncodedFieldChannels)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentRuleNotPossibleEncoded) SetReason(reason CommentRuleRefusal) {
+	c.Reason = reason
+	c.require(commentRuleNotPossibleEncodedFieldReason)
+}
+
+func (c *CommentRuleNotPossibleEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommentRuleNotPossibleEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommentRuleNotPossibleEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommentRuleNotPossibleEncoded) MarshalJSON() ([]byte, error) {
+	type embed CommentRuleNotPossibleEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommentRuleNotPossibleEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CommentRuleNotPossibleEncodedTag string
+
+const (
+	CommentRuleNotPossibleEncodedTagCommentRuleNotPossible CommentRuleNotPossibleEncodedTag = "CommentRuleNotPossible"
+)
+
+func NewCommentRuleNotPossibleEncodedTagFromString(s string) (CommentRuleNotPossibleEncodedTag, error) {
+	switch s {
+	case "CommentRuleNotPossible":
+		return CommentRuleNotPossibleEncodedTagCommentRuleNotPossible, nil
+	}
+	var t CommentRuleNotPossibleEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CommentRuleNotPossibleEncodedTag) Ptr() *CommentRuleNotPossibleEncodedTag {
+	return &c
+}
+
+type CommentRuleRefusal string
+
+const (
+	CommentRuleRefusalKeywords   CommentRuleRefusal = "keywords"
+	CommentRuleRefusalEmptyReply CommentRuleRefusal = "emptyReply"
+	CommentRuleRefusalNoChannel  CommentRuleRefusal = "noChannel"
+	CommentRuleRefusalChannels   CommentRuleRefusal = "channels"
+)
+
+func NewCommentRuleRefusalFromString(s string) (CommentRuleRefusal, error) {
+	switch s {
+	case "keywords":
+		return CommentRuleRefusalKeywords, nil
+	case "emptyReply":
+		return CommentRuleRefusalEmptyReply, nil
+	case "noChannel":
+		return CommentRuleRefusalNoChannel, nil
+	case "channels":
+		return CommentRuleRefusalChannels, nil
+	}
+	var t CommentRuleRefusal
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CommentRuleRefusal) Ptr() *CommentRuleRefusal {
+	return &c
+}
+
 type ConflictErrorBody struct {
-	Type                  string
-	PostNotRecyclable     *PostNotRecyclableEncoded
-	RecyclingRuleEnded    *RecyclingRuleEndedEncoded
-	TooManyRecyclingRules *TooManyRecyclingRulesEncoded
+	Type                 string
+	FollowUpRuleTaken    *FollowUpRuleTakenEncoded
+	TooManyFollowUpRules *TooManyFollowUpRulesEncoded
 
 	rawJSON json.RawMessage
 }
@@ -5288,25 +5787,18 @@ func (c *ConflictErrorBody) GetType() string {
 	return c.Type
 }
 
-func (c *ConflictErrorBody) GetPostNotRecyclable() *PostNotRecyclableEncoded {
+func (c *ConflictErrorBody) GetFollowUpRuleTaken() *FollowUpRuleTakenEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.PostNotRecyclable
+	return c.FollowUpRuleTaken
 }
 
-func (c *ConflictErrorBody) GetRecyclingRuleEnded() *RecyclingRuleEndedEncoded {
+func (c *ConflictErrorBody) GetTooManyFollowUpRules() *TooManyFollowUpRulesEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.RecyclingRuleEnded
-}
-
-func (c *ConflictErrorBody) GetTooManyRecyclingRules() *TooManyRecyclingRulesEncoded {
-	if c == nil {
-		return nil
-	}
-	return c.TooManyRecyclingRules
+	return c.TooManyFollowUpRules
 }
 
 func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
@@ -5321,24 +5813,18 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", c)
 	}
 	switch unmarshaler.Type {
-	case "PostNotRecyclable":
-		value := new(PostNotRecyclableEncoded)
+	case "FollowUpRuleTaken":
+		value := new(FollowUpRuleTakenEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.PostNotRecyclable = value
-	case "RecyclingRuleEnded":
-		value := new(RecyclingRuleEndedEncoded)
+		c.FollowUpRuleTaken = value
+	case "TooManyFollowUpRules":
+		value := new(TooManyFollowUpRulesEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.RecyclingRuleEnded = value
-	case "TooManyRecyclingRules":
-		value := new(TooManyRecyclingRulesEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		c.TooManyRecyclingRules = value
+		c.TooManyFollowUpRules = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -5348,14 +5834,11 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if c.PostNotRecyclable != nil {
-		return internal.MarshalJSONWithExtraProperty(c.PostNotRecyclable, "_tag", "PostNotRecyclable")
+	if c.FollowUpRuleTaken != nil {
+		return internal.MarshalJSONWithExtraProperty(c.FollowUpRuleTaken, "_tag", "FollowUpRuleTaken")
 	}
-	if c.RecyclingRuleEnded != nil {
-		return internal.MarshalJSONWithExtraProperty(c.RecyclingRuleEnded, "_tag", "RecyclingRuleEnded")
-	}
-	if c.TooManyRecyclingRules != nil {
-		return internal.MarshalJSONWithExtraProperty(c.TooManyRecyclingRules, "_tag", "TooManyRecyclingRules")
+	if c.TooManyFollowUpRules != nil {
+		return internal.MarshalJSONWithExtraProperty(c.TooManyFollowUpRules, "_tag", "TooManyFollowUpRules")
 	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
@@ -5364,20 +5847,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type ConflictErrorBodyVisitor interface {
-	VisitPostNotRecyclable(*PostNotRecyclableEncoded) error
-	VisitRecyclingRuleEnded(*RecyclingRuleEndedEncoded) error
-	VisitTooManyRecyclingRules(*TooManyRecyclingRulesEncoded) error
+	VisitFollowUpRuleTaken(*FollowUpRuleTakenEncoded) error
+	VisitTooManyFollowUpRules(*TooManyFollowUpRulesEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
-	if c.PostNotRecyclable != nil {
-		return visitor.VisitPostNotRecyclable(c.PostNotRecyclable)
+	if c.FollowUpRuleTaken != nil {
+		return visitor.VisitFollowUpRuleTaken(c.FollowUpRuleTaken)
 	}
-	if c.RecyclingRuleEnded != nil {
-		return visitor.VisitRecyclingRuleEnded(c.RecyclingRuleEnded)
-	}
-	if c.TooManyRecyclingRules != nil {
-		return visitor.VisitTooManyRecyclingRules(c.TooManyRecyclingRules)
+	if c.TooManyFollowUpRules != nil {
+		return visitor.VisitTooManyFollowUpRules(c.TooManyFollowUpRules)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
@@ -5387,14 +5866,11 @@ func (c *ConflictErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if c.PostNotRecyclable != nil {
-		fields = append(fields, "PostNotRecyclable")
+	if c.FollowUpRuleTaken != nil {
+		fields = append(fields, "FollowUpRuleTaken")
 	}
-	if c.RecyclingRuleEnded != nil {
-		fields = append(fields, "RecyclingRuleEnded")
-	}
-	if c.TooManyRecyclingRules != nil {
-		fields = append(fields, "TooManyRecyclingRules")
+	if c.TooManyFollowUpRules != nil {
+		fields = append(fields, "TooManyFollowUpRules")
 	}
 	if len(fields) == 0 {
 		if c.Type != "" {
@@ -8557,6 +9033,649 @@ func NewFieldTypeFromString(s string) (FieldType, error) {
 
 func (f FieldType) Ptr() *FieldType {
 	return &f
+}
+
+var (
+	followUpNotPossibleEncodedFieldTag       = big.NewInt(1 << 0)
+	followUpNotPossibleEncodedFieldCode      = big.NewInt(1 << 1)
+	followUpNotPossibleEncodedFieldMessage   = big.NewInt(1 << 2)
+	followUpNotPossibleEncodedFieldRequestID = big.NewInt(1 << 3)
+	followUpNotPossibleEncodedFieldChannels  = big.NewInt(1 << 4)
+	followUpNotPossibleEncodedFieldReason    = big.NewInt(1 << 5)
+)
+
+type FollowUpNotPossibleEncoded struct {
+	Tag       FollowUpNotPossibleEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                       `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                       `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                       `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Channels  []*ChannelFollowUps           `json:"channels" url:"channels"`
+	Reason    FollowUpRefusal               `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpNotPossibleEncoded) GetTag() FollowUpNotPossibleEncodedTag {
+	if f == nil {
+		return ""
+	}
+	return f.Tag
+}
+
+func (f *FollowUpNotPossibleEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FollowUpNotPossibleEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FollowUpNotPossibleEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FollowUpNotPossibleEncoded) GetChannels() []*ChannelFollowUps {
+	if f == nil {
+		return nil
+	}
+	return f.Channels
+}
+
+func (f *FollowUpNotPossibleEncoded) GetReason() FollowUpRefusal {
+	if f == nil {
+		return ""
+	}
+	return f.Reason
+}
+
+func (f *FollowUpNotPossibleEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowUpNotPossibleEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetTag(tag FollowUpNotPossibleEncodedTag) {
+	f.Tag = tag
+	f.require(followUpNotPossibleEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(followUpNotPossibleEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(followUpNotPossibleEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(followUpNotPossibleEncodedFieldRequestID)
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetChannels(channels []*ChannelFollowUps) {
+	f.Channels = channels
+	f.require(followUpNotPossibleEncodedFieldChannels)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpNotPossibleEncoded) SetReason(reason FollowUpRefusal) {
+	f.Reason = reason
+	f.require(followUpNotPossibleEncodedFieldReason)
+}
+
+func (f *FollowUpNotPossibleEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowUpNotPossibleEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowUpNotPossibleEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowUpNotPossibleEncoded) MarshalJSON() ([]byte, error) {
+	type embed FollowUpNotPossibleEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowUpNotPossibleEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FollowUpNotPossibleEncodedTag string
+
+const (
+	FollowUpNotPossibleEncodedTagFollowUpNotPossible FollowUpNotPossibleEncodedTag = "FollowUpNotPossible"
+)
+
+func NewFollowUpNotPossibleEncodedTagFromString(s string) (FollowUpNotPossibleEncodedTag, error) {
+	switch s {
+	case "FollowUpNotPossible":
+		return FollowUpNotPossibleEncodedTagFollowUpNotPossible, nil
+	}
+	var t FollowUpNotPossibleEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpNotPossibleEncodedTag) Ptr() *FollowUpNotPossibleEncodedTag {
+	return &f
+}
+
+type FollowUpRefusal string
+
+const (
+	FollowUpRefusalNoAction          FollowUpRefusal = "noAction"
+	FollowUpRefusalEmptyComment      FollowUpRefusal = "emptyComment"
+	FollowUpRefusalPostCancelled     FollowUpRefusal = "postCancelled"
+	FollowUpRefusalNoChannel         FollowUpRefusal = "noChannel"
+	FollowUpRefusalAlreadyFollowedUp FollowUpRefusal = "alreadyFollowedUp"
+	FollowUpRefusalWindowPassed      FollowUpRefusal = "windowPassed"
+	FollowUpRefusalChannels          FollowUpRefusal = "channels"
+)
+
+func NewFollowUpRefusalFromString(s string) (FollowUpRefusal, error) {
+	switch s {
+	case "noAction":
+		return FollowUpRefusalNoAction, nil
+	case "emptyComment":
+		return FollowUpRefusalEmptyComment, nil
+	case "postCancelled":
+		return FollowUpRefusalPostCancelled, nil
+	case "noChannel":
+		return FollowUpRefusalNoChannel, nil
+	case "alreadyFollowedUp":
+		return FollowUpRefusalAlreadyFollowedUp, nil
+	case "windowPassed":
+		return FollowUpRefusalWindowPassed, nil
+	case "channels":
+		return FollowUpRefusalChannels, nil
+	}
+	var t FollowUpRefusal
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpRefusal) Ptr() *FollowUpRefusal {
+	return &f
+}
+
+var (
+	followUpRuleEndedEncodedFieldTag       = big.NewInt(1 << 0)
+	followUpRuleEndedEncodedFieldCode      = big.NewInt(1 << 1)
+	followUpRuleEndedEncodedFieldMessage   = big.NewInt(1 << 2)
+	followUpRuleEndedEncodedFieldRequestID = big.NewInt(1 << 3)
+	followUpRuleEndedEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type FollowUpRuleEndedEncoded struct {
+	Tag       FollowUpRuleEndedEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                     `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                     `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                     `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    FollowUpEndReason           `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpRuleEndedEncoded) GetTag() FollowUpRuleEndedEncodedTag {
+	if f == nil {
+		return ""
+	}
+	return f.Tag
+}
+
+func (f *FollowUpRuleEndedEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FollowUpRuleEndedEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FollowUpRuleEndedEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FollowUpRuleEndedEncoded) GetReason() FollowUpEndReason {
+	if f == nil {
+		return ""
+	}
+	return f.Reason
+}
+
+func (f *FollowUpRuleEndedEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowUpRuleEndedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleEndedEncoded) SetTag(tag FollowUpRuleEndedEncodedTag) {
+	f.Tag = tag
+	f.require(followUpRuleEndedEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleEndedEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(followUpRuleEndedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleEndedEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(followUpRuleEndedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleEndedEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(followUpRuleEndedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleEndedEncoded) SetReason(reason FollowUpEndReason) {
+	f.Reason = reason
+	f.require(followUpRuleEndedEncodedFieldReason)
+}
+
+func (f *FollowUpRuleEndedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowUpRuleEndedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowUpRuleEndedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowUpRuleEndedEncoded) MarshalJSON() ([]byte, error) {
+	type embed FollowUpRuleEndedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowUpRuleEndedEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FollowUpRuleEndedEncodedTag string
+
+const (
+	FollowUpRuleEndedEncodedTagFollowUpRuleEnded FollowUpRuleEndedEncodedTag = "FollowUpRuleEnded"
+)
+
+func NewFollowUpRuleEndedEncodedTagFromString(s string) (FollowUpRuleEndedEncodedTag, error) {
+	switch s {
+	case "FollowUpRuleEnded":
+		return FollowUpRuleEndedEncodedTagFollowUpRuleEnded, nil
+	}
+	var t FollowUpRuleEndedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpRuleEndedEncodedTag) Ptr() *FollowUpRuleEndedEncodedTag {
+	return &f
+}
+
+var (
+	followUpRuleNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	followUpRuleNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	followUpRuleNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type FollowUpRuleNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpRuleNotFoundEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FollowUpRuleNotFoundEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FollowUpRuleNotFoundEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FollowUpRuleNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowUpRuleNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleNotFoundEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(followUpRuleNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleNotFoundEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(followUpRuleNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleNotFoundEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(followUpRuleNotFoundEncodedFieldRequestID)
+}
+
+func (f *FollowUpRuleNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowUpRuleNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowUpRuleNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowUpRuleNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed FollowUpRuleNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowUpRuleNotFoundEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+var (
+	followUpRuleTakenEncodedFieldCode      = big.NewInt(1 << 0)
+	followUpRuleTakenEncodedFieldMessage   = big.NewInt(1 << 1)
+	followUpRuleTakenEncodedFieldRequestID = big.NewInt(1 << 2)
+	followUpRuleTakenEncodedFieldRuleID    = big.NewInt(1 << 3)
+)
+
+type FollowUpRuleTakenEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	RuleID    string  `json:"ruleId" url:"ruleId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpRuleTakenEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FollowUpRuleTakenEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FollowUpRuleTakenEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FollowUpRuleTakenEncoded) GetRuleID() string {
+	if f == nil {
+		return ""
+	}
+	return f.RuleID
+}
+
+func (f *FollowUpRuleTakenEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowUpRuleTakenEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleTakenEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(followUpRuleTakenEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleTakenEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(followUpRuleTakenEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleTakenEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(followUpRuleTakenEncodedFieldRequestID)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpRuleTakenEncoded) SetRuleID(ruleID string) {
+	f.RuleID = ruleID
+	f.require(followUpRuleTakenEncodedFieldRuleID)
+}
+
+func (f *FollowUpRuleTakenEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowUpRuleTakenEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowUpRuleTakenEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowUpRuleTakenEncoded) MarshalJSON() ([]byte, error) {
+	type embed FollowUpRuleTakenEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowUpRuleTakenEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 var (
@@ -26298,6 +27417,175 @@ func (t *TooManyChannelSetsEncoded) String() string {
 }
 
 var (
+	tooManyCommentRulesEncodedFieldTag       = big.NewInt(1 << 0)
+	tooManyCommentRulesEncodedFieldCode      = big.NewInt(1 << 1)
+	tooManyCommentRulesEncodedFieldMessage   = big.NewInt(1 << 2)
+	tooManyCommentRulesEncodedFieldRequestID = big.NewInt(1 << 3)
+	tooManyCommentRulesEncodedFieldAllowed   = big.NewInt(1 << 4)
+)
+
+type TooManyCommentRulesEncoded struct {
+	Tag       TooManyCommentRulesEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                       `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                       `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                       `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed   int                           `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyCommentRulesEncoded) GetTag() TooManyCommentRulesEncodedTag {
+	if t == nil {
+		return ""
+	}
+	return t.Tag
+}
+
+func (t *TooManyCommentRulesEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TooManyCommentRulesEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TooManyCommentRulesEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TooManyCommentRulesEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyCommentRulesEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyCommentRulesEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyCommentRulesEncoded) SetTag(tag TooManyCommentRulesEncodedTag) {
+	t.Tag = tag
+	t.require(tooManyCommentRulesEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyCommentRulesEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(tooManyCommentRulesEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyCommentRulesEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(tooManyCommentRulesEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyCommentRulesEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(tooManyCommentRulesEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyCommentRulesEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyCommentRulesEncodedFieldAllowed)
+}
+
+func (t *TooManyCommentRulesEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyCommentRulesEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyCommentRulesEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyCommentRulesEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyCommentRulesEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyCommentRulesEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TooManyCommentRulesEncodedTag string
+
+const (
+	TooManyCommentRulesEncodedTagTooManyCommentRules TooManyCommentRulesEncodedTag = "TooManyCommentRules"
+)
+
+func NewTooManyCommentRulesEncodedTagFromString(s string) (TooManyCommentRulesEncodedTag, error) {
+	switch s {
+	case "TooManyCommentRules":
+		return TooManyCommentRulesEncodedTagTooManyCommentRules, nil
+	}
+	var t TooManyCommentRulesEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TooManyCommentRulesEncodedTag) Ptr() *TooManyCommentRulesEncodedTag {
+	return &t
+}
+
+var (
 	tooManyConnectLinksEncodedFieldCode      = big.NewInt(1 << 0)
 	tooManyConnectLinksEncodedFieldMessage   = big.NewInt(1 << 1)
 	tooManyConnectLinksEncodedFieldRequestID = big.NewInt(1 << 2)
@@ -26598,6 +27886,140 @@ func NewTooManyFeedsEncodedTagFromString(s string) (TooManyFeedsEncodedTag, erro
 
 func (t TooManyFeedsEncodedTag) Ptr() *TooManyFeedsEncodedTag {
 	return &t
+}
+
+var (
+	tooManyFollowUpRulesEncodedFieldCode      = big.NewInt(1 << 0)
+	tooManyFollowUpRulesEncodedFieldMessage   = big.NewInt(1 << 1)
+	tooManyFollowUpRulesEncodedFieldRequestID = big.NewInt(1 << 2)
+	tooManyFollowUpRulesEncodedFieldAllowed   = big.NewInt(1 << 3)
+)
+
+type TooManyFollowUpRulesEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed   int     `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyFollowUpRulesEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TooManyFollowUpRulesEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TooManyFollowUpRulesEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TooManyFollowUpRulesEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyFollowUpRulesEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyFollowUpRulesEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFollowUpRulesEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(tooManyFollowUpRulesEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFollowUpRulesEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(tooManyFollowUpRulesEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFollowUpRulesEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(tooManyFollowUpRulesEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFollowUpRulesEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyFollowUpRulesEncodedFieldAllowed)
+}
+
+func (t *TooManyFollowUpRulesEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyFollowUpRulesEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyFollowUpRulesEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyFollowUpRulesEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyFollowUpRulesEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyFollowUpRulesEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
 }
 
 var (

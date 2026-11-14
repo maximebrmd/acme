@@ -112,7 +112,10 @@ export const ReferencesTest = Layer.mergeAll(
   ShortLinkDefaults.none
 );
 
-const syntheticUser = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+/** The member `actorIn` signs in as. */
+export const syntheticUser = UserIdSchema.make(
+  "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+);
 
 /** Someone signed in to the workspace with these permissions. */
 export const actorIn = (

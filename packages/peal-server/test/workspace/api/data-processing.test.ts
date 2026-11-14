@@ -374,7 +374,7 @@ describe("the data processing registry", () => {
     // left draft stays until the workspace goes; its figures, as long as
     // the analytics purge keeps them.
     expect(kept("content")).toContain(
-      "Posts that were scheduled, published or cancelled, their publication history and the rules that repeat posts: until the workspace is deleted"
+      "Posts that were scheduled, published or cancelled, their publication history and the rules that repeat posts or follow them up: until the workspace is deleted"
     );
     expect(kept("content")).not.toContain("deletes the post");
     // The daily purges run once a day: a period is its rule's, then at

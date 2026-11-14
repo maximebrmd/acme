@@ -72,6 +72,7 @@ const Recording = Layer.effectContext(
         EngagementRecords.of({
           channelGone: () => Effect.void,
           eraseWorkspace: () => Effect.void,
+          exportCommentRules: () => Effect.succeed([]),
           exportUser: () => Effect.succeed([]),
           exportUserMessages: () => Effect.succeed([]),
           exportUserReviewReplies: () => Effect.succeed([]),

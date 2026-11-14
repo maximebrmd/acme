@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  CommentRuleRecord,
   SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
@@ -51,6 +52,13 @@ export class EngagementRecords extends Context.Service<
       platform: Platform,
       at: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The workspace's rules that answer comments by keyword, oldest
+     * first, each with the comments it looked at, by id.
+     */
+    readonly exportCommentRules: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly CommentRuleRecord[], DatabaseError>;
     /** The replies the user wrote, oldest first. */
     readonly exportUser: (
       userId: UserId

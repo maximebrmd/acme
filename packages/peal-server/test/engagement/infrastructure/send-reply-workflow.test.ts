@@ -32,6 +32,7 @@ import {
   SendReplyV1,
   SendReplyV1Live,
 } from "#engagement/infrastructure/workflows/send-reply.ts";
+import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import {
   ChannelGateLive,
@@ -222,7 +223,8 @@ const serverOver = <S, E, R>(
             FakePlatformPublisher,
             UnreadMetrics,
             adaptersOf(world, platform),
-            LivePostClients.none
+            LivePostClients.none,
+            FollowUpPublisher.none
           )
         )
       )

@@ -23,9 +23,11 @@ import { ContractRequestsApi } from "./contract-requests.ts";
 import { CredentialApi } from "./credential.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { FeedsApi } from "./feeds.ts";
+import { FollowUpsApi } from "./follow-ups.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
 import { InboxMessagesApi } from "./inbox-messages.ts";
 import { InboxReviewsApi } from "./inbox-reviews.ts";
+import { InboxRulesApi } from "./inbox-rules.ts";
 import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
@@ -223,6 +225,99 @@ export {
 export type { NotRecyclableReason } from "./post-not-recyclable.ts";
 
 export { RecyclingEndsTooSoon } from "./recycling-ends-too-soon.ts";
+
+export { FollowUpsApi } from "./follow-ups.ts";
+
+export { InboxRulesApi } from "./inbox-rules.ts";
+
+export {
+  ChannelCommentRuleSchema,
+  CommentRuleAbilitySchema,
+  CommentRuleChangeSchema,
+  CommentRuleEndReasonSchema,
+  CommentRuleMatchSchema,
+  CommentRuleOutcomeSchema,
+  commentRuleMatchesShown,
+  CommentRulePageSchema,
+  CommentRuleRefusalSchema,
+  CommentRuleSchema,
+  CommentRuleStatusSchema,
+  maxChannelRepliesPerDay,
+  maxCommentRulesPerWorkspace,
+  maxKeywordLength,
+  maxKeywords,
+  maxRuleRepliesPerDay,
+  NewCommentRuleSchema,
+} from "./comment-rule.ts";
+
+export type {
+  CommentRule,
+  CommentRuleAbility,
+  CommentRuleChange,
+  CommentRulePage,
+  CommentRuleRefusal,
+  CommentRuleStatus,
+  NewCommentRule,
+} from "./comment-rule.ts";
+
+export { CommentRuleEnded } from "./comment-rule-ended.ts";
+
+export { CommentRuleNotFound } from "./comment-rule-not-found.ts";
+
+export { CommentRuleNotPossible } from "./comment-rule-not-possible.ts";
+
+export { TooManyCommentRules } from "./too-many-comment-rules.ts";
+
+export {
+  ChannelFollowUpsSchema,
+  defaultFollowUpPageSize,
+  FollowUpAbilitySchema,
+  FollowUpApprovalStateSchema,
+  FollowUpEndReasonSchema,
+  FollowUpKindSchema,
+  FollowUpRefusalSchema,
+  FollowUpRuleChangeSchema,
+  FollowUpRulePageSchema,
+  FollowUpRuleSchema,
+  FollowUpRuleStatusSchema,
+  FollowUpSchema,
+  FollowUpStatusSchema,
+  followUpsShown,
+  followUpWindowDays,
+  maxFollowUpCommentLength,
+  maxFollowUpPageSize,
+  maxFollowUpRulesPerWorkspace,
+  maxFollowUpsPerChannelDay,
+  maxLikesThreshold,
+  minLikesThreshold,
+  NewFollowUpRuleSchema,
+} from "./follow-up-rule.ts";
+
+export type {
+  ChannelFollowUps,
+  FollowUp,
+  FollowUpAbility,
+  FollowUpApprovalState,
+  FollowUpEndReason,
+  FollowUpKind,
+  FollowUpRefusal,
+  FollowUpRule,
+  FollowUpRuleChange,
+  FollowUpRulePage,
+  FollowUpRuleStatus,
+  FollowUpStatus,
+  NewFollowUpRule,
+} from "./follow-up-rule.ts";
+
+export { FollowUpNotPossible } from "./follow-up-not-possible.ts";
+
+export { FollowUpRuleEnded } from "./follow-up-rule-ended.ts";
+
+export { FollowUpRuleNotFound } from "./follow-up-rule-not-found.ts";
+
+export { FollowUpRuleTaken } from "./follow-up-rule-taken.ts";
+
+export { TooManyFollowUpRules } from "./too-many-follow-up-rules.ts";
 
 export { RecyclingRuleEnded } from "./recycling-rule-ended.ts";
 
@@ -2344,6 +2439,8 @@ export class Api extends HttpApi.make("peal")
   .add(ChannelSetsApi)
   .add(QueuesApi)
   .add(RecyclingApi)
+  .add(FollowUpsApi)
+  .add(InboxRulesApi)
   .add(FeedsApi)
   .add(ChannelDefaultsApi)
   .add(ShortLinksApi)

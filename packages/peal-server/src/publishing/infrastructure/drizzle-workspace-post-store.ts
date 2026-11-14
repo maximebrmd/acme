@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
@@ -10,6 +10,7 @@ import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
+  FollowUpRuleRecord,
   PostOriginRecord,
   PostRecord,
   SavedItemsRecord,
@@ -23,6 +24,8 @@ import {
   feedReads,
   feeds,
   queues,
+  followUpRules,
+  followUps as armedFollowUps,
   recyclingRules,
   idempotencyKeys,
   livePostChanges,
@@ -34,6 +37,15 @@ import {
 } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
+
+// A follow-up rule's approval as stored, for the export: its tag, and
+// when it was approved, never by whom.
+const decodeApproval = Schema.decodeUnknownEffect(
+  Schema.Struct({
+    _tag: Schema.String,
+    approvedAt: Schema.optionalKey(Schema.DateTimeUtcFromString),
+  })
+);
 
 const decodeStanding = Schema.decodeUnknownEffect(
   Schema.Struct({
@@ -374,6 +386,21 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .where(eq(recyclingRules.startedBy, userId))
           .pipe(Effect.mapError(failed));
 
+        // Nor that they started a follow-up rule: its next follow-up ends
+        // it, as its starter is gone.
+        yield* db
+          .update(followUpRules)
+          .set({ startedBy: null })
+          .where(eq(followUpRules.startedBy, userId))
+          .pipe(Effect.mapError(failed));
+
+        // Nor that they approved one: it stays approved, by nobody named.
+        yield* db
+          .update(followUpRules)
+          .set({ approval: sql`${followUpRules.approval} - 'approvedBy'` })
+          .where(sql`${followUpRules.approval}->>'approvedBy' = ${userId}`)
+          .pipe(Effect.mapError(failed));
+
         // Nor that they added a feed: the next run stops it, as its
         // starter is gone.
         yield* db
@@ -390,6 +417,54 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .pipe(Effect.mapError(failed));
       }
     );
+
+    const exportFollowUpRules = Effect.fn(
+      "WorkspacePostStore.exportFollowUpRules"
+    )(function* exportFollowUpRules(workspaceId: string) {
+      const rules = yield* db
+        .select()
+        .from(followUpRules)
+        .where(eq(followUpRules.workspaceId, workspaceId))
+        .orderBy(asc(followUpRules.id));
+
+      const armed = yield* db
+        .select()
+        .from(armedFollowUps)
+        .where(eq(armedFollowUps.workspaceId, workspaceId))
+        .orderBy(asc(armedFollowUps.id));
+
+      return yield* Effect.forEach((rule: (typeof rules)[number]) =>
+        decodeApproval(rule.approval).pipe(
+          Effect.map((approval): FollowUpRuleRecord => ({
+            approval: approval._tag,
+            approvedAt: approval.approvedAt ?? null,
+            channelId: rule.channelId,
+            comment: rule.comment,
+            createdAt: DateTime.fromDateUnsafe(rule.createdAt),
+            endedReason: rule.endedReason,
+            followUps: armed
+              .filter(({ ruleId }) => ruleId === rule.id)
+              .map((followUp) => ({
+                armedAt: DateTime.fromDateUnsafe(followUp.armedAt),
+                channelId: followUp.channelId,
+                id: followUp.id,
+                kind: followUp.kind,
+                postId: followUp.postId,
+                state: followUp.state,
+                status: followUp.status,
+                targetId: followUp.targetId,
+              })),
+            id: rule.id,
+            likes: rule.likes,
+            postId: rule.postId,
+            repost: rule.repost,
+            scope: rule.scope,
+            status: rule.status,
+            statusAt: utcOrNull(rule.statusAt),
+          }))
+        )
+      )(rules);
+    });
 
     const exportSaved = Effect.fn("WorkspacePostStore.exportSaved")(
       function* exportSaved(workspaceId: string) {
@@ -465,6 +540,7 @@ export const DrizzleWorkspacePostStore = Layer.effect(
             until: rule.until,
             variants: rule.variants,
           })),
+          followUpRules: yield* exportFollowUpRules(workspaceId),
           signatures: (yield* db
             .select({
               createdAt: signatures.createdAt,
@@ -509,6 +585,13 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(feeds)
           .where(eq(feeds.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // The follow-up rules, with what they armed: a job that wakes
+        // finds nothing, and a gate claims no call for it.
+        yield* db
+          .delete(followUpRules)
+          .where(eq(followUpRules.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
 
         // And what its members had read for it this past day.

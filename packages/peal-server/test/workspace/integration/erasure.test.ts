@@ -194,6 +194,11 @@ const workspaceRows = {
   // do the replies sent to them.
   "engagement.comments": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
+  // The rules that answer them by keyword go too, with what they matched.
+  "engagement.comment_rule_matches": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.comment_rule_matches m JOIN engagement.comment_rules r ON r.id = m.rule_id WHERE r.workspace_id = ${id}`,
+  "engagement.comment_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.comment_rules WHERE workspace_id = ${id}`,
   "engagement.conversations": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.conversations WHERE workspace_id = ${id}`,
   "engagement.direct_messages": (sql, id) =>
@@ -222,6 +227,11 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE workspace_id = ${id}`,
   "publishing.channel_defaults": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.channel_defaults WHERE workspace_id = ${id}`,
+  // The rules that follow its posts up go, with what they armed.
+  "publishing.follow_up_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.follow_up_rules WHERE workspace_id = ${id}`,
+  "publishing.follow_ups": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.follow_ups WHERE workspace_id = ${id}`,
   "publishing.channel_sets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.channel_sets WHERE workspace_id = ${id}`,
   // The feeds it follows go, with what they read and the reads its
@@ -392,6 +402,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM engagement.review_replies WHERE author_id = ${id}`,
   "engagement.threads": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.threads WHERE author_id = ${id}`,
+  // The comment rules they started stay with the workspace, without them:
+  // the next run ends each, its starter gone.
+  "engagement.comment_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.comment_rules WHERE started_by = ${id}`,
   "notifications.notices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
@@ -400,6 +414,10 @@ const userRows = {
   // run stops each, its starter gone.
   "publishing.feeds": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.feeds WHERE started_by = ${id}`,
+  // The follow-up rules they started or approved stay, without them: the
+  // next run ends each they started, its starter gone.
+  "publishing.follow_up_rules": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.follow_up_rules WHERE started_by = ${id} OR approval->>'approvedBy' = ${id}`,
   // The changes they asked of live posts stay, without them.
   "publishing.live_post_changes": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
@@ -620,6 +638,22 @@ const fill = Effect.fn("fill")(function* fill(
 
   const targetId = target?.id ?? "";
 
+  // A rule that follows the post up, started and approved by the person,
+  // and what it armed on the target.
+  const followUpRuleId = uuid7();
+
+  const approval = JSON.stringify({
+    _tag: "approved",
+    approvedAt: "2026-07-06T07:00:00.000Z",
+    approvedBy: person.id,
+  });
+
+  yield* sql`INSERT INTO publishing.follow_up_rules (id, workspace_id, scope, post_id, likes, comment, repost, approval, status, started_by, started_via, created_at)
+    VALUES (${followUpRuleId}, ${workspaceId}, 'post', ${postId}, 50, 'A synthetic follow-up', false, ${approval}::jsonb, 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
+
+  yield* sql`INSERT INTO publishing.follow_ups (id, rule_id, workspace_id, post_id, target_id, channel_id, kind, status, state, armed_at, until)
+    VALUES (${uuid7()}, ${followUpRuleId}, ${workspaceId}, ${postId}, ${targetId}, ${uuid7()}, 'comment', 'armed', '{"_tag":"armed","until":"2030-01-01T00:00:00.000Z"}'::jsonb, now(), now() + interval '7 days')`;
+
   yield* sql`INSERT INTO publishing.publication_attempts (target_id, round, attempt, decision, detail, outcome, started_at, finished_at)
     VALUES (${targetId}, 1, 1, 'settle', '{}'::jsonb, 'published', now(), now())`;
 
@@ -754,6 +788,16 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO engagement.comments (id, thread_id, workspace_id, channel_id, platform_comment_id, author_platform_id, author_handle, author_display_name, text, written_at, received_at, state)
     VALUES (${commentId}, ${threadId}, ${workspaceId}, ${uuid7()}, '113000000000000002', '7001', 'reader@social.example', 'A synthetic reader', 'A synthetic comment', now(), now(), 'answered')`;
+
+  // A rule that answers comments by keyword, started by the person, and
+  // the comment it looked at.
+  const commentRuleId = uuid7();
+
+  yield* sql`INSERT INTO engagement.comment_rules (id, workspace_id, scope, channel_id, keywords, reply, status, started_by, started_via, created_at, answers_from)
+    VALUES (${commentRuleId}, ${workspaceId}, 'channel', ${uuid7()}, ARRAY['price'], 'A synthetic reply', 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now(), now())`;
+
+  yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+    VALUES (${commentRuleId}, ${commentId}, 'noMatch', now())`;
 
   yield* sql`INSERT INTO engagement.replies (id, thread_id, comment_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
     VALUES (${uuid7()}, ${threadId}, ${commentId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic reply', now(), 'sent', now())`;
@@ -1265,6 +1309,63 @@ layer(RetainingLive, {
         for (const { secret } of secrets) {
           assert.notInclude(text, secret);
         }
+
+        // The rules that act by themselves in Lee's own workspace, with
+        // what they did.
+        const exported = yield* Schema.decodeUnknownEffect(
+          Schema.Struct({
+            workspaces: Schema.Array(
+              Schema.Struct({
+                commentRules: Schema.Array(
+                  Schema.Struct({
+                    keywords: Schema.Array(Schema.String),
+                    matches: Schema.Array(
+                      Schema.Struct({ outcome: Schema.String })
+                    ),
+                    reply: Schema.String,
+                  })
+                ),
+                name: Schema.String,
+                saved: Schema.Struct({
+                  followUpRules: Schema.Array(
+                    Schema.Struct({
+                      comment: Schema.NullOr(Schema.String),
+                      followUps: Schema.Array(
+                        Schema.Struct({ kind: Schema.String })
+                      ),
+                    })
+                  ),
+                }),
+              })
+            ),
+          })
+        )(reply.body).pipe(Effect.orDie);
+
+        assert.deepStrictEqual(
+          exported.workspaces.map(({ commentRules, name, saved }) => ({
+            commentRules,
+            followUpRules: saved.followUpRules,
+            name,
+          })),
+          [
+            {
+              commentRules: [
+                {
+                  keywords: ["price"],
+                  matches: [{ outcome: "noMatch" }],
+                  reply: "A synthetic reply",
+                },
+              ],
+              followUpRules: [
+                {
+                  comment: "A synthetic follow-up",
+                  followUps: [{ kind: "comment" }],
+                },
+              ],
+              name: "Studio",
+            },
+          ]
+        );
 
         // Kim's address and notices are Kim's, though Lee works with Kim.
         assert.notInclude(text, kim.email);

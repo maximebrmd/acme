@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    PostNotRecyclable {
+    FollowUpRuleTaken {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,27 +13,13 @@ pub enum ConflictErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
-        #[serde(rename = "postId")]
+        #[serde(rename = "ruleId")]
         #[serde(default)]
-        post_id: String,
-        reason: NotRecyclableReason,
+        rule_id: String,
     },
 
     #[non_exhaustive]
-    RecyclingRuleEnded {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        #[serde(default)]
-        reason: String,
-    },
-
-    #[non_exhaustive]
-    TooManyRecyclingRules {
+    TooManyFollowUpRules {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,27 +39,17 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn post_not_recyclable(post_id: String, reason: NotRecyclableReason) -> Self {
-        Self::PostNotRecyclable {
+    pub fn follow_up_rule_taken(rule_id: String) -> Self {
+        Self::FollowUpRuleTaken {
             code: None,
             message: None,
             request_id: None,
-            post_id,
-            reason,
+            rule_id,
         }
     }
 
-    pub fn recycling_rule_ended(reason: String) -> Self {
-        Self::RecyclingRuleEnded {
-            code: None,
-            message: None,
-            request_id: None,
-            reason,
-        }
-    }
-
-    pub fn too_many_recycling_rules(allowed: i64) -> Self {
-        Self::TooManyRecyclingRules {
+    pub fn too_many_follow_up_rules(allowed: i64) -> Self {
+        Self::TooManyFollowUpRules {
             code: None,
             message: None,
             request_id: None,
@@ -81,103 +57,55 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn post_not_recyclable_with_code(
+    pub fn follow_up_rule_taken_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        post_id: String,
-        reason: NotRecyclableReason,
+        rule_id: String,
     ) -> Self {
-        Self::PostNotRecyclable {
+        Self::FollowUpRuleTaken {
             code: Some(code),
             message,
             request_id,
-            post_id,
-            reason,
+            rule_id,
         }
     }
 
-    pub fn post_not_recyclable_with_message(
+    pub fn follow_up_rule_taken_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        post_id: String,
-        reason: NotRecyclableReason,
+        rule_id: String,
     ) -> Self {
-        Self::PostNotRecyclable {
+        Self::FollowUpRuleTaken {
             code,
             message: Some(message),
             request_id,
-            post_id,
-            reason,
+            rule_id,
         }
     }
 
-    pub fn post_not_recyclable_with_request_id(
+    pub fn follow_up_rule_taken_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        post_id: String,
-        reason: NotRecyclableReason,
+        rule_id: String,
     ) -> Self {
-        Self::PostNotRecyclable {
+        Self::FollowUpRuleTaken {
             code,
             message,
             request_id: Some(request_id),
-            post_id,
-            reason,
+            rule_id,
         }
     }
 
-    pub fn recycling_rule_ended_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        reason: String,
-    ) -> Self {
-        Self::RecyclingRuleEnded {
-            code: Some(code),
-            message,
-            request_id,
-            reason,
-        }
-    }
-
-    pub fn recycling_rule_ended_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        reason: String,
-    ) -> Self {
-        Self::RecyclingRuleEnded {
-            code,
-            message: Some(message),
-            request_id,
-            reason,
-        }
-    }
-
-    pub fn recycling_rule_ended_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        reason: String,
-    ) -> Self {
-        Self::RecyclingRuleEnded {
-            code,
-            message,
-            request_id: Some(request_id),
-            reason,
-        }
-    }
-
-    pub fn too_many_recycling_rules_with_code(
+    pub fn too_many_follow_up_rules_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyRecyclingRules {
+        Self::TooManyFollowUpRules {
             code: Some(code),
             message,
             request_id,
@@ -185,13 +113,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_recycling_rules_with_message(
+    pub fn too_many_follow_up_rules_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyRecyclingRules {
+        Self::TooManyFollowUpRules {
             code,
             message: Some(message),
             request_id,
@@ -199,13 +127,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_recycling_rules_with_request_id(
+    pub fn too_many_follow_up_rules_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
         allowed: i64,
     ) -> Self {
-        Self::TooManyRecyclingRules {
+        Self::TooManyFollowUpRules {
             code,
             message,
             request_id: Some(request_id),

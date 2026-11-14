@@ -201,6 +201,19 @@ const PostFieldsSchema = Schema.Struct({
 
 const isValidPost = Schema.is(PostFieldsSchema);
 
+// A repost, as app.bsky.feed.repost's lexicon writes it: the post it
+// reposts, as a strong reference, and when.
+const isValidRepost = Schema.is(
+  Schema.Struct({
+    $type: Schema.Literal("app.bsky.feed.repost"),
+    createdAt: Schema.String,
+    subject: Schema.Struct({
+      cid: Schema.NonEmptyString,
+      uri: Schema.NonEmptyString,
+    }),
+  })
+);
+
 const tidPattern = /^[234567a-j][234567a-z]{12}$/u;
 
 const sha256 = (text: string) =>
@@ -318,7 +331,9 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
     if (
       !tidPattern.test(body.rkey) ||
       body.repo !== blueskyDid ||
-      !isValidPost(body.record)
+      !(body.collection === "app.bsky.feed.repost"
+        ? isValidRepost(body.record)
+        : isValidPost(body.record))
     ) {
       return json({ error: "InvalidRequest", message: "Bad record" }, 400);
     }

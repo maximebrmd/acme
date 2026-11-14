@@ -156,6 +156,11 @@ const coverage = {
     "Only an owner in person, in the web app, lets an application read the direct messages."
   ),
   "inboxReviews.getReviewThread": by("inbox reviews show"),
+  "inboxRules.createCommentRule": by("inbox rules start"),
+  "inboxRules.deleteCommentRule": by("inbox rules stop"),
+  "inboxRules.getCommentRule": by("inbox rules show"),
+  "inboxRules.listCommentRules": by("inbox rules list"),
+  "inboxRules.updateCommentRule": by("inbox rules update"),
   "inboxReviews.listReviewThreads": by("inbox reviews list"),
   "inboxReviews.replyToReview": exempt(
     "Only a member in the web app answers a review: Google's policies ask that a reply follow the user's own decision, and the command line is an application acting for them."
@@ -246,6 +251,12 @@ const coverage = {
   "queues.reshuffle": by("queues reshuffle"),
   "queues.slots": by("queues preview"),
   "queues.update": by("queues update"),
+  "followUps.approve": by("follow-ups approve"),
+  "followUps.create": by("follow-ups start"),
+  "followUps.delete": by("follow-ups stop"),
+  "followUps.get": by("follow-ups show"),
+  "followUps.list": by("follow-ups list"),
+  "followUps.update": by("follow-ups update"),
   "recycling.create": by("recycling start"),
   "recycling.delete": by("recycling end"),
   "recycling.get": by("recycling show"),

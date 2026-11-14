@@ -14,7 +14,7 @@ import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 // post itself (`status`), which may have gone live when the instance fails.
 type MastodonCall = "media" | "status";
 
-type MastodonRefusal = OutcomeUnknown | PublishFailure | TokenRejected;
+export type MastodonRefusal = OutcomeUnknown | PublishFailure | TokenRejected;
 
 // How Mastodon refuses a token: a JSON error. A page from something on the
 // way, such as a proxy's challenge, says nothing of the token.

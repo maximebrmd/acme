@@ -23,9 +23,11 @@ if typing.TYPE_CHECKING:
     from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
     from .credential.client import AsyncCredentialClient, CredentialClient
     from .feeds.client import AsyncFeedsClient, FeedsClient
+    from .follow_ups.client import AsyncFollowUpsClient, FollowUpsClient
     from .inbox.client import AsyncInboxClient, InboxClient
     from .inbox_messages.client import AsyncInboxMessagesClient, InboxMessagesClient
     from .inbox_reviews.client import AsyncInboxReviewsClient, InboxReviewsClient
+    from .inbox_rules.client import AsyncInboxRulesClient, InboxRulesClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
@@ -169,6 +171,8 @@ class Peal:
         self._channel_sets: typing.Optional[ChannelSetsClient] = None
         self._queues: typing.Optional[QueuesClient] = None
         self._recycling: typing.Optional[RecyclingClient] = None
+        self._follow_ups: typing.Optional[FollowUpsClient] = None
+        self._inbox_rules: typing.Optional[InboxRulesClient] = None
         self._feeds: typing.Optional[FeedsClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
         self._short_links: typing.Optional[ShortLinksClient] = None
@@ -454,6 +458,22 @@ class Peal:
         return self._recycling
 
     @property
+    def follow_ups(self):
+        if self._follow_ups is None:
+            from .follow_ups.client import FollowUpsClient  # noqa: E402
+
+            self._follow_ups = FollowUpsClient(client_wrapper=self._client_wrapper)
+        return self._follow_ups
+
+    @property
+    def inbox_rules(self):
+        if self._inbox_rules is None:
+            from .inbox_rules.client import InboxRulesClient  # noqa: E402
+
+            self._inbox_rules = InboxRulesClient(client_wrapper=self._client_wrapper)
+        return self._inbox_rules
+
+    @property
     def feeds(self):
         if self._feeds is None:
             from .feeds.client import FeedsClient  # noqa: E402
@@ -618,6 +638,8 @@ class AsyncPeal:
         self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
         self._queues: typing.Optional[AsyncQueuesClient] = None
         self._recycling: typing.Optional[AsyncRecyclingClient] = None
+        self._follow_ups: typing.Optional[AsyncFollowUpsClient] = None
+        self._inbox_rules: typing.Optional[AsyncInboxRulesClient] = None
         self._feeds: typing.Optional[AsyncFeedsClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
         self._short_links: typing.Optional[AsyncShortLinksClient] = None
@@ -901,6 +923,22 @@ class AsyncPeal:
 
             self._recycling = AsyncRecyclingClient(client_wrapper=self._client_wrapper)
         return self._recycling
+
+    @property
+    def follow_ups(self):
+        if self._follow_ups is None:
+            from .follow_ups.client import AsyncFollowUpsClient  # noqa: E402
+
+            self._follow_ups = AsyncFollowUpsClient(client_wrapper=self._client_wrapper)
+        return self._follow_ups
+
+    @property
+    def inbox_rules(self):
+        if self._inbox_rules is None:
+            from .inbox_rules.client import AsyncInboxRulesClient  # noqa: E402
+
+            self._inbox_rules = AsyncInboxRulesClient(client_wrapper=self._client_wrapper)
+        return self._inbox_rules
 
     @property
     def feeds(self):

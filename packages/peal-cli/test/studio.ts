@@ -156,6 +156,8 @@ import {
   videoCategories,
 } from "./studio-capabilities.ts";
 import { studioFeedsOf } from "./studio-feeds.ts";
+import { studioFollowUpsOf } from "./studio-follow-ups.ts";
+import { studioInboxRulesOf } from "./studio-inbox-rules.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
 import { makeMessages, studioMessagesLive } from "./studio-messages.ts";
@@ -2486,6 +2488,32 @@ const recyclingOfStudio = studioRecyclingOf({
   workspaceId: studioId,
 });
 
+// The studio's follow-up rules, over its channels and posts.
+const followUpsOfStudio = studioFollowUpsOf({
+  allowed,
+  channelPlatform: (channelId) =>
+    Option.fromUndefinedOr(channels.find(({ id }) => id === channelId)).pipe(
+      Option.map(({ platform }) => platform)
+    ),
+  now: studioNow,
+  posts: (studio) =>
+    Ref.get(studio.state).pipe(Effect.map(({ posts: kept }) => kept)),
+  record,
+  workspaceId: studioId,
+});
+
+// The studio's comment rules, over its channels.
+const inboxRulesOfStudio = studioInboxRulesOf({
+  allowed,
+  channelPlatform: (channelId) =>
+    Option.fromUndefinedOr(channels.find(({ id }) => id === channelId)).pipe(
+      Option.map(({ platform }) => platform)
+    ),
+  now: studioNow,
+  record,
+  workspaceId: studioId,
+});
+
 // The studio's feeds.
 const feedsOfStudio = studioFeedsOf({
   allowed,
@@ -3164,6 +3192,8 @@ export const studioGroupsLive = (studio: Studio) =>
     adsGroupLive(studio),
     queuesOfStudio.groupLive(studio),
     recyclingOfStudio.groupLive(studio),
+    followUpsOfStudio.groupLive(studio),
+    inboxRulesOfStudio.groupLive(studio),
     feedsOfStudio.groupLive(studio),
     overviewGroupLive(studio, studioId),
     HttpApiBuilder.group(Api, "session", (handlers) =>

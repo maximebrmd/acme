@@ -19,9 +19,11 @@ import social.peal.resources.channelsets.ChannelSetsClient;
 import social.peal.resources.connectlinks.ConnectLinksClient;
 import social.peal.resources.credential.CredentialClient;
 import social.peal.resources.feeds.FeedsClient;
+import social.peal.resources.followups.FollowUpsClient;
 import social.peal.resources.inbox.InboxClient;
 import social.peal.resources.inboxmessages.InboxMessagesClient;
 import social.peal.resources.inboxreviews.InboxReviewsClient;
+import social.peal.resources.inboxrules.InboxRulesClient;
 import social.peal.resources.invitations.InvitationsClient;
 import social.peal.resources.lookups.LookupsClient;
 import social.peal.resources.media.MediaClient;
@@ -118,6 +120,10 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<RecyclingClient> recyclingClient;
 
+    protected final Supplier<FollowUpsClient> followUpsClient;
+
+    protected final Supplier<InboxRulesClient> inboxRulesClient;
+
     protected final Supplier<FeedsClient> feedsClient;
 
     protected final Supplier<ChannelDefaultsClient> channelDefaultsClient;
@@ -161,6 +167,8 @@ public class PealClient implements AutoCloseable {
         this.channelSetsClient = Suppliers.memoize(() -> new ChannelSetsClient(clientOptions));
         this.queuesClient = Suppliers.memoize(() -> new QueuesClient(clientOptions));
         this.recyclingClient = Suppliers.memoize(() -> new RecyclingClient(clientOptions));
+        this.followUpsClient = Suppliers.memoize(() -> new FollowUpsClient(clientOptions));
+        this.inboxRulesClient = Suppliers.memoize(() -> new InboxRulesClient(clientOptions));
         this.feedsClient = Suppliers.memoize(() -> new FeedsClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new ChannelDefaultsClient(clientOptions));
         this.shortLinksClient = Suppliers.memoize(() -> new ShortLinksClient(clientOptions));
@@ -304,6 +312,14 @@ public class PealClient implements AutoCloseable {
 
     public RecyclingClient recycling() {
         return this.recyclingClient.get();
+    }
+
+    public FollowUpsClient followUps() {
+        return this.followUpsClient.get();
+    }
+
+    public InboxRulesClient inboxRules() {
+        return this.inboxRulesClient.get();
     }
 
     public FeedsClient feeds() {

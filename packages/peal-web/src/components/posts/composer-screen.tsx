@@ -9,6 +9,7 @@ import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useCallback } from "react";
 
+import { PostFollowUp } from "#components/follow-ups/post-follow-up.tsx";
 import { Composer } from "#components/posts/composer.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { PostChannels } from "#components/posts/post-channels.tsx";
@@ -140,6 +141,11 @@ const ExistingPost = ({
           post={post}
           workspaceId={workspaceId}
         />
+        <PostFollowUp
+          permissions={permissions}
+          post={post}
+          workspaceId={workspaceId}
+        />
         <PostReviewSection
           permissions={permissions}
           post={post}
@@ -178,6 +184,11 @@ const ExistingPost = ({
           />
         ) : null}
         <PostRepeat
+          permissions={permissions}
+          post={post}
+          workspaceId={workspaceId}
+        />
+        <PostFollowUp
           permissions={permissions}
           post={post}
           workspaceId={workspaceId}

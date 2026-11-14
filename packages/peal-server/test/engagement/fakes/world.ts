@@ -494,6 +494,17 @@ export const makeWorld = (
     Layer.succeed(
       FollowedPosts,
       FollowedPosts.of({
+        channelsOf: (workspaceId, postId) =>
+          Effect.succeed([
+            ...new Set(
+              state.posts
+                .filter(
+                  (post) =>
+                    post.workspaceId === workspaceId && post.postId === postId
+                )
+                .map(({ channelId }) => channelId)
+            ),
+          ]),
         from: (cursor, limit) =>
           Effect.succeed(
             state.posts

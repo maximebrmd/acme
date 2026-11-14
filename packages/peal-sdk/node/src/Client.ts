@@ -13,9 +13,11 @@ import { ChannelSetsClient } from "./api/resources/channelSets/client/Client.js"
 import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
 import { CredentialClient } from "./api/resources/credential/client/Client.js";
 import { FeedsClient } from "./api/resources/feeds/client/Client.js";
+import { FollowUpsClient } from "./api/resources/followUps/client/Client.js";
 import { InboxClient } from "./api/resources/inbox/client/Client.js";
 import { InboxMessagesClient } from "./api/resources/inboxMessages/client/Client.js";
 import { InboxReviewsClient } from "./api/resources/inboxReviews/client/Client.js";
+import { InboxRulesClient } from "./api/resources/inboxRules/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { LookupsClient } from "./api/resources/lookups/client/Client.js";
 import { MediaClient } from "./api/resources/media/client/Client.js";
@@ -87,6 +89,8 @@ export class PealClient {
     protected _channelSets: ChannelSetsClient | undefined;
     protected _queues: QueuesClient | undefined;
     protected _recycling: RecyclingClient | undefined;
+    protected _followUps: FollowUpsClient | undefined;
+    protected _inboxRules: InboxRulesClient | undefined;
     protected _feeds: FeedsClient | undefined;
     protected _channelDefaults: ChannelDefaultsClient | undefined;
     protected _shortLinks: ShortLinksClient | undefined;
@@ -234,6 +238,14 @@ export class PealClient {
 
     public get recycling(): RecyclingClient {
         return (this._recycling ??= new RecyclingClient(this._options));
+    }
+
+    public get followUps(): FollowUpsClient {
+        return (this._followUps ??= new FollowUpsClient(this._options));
+    }
+
+    public get inboxRules(): InboxRulesClient {
+        return (this._inboxRules ??= new InboxRulesClient(this._options));
     }
 
     public get feeds(): FeedsClient {

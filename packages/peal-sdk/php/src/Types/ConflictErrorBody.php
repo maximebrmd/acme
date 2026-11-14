@@ -9,9 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'PostNotRecyclable'
-     *   |'RecyclingRuleEnded'
-     *   |'TooManyRecyclingRules'
+     *    'FollowUpRuleTaken'
+     *   |'TooManyFollowUpRules'
      *   |'_unknown'
      * ) $type
      */
@@ -19,9 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    PostNotRecyclableEncoded
-     *   |RecyclingRuleEndedEncoded
-     *   |TooManyRecyclingRulesEncoded
+     *    FollowUpRuleTakenEncoded
+     *   |TooManyFollowUpRulesEncoded
      *   |mixed
      * ) $value
      */
@@ -30,15 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'PostNotRecyclable'
-     *   |'RecyclingRuleEnded'
-     *   |'TooManyRecyclingRules'
+     *    'FollowUpRuleTaken'
+     *   |'TooManyFollowUpRules'
      *   |'_unknown'
      * ),
      *   value: (
-     *    PostNotRecyclableEncoded
-     *   |RecyclingRuleEndedEncoded
-     *   |TooManyRecyclingRulesEncoded
+     *    FollowUpRuleTakenEncoded
+     *   |TooManyFollowUpRulesEncoded
      *   |mixed
      * ),
      * } $values
@@ -51,57 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param PostNotRecyclableEncoded $postNotRecyclable
+     * @param FollowUpRuleTakenEncoded $followUpRuleTaken
      * @return ConflictErrorBody
      */
-    public static function postNotRecyclable(PostNotRecyclableEncoded $postNotRecyclable): ConflictErrorBody
+    public static function followUpRuleTaken(FollowUpRuleTakenEncoded $followUpRuleTaken): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'PostNotRecyclable',
-            'value' => $postNotRecyclable,
+            'type' => 'FollowUpRuleTaken',
+            'value' => $followUpRuleTaken,
         ]);
     }
 
     /**
-     * @param RecyclingRuleEndedEncoded $recyclingRuleEnded
+     * @param TooManyFollowUpRulesEncoded $tooManyFollowUpRules
      * @return ConflictErrorBody
      */
-    public static function recyclingRuleEnded(RecyclingRuleEndedEncoded $recyclingRuleEnded): ConflictErrorBody
+    public static function tooManyFollowUpRules(TooManyFollowUpRulesEncoded $tooManyFollowUpRules): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'RecyclingRuleEnded',
-            'value' => $recyclingRuleEnded,
-        ]);
-    }
-
-    /**
-     * @param TooManyRecyclingRulesEncoded $tooManyRecyclingRules
-     * @return ConflictErrorBody
-     */
-    public static function tooManyRecyclingRules(TooManyRecyclingRulesEncoded $tooManyRecyclingRules): ConflictErrorBody
-    {
-        return new ConflictErrorBody([
-            'type' => 'TooManyRecyclingRules',
-            'value' => $tooManyRecyclingRules,
+            'type' => 'TooManyFollowUpRules',
+            'value' => $tooManyFollowUpRules,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isPostNotRecyclable(): bool
+    public function isFollowUpRuleTaken(): bool
     {
-        return $this->value instanceof PostNotRecyclableEncoded && $this->type === 'PostNotRecyclable';
+        return $this->value instanceof FollowUpRuleTakenEncoded && $this->type === 'FollowUpRuleTaken';
     }
 
     /**
-     * @return PostNotRecyclableEncoded
+     * @return FollowUpRuleTakenEncoded
      */
-    public function asPostNotRecyclable(): PostNotRecyclableEncoded
+    public function asFollowUpRuleTaken(): FollowUpRuleTakenEncoded
     {
-        if (!($this->value instanceof PostNotRecyclableEncoded && $this->type === 'PostNotRecyclable')) {
+        if (!($this->value instanceof FollowUpRuleTakenEncoded && $this->type === 'FollowUpRuleTaken')) {
             throw new Exception(
-                "Expected PostNotRecyclable; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected FollowUpRuleTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -111,41 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isRecyclingRuleEnded(): bool
+    public function isTooManyFollowUpRules(): bool
     {
-        return $this->value instanceof RecyclingRuleEndedEncoded && $this->type === 'RecyclingRuleEnded';
+        return $this->value instanceof TooManyFollowUpRulesEncoded && $this->type === 'TooManyFollowUpRules';
     }
 
     /**
-     * @return RecyclingRuleEndedEncoded
+     * @return TooManyFollowUpRulesEncoded
      */
-    public function asRecyclingRuleEnded(): RecyclingRuleEndedEncoded
+    public function asTooManyFollowUpRules(): TooManyFollowUpRulesEncoded
     {
-        if (!($this->value instanceof RecyclingRuleEndedEncoded && $this->type === 'RecyclingRuleEnded')) {
+        if (!($this->value instanceof TooManyFollowUpRulesEncoded && $this->type === 'TooManyFollowUpRules')) {
             throw new Exception(
-                "Expected RecyclingRuleEnded; got " . $this->type . " with value of type " . get_debug_type($this->value),
-            );
-        }
-
-        return $this->value;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isTooManyRecyclingRules(): bool
-    {
-        return $this->value instanceof TooManyRecyclingRulesEncoded && $this->type === 'TooManyRecyclingRules';
-    }
-
-    /**
-     * @return TooManyRecyclingRulesEncoded
-     */
-    public function asTooManyRecyclingRules(): TooManyRecyclingRulesEncoded
-    {
-        if (!($this->value instanceof TooManyRecyclingRulesEncoded && $this->type === 'TooManyRecyclingRules')) {
-            throw new Exception(
-                "Expected TooManyRecyclingRules; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyFollowUpRules; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -172,16 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'PostNotRecyclable':
-                $value = $this->asPostNotRecyclable()->jsonSerialize();
+            case 'FollowUpRuleTaken':
+                $value = $this->asFollowUpRuleTaken()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'RecyclingRuleEnded':
-                $value = $this->asRecyclingRuleEnded()->jsonSerialize();
-                $result = array_merge($value, $result);
-                break;
-            case 'TooManyRecyclingRules':
-                $value = $this->asTooManyRecyclingRules()->jsonSerialize();
+            case 'TooManyFollowUpRules':
+                $value = $this->asTooManyFollowUpRules()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -220,14 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'PostNotRecyclable':
-                $args['value'] = PostNotRecyclableEncoded::jsonDeserialize($data);
+            case 'FollowUpRuleTaken':
+                $args['value'] = FollowUpRuleTakenEncoded::jsonDeserialize($data);
                 break;
-            case 'RecyclingRuleEnded':
-                $args['value'] = RecyclingRuleEndedEncoded::jsonDeserialize($data);
-                break;
-            case 'TooManyRecyclingRules':
-                $args['value'] = TooManyRecyclingRulesEncoded::jsonDeserialize($data);
+            case 'TooManyFollowUpRules':
+                $args['value'] = TooManyFollowUpRulesEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

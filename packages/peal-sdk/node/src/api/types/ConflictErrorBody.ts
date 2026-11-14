@@ -3,20 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.PostNotRecyclable
-    | Peal.ConflictErrorBody.RecyclingRuleEnded
-    | Peal.ConflictErrorBody.TooManyRecyclingRules;
+    | Peal.ConflictErrorBody.FollowUpRuleTaken
+    | Peal.ConflictErrorBody.TooManyFollowUpRules;
 
 export namespace ConflictErrorBody {
-    export interface PostNotRecyclable extends Peal.PostNotRecyclableEncoded {
-        _tag: "PostNotRecyclable";
+    export interface FollowUpRuleTaken extends Peal.FollowUpRuleTakenEncoded {
+        _tag: "FollowUpRuleTaken";
     }
 
-    export interface RecyclingRuleEnded extends Peal.RecyclingRuleEndedEncoded {
-        _tag: "RecyclingRuleEnded";
-    }
-
-    export interface TooManyRecyclingRules extends Peal.TooManyRecyclingRulesEncoded {
-        _tag: "TooManyRecyclingRules";
+    export interface TooManyFollowUpRules extends Peal.TooManyFollowUpRulesEncoded {
+        _tag: "TooManyFollowUpRules";
     }
 }

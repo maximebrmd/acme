@@ -167,6 +167,25 @@ export const DrizzlePublishedTargets = Layer.effect(
               workspaceId,
               inArray(platformPostIdColumn, [...platformPostIds])
             ),
+      channelsOf: (workspaceId, postId) =>
+        db
+          .selectDistinct({ channelId: postTargets.channelId })
+          .from(postTargets)
+          .innerJoin(posts, eq(posts.id, postTargets.postId))
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              eq(postTargets.postId, postId),
+              isNull(postTargets.removedAt)
+            )
+          )
+          .orderBy(asc(postTargets.channelId))
+          .pipe(
+            Effect.map((rows) =>
+              rows.map(({ channelId }) => ChannelIdSchema.make(channelId))
+            ),
+            Effect.mapError(failed)
+          ),
       from,
       ofPost: (workspaceId, postId) =>
         within(workspaceId, eq(postTargets.postId, postId)),

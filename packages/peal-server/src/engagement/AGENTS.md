@@ -3,6 +3,10 @@
 - The context is `engagement`; the product, the API group and the pages
   say "inbox" (`/api/workspaces/:workspaceId/inbox`, `peal inbox`,
   `…/inbox`), as "notices" already names a user's notifications. This
+  slice is comments on posts Peal published, and the reviews of Google
+  Business Profile locations (below); direct messages and mentions will
+  build on it. Nothing answers by itself but a comment rule (below), and
+  no assistant prompt ever reads a comment.
   slice is comments on posts Peal published, the reviews of Google
   Business Profile locations, and the direct messages of Mastodon and
   Bluesky channels (below); mentions will build on it. Nothing here answers by itself: no automation,
@@ -361,6 +365,38 @@
   the setting is turned on anywhere, Google grants the project access (its
   quota is zero before), and one review is read, answered and its reply
   deleted on a test location.
+- A comment rule (`domain/comment-rule.ts`, `CommentRules`,
+  `engagement.comment_rules`) answers by itself, in public, a comment
+  written after it started or was last set going again (`answersFrom`,
+  against the comment's `written_at`, not when Peal read it)
+  under a post it answers on (one post's, on the channels the post is
+  for, out or not, `FollowedPosts.channelsOf`; or every post of a
+  channel's) that holds one of its keywords as a word
+  (`isMatch`: folded, accents dropped, whole words). The collection's cron
+  runs `CommentRules.runDue` after each read: a comment is claimed once a
+  rule (`comment_rule_matches`, unique on rule and comment, cascading with
+  the comment, ids and Peal's words only), answered through
+  `EngagementReplies.reply` as the starter is now (`RuleStarters`, the
+  workspace's `ActorsNow`) under the key `comment-rule:<rule>:<comment>`,
+  so the journal, the once-a-comment index and the outbound message
+  apply and a run cut short answers once; one person once a rule
+  (`samePerson`), `maxRuleRepliesPerDay` (25) a rule and
+  `maxChannelRepliesPerDay` (100) a channel, every rule together, each
+  UTC day, a meter without room releasing the claim for a later run, a
+  claim left `claimed` `claimLifetime` (30 minutes) taken again, and one
+  rule's database error logged without stopping the others. The caps are
+  counted without a lock: the cron runs on one runner, and only runs that
+  overlap could pass one by a few. Where it answers is
+  `commentRuleSupport`, from each platform's pages: Bluesky (its bot
+  guidance), X, LinkedIn and YouTube are `notAllowed`, refused when the
+  rule starts (`CommentRuleNotPossible`, each channel with its reason)
+  and skipped at every run, whatever the inbox may do there. A channel
+  disconnected ends its rules `channelGone` (`EngagementRecords.channelGone`).
+  The account export holds the rules with the comments each looked at,
+  by id.
+  The approval policy does not apply, as it does not to a member's
+  reply; staff acting as a member start none. Never a private reply, a
+  like or a follow: decision 6.
 - Direct messages are a model of their own beside comments and reviews:
   a `MessageBox` per channel (`engagement.message_boxes`, keyed by the
   channel: its schedule), a `Conversation` per conversation on the

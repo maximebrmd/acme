@@ -15,6 +15,9 @@ public record ReconnectChannelsRequest
     [JsonIgnore]
     public ReconnectChannelsRequestMessages? Messages { get; set; }
 
+    [JsonIgnore]
+    public ReconnectChannelsRequestReposts? Reposts { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

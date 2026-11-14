@@ -17,9 +17,11 @@ import (
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	credential "github.com/peal-social/peal/packages/peal-sdk/go/credential"
 	feeds "github.com/peal-social/peal/packages/peal-sdk/go/feeds"
+	followups "github.com/peal-social/peal/packages/peal-sdk/go/followups"
 	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
 	inboxmessages "github.com/peal-social/peal/packages/peal-sdk/go/inboxmessages"
 	inboxreviews "github.com/peal-social/peal/packages/peal-sdk/go/inboxreviews"
+	inboxrules "github.com/peal-social/peal/packages/peal-sdk/go/inboxrules"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
 	lookups "github.com/peal-social/peal/packages/peal-sdk/go/lookups"
@@ -82,6 +84,8 @@ type Client struct {
 	ChannelSets             *channelsets.Client
 	Queues                  *queues.Client
 	Recycling               *recycling.Client
+	FollowUps               *followups.Client
+	InboxRules              *inboxrules.Client
 	Feeds                   *feeds.Client
 	ChannelDefaults         *channeldefaults.Client
 	ShortLinks              *shortlinks.Client
@@ -129,6 +133,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 		ChannelSets:             channelsets.NewClient(options),
 		Queues:                  queues.NewClient(options),
 		Recycling:               recycling.NewClient(options),
+		FollowUps:               followups.NewClient(options),
+		InboxRules:              inboxrules.NewClient(options),
 		Feeds:                   feeds.NewClient(options),
 		ChannelDefaults:         channeldefaults.NewClient(options),
 		ShortLinks:              shortlinks.NewClient(options),

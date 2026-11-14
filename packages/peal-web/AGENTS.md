@@ -284,6 +284,22 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Repeat to a member with post:schedule; a new post repeats once it is
   scheduled, from its page. Refusals are explained from the
   `Recycling.errors` catalogue (`#recycling/rule-error.ts`).
+- Follow-up rules have a settings page (`…/settings/follow-ups`, read
+  with post:read, paused, resumed and stopped with post:schedule,
+  approved with post:approve; `?rule=` marks the rule a post's page
+  opened it for), views in `components/follow-ups/follow-up-views.tsx`,
+  atoms in `#follow-ups/atoms.ts`, the form's request in
+  `#follow-ups/rules.ts`. `PostFollowUp`, on a post's page, shows the
+  post's rule or offers Follow up to a member with post:schedule.
+  Refusals are explained from the `FollowUps.errors` catalogue
+  (`#follow-ups/follow-up-error.ts`); what a channel carries reads the
+  API's words (`FollowUps.carries`), never a list of platforms of the
+  web app's own.
+- Comment rules have a settings page (`…/settings/comment-rules`, read
+  with engagement:read, started, paused and stopped with
+  engagement:reply), views in `components/comment-rules/`, atoms in
+  `#comment-rules/atoms.ts`, the form's request in
+  `#comment-rules/rules.ts`.
 - Feeds have a settings page (`…/settings/feeds`, read with post:read,
   added, paused, resumed and deleted with post:create, a queue's mode with
   post:schedule; `?feed=` marks the feed a `FeedStopped` notice opened it

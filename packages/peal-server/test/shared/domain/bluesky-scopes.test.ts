@@ -6,9 +6,11 @@ import {
   blueskyChatMethods,
   blueskyChatScopes,
   blueskyGateScopes,
+  blueskyRepostScope,
   createsRecords,
   grantsBlueskyChat,
   postgateCollection,
+  repostCollection,
   threadgateCollection,
 } from "#shared/domain/bluesky-scopes.ts";
 
@@ -18,6 +20,18 @@ describe("a Bluesky account's scopes", () => {
   it("let Peal write a post's gates once granted, as Peal now asks", () => {
     expect(createsRecords(blueskyScope.split(" "), gates)).toBeTruthy();
     expect(createsRecords([...blueskyGateScopes], gates)).toBeTruthy();
+  });
+
+  it("let Peal repost the account's own posts once granted, which a first sign-in does not ask", () => {
+    expect(
+      createsRecords(blueskyScope.split(" "), [repostCollection])
+    ).toBeFalsy();
+    expect(
+      createsRecords([blueskyRepostScope], [repostCollection])
+    ).toBeTruthy();
+    expect(
+      createsRecords([...blueskyGateScopes], [repostCollection])
+    ).toBeFalsy();
   });
 
   it("do not, on a channel connected before Peal asked for them", () => {

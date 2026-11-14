@@ -9,6 +9,8 @@ module Peal
         field :channel_id, -> { String }, optional: false, nullable: false, api_name: "channelId"
 
         field :messages, -> { Peal::Channels::Types::ReconnectChannelsRequestMessages }, optional: true, nullable: false
+
+        field :reposts, -> { Peal::Channels::Types::ReconnectChannelsRequestReposts }, optional: true, nullable: false
       end
     end
   end

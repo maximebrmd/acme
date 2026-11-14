@@ -171,3 +171,33 @@ none of them, and the new table is ignored.
 
 3. **Either lists a row:** do not roll back past this release; release a
    fix forward instead. Never change the rows by hand.
+
+## Past follow-up rules
+
+The release that follows posts up at a likes threshold (migration
+`follow-up-and-comment-rules`) adds two tables the release before ignores
+(`publishing.follow_up_rules`, `publishing.follow_ups`), so rules stop
+acting and keep what they armed, and one job, `SendFollowUpV1`, which the
+release before does not register: a follow-up on its way when the
+release goes back stays `sending` in the cluster's tables, its comment or
+repost neither sent nor settled. Rolled forward again, the follow-ups'
+run hands it over (armed again when its call never set out,
+`unconfirmed` when it may have), so nothing goes out twice.
+
+1. **Follow-ups on their way:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT id, rule_id, status FROM publishing.follow_ups WHERE status = 'sending'"
+   ```
+
+2. **It lists a row:** wait a few minutes for its job to settle it, and
+   check again; roll back once it lists none. Rules that are active then
+   act again after rolling forward, within their windows.
+
+## Past comment rules
+
+The same release's comment rules (the same migration) add two
+tables the release before ignores: rules stop answering, and the replies
+they made stay ordinary replies of the inbox, which the release before
+reads as any other. Nothing to check before rolling back.

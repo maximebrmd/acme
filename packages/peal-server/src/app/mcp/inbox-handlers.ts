@@ -8,6 +8,7 @@ import {
   refuse,
   usageRefusal,
 } from "#app/mcp/refusals.ts";
+import { commentRuleView } from "#engagement/api/comment-rule-view.ts";
 import {
   conversationCursorOf,
   messageCursorOf,
@@ -30,6 +31,12 @@ import {
   toThreadPageView,
 } from "#engagement/api/inbox-view.ts";
 import type { AbilityUnavailable } from "#engagement/application/ability-unavailable.ts";
+import type { CommentRuleNotPossible } from "#engagement/application/comment-rule-not-possible.ts";
+import { CommentRules } from "#engagement/application/comment-rules.ts";
+import type {
+  ChangeCommentRuleRequest,
+  ListedCommentRule,
+} from "#engagement/application/comment-rules.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import {
   EngagementMessages,
@@ -42,6 +49,8 @@ import type { ModerationFailed } from "#engagement/application/moderation-failed
 import type { ReplyTooLong } from "#engagement/application/reply-too-long.ts";
 import type { ReviewActionFailed } from "#engagement/application/review-action-failed.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
+import { CommentRuleIdSchema } from "#engagement/domain/comment-rule-id.ts";
+import type { CommentRuleScope } from "#engagement/domain/comment-rule.ts";
 import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
 import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-transition.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
@@ -49,6 +58,7 @@ import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
 import { ReviewThreadIdSchema } from "#engagement/domain/review-thread-id.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 
 const decodeThreadId = Schema.decodeUnknownOption(ThreadIdSchema);
@@ -155,12 +165,73 @@ const filterOf = <A>(
   });
 };
 
+const decodeCommentRuleId = Schema.decodeUnknownOption(CommentRuleIdSchema);
+const decodeRuleChannel = Schema.decodeUnknownOption(ChannelIdSchema);
+const decodeRulePost = Schema.decodeUnknownOption(PostIdSchema);
+
+const noCommentRule = () =>
+  refuse(
+    "The workspace has no comment rule with this id: list_comment_rules answers its rules."
+  );
+
+const ruleNotPossible = ({ channels, reason }: CommentRuleNotPossible) =>
+  refuse(
+    channels.length === 0
+      ? `The rule cannot answer (${reason}): it needs 1 to 10 keywords, a reply, and a post that went out or a channel the inbox reads.`
+      : `No channel can carry the rule's reply, or it is too long for one that could. Nothing was saved. Each channel: ${JSON.stringify(channels)}`
+  );
+
+// What a call answers on: one post or one channel.
+const ruleScopeFrom = (given: {
+  readonly channelId?: string;
+  readonly postId?: string;
+}) =>
+  Effect.gen(function* readingScope() {
+    if ((given.postId === undefined) === (given.channelId === undefined)) {
+      return yield* refuse(
+        "Give postId or channelId, one of them: whose comments the rule answers."
+      );
+    }
+
+    if (given.postId !== undefined) {
+      const postId = decodeRulePost(given.postId);
+
+      if (Option.isNone(postId)) {
+        return yield* refuse("The workspace has no post with this id.");
+      }
+
+      const scope: CommentRuleScope = { _tag: "post", postId: postId.value };
+
+      return scope;
+    }
+
+    const channelId = decodeRuleChannel(given.channelId);
+
+    if (Option.isNone(channelId)) {
+      return yield* refuse("The workspace has no channel with this id.");
+    }
+
+    const scope: CommentRuleScope = {
+      _tag: "channel",
+      channelId: channelId.value,
+    };
+
+    return scope;
+  });
+
+const ruleIdFrom = (raw: string) =>
+  Option.match(decodeCommentRuleId(raw), {
+    onNone: noCommentRule,
+    onSome: (id) => Effect.succeed(id),
+  });
+
 /** What the inbox tools do, through the engagement use cases. */
 export const InboxToolsLive = InboxTools.toLayer(
   Effect.gen(function* inboxTools() {
     const inbox = yield* EngagementInbox;
     const replies = yield* EngagementReplies;
     const reviews = yield* EngagementReviews;
+    const commentRules = yield* CommentRules;
     const messages = yield* EngagementMessages;
     const refusedByMeter = yield* usageRefusal;
 
@@ -179,7 +250,120 @@ export const InboxToolsLive = InboxTools.toLayer(
         )
       );
 
+    // Said before anything is read: a rule answers in public.
+    const answerer = actor.pipe(
+      Effect.tap((member) =>
+        Effect.fromResult(authorize(member, "engagement:reply")).pipe(
+          Effect.catchTag("MissingPermission", notAllowed("answer comments"))
+        )
+      )
+    );
+
     return InboxTools.of({
+      list_comment_rules: ({ status }) =>
+        Effect.gen(function* list() {
+          const member = yield* actor;
+          const found: ListedCommentRule[] = [];
+
+          // Every page: a workspace keeps few rules.
+          for (;;) {
+            const page = yield* commentRules
+              .list(member, {
+                after: Option.fromUndefinedOr(found.at(-1)?.rule.id),
+                limit: 100,
+                status: Option.fromUndefinedOr(status),
+              })
+              .pipe(
+                Effect.catchTags({
+                  DatabaseError: Effect.die,
+                  MissingPermission: notAllowed("read comment rules"),
+                })
+              );
+
+            found.push(...page);
+
+            if (page.length < 100) {
+              return { rules: found.map(commentRuleView) };
+            }
+          }
+        }),
+      start_comment_rule: (given) =>
+        Effect.gen(function* start() {
+          const member = yield* answerer;
+          const scope = yield* ruleScopeFrom(given);
+
+          const listed = yield* commentRules
+            .start(member, {
+              keywords: given.keywords,
+              reply: given.reply,
+              scope,
+            })
+            .pipe(
+              Effect.catchTags({
+                CommentRuleNotPossible: ruleNotPossible,
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("answer comments"),
+                TooManyCommentRules: ({ allowed }) =>
+                  refuse(
+                    `The workspace has ${String(allowed)} comment rules going, the most it may: stop one first.`
+                  ),
+              })
+            );
+
+          return commentRuleView(listed);
+        }),
+      stop_comment_rule: ({ ruleId }) =>
+        Effect.gen(function* stop() {
+          yield* commentRules
+            .stop(yield* answerer, yield* ruleIdFrom(ruleId))
+            .pipe(
+              Effect.catchTags({
+                CommentRuleNotFound: noCommentRule,
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("answer comments"),
+              })
+            );
+
+          return { stopped: ruleId };
+        }),
+      update_comment_rule: ({ keywords, paused, reply, ruleId }) =>
+        Effect.gen(function* update() {
+          const change: {
+            -readonly [
+              K in keyof ChangeCommentRuleRequest
+            ]: ChangeCommentRuleRequest[K];
+          } = {};
+
+          if (keywords !== undefined) {
+            change.keywords = keywords;
+          }
+
+          if (paused !== undefined) {
+            change.paused = paused;
+          }
+
+          if (reply !== undefined) {
+            change.reply = reply;
+          }
+
+          const listed = yield* commentRules
+            .change(yield* answerer, yield* ruleIdFrom(ruleId), change)
+            .pipe(
+              Effect.catchTags({
+                CommentRuleEnded: ({ reason }) =>
+                  refuse(
+                    `The comment rule ended (${reason}) and changes no more.`
+                  ),
+                CommentRuleNotFound: noCommentRule,
+                CommentRuleNotPossible: ruleNotPossible,
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("answer comments"),
+              })
+            );
+
+          return commentRuleView(listed);
+        }),
+
       get_conversation: ({ conversationId, cursor }) =>
         Effect.gen(function* getConversation() {
           const id = yield* idOr(

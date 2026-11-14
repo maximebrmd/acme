@@ -328,8 +328,10 @@ module Peal
       # no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where
       # the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages
       # on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A
-      # reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs
-      # channel:connect.
+      # reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With
+      # `reposts=true`, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that
+      # reposts there needs (its channel shows `reconnect` until it is granted); a reconnect of a channel that granted
+      # it asks it again. Needs channel:connect.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -341,6 +343,7 @@ module Peal
       # @option params [String] :workspace_id
       # @option params [String] :channel_id
       # @option params [Peal::Channels::Types::ReconnectChannelsRequestMessages, nil] :messages
+      # @option params [Peal::Channels::Types::ReconnectChannelsRequestReposts, nil] :reposts
       #
       # @example
       #   client.channels.reconnect(
@@ -353,6 +356,7 @@ module Peal
         params = Peal::Internal::Types::Utils.normalize_keys(params)
         query_params = {}
         query_params["messages"] = params[:messages] if params.key?(:messages)
+        query_params["reposts"] = params[:reposts] if params.key?(:reposts)
 
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],

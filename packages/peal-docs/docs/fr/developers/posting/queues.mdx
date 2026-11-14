@@ -176,6 +176,21 @@ Qui peut faire quoi :
 | 409    | `too_many_recycling_rules`   | 100 règles sont en cours.                                                                                                                                                                                                                                      |
 | 409    | `recycling_rule_ended`       | Une modification d’une règle terminée.                                                                                                                                                                                                                         |
 
+## Relancer une publication [#follow-ups]
+
+`POST /api/workspaces/{workspaceId}/follow-ups` lance une [règle de relance](/fr/guides/posts/queues#follow-ups) sur une publication ou un canal, exactement l’un des deux :
+
+```json
+{
+  "postId": "…",
+  "likes": 50,
+  "comment": "Merci à toutes et à tous !",
+  "repost": true
+}
+```
+
+La réponse est la règle : son `approval` (`notNeeded`, `pending`, `approved`), `channels` (ce que chaque canal peut porter, sorte par sorte : `available`, `notAsked`, ou pourquoi non, comme `notAllowed` sur LinkedIn ou `reconnect` sur un canal Bluesky connecté avant que Peal ne demande à y repartager), et ses dernières `followUps`, chacune avec son `status` (`armed` jusqu’à `until`, `waiting` jusqu’à `until` en attendant que son canal soit reconnecté, `sending`, `sent` avec `platformPostId` et `permalink`, `failed`, `unconfirmed`, `expired`, `cancelled`) et sa `reason`. `FollowUpNotPossible` (422) refuse une règle qu’aucun canal ne peut porter, ou dont le commentaire est trop long pour un canal qui le pourrait, avec les mêmes `channels` ; sur une publication qui n’a plus rien à mettre en ligne, une règle qui ne préparerait rien (`alreadyFollowedUp`, `windowPassed`). `PATCH …/follow-ups/{ruleId}` modifie `likes`, `comment` (null le retire) et `repost`, ou la met en pause (`paused`) ; `POST …/approve` l’approuve, un membre en personne ; `DELETE` l’arrête. `GET …/follow-ups?postId=…` liste les règles d’une publication.
+
 ## Publier depuis un flux [#feeds]
 
 `POST …/feeds` suit un flux web ([comment](/fr/guides/posts/queues#feeds)). Il est lu une fois, et chaque élément qu’il contient alors est noté comme vu et jamais créé ; la réponse 201 donne le flux et `seen`, leur nombre.
