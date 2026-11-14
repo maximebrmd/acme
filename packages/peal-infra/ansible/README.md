@@ -98,7 +98,7 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                                                                                                                                                                                  |
 | `peal_disks`     | smartmontools, and `peal-disk-health` and its timer: the RAID arrays' and the disks' health reported to the collector every 15 minutes ([Disks](#disks))                                                                                                                                                   |
 | `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                                                                                                                                                                              |
-| `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory (`uptime.yml`)                                                                                                                                                                         |
+| `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory, and the platform watch once its webhook is set (`uptime.yml`)                                                                                                                         |
 
 ### Playbooks
 
@@ -118,7 +118,7 @@ Run each with `--limit production` or `--limit sandbox` (`--limit uptime` for
 | Path                          | What it holds                                                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/srv/peal/secrets.env`       | The database password, `BETTER_AUTH_SECRET`, `PEAL_TOKEN_KEYS`, Grafana's admin password and the Bluesky client keys, generated there once |
-| `/srv/peal/credentials.env`   | What outside services issued: R2 keys, the email key, the backup passphrase, Telegram's                                                    |
+| `/srv/peal/credentials.env`   | What outside services issued: R2 keys, the email key, the backup passphrase, Telegram's, Slack's webhook                                   |
 | `/srv/peal/host.env`          | Plain settings, written by Ansible                                                                                                         |
 | `/srv/peal/release.env`       | The image tags that run                                                                                                                    |
 | `/srv/peal/releases/<commit>` | Each release's Compose file and configuration, the last three kept                                                                         |
@@ -515,6 +515,57 @@ local storage, `user_auth`), and steps 1, 4 and 5 do not apply.
 Alerts carry rule names and labels, never log lines: Telegram is outside
 the EU, so keep personal data out of any rule you add.
 
+### Slack
+
+The same alerts go to Slack too, beside Telegram, which stays the owner's
+pager, and the uptime server posts the platforms' changelog changes there
+([The platform watch](#the-platform-watch)). Each message goes through an
+incoming webhook of one Slack app, **Peal Alerts**, one webhook per
+channel:
+
+| Channel               | Who posts                                                   | Its webhook goes in                                                                  |
+| --------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `#alerts-production`  | Production's Grafana                                        | `group_vars/production/vault.yml`: `peal_credentials.SLACK_ALERTS_WEBHOOK_URL`       |
+| `#alerts-sandbox`     | The sandbox's Grafana                                       | `group_vars/sandbox/vault.yml`: `peal_credentials.SLACK_ALERTS_WEBHOOK_URL`          |
+| `#alerts-production`  | The uptime server, for production's checks and its own      | `group_vars/uptime/vault.yml`: `uptime_credentials.SLACK_ALERTS_WEBHOOK_URL`         |
+| `#alerts-sandbox`     | The uptime server, for the sandbox's checks (`slack: true`) | `group_vars/uptime/vault.yml`: `uptime_credentials.SLACK_SANDBOX_ALERTS_WEBHOOK_URL` |
+| `#platform-changelog` | The uptime server's platform watch                          | `group_vars/uptime/vault.yml`: `uptime_credentials.SLACK_CHANGELOG_WEBHOOK_URL`      |
+
+Each is optional: without it, that sender keeps Telegram alone, or the
+watch does not run, and nothing else changes. `site.yml` mounts Grafana's
+`telegram-slack.yaml` contact points only where the environment's
+credentials hold `SLACK_ALERTS_WEBHOOK_URL`, `telegram.yaml` otherwise:
+Grafana refuses to start on a contact point whose setting is missing.
+`uptime.yml` adds Slack's alerts to Gatus for each group whose webhook is
+set, at Telegram's thresholds, and installs the watch's timer only with
+its webhook. Every check is by name; the values stay in the vault or on
+the server, as Telegram's do.
+
+1. In Slack, create an app from scratch, named **Peal Alerts**, in the
+   operations workspace, and turn on **Incoming Webhooks** for it.
+2. **Add New Webhook** three times, once for each of `#alerts-production`,
+   `#alerts-sandbox` and `#platform-changelog`. Each URL is a secret, which
+   posts to its channel alone: copy it straight into the vault named
+   above, with
+   `EDITOR=nano uv run ansible-vault edit inventory/group_vars/<group>/vault.yml`.
+   The uptime server's two alert webhooks are the same URLs as the
+   Grafanas'. Or write them on the server, as `NAME='value'` lines in
+   `/srv/peal/credentials.env` or `/srv/uptime/credentials.env`
+   ([Credentials](#credentials)).
+3. Run `site.yml` on each environment, then `release.yml`, which restarts
+   Grafana with the Telegram and Slack contact point, and `uptime.yml`.
+4. Send a test from Grafana (Alerting › Contact points › Telegram and Slack
+   › Test) on production and on the sandbox: it reaches both. Gatus has no
+   test button, as for Telegram. The watch's first run, within 6 hours,
+   keeps a copy of each page and feed and posts nothing: a message comes
+   when one changes, and `watch broken: <name> (<reason>)` when a source
+   fails 3 runs in a row.
+
+To remove a webhook, revoke it in the app's settings and delete its line:
+the next run puts the sender back on Telegram alone. Slack is outside the
+EU too: messages carry rule names, states, the environment and labels, or
+a public page's lines, never log lines or personal data.
+
 ### Credentials
 
 The server generates its own secrets and they never leave it. What outside
@@ -587,7 +638,7 @@ password manager: the backups cannot be read without it.
 6. `uv run ansible-playbook playbooks/release.yml --limit production`.
 7. Take the first backup, `ssh ops@ssh.peal.social sudo systemctl start peal-backup@full`,
    and send a test alert from Grafana (Alerting › Contact points › Telegram ›
-   Test).
+   Test, or Telegram and Slack once its webhook is set, [Slack](#slack)).
 8. For production, once the uptime server runs: give it its heartbeat token
    ([The heartbeat](#the-heartbeat)). Until then, set `peal_heartbeat_url` to
    `""` in `host_vars/peal-production/local.yml`, off Git, as the committed
@@ -956,7 +1007,8 @@ sign-in never passes for the page. The sandbox is behind Access throughout:
 its checks carry a Cloudflare Access service token, which the sandbox's
 Access application lets in with a Service Auth policy.
 
-Telegram hears of incidents, not blips: of a page or the API after 5
+Telegram, and Slack where its webhooks are set ([Slack](#slack)), hear
+of incidents, not blips: of a page or the API after 5
 failures in a row (5 minutes), of a host name after 3 failed lookups (15
 minutes), of a certificate after 3 hourly failures, and of a heartbeat
 once it has been silent for 15 minutes; and that each is back after 2
@@ -967,7 +1019,11 @@ the default chat, `TELEGRAM_CHAT_ID`, unless it has a chat of its own
 (`telegram: true` in `uptime_environments`): the sandbox's go to the
 sandbox's chat, with the bot that writes there,
 `SANDBOX_TELEGRAM_BOT_TOKEN` and `SANDBOX_TELEGRAM_CHAT_ID`. The uptime
-server's own checks (its certificates) stay in the default chat.
+server's own checks (its certificates) stay in the default chat. On Slack,
+the same: `SLACK_ALERTS_WEBHOOK_URL` (`#alerts-production`) for production
+and the uptime server's own, and `SLACK_SANDBOX_ALERTS_WEBHOOK_URL`
+(`#alerts-sandbox`) for an environment with `slack: true`; a group whose
+webhook is unset alerts on Telegram alone.
 
 ### Set it up
 
@@ -1004,7 +1060,10 @@ resource. Then:
      links, and no other. Run the sandbox stack's `preview --diff`, then
      `up`. When the token expires, every check of the sandbox fails at
      once: refresh it before, which keeps its id and secret
-     ([`../pulumi`](../pulumi/README.md#the-uptime-server)).
+     ([`../pulumi`](../pulumi/README.md#the-uptime-server));
+   - optional, Slack's webhooks ([Slack](#slack)): `SLACK_ALERTS_WEBHOOK_URL`,
+     `SLACK_SANDBOX_ALERTS_WEBHOOK_URL` and `SLACK_CHANGELOG_WEBHOOK_URL`,
+     the platform watch's.
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
    `inventory/vault.uptime.example.yml` and encrypted like the others: fill
@@ -1124,19 +1183,62 @@ changes one record. To take the page down, set `uptime_public_status: false`
 and run `uptime.yml`; Caddy then serves `uptime_hostname` alone, and the
 record can go.
 
+### The platform watch
+
+The uptime server, which watches outside things and holds no production
+secret, also reads the platforms' changelogs and posts what changed to
+`#platform-changelog`. `peal-platform-watch` (`roles/uptime/files/platform_watch.py`,
+Python's standard library alone, so the server installs nothing for it)
+runs from a systemd timer every 6 hours, up to an hour late at random, as
+the `gatus` user, with no privilege, read-only but for its copies. It runs
+once `SLACK_CHANGELOG_WEBHOOK_URL` is among the uptime server's credentials;
+without it, `uptime.yml` installs no timer, and stops and removes one it
+installed before.
+
+Its sources are `uptime_platform_watch_sources` in
+`group_vars/uptime/main.yml`, each with a `name`, a `platform`, an
+`https://` `url` and a `kind`:
+
+- `page`: the page's readable text, from its `<main>`, or else its
+  `<article>`, or else the element tree a page rendered by a script
+  framework carries in its JSON, or else its body, without scripts,
+  styles, navigation, headers, footers, and lines that are only a date, a
+  time or a token, so a page that did not change posts nothing. When the
+  text differs from the copy of the last run, it posts the platform, the
+  page's name and URL, and up to 15 added (`+`) or removed (`-`) lines.
+- `feed`: an RSS 2.0 or Atom feed, each new item's title and link, oldest
+  first.
+
+A source's first run keeps its copy and posts nothing. A source that
+fails 3 runs in a row (an HTTP error, a timeout, no readable text) posts
+`watch broken: <name> (<reason>)` once, and `watch recovered: <name>` when
+it reads again; one source that fails never stops the others, and a
+message Slack refuses is sent again at the next run. It fetches with the
+User-Agent `peal-platform-watch/1 (+https://peal.social)`, follows
+redirects and takes gzip. The webhook reaches it through its environment,
+from a file only root reads, never on its command line or in its output.
+
+To watch another page or feed, add it to the list, with a platform's own
+changelog page rather than a page about it, check that a plain request
+(no script run) gets its text, and run `uptime.yml`: its first run is a
+baseline. To read what it did: `sudo journalctl -u peal-platform-watch`;
+to run it now: `sudo systemctl start peal-platform-watch`.
+
 ### On the uptime server
 
-| Path                          | What it holds                                                                    |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `/srv/uptime/compose.yaml`    | The stack: Gatus on 127.0.0.1:8080, Caddy on port 443                            |
-| `/srv/uptime/gatus/`          | Gatus's configuration, which holds no secret: Gatus reads them from its settings |
-| `/srv/uptime/caddy/`          | Caddy's configuration: the heartbeats' routes, and the status page's             |
-| `/srv/uptime/data/`           | Gatus's history, a SQLite database the `gatus` user owns                         |
-| `/srv/uptime/status/`         | The status page's Gatus's configuration: public checks alone, no secret          |
-| `/srv/uptime/status-data/`    | The status page's history, which the `gatus` user owns                           |
-| `/srv/uptime/secrets.env`     | The heartbeat tokens, generated there                                            |
-| `/srv/uptime/credentials.env` | What outside services issued: the Telegram bots and the Access service token     |
-| `/srv/uptime-brand/`          | The status page's mark, icon and fonts, which Caddy serves under `/peal/`        |
+| Path                             | What it holds                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `/srv/uptime/compose.yaml`       | The stack: Gatus on 127.0.0.1:8080, Caddy on port 443                                       |
+| `/srv/uptime/gatus/`             | Gatus's configuration, which holds no secret: Gatus reads them from its settings            |
+| `/srv/uptime/caddy/`             | Caddy's configuration: the heartbeats' routes, and the status page's                        |
+| `/srv/uptime/data/`              | Gatus's history, a SQLite database the `gatus` user owns                                    |
+| `/srv/uptime/status/`            | The status page's Gatus's configuration: public checks alone, no secret                     |
+| `/srv/uptime/status-data/`       | The status page's history, which the `gatus` user owns                                      |
+| `/srv/uptime/secrets.env`        | The heartbeat tokens, generated there                                                       |
+| `/srv/uptime/credentials.env`    | What outside services issued: the Telegram bots, the Access service token, Slack's webhooks |
+| `/srv/uptime/platform-watch/`    | The platform watch's sources and, in `state/`, each one's last copy (gatus's)               |
+| `/srv/uptime/platform-watch.env` | The platform watch's webhook alone, which systemd hands it                                  |
+| `/srv/uptime-brand/`             | The status page's mark, icon and fonts, which Caddy serves under `/peal/`                   |
 
 `uptime-compose` runs Docker Compose on the stack: `sudo uptime-compose ps`,
 `sudo uptime-compose logs --tail 50 gatus`.
@@ -1174,6 +1276,9 @@ them, and `bootstrap.yml` refuses the host. The role:
   the `caddy` user, and requires each name in it; a file Caddy refuses or
   does not import comes out again, or goes back to what it was, so Caddy's
   next start finds the configuration that runs;
+- installs the platform watch, once its webhook is set, as on a server of
+  its own: `/usr/local/bin/peal-platform-watch` and the units
+  `peal-platform-watch.service` and `.timer`, run as `gatus`;
 - reloads `caddy.service` when the file changed, or when the configuration
   Caddy runs (read from its admin API, `127.0.0.1:2019`) lacks a name: the
   reload swaps the configuration without dropping connections, and Caddy
@@ -1231,7 +1336,7 @@ in `/srv/uptime`, on the host alone.
 
 - **The host's other sites reach the uptime server's secrets.** Whoever
   gets root, or the Docker socket, through any of them reads the Telegram
-  bot's token, the sandbox's Access service token, which lets its holder
+  bot's token, Slack's webhooks, the sandbox's Access service token, which lets its holder
   through the sandbox's Access, and the heartbeat token, which can keep the
   heartbeat green. None of them is production's. Rotate the three if the
   host is ever compromised.
@@ -1256,8 +1361,9 @@ in `/srv/uptime`, on the host alone.
   production's and the sandbox's, which the role refuses otherwise.
 
 To leave the host: `sudo uptime-compose down`, remove the site file and
-reload Caddy, then remove `/srv/uptime`, `/usr/local/bin/uptime-compose`
-and the `gatus` user.
+reload Caddy, `sudo systemctl disable --now peal-platform-watch.timer` and
+remove its units, then remove `/srv/uptime`, `/usr/local/bin/uptime-compose`,
+`/usr/local/bin/peal-platform-watch` and the `gatus` user.
 
 ## Docker Engine
 

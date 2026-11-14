@@ -1,7 +1,8 @@
 # Sends every alert to a Telegram chat. Mount this file as the contact points
 # (PEAL_GRAFANA_CONTACT_POINTS) only where TELEGRAM_BOT_TOKEN and
 # TELEGRAM_CHAT_ID are set: Grafana reads them from its environment when it
-# starts, and refuses to start without them.
+# starts, and refuses to start without them. telegram-slack.yaml sends the
+# same alerts to Slack too.
 
 apiVersion: 1
 

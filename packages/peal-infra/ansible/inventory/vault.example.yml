@@ -31,6 +31,11 @@ peal_credentials:
   # channel (README.md, "Telegram").
   TELEGRAM_BOT_TOKEN: REPLACE
   TELEGRAM_CHAT_ID: REPLACE
+  # Optional: the Slack incoming webhook Grafana posts the same alerts to,
+  # beside Telegram (README.md, "Slack"): #alerts-production's in
+  # production's vault, #alerts-sandbox's in the sandbox's. Left empty,
+  # Grafana alerts Telegram alone.
+  SLACK_ALERTS_WEBHOOK_URL: ""
   # Where peal_heartbeat_url is set (production): the token Grafana's
   # heartbeat carries, which the uptime server generated, from its
   # /srv/uptime/secrets.env (PRODUCTION_HEARTBEAT_TOKEN; README.md, "Uptime").
