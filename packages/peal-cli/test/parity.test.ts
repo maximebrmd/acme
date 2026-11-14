@@ -141,6 +141,11 @@ const coverage = {
   "inbox.reply": by("inbox reply"),
   "inbox.setAnswered": by("inbox answered"),
   "inbox.withdrawReply": by("inbox withdraw"),
+  "inboxMessages.confirmMessage": by("inbox messages confirm"),
+  "inboxMessages.getConversation": by("inbox messages show"),
+  "inboxMessages.listConversations": by("inbox messages list"),
+  "inboxMessages.sendMessage": by("inbox messages send"),
+  "inboxMessages.setConversationRead": by("inbox messages read"),
   "inboxReviews.getReviewThread": by("inbox reviews show"),
   "inboxReviews.listReviewThreads": by("inbox reviews list"),
   "inboxReviews.replyToReview": exempt(
