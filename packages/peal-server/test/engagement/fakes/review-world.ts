@@ -58,6 +58,8 @@ export interface ReviewWorldState {
   readonly channels: Map<ChannelId, EngagedChannel>;
   readonly claims: Map<string, DateTime.Utc>;
   readonly jobs: ReviewReplyId[];
+  /** The reply each idempotency key made. */
+  readonly keys: Map<string, ReviewReplyId>;
   readonly locations: ConnectedLocation[];
   read: (
     request: ReviewsRequest
@@ -96,6 +98,7 @@ export const makeReviewWorld = (
     channels: new Map(),
     claims: new Map(),
     jobs: [],
+    keys: new Map(),
     locations: [],
     read: nothingRead,
     reads: [],
@@ -252,8 +255,22 @@ export const makeReviewWorld = (
 
         return added;
       }),
-    journalReply: (reply) =>
+    journalReply: (reply, key) =>
       Effect.sync(() => {
+        const made = key.pipe(
+          Option.flatMap(({ key: given }) =>
+            Option.fromUndefinedOr(state.keys.get(given))
+          ),
+          Option.flatMap((id) => Option.fromUndefinedOr(state.replies.get(id)))
+        );
+
+        if (Option.isSome(made)) {
+          return made.value.reviewId === reply.reviewId &&
+            made.value.text === reply.text
+            ? { _tag: "replayed" as const, reply: made.value }
+            : { _tag: "keyReused" as const };
+        }
+
         if (!state.reviews.has(reply.reviewId)) {
           return { _tag: "dropped" as const };
         }
@@ -270,6 +287,10 @@ export const makeReviewWorld = (
         }
 
         state.replies.set(reply.id, reply);
+
+        if (Option.isSome(key)) {
+          state.keys.set(key.value.key, reply.id);
+        }
 
         return { _tag: "journalled" as const };
       }),

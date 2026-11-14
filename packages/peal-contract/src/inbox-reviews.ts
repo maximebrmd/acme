@@ -9,6 +9,7 @@ import {
 
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { InboxActionFailed } from "./inbox-action-failed.ts";
 import { InboxActionUnavailable } from "./inbox-action-unavailable.ts";
 import { InboxReviewNotFound } from "./inbox-review-not-found.ts";
@@ -20,6 +21,10 @@ import {
   maxInboxPageSize,
 } from "./inbox.ts";
 import { PlatformSchema } from "./platform.ts";
+import {
+  idempotencyKeyLifetimeHours,
+  maxIdempotencyKeyLength,
+} from "./posts.ts";
 import { ReplyInvalid } from "./reply-invalid.ts";
 import { ReplyPending } from "./reply-pending.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -287,13 +292,21 @@ export class InboxReviewsApi extends HttpApiGroup.make("inboxReviews")
         InboxActionUnavailable,
         ReplyInvalid,
         ReplyPending,
+        IdempotencyKeyReused,
       ],
+      headers: {
+        "idempotency-key": Schema.optionalKey(
+          Schema.String.check(
+            Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+          )
+        ),
+      },
       params: review,
       payload: NewInboxReviewReplySchema,
       success: InboxReviewReplySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's \`reply.moderation\`). The reply is checked against Google's ${maxInboxReviewReplyBytes} bytes (UTF-8), journalled, and sent by a job: the answer is the reply \`sending\`, and the location's reviews show how it ended. A reply whose outcome is not known is \`unconfirmed\` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 \`ReplyPending\`). Replies to reviews count no inbox message. ${inPerson} ${acting}`,
+        description: `Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's \`reply.moderation\`). The reply is checked against Google's ${maxInboxReviewReplyBytes} bytes (UTF-8), journalled, and sent by a job: the answer is the reply \`sending\`, and the location's reviews show how it ended. A reply whose outcome is not known is \`unconfirmed\` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 \`ReplyPending\`). With an \`Idempotency-Key\` header (${maxIdempotencyKeyLength} characters at most, new for each reply), the request is safe to send again: within ${idempotencyKeyLifetimeHours} hours the same key with the same review and text answers the reply the first request made, and sends no other; with another review or text it is refused (409 \`IdempotencyKeyReused\`). Replies to reviews count no inbox message. ${inPerson} ${acting}`,
         summary: "Reply to a review",
       })
     ),

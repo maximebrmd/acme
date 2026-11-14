@@ -55,6 +55,7 @@ const ReviewActions = ({
   const mark = useAtomSet(setReviewAnswered, { mode: "promiseExit" });
   const withdraw = useAtomSet(withdrawReviewReply, { mode: "promiseExit" });
   const [text, setText] = useState("");
+  const [attempt, setAttempt] = useState(() => crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [isSending, startSending] = useTransition();
   const [isActing, startActing] = useTransition();
@@ -76,9 +77,17 @@ const ReviewActions = ({
   const handleSend = () => {
     setError(null);
     startSending(async () => {
-      const exit = await send({ params, payload: { text }, reactivityKeys });
+      // The same key until the reply is made: a reply sent again after a
+      // lost answer is the one the first request made.
+      const exit = await send({
+        headers: { "idempotency-key": attempt },
+        params,
+        payload: { text },
+        reactivityKeys,
+      });
 
       if (Exit.isSuccess(exit)) {
+        setAttempt(crypto.randomUUID());
         setText("");
         toast.success(t("box.sent"));
 
@@ -150,7 +159,11 @@ const ReviewActions = ({
         pending={pending}
         sending={isSending}
         text={text}
-        onChange={setText}
+        onChange={(changed) => {
+          // Another text is another reply, under a key of its own.
+          setText(changed);
+          setAttempt(crypto.randomUUID());
+        }}
         onSend={handleSend}
       />
     </div>

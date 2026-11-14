@@ -215,13 +215,19 @@ layer(StoreTest)("the review store", (it) => {
             at
           );
 
-          assert.deepStrictEqual(yield* store.journalReply(reply), {
-            _tag: "journalled",
-          });
-          assert.deepStrictEqual(yield* store.journalReply(other), {
-            _tag: "pending",
-            replyId: reply.id,
-          });
+          assert.deepStrictEqual(
+            yield* store.journalReply(reply, Option.none()),
+            {
+              _tag: "journalled",
+            }
+          );
+          assert.deepStrictEqual(
+            yield* store.journalReply(other, Option.none()),
+            {
+              _tag: "pending",
+              replyId: reply.id,
+            }
+          );
 
           const begun = Result.getOrThrow(beginReviewReply(reply, at));
 
@@ -263,9 +269,12 @@ layer(StoreTest)("the review store", (it) => {
           assert.deepStrictEqual(yield* store.repliesOf(thread.id), [sent]);
 
           // Settled, it leaves room for another.
-          assert.deepStrictEqual(yield* store.journalReply(other), {
-            _tag: "journalled",
-          });
+          assert.deepStrictEqual(
+            yield* store.journalReply(other, Option.none()),
+            {
+              _tag: "journalled",
+            }
+          );
 
           // A reply to a review that is gone is dropped.
           yield* store.deleteReviews([kept.id]);
@@ -278,9 +287,12 @@ layer(StoreTest)("the review store", (it) => {
             at
           );
 
-          assert.deepStrictEqual(yield* store.journalReply(late), {
-            _tag: "dropped",
-          });
+          assert.deepStrictEqual(
+            yield* store.journalReply(late, Option.none()),
+            {
+              _tag: "dropped",
+            }
+          );
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );
@@ -386,7 +398,7 @@ layer(StoreTest)("the review store", (it) => {
             at
           );
 
-          yield* store.journalReply(reply);
+          yield* store.journalReply(reply, Option.none());
 
           // Another platform's channel leaves reviews alone.
           yield* records.channelGone(kept.channelId, "mastodon", at);
@@ -463,6 +475,54 @@ layer(StoreTest)("the review store", (it) => {
           assert.strictEqual(
             Option.getOrThrow(yield* store.thread(thread.id)).unanswered,
             1
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "answers the reply a key made in its workspace, and tells a key used with another text",
+    () =>
+      Effect.gen(function* keys() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* ReviewStore;
+        const thread = yield* locationOf(
+          workspaceId,
+          "2047-02-07T10:00:00.000Z"
+        );
+        const at = utc("2047-02-07T10:00:00.000Z");
+
+        const key = Option.some({
+          key: "synthetic-key-1",
+          since: utc("2047-02-06T10:00:00.000Z"),
+        });
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const kept = yield* reviewOn(thread, 1, "2047-02-07T09:00:00.000Z");
+
+          yield* store.saveReviews([kept]);
+
+          const written = (text: string) =>
+            newId(ReviewReplyIdSchema).pipe(
+              Effect.map((id) =>
+                writeReviewReply(id, kept, Option.none(), text, at)
+              )
+            );
+
+          const first = yield* written("Thanks!");
+
+          assert.deepStrictEqual(yield* store.journalReply(first, key), {
+            _tag: "journalled",
+          });
+          assert.deepStrictEqual(
+            yield* store.journalReply(yield* written("Thanks!"), key),
+            { _tag: "replayed", reply: first }
+          );
+          assert.deepStrictEqual(
+            yield* store.journalReply(yield* written("Other"), key),
+            { _tag: "keyReused" }
           );
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })

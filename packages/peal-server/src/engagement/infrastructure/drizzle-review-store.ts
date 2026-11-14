@@ -10,11 +10,13 @@ import {
   sql as drizzleSql,
 } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { Digest } from "effect/crypto";
 import { SqlClient } from "effect/sql";
 
 import { ReviewStore } from "#engagement/application/ports/review-store.ts";
 import type {
   ReviewReplyJournalled,
+  ReviewReplyKey,
   ReviewThreadCursor,
   ReviewThreadFilter,
   ReviewThreadSummary,
@@ -239,6 +241,44 @@ export const DrizzleReviewStore = Layer.effect(
   Effect.gen(function* DrizzleReviewStore() {
     const db = yield* Drizzle;
     const sql = yield* SqlClient.SqlClient;
+    const digest = yield* Digest.Digest;
+
+    const hashOf = (text: string) =>
+      digest
+        .digestHex(Digest.sha256, new TextEncoder().encode(text))
+        .pipe(Effect.mapError(failed));
+
+    // The reply a key made in the workspace, compared with what comes
+    // with the key now.
+    const madeUnder = Effect.fn("ReviewStore.madeUnder")(function* madeUnder(
+      saved: ReviewReply,
+      keyDigest: string
+    ) {
+      const [row] = yield* db
+        .select()
+        .from(reviewReplies)
+        .where(
+          and(
+            eq(reviewReplies.workspaceId, saved.workspaceId),
+            eq(reviewReplies.keyDigest, keyDigest)
+          )
+        )
+        .limit(1)
+        .pipe(Effect.mapError(failed));
+
+      if (row === undefined) {
+        return Option.none<ReviewReplyJournalled>();
+      }
+
+      const earlier = yield* replyOf(row);
+
+      const same =
+        earlier.reviewId === saved.reviewId && earlier.text === saved.text;
+
+      return Option.some<ReviewReplyJournalled>(
+        same ? { _tag: "replayed", reply: earlier } : { _tag: "keyReused" }
+      );
+    });
 
     const followLocked = Effect.fn("ReviewStore.followLocked")(
       function* followLocked(followed: readonly ReviewThread[]) {
@@ -482,24 +522,50 @@ export const DrizzleReviewStore = Layer.effect(
         WHERE thread.id = ${threadId}::uuid
       `.pipe(Effect.asVoid, Effect.mapError(failed));
 
-    // Insert only, and only when the unique index allows it: one reply on
-    // its way or unconfirmed a review. A reply whose review went is
-    // dropped: the insert selects its review, and finds none.
+    // Insert only, and only when the unique indexes allow it: one reply on
+    // its way or unconfirmed a review, one reply a key. A reply whose
+    // review went is dropped: the insert selects its review, and finds
+    // none.
     const journalReply = Effect.fn("ReviewStore.journalReply")(
-      function* journalReply(saved: ReviewReply) {
+      function* journalReply(
+        saved: ReviewReply,
+        key: Option.Option<ReviewReplyKey>
+      ) {
+        const keyDigest = Option.isSome(key)
+          ? yield* hashOf(key.value.key)
+          : null;
+
+        if (Option.isSome(key) && keyDigest !== null) {
+          // A use of the key older than its lifetime is forgotten.
+          yield* sql`
+            UPDATE engagement.review_replies SET key_digest = NULL
+            WHERE workspace_id = ${saved.workspaceId}::uuid
+              AND key_digest = ${keyDigest}
+              AND created_at <= ${DateTime.formatIso(key.value.since)}::timestamptz
+          `.pipe(Effect.mapError(failed));
+
+          const made = yield* madeUnder(saved, keyDigest);
+
+          if (Option.isSome(made)) {
+            return made.value;
+          }
+        }
+
         const status = statusColumns(saved.status);
 
         const inserted = yield* sql`
           INSERT INTO engagement.review_replies (
             id, review_id, thread_id, workspace_id, channel_id, author_id,
-            text, created_at, status, attempted_at, settled_at, reason
+            text, created_at, status, attempted_at, settled_at, reason,
+            key_digest
           )
           SELECT ${saved.id}::uuid, review.id, review.thread_id,
                  review.workspace_id, review.channel_id,
                  ${Option.getOrNull(saved.authorId)}::uuid, ${saved.text},
                  ${DateTime.formatIso(saved.createdAt)}::timestamptz,
                  ${saved.status._tag}, ${status.attemptedAt}::timestamptz,
-                 ${status.settledAt}::timestamptz, ${status.reason}::text
+                 ${status.settledAt}::timestamptz, ${status.reason}::text,
+                 ${keyDigest}::text
           FROM engagement.reviews AS review
           WHERE review.id = ${saved.reviewId}::uuid
           ON CONFLICT DO NOTHING
@@ -510,6 +576,17 @@ export const DrizzleReviewStore = Layer.effect(
           const journalled: ReviewReplyJournalled = { _tag: "journalled" };
 
           return journalled;
+        }
+
+        // Refused: by the key, used by a request that came just before,
+        // by a reply to the review that is not settled, or the review is
+        // gone.
+        if (keyDigest !== null) {
+          const made = yield* madeUnder(saved, keyDigest);
+
+          if (Option.isSome(made)) {
+            return made.value;
+          }
         }
 
         const [pending] = yield* db
@@ -706,4 +783,4 @@ export const DrizzleReviewStore = Layer.effect(
       thread,
     });
   })
-);
+).pipe(Layer.provide(Digest.layerWebCrypto));

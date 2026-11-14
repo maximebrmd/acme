@@ -1,5 +1,6 @@
 import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 
+import { replyKeyLifetime } from "#engagement/domain/reply.ts";
 import { reviewAbilitiesOf } from "#engagement/domain/review-abilities.ts";
 import type {
   ReviewAbilities,
@@ -43,6 +44,7 @@ import type {
   ReviewThreadSummary,
 } from "./ports/review-store.ts";
 import { ReplyEmpty } from "./reply-empty.ts";
+import { ReplyKeyReused } from "./reply-key-reused.ts";
 import { ReplyTooLong } from "./reply-too-long.ts";
 import { ReviewActionFailed } from "./review-action-failed.ts";
 import { ReviewNotFound } from "./review-not-found.ts";
@@ -125,16 +127,22 @@ export class EngagementReviews extends Context.Service<
       ReviewThreadDetail,
       DatabaseError | MissingPermission | ReviewThreadNotFound
     >;
+    /**
+     * With `key`, a request sent again within `replyKeyLifetime` answers
+     * the reply the key made, and sends no other.
+     */
     readonly reply: (
       actor: Actor,
       reviewId: ReviewId,
-      text: string
+      text: string,
+      key?: Option.Option<string>
     ) => Effect.Effect<
       ReviewReply,
       | AbilityUnavailable
       | DatabaseError
       | MissingPermission
       | ReplyEmpty
+      | ReplyKeyReused
       | ReplyTooLong
       | ReviewNotFound
       | ReviewReplyNeedsPerson
@@ -293,7 +301,8 @@ export class EngagementReviews extends Context.Service<
       const reply = Effect.fn("EngagementReviews.reply")(function* reply(
         actor: Actor,
         reviewId: ReviewId,
-        text: string
+        text: string,
+        key: Option.Option<string> = Option.none()
       ) {
         yield* Effect.fromResult(authorize(actor, "engagement:reply"));
 
@@ -323,6 +332,8 @@ export class EngagementReviews extends Context.Service<
 
         yield* able(review.channelId, "reply");
 
+        const now = yield* DateTime.now;
+
         const written = writeReviewReply(
           yield* newId(ReviewReplyIdSchema).pipe(
             Effect.provideService(Ids, ids)
@@ -330,13 +341,21 @@ export class EngagementReviews extends Context.Service<
           review,
           writerOf(actor),
           said,
-          yield* DateTime.now
+          now
         );
 
         // The row and the start of its job commit together, or neither.
         const journalled = yield* transaction(
           store
-            .journalReply(written)
+            .journalReply(
+              written,
+              key.pipe(
+                Option.map((given) => ({
+                  key: given,
+                  since: DateTime.subtractDuration(now, replyKeyLifetime),
+                }))
+              )
+            )
             .pipe(
               Effect.tap((outcome) =>
                 outcome._tag === "journalled"
@@ -357,7 +376,11 @@ export class EngagementReviews extends Context.Service<
           return yield* new ReviewNotFound({ reviewId });
         }
 
-        return written;
+        if (journalled._tag === "keyReused") {
+          return yield* new ReplyKeyReused();
+        }
+
+        return journalled._tag === "replayed" ? journalled.reply : written;
       });
 
       const withdraw = Effect.fn("EngagementReviews.withdraw")(

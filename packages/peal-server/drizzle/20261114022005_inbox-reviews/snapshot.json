@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "4d02d3d1-77b8-4b7b-bf5e-c410f148a3cb",
+  "id": "ab1aaff6-828f-4f1e-85a4-91aaf59f3d4f",
   "prevIds": [
     "68fad7c9-755e-45d3-9a12-f5dae4559337"
   ],
@@ -124,6 +124,27 @@
         "n|tbl|engagement.review_replies",
         "n|sch|engagement",
         "n|col|engagement.review_replies.review_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_key"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_key",
+        "n|idx|engagement.review_replies_key",
+        "e|idx|engagement.review_replies_key",
+        "n|rel|engagement.review_replies_key"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.workspace_id",
+        "n|col|engagement.review_replies.key_digest"
       ]
     },
     {
@@ -499,6 +520,22 @@
         "type": "uuid",
         "typeSchema": null,
         "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "key_digest",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
         "dimensions": 0,
         "default": null,
         "generated": null,
@@ -1130,6 +1167,37 @@
         ],
         "isUnique": true,
         "where": "\"status\" IN ('sending', 'unconfirmed')",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "key_digest",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"key_digest\" IS NOT NULL",
         "with": "",
         "method": "btree",
         "concurrently": false,

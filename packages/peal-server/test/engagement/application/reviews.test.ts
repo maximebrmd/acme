@@ -507,6 +507,41 @@ describe("a reply's text", () => {
   );
 });
 
+describe("a reply sent again under its idempotency key", () => {
+  it.effect(
+    "answers the reply the key made, sends no second one, and refuses the key with another text",
+    () => {
+      const world = withReview();
+
+      return at(
+        Effect.gen(function* keyed() {
+          yield* collect;
+
+          const reviewId = onlyReview(world).id;
+          const key = Option.some("synthetic-key-1");
+
+          const first = yield* EngagementReviews.use((reviews) =>
+            reviews.reply(editor, reviewId, "Thank you!", key)
+          );
+
+          const again = yield* EngagementReviews.use((reviews) =>
+            reviews.reply(editor, reviewId, "Thank you!", key)
+          );
+
+          assert.strictEqual(again.id, first.id);
+          assert.deepStrictEqual(world.state.jobs, [first.id]);
+
+          const reused = yield* EngagementReviews.use((reviews) =>
+            reviews.reply(editor, reviewId, "Something else", key)
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(reused._tag, "ReplyKeyReused");
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
+
 describe("replying to reviews in person", () => {
   it.effect(
     "refuses an API key and an application a reply or a deleted reply, and lets them read and mark",

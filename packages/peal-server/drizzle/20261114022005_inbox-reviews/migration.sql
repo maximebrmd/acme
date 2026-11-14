@@ -5,6 +5,7 @@ CREATE TABLE "engagement"."review_replies" (
 	"channel_id" uuid NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
 	"id" uuid PRIMARY KEY,
+	"key_digest" text,
 	"reason" text,
 	"review_id" uuid NOT NULL,
 	"settled_at" timestamp with time zone,
@@ -56,6 +57,7 @@ CREATE TABLE "engagement"."reviews" (
 CREATE INDEX "review_replies_thread" ON "engagement"."review_replies" ("thread_id","id");--> statement-breakpoint
 CREATE INDEX "review_replies_review" ON "engagement"."review_replies" ("review_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "review_replies_pending" ON "engagement"."review_replies" ("review_id") WHERE "status" IN ('sending', 'unconfirmed');--> statement-breakpoint
+CREATE UNIQUE INDEX "review_replies_key" ON "engagement"."review_replies" ("workspace_id","key_digest") WHERE "key_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "review_replies_sending" ON "engagement"."review_replies" ("created_at","id") WHERE "status" = 'sending';--> statement-breakpoint
 CREATE INDEX "review_replies_author" ON "engagement"."review_replies" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "review_threads_channel" ON "engagement"."review_threads" ("channel_id");--> statement-breakpoint

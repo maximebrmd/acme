@@ -4,6 +4,7 @@ import {
   Api,
   CurrentMember,
   defaultInboxPageSize,
+  IdempotencyKeyReused,
   InboxActionFailed,
   InboxActionUnavailable,
   InboxReviewNotFound,
@@ -132,7 +133,7 @@ export const InboxReviewsHandlers = HttpApiBuilder.group(
               })
             );
         }),
-      replyToReview: ({ params, payload }) =>
+      replyToReview: ({ headers, params, payload }) =>
         Effect.gen(function* replyToReview() {
           const actor = actorOf(yield* CurrentMember);
 
@@ -141,19 +142,27 @@ export const InboxReviewsHandlers = HttpApiBuilder.group(
             reviewNotFound
           );
 
-          return yield* reviews.reply(actor, reviewId, payload.text).pipe(
-            Effect.map(toReviewReplyView),
-            Effect.catchTags({
-              AbilityUnavailable: unavailable,
-              DatabaseError: Effect.die,
-              MissingPermission: forbidden,
-              ReplyEmpty: empty,
-              ReplyTooLong: tooLong,
-              ReviewNotFound: reviewNotFound,
-              ReviewReplyNeedsPerson: forbidden,
-              ReviewReplyPending: pending,
-            })
-          );
+          return yield* reviews
+            .reply(
+              actor,
+              reviewId,
+              payload.text,
+              Option.fromUndefinedOr(headers["idempotency-key"])
+            )
+            .pipe(
+              Effect.map(toReviewReplyView),
+              Effect.catchTags({
+                AbilityUnavailable: unavailable,
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                ReplyEmpty: empty,
+                ReplyKeyReused: () => Effect.fail(new IdempotencyKeyReused()),
+                ReplyTooLong: tooLong,
+                ReviewNotFound: reviewNotFound,
+                ReviewReplyNeedsPerson: forbidden,
+                ReviewReplyPending: pending,
+              })
+            );
         }),
       setReviewAnswered: ({ params, payload }) =>
         Effect.gen(function* setReviewAnswered() {

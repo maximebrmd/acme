@@ -35,9 +35,20 @@ export interface ReviewThreadCursor {
   readonly waiting: boolean;
 }
 
+/** An idempotency key a request came with, and since when its uses count. */
+export interface ReviewReplyKey {
+  readonly key: string;
+  /** Uses of the key before this instant are forgotten. */
+  readonly since: DateTime.Utc;
+}
+
 /** How journalling a reply ended. */
 export type ReviewReplyJournalled =
   | { readonly _tag: "journalled" }
+  // The key made this reply, with the same review and text: no other.
+  | { readonly _tag: "replayed"; readonly reply: ReviewReply }
+  // The key made a reply to another review, or with another text.
+  | { readonly _tag: "keyReused" }
   // A reply to the review is on its way or unconfirmed.
   | { readonly _tag: "pending"; readonly replyId: ReviewReplyId }
   // The review went, with its thread or its workspace.
@@ -120,10 +131,12 @@ export class ReviewStore extends Context.Service<
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * Journals a reply about to be sent. The database decides: one reply
-     * a review on its way or unconfirmed at a time.
+     * a review on its way or unconfirmed at a time, and one reply a key
+     * in the workspace (kept under its SHA-256, never the key).
      */
     readonly journalReply: (
-      reply: ReviewReply
+      reply: ReviewReply,
+      key: Option.Option<ReviewReplyKey>
     ) => Effect.Effect<ReviewReplyJournalled, DatabaseError>;
     readonly reply: (
       replyId: string

@@ -159,6 +159,7 @@ describe("the reviews endpoints", () => {
         const reviewId = reviews[0]?.id ?? "";
 
         const reply = yield* client.inboxReviews.replyToReview({
+          headers: {},
           params: { ...params, reviewId },
           payload: { text: "Thank you for coming!" },
         });
@@ -168,6 +169,7 @@ describe("the reviews endpoints", () => {
 
         const again = yield* client.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId },
             payload: { text: "Again" },
           })
@@ -177,6 +179,7 @@ describe("the reviews endpoints", () => {
 
         const tooLong = yield* client.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId: reviews[1]?.id ?? "" },
             payload: { text: "é".repeat(2049) },
           })
@@ -225,6 +228,7 @@ describe("the reviews endpoints", () => {
 
         const forbidden = yield* viewer.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId },
             payload: { text: "Thanks" },
           })
@@ -236,6 +240,7 @@ describe("the reviews endpoints", () => {
 
         const missing = yield* editor.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId: "not-a-review" },
             payload: { text: "Thanks" },
           })
@@ -256,6 +261,7 @@ describe("the reviews endpoints", () => {
 
         const unable = yield* editor.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId },
             payload: { text: "Thanks" },
           })
@@ -289,6 +295,7 @@ describe("the reviews endpoints", () => {
 
         const replied = yield* key.inboxReviews
           .replyToReview({
+            headers: {},
             params: { ...params, reviewId },
             payload: { text: "Thanks" },
           })

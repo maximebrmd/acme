@@ -327,6 +327,9 @@ export const reviewReplies = engagement.table(
     channelId: uuid("channel_id").notNull(),
     createdAt: instant("created_at").notNull(),
     id: uuid("id").primaryKey(),
+    // The SHA-256 of the idempotency key the request came with, never the
+    // key; null without one, and once the key is forgotten.
+    keyDigest: text("key_digest"),
     reason: text("reason"),
     reviewId: uuid("review_id")
       .notNull()
@@ -346,6 +349,10 @@ export const reviewReplies = engagement.table(
     uniqueIndex("review_replies_pending")
       .on(table.reviewId)
       .where(sql`${table.status} IN ('sending', 'unconfirmed')`),
+    // One reply an idempotency key, in its workspace.
+    uniqueIndex("review_replies_key")
+      .on(table.workspaceId, table.keyDigest)
+      .where(sql`${table.keyDigest} IS NOT NULL`),
     // The replies no job settled, which the collection settles.
     index("review_replies_sending")
       .on(table.createdAt, table.id)

@@ -217,6 +217,7 @@ export const InboxToolsLive = InboxTools.toLayer(
                 refuse(
                   `The reply is too long for Google: ${String(length)} bytes, where it takes ${String(maximum)}. Nothing was sent.`
                 ),
+              ReplyKeyReused: reviewNeedsPerson,
               ReviewNotFound: noReview,
               ReviewReplyNeedsPerson: reviewNeedsPerson,
               ReviewReplyPending: ({ replyId }) =>
