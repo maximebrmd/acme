@@ -295,6 +295,30 @@
   made). Not the customer's balance, which Stripe's own proration would
   use: the legacy plan was paid in euros, and a balance in euros pays no
   dollar invoice.
+- Legacy plans are retired by the operator's command, `nx run
+  peal-server:billing:retire-plans` (`src/retire-plans.ts`, in the image;
+  `RetireLegacyPlans`, `RetirePlansLive`): it lists each legacy
+  subscription that may still give its plan with what retiring does
+  (`Retirement`), changing nothing; `--apply` keeps the day on its row
+  first (`billing.subscriptions.retires_at`, `PlanRetirements.retire`: a
+  day kept stays), then sets it to end at Stripe under the request key
+  `retirement` (`cancelAtPeriodEnd` when the day is its period's end, else
+  `cancelAt`), and a run again asks again only what Stripe's events do not
+  show ended. The day is `retirementDay(noticeAt, periodEnd, interval)`
+  (`domain/plan-retirement.ts`): the period's end when it is 30 days
+  (`retirementNotice`) or more after the notice, else a monthly plan's
+  next period end that is, and a yearly plan's 30th day (renewing a year
+  to retire it would charge a year); `noticeAt` is a day after the run
+  (`retirementTelling`), as the hourly `SendBillingReminders` tells each
+  billing manager (`PlansRetiring`, always emailed, key
+  `plans-retiring:<subscription>`, then `retirement_told_at`). A trial runs
+  to its end; a plan a cancellation ends is left (`ending`). A server that
+  does not bill lists, and refuses `--apply` (`BillingOff`). Runbook (the
+  owner, sandbox, never in tests): a monthly and a yearly legacy
+  subscription on test clocks, the command, `--apply`, again (nothing
+  more), the notice and email within the hour, the clock past the day (each
+  ends, the monthly after one renewal at most, the yearly prorated to its
+  day), and one moved before its day (credited, ended, no end left set).
 - `GET …/billing` answers `accounts` (the workspace's own and the
   pooled count, and for the billing workspace's members only the month's
   account-days, `estimate` by `accountsCharge` of what was reported once

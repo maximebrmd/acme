@@ -800,6 +800,24 @@ workspace.
   command above, which then runs the previous image and moves the key back
   to a third price, and release the previous commit again.
 
+### Retiring the legacy plans
+
+The plans priced by channels are no longer sold, and their subscriptions
+are retired with 30 days' notice. Each run lists every subscription to one
+that still gives its plan, with the day it would end, and changes nothing:
+
+```sh
+sudo peal-compose run --rm --no-deps server packages/peal-server/src/retire-plans.ts
+```
+
+With `--apply` it keeps each one's day and sets it to end then at Stripe;
+the server's hourly reminders then tell each workspace's billing managers
+once, by notice and email (`PlansRetiring`). A trial runs to its end, and a
+plan its subscriber cancelled ends anyway. Run it again any time: what was
+set stays. A server that does not bill (production today) prints that
+there is nothing to do, or refuses `--apply`. Once the last legacy
+subscription ended, archive the legacy plans' prices by hand at Stripe.
+
 ## Backups
 
 Postgres archives each write-ahead log segment to the backup bucket as soon as

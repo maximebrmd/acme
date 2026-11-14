@@ -179,6 +179,15 @@ export const NoticeEventSchema = Schema.Union([
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
   }),
+  // Plans priced by tiers of channels are retired: the workspace's legacy
+  // `plan` ends at `endsAt`, 30 days at least after this notice, and is
+  // not renewed. Before then it may move to per-account pricing on the
+  // billing page, which ends the plan at once and refunds its unused time;
+  // otherwise it is on the free tier from that day.
+  Schema.TaggedStruct("PlansRetiring", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
   // The billing account, without a payment method, used the `allowed`
   // units of `meter` its month includes: what it meters (sending inbox
   // messages, managed ads) pauses until `resetsAt`, the first of next

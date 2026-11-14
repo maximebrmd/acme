@@ -15,6 +15,7 @@ import {
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import type { RecordOutcome } from "#billing/application/ports/subscriptions.ts";
 import {
@@ -398,6 +399,81 @@ export const DrizzleSubscriptionsLive = Layer.effect(
       perAccount,
       record,
       remindable,
+    });
+  })
+);
+
+// The plans retired, as `billing:retire-plans` reads them: every legacy
+// plan but the free one, on a subscription that may still give it.
+const retiring = and(
+  notInArray(subscriptions.plan, ["payAsYouGo", "free"]),
+  inArray(subscriptions.status, ["active", "past_due", "trialing"])
+);
+
+const retiringOf = (row: Row) =>
+  toSubscription(row).pipe(
+    Effect.map((subscription) => ({
+      retiresAt: instantOf(row.retiresAt),
+      subscription,
+      toldAt: instantOf(row.retirementToldAt),
+    }))
+  );
+
+/** The retirement of the legacy plans, on their subscriptions' rows. */
+export const DrizzlePlanRetirementsLive = Layer.effect(
+  PlanRetirements,
+  Effect.gen(function* DrizzlePlanRetirementsLive() {
+    const db = yield* Drizzle;
+
+    const read = (where: ReturnType<typeof and>) =>
+      db
+        .select()
+        .from(subscriptions)
+        .where(where)
+        .orderBy(asc(subscriptions.stripeSubscriptionId))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.flatMap((rows) => Effect.all(rows.map(retiringOf)))
+        );
+
+    return PlanRetirements.of({
+      legacy: read(retiring).pipe(Effect.withSpan("PlanRetirements.legacy")),
+      retire: Effect.fn("PlanRetirements.retire")(
+        function* retire(subscriptionId, retiresAt) {
+          // A day kept already stays: the one Stripe was asked for.
+          const [row] = yield* db
+            .update(subscriptions)
+            .set({
+              retiresAt: sql`coalesce(${subscriptions.retiresAt}, ${date(retiresAt)})`,
+            })
+            .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+            .returning({ retiresAt: subscriptions.retiresAt })
+            .pipe(Effect.mapError(failed));
+
+          return Option.getOrElse(
+            instantOf(row?.retiresAt ?? null),
+            () => retiresAt
+          );
+        }
+      ),
+      told: (subscriptionId, at) =>
+        db
+          .update(subscriptions)
+          .set({ retirementToldAt: date(at) })
+          .where(
+            and(
+              eq(subscriptions.stripeSubscriptionId, subscriptionId),
+              isNull(subscriptions.retirementToldAt)
+            )
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      untold: read(
+        and(
+          retiring,
+          isNotNull(subscriptions.retiresAt),
+          isNull(subscriptions.retirementToldAt)
+        )
+      ).pipe(Effect.withSpan("PlanRetirements.untold")),
     });
   })
 );

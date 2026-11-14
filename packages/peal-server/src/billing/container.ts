@@ -23,6 +23,7 @@ import { RecordSubscription } from "#billing/application/record-subscription.ts"
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
+import { RetireLegacyPlans } from "#billing/application/retire-legacy-plans.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
@@ -54,7 +55,10 @@ import { DrizzleMeterUsageStoreLive } from "#billing/infrastructure/drizzle-mete
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
 import { DrizzleStripeEventLedgerLive } from "#billing/infrastructure/drizzle-stripe-event-ledger.ts";
-import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
+import {
+  DrizzlePlanRetirementsLive,
+  DrizzleSubscriptionsLive,
+} from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { DrizzleTrialsLive } from "#billing/infrastructure/drizzle-trials.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdrawals.ts";
@@ -79,6 +83,7 @@ const RecordsLive = Layer.mergeAll(
   DrizzleContractRequestsLive,
   KeyedContractReferencesLive,
   DrizzleSubscriptionsLive,
+  DrizzlePlanRetirementsLive,
   DrizzleOrdersLive,
   DrizzleTrialsLive,
   DrizzleMeteredPostLedgerLive,
@@ -369,6 +374,22 @@ export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
       ContextAccountChannelsLive,
       AuditedAccountDeskLive,
       StartDaysLive
+    )
+  )
+);
+
+/**
+ * Retiring the legacy plans (`src/retire-plans.ts`, `nx run
+ * peal-server:billing:retire-plans`): their subscriptions on the
+ * database, Stripe through the server's key, and whether the server
+ * bills. Needs the database, migrated.
+ */
+export const RetirePlansLive = RetireLegacyPlans.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzlePlanRetirementsLive,
+      StripeContractsLive,
+      ConfiguredBillingModeLive
     )
   )
 );

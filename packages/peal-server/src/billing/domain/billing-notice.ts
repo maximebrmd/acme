@@ -77,6 +77,14 @@ export const BillingNoticeSchema = Schema.Union([
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
   }),
+  // The workspace's legacy `plan` is retired: its subscription ends at
+  // `endsAt`, 30 days at least after this notice, unless the workspace
+  // moves to per-account pricing before (credited its unused time); else
+  // it is on the free tier then.
+  Schema.TaggedStruct("PlansRetiring", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
   // The billing account, without a payment method, used the `allowed`
   // units of `meter` its month includes: the meter pauses until
   // `resetsAt`, the first of next month.

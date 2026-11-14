@@ -409,6 +409,13 @@ export const english: EmailCatalog = {
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Add a payment method to {workspaceName} before {graceUntil}",
   },
+  plansRetiring: {
+    action: "Move to per-account pricing",
+    body: "Plans priced by tiers of channels are retired, {plan} among them. The {plan} plan of {workspaceName} ends on {endsAt} and is not renewed: nothing more is charged for it. Before that day you may move to per-account pricing on the billing page, with its own order: the plan then ends at once, and its unused time is refunded to the payment method it was paid with. Otherwise the workspace is on the free tier from that day, with its first accounts free; one that holds more publishes nothing until a payment method is added or fewer accounts are kept.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "The {plan} plan of {workspaceName} ends on {endsAt}",
+  },
   allowanceReached: {
     action: "Add a payment method",
     body: "{workspaceName} used the {allowed} {meter} its billing account includes this month without a payment method. Until {resetsAt}, the meter pauses: no more messages are sent and no new ads are recorded; reading, publishing and everything else go on. Add a payment method on the billing page to go on now: what is used past the allowance is then billed at the rate card's price.",

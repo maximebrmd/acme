@@ -226,6 +226,12 @@ export const NoticeEventSchema = Schema.Union([
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
   }),
+  // The workspace's legacy `plan` is retired: its subscription ends at
+  // `endsAt`, unless it moves to per-account pricing before.
+  Schema.TaggedStruct("PlansRetiring", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
   // The billing account, without a payment method, used the `allowed`
   // units of `meter` its month includes: the meter pauses until
   // `resetsAt`, the first of next month, unless a payment method is added.
@@ -356,6 +362,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     PaymentMethodNeeded: () => Option.none<EmailKind>(),
+    PlansRetiring: () => Option.none<EmailKind>(),
     AllowanceReached: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
     WebhookDeliveriesFailing: () => Option.some<EmailKind>("webhookFailing"),
@@ -393,6 +400,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     PaymentMethodNeeded: (): Permission => "billing:manage",
+    PlansRetiring: (): Permission => "billing:manage",
     AllowanceReached: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
     WebhookDeliveriesFailing: (): Permission => "webhook:manage",
@@ -421,6 +429,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
     PaymentMethodNeeded: () => false,
+    PlansRetiring: () => false,
     AllowanceReached: () => false,
     TrialEnding: () => false,
     WebhookDeliveriesFailing: () => false,
@@ -547,6 +556,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     PaymentMethodNeeded: () => `/app/${workspaceId}/billing`,
+    PlansRetiring: () => `/app/${workspaceId}/billing`,
     AllowanceReached: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
     WebhookDeliveriesFailing: () => `/app/${workspaceId}/settings/webhooks`,

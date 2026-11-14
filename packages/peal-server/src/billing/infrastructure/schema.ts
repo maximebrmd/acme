@@ -46,6 +46,11 @@ export const subscriptions = billing.table(
     // something: per-account pricing's ceiling before then lifts.
     paidInvoiceAt: instant("paid_invoice_at"),
     plan: text("plan").notNull(),
+    // A legacy plan retired (`billing:retire-plans --apply`): the day it
+    // was set to end at Stripe, and when its billing managers were told,
+    // once. The release before ignores both.
+    retiresAt: instant("retires_at"),
+    retirementToldAt: instant("retirement_told_at"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     stripeCustomerId: text("stripe_customer_id").notNull(),

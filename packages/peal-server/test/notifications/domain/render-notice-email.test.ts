@@ -207,6 +207,24 @@ describe(renderNoticeEmail, () => {
     );
   });
 
+  it("tells a legacy plan's retirement, with its last day, in both languages", () => {
+    const retiring = {
+      _tag: "PlansRetiring",
+      endsAt: DateTime.makeUnsafe("2027-01-01T00:00:00Z"),
+      plan: "starter",
+    } as const;
+
+    expect(render(retiring, "en").subject).toBe(
+      "The Starter plan of Studio Nord ends on January 1, 2027 at 12:00 AM UTC"
+    );
+    expect(render(retiring, "en").text).toContain(
+      "its unused time is refunded to the payment method it was paid with"
+    );
+    expect(render(retiring, "fr").subject).toBe(
+      "La formule Starter de Studio Nord prend fin le 1 janvier 2027 à 00:00 UTC"
+    );
+  });
+
   it("tells a trial's end and a cancellation's", () => {
     expect(
       render(

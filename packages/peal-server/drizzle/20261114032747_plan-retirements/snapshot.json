@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b8d3052a-2ef6-4d78-8cee-071a8aa01d76",
+  "prevIds": [
+    "b8ccc7da-2ac8-4bf4-a901-314881c357bb"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retires_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retires_at",
+        "n|col|billing.subscriptions.retires_at",
+        "e|col|billing.subscriptions.retires_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retirement_told_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retirement_told_at",
+        "n|col|billing.subscriptions.retirement_told_at",
+        "e|col|billing.subscriptions.retirement_told_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retirement_told_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

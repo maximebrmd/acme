@@ -198,6 +198,11 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       allowed,
       graceUntil,
     }),
+    PlansRetiring: ({ endsAt, plan }): NoticeEventView => ({
+      _tag: "PlansRetiring",
+      endsAt,
+      plan,
+    }),
     AllowanceReached: ({ allowed, meter, resetsAt }): NoticeEventView => ({
       _tag: "AllowanceReached",
       allowed,

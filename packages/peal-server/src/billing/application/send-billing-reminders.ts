@@ -23,6 +23,7 @@ import { BillingAccountStore } from "./ports/billing-account-store.ts";
 import { BillingMode, inGrace } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { ContractReferences } from "./ports/contract-references.ts";
+import { PlanRetirements } from "./ports/plan-retirements.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
@@ -160,7 +161,8 @@ const noticeOf = (
  * (PEAL_BILLING_GRACE_UNTIL), each billing account on the free tier that
  * holds more accounts than it includes is told once, on its billing
  * workspace (`PaymentMethodNeeded`, with the grace's day), its accounts
- * read a page at a time.
+ * read a page at a time. A legacy plan retired (`RetireLegacyPlans`) is
+ * told once, with the day it ends (`PlansRetiring`).
  */
 export class SendBillingReminders extends Context.Service<
   SendBillingReminders,
@@ -175,6 +177,7 @@ export class SendBillingReminders extends Context.Service<
       const entitlements = yield* WorkspaceEntitlements;
       const notices = yield* BillingNotices;
       const references = yield* ContractReferences;
+      const retirements = yield* PlanRetirements;
       const context = yield* Effect.context<StripeContracts | WorkspaceUsage>();
 
       // The billing workspaces on the free tier over its accounts, told
@@ -250,12 +253,45 @@ export class SendBillingReminders extends Context.Service<
         ).pipe(Effect.annotateLogs({ over }));
       });
 
+      // The legacy plans retired since the last run, each told once: its
+      // plan and the day it ends.
+      const tellRetirements = Effect.fn("SendBillingReminders.tellRetirements")(
+        function* tellRetirements(now: DateTime.Utc) {
+          const untold = yield* retirements.untold;
+
+          for (const { retiresAt, subscription } of untold) {
+            if (Option.isSome(retiresAt)) {
+              yield* notices.tell({
+                key: `plans-retiring:${subscription.stripeSubscriptionId}`,
+                notice: {
+                  _tag: "PlansRetiring",
+                  endsAt: retiresAt.value,
+                  plan: subscription.plan,
+                },
+                workspaceId: subscription.workspaceId,
+              });
+              yield* retirements.told(subscription.stripeSubscriptionId, now);
+            }
+          }
+        }
+      );
+
       const run = Effect.gen(function* run() {
         if (!enabled) {
           return 0;
         }
 
         const now = yield* DateTime.now;
+
+        // Neither holds back the other, nor the reminders the law asks for.
+        yield* tellRetirements(now).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logError(
+              "The notices of retired plans could not be sent: the next run tries again",
+              cause
+            )
+          )
+        );
 
         // A failure here never holds back the reminders below, which the
         // law asks for.

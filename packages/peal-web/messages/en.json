@@ -2061,6 +2061,7 @@
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "PaymentMethodNeeded": "{workspace} holds {accounts, number} connected accounts, more than the {allowed, number} the free tier includes. It still schedules and publishes on the accounts it had before billing began until {graceUntil} UTC; after that, nothing goes out until a payment method is added or {allowed, number} accounts are kept.",
+      "PlansRetiring": "Plans priced by channels are retired: the {plan} plan of {workspace} ends on {endsAt, date, long} and is not renewed. Move to per-account pricing on the billing page before then to end it at once, its unused time refunded; otherwise the workspace is on the free tier from that day.",
       "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
       "SubscriptionRenewing": "The yearly {plan} plan of {workspace} renews on {renewsAt, date, long} for {price}, VAT included. Cancel it before then to stop it.",
       "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
