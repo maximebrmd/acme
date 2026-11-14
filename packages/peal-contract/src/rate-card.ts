@@ -140,19 +140,13 @@ const gigabytes = (count: number): number => count * 1_000_000_000;
  * with the owner's figures before a pricing page shows them: the
  * assistant's allowances with a payment method, its two prices and its
  * margin. Recommended defaults awaiting confirmation: the X ceiling, the
- * account ceiling before a first paid invoice, storage and the API's rate
- * limits.
+ * account ceiling before a first paid invoice and the API's rate limits.
  */
 const awaitingDecision = {
   apiRequestsPerMinute: { onRequest: 1200, withoutPaymentMethod: 60 },
   assistantImages: { allowance: 10, cents: 5 },
   assistantMargin: 30,
   assistantRequests: { allowance: 100, cents: 1 },
-  storage: {
-    minimum: gigabytes(5),
-    perAccount: gigabytes(5),
-    withoutPaymentMethod: gigabytes(1),
-  },
   unverifiedCeiling: 100,
   xCeiling: 2500,
 } as const;
@@ -225,7 +219,13 @@ export const rateCard: RateCard = {
       },
     },
   },
-  storage: awaitingDecision.storage,
+  // Fair use across the billing account, decided: 1 GB without a
+  // payment method; with one, 5 GB per connected account, 5 GB at least.
+  storage: {
+    minimum: gigabytes(5),
+    perAccount: gigabytes(5),
+    withoutPaymentMethod: gigabytes(1),
+  },
   unverifiedCeiling: awaitingDecision.unverifiedCeiling,
   x: {
     defaultCeiling: awaitingDecision.xCeiling,
@@ -290,6 +290,28 @@ export const freeAccountsOf = (
 
   return free;
 };
+
+/**
+ * The examples the pricing pages work out, the same on every page: a
+ * month with each of `fullMonths` accounts connected all month, and a part
+ * month with `partMonth.allMonth` accounts connected all month and one
+ * more for each of `partMonth.forDays` days.
+ */
+export const pricingExamples = {
+  fullMonths: [2, 5, 10, 20, 50, 100, 1000],
+  partMonth: { allMonth: 10, forDays: [7, 7] },
+} as const satisfies {
+  readonly fullMonths: readonly number[];
+  readonly partMonth: {
+    readonly allMonth: number;
+    readonly forDays: readonly number[];
+  };
+};
+
+/** The account-days of `pricingExamples.partMonth` under `card`. */
+export const partMonthAccountDays = (card: RateCard = rateCard): number =>
+  pricingExamples.partMonth.allMonth * card.daysPerMonth +
+  pricingExamples.partMonth.forDays.reduce((sum, days) => sum + days, 0);
 
 /** What `accounts` connected all month cost, in cents: 10 cost 4,000. */
 export const accountsMonthly = (

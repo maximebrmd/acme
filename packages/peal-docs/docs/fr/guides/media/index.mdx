@@ -25,7 +25,7 @@ Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dim
 - Un PDF de plus de 300 pages, le maximum que LinkedIn accepte, n’est pas prêt pour les publications. Un PDF dont les pages ne peuvent pas être comptées, comme un fichier chiffré, est conservé, et LinkedIn en juge.
 - Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée.
 
-Sur une instance qui facture, chaque abonnement contient un nombre d’octets de médias ([Abonnements et facturation](/guides/workspace/billing#limits)), envois en cours compris. Un envoi pour lequel l’espace de travail n’a pas de place est refusé avant que rien ne parte, et supprimer des médias libère de la place.
+Sur une instance qui facture, chaque compte de facturation contient un nombre d’octets de médias pour tous ses espaces de travail ([Un moyen de paiement](/guides/workspace/billing#payment-method)), envois en cours compris. Un envoi pour lequel l’espace de travail n’a pas de place est refusé avant que rien ne parte, et supprimer des médias libère de la place.
 
 ## Retrouver un fichier [#find]
 
@@ -96,10 +96,10 @@ La description, de 1 à 1 000 caractères, part telle quelle chez le fournisseur
 
 ### Ce que coûte une image [#generate-cost]
 
-| Créée par                             | Ce qu’elle coûte                                                                                                                                                                                                                                                              |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le fournisseur de l’espace de travail | Aucune des demandes à l’assistant du jour, quel que soit l’abonnement, gratuit et essai compris. Un espace de travail lui demande 50 images par jour au plus, chacune comptée quelle que soit sa fin, et deux à la fois (`OwnImageLimitReached`, 429, au-delà de la journée). |
-| Le modèle de l’instance               | 5 des [demandes à l’assistant](/guides/posts/assistant#assistant) du jour de l’espace de travail, rendues chaque fois qu’aucune image n’en est sortie. Avec les 3 par jour de l’offre gratuite, et pendant un essai, aucune n’est créée.                                      |
+| Créée par                             | Ce qu’elle coûte                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le fournisseur de l’espace de travail | Rien de la franchise de l’assistant et aucun compteur, quel que soit l’abonnement, offre gratuite et essai compris. Un espace de travail lui demande 50 images par jour au plus, chacune comptée quelle que soit sa fin, et deux à la fois (`OwnImageLimitReached`, 429, au-delà de la journée).                                                                                                                                    |
+| Le modèle de l’instance               | Sur une instance qui facture, une image du mois du compte de facturation ([Les compteurs d’usage](/guides/workspace/billing#meters)), rendue chaque fois qu’aucune image n’en est sortie ; sans moyen de paiement, et pendant un essai, aucune n’est créée. Un abonnement par paliers de canaux, et une instance qui ne facture pas, prennent à la place 5 des [demandes à l’assistant](/guides/posts/assistant#assistant) du jour. |
 
 - Le fournisseur de l’espace de travail a ses propres places : ses images ne prennent jamais celles du modèle de l’instance.
 - Si ce fournisseur refuse (sa clé, son compte, son modèle ou son adresse), l’image n’est pas créée, et le modèle de Peal n’est jamais demandé à sa place. La réponse est `ImageProviderRefused`, et un propriétaire ou un administrateur corrige les réglages.

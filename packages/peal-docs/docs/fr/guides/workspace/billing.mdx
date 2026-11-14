@@ -1,6 +1,6 @@
 ---
 title: Abonnements et facturation
-description: "Le tarif par compte de Peal Cloud, l’offre gratuite, les abonnements par paliers de canaux que des abonnés gardent encore, et comment commander, résilier ou se rétracter."
+description: "Le tarif par compte de Peal Cloud en dollars américains, ses compteurs d’usage et son offre gratuite, les abonnements par paliers de canaux que des abonnés gardent encore, et comment commander, résilier ou se rétracter."
 sidebar:
   icon: credit-card
 ---
@@ -11,41 +11,71 @@ Tous deux comprennent toutes les plateformes, le calendrier, les statistiques, l
 
 ## Le tarif par compte [#pricing]
 
-Un compte de facturation connecte ses {{free-accounts}} premiers comptes gratuitement, sur tous ses espaces de travail. Avec un moyen de paiement, il en connecte autant qu’il veut.
+Un compte de facturation paie les comptes de réseaux sociaux connectés dans tous ses espaces de travail, sur un barème progressif, par mois : les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche. Chaque prix est affiché HT et avec la TVA française de {{vat-rate}} %, en dollars américains.
 
-| Quoi                                         | Sans moyen de paiement                                | Avec un moyen de paiement                                                                                                                                                                                                          |
-| -------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comptes connectés                            | Les {{free-accounts}} premiers                        | Autant qu’il veut : chaque compte au-delà des {{free-accounts}} premiers coûte {{account-price-fr}} HT par mois ({{account-price-vat-fr}} avec la TVA française de {{vat-rate}} %), moins à partir du compte {{account-less-from}} |
-| Stockage des médias (usage raisonnable)      | {{free-storage-fr}} sur tout le compte de facturation | {{storage-per-account-fr}} par compte connecté                                                                                                                                                                                     |
-| Assistant d’écriture sur les modèles de Peal | Aucun                                                 | Un quota quotidien                                                                                                                                                                                                                 |
+| Comptes                                           | Par mois et par compte |
+| ------------------------------------------------- | ---------------------- |
+| {{accounts-band-1-from}} à {{accounts-band-1-to}} | {{accounts-band-1-fr}} |
+| {{accounts-band-2-from}} à {{accounts-band-2-to}} | {{accounts-band-2-fr}} |
+| {{accounts-band-3-from}} à {{accounts-band-3-to}} | {{accounts-band-3-fr}} |
+| {{accounts-band-4-from}} et au-delà               | {{accounts-band-4-fr}} |
 
-- Les comptes sont comptés au jour de connexion, et facturés chaque mois pour le mois écoulé.
-- Les prix sont en dollars américains, hors taxes : la TVA est ajoutée au paiement pour les clients de l’UE, au taux de leur pays.
-- Au paiement, vous pouvez payer dans votre devise, convertie par notre prestataire de paiement au cours du jour ; sinon votre carte est débitée en dollars américains.
-- Les [fournisseurs](/guides/workspace#image-provider) propres d’un espace de travail fonctionnent avec tout abonnement, et ne coûtent rien.
+Les comptes sont comptés au jour :
 
-## Les abonnements par paliers de canaux [#plans]
+- Chaque jour UTC du mois compte le plus grand nombre de comptes connectés en même temps ce jour-là, sur tout le compte de facturation, pour les jours 1 à {{days-per-month}} seulement (le jour {{day-not-counted}} n’est jamais compté).
+- À la fin du mois, les jours-comptes sont additionnés et divisés par {{days-per-month}}, et ce nombre de comptes, qui peut comporter une fraction, passe au barème : les {{free-account-days}} premiers jours-comptes sont gratuits.
+- Un compte que vous déconnectez cesse de compter dès le lendemain, et rien d’autre n’est facturé pour les comptes : aucuns frais.
+- Un canal désactivé ou à reconnecter compte toujours ; un compte publicitaire ne compte pas.
+- Le premier de chaque mois, la facture porte sur le mois écoulé.
 
-Ces abonnements ne sont plus vendus : un abonné le garde, avec les limites ci-dessous, jusqu’à sa fin.
+Avec chaque compte connecté tout le mois :
 
-| Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                               | Annuel                                              |
-| ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | ----------------------------------------------------- | --------------------------------------------------- |
-| Gratuit    | {{free-channels-fr}}     | {{free-members-fr}}     | {{free-scheduledPosts-fr}}     | {{free-assistantRequests-fr}}     | {{free-mediaStorage-fr}}     | gratuit                                               | gratuit                                             |
-| Starter    | {{starter-channels-fr}}  | {{starter-members-fr}}  | {{starter-scheduledPosts-fr}}  | {{starter-assistantRequests-fr}}  | {{starter-mediaStorage-fr}}  | {{starter-month-fr}} ({{starter-month-excl-fr}} HT)   | {{starter-year-fr}} ({{starter-year-excl-fr}} HT)   |
-| Pro        | {{pro-channels-fr}}      | {{pro-members-fr}}      | {{pro-scheduledPosts-fr}}      | {{pro-assistantRequests-fr}}      | {{pro-mediaStorage-fr}}      | {{pro-month-fr}} ({{pro-month-excl-fr}} HT)           | {{pro-year-fr}} ({{pro-year-excl-fr}} HT)           |
-| Business   | {{business-channels-fr}} | {{business-members-fr}} | {{business-scheduledPosts-fr}} | {{business-assistantRequests-fr}} | {{business-mediaStorage-fr}} | {{business-month-fr}} ({{business-month-excl-fr}} HT) | {{business-year-fr}} ({{business-year-excl-fr}} HT) |
-| Agency     | {{agency-channels-fr}}   | {{agency-members-fr}}   | {{agency-scheduledPosts-fr}}   | {{agency-assistantRequests-fr}}   | {{agency-mediaStorage-fr}}   | {{agency-month-fr}} ({{agency-month-excl-fr}} HT)     | {{agency-year-fr}} ({{agency-year-excl-fr}} HT)     |
+| Comptes                    | Par mois             |
+| -------------------------- | -------------------- |
+| {{accounts-2-count-fr}}    | {{accounts-2-fr}}    |
+| {{accounts-5-count-fr}}    | {{accounts-5-fr}}    |
+| {{accounts-10-count-fr}}   | {{accounts-10-fr}}   |
+| {{accounts-20-count-fr}}   | {{accounts-20-fr}}   |
+| {{accounts-50-count-fr}}   | {{accounts-50-fr}}   |
+| {{accounts-100-count-fr}}  | {{accounts-100-fr}}  |
+| {{accounts-1000-count-fr}} | {{accounts-1000-fr}} |
 
-- Prix TTC, TVA française de {{vat-rate}} % comprise ; le prix HT est entre parenthèses.
-- Une année coûte dix mois.
+Un mois incomplet : {{part-month-all-fr}} comptes connectés tout le mois, plus {{part-month-extras-fr}}, font {{part-month-days-fr}} jours-comptes. Divisés par {{days-per-month}}, cela fait {{part-month-units-fr}} comptes passés au barème : {{part-month-fr}} pour le mois.
 
-La page **Facturation** de l’espace de travail montre son abonnement et ce qu’il utilise de chaque limite. `GET /api/workspaces/:workspaceId/billing` les donne aussi.
+Les prix sont fixés en dollars américains, hors taxes. La TVA que vous payez dépend de votre pays : elle est ajoutée au paiement pour les clients de l’UE, au taux de leur pays. Une entreprise avec un numéro de TVA valide paie le prix HT, la TVA étant autoliquidée ; en France, la TVA française s’applique.
 
-## L’offre gratuite et les essais [#trial]
+Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains. Les factures sont en dollars américains.
 
-Un nouvel espace de travail est sur l’abonnement de son [compte de facturation](#accounts) : l’offre gratuite, tant qu’aucun moyen de paiement n’est ajouté pour le compte. Un compte peut créer autant d’espaces de travail qu’il veut, mais ils partagent un abonnement et comptent leurs comptes ensemble : un espace de plus n’apporte rien de gratuit.
+La page **Facturation** de l’espace de travail indique son abonnement et ce qu’il utilise de chaque limite. `GET /api/workspaces/:workspaceId/billing` répond la même chose.
 
-Aucun essai n’est plus proposé : les comptes gratuits le remplacent. Un essai commencé avant va jusqu’à sa fin, sans rien facturer, et l’espace de travail passe ensuite à l’offre gratuite, avec son contenu. Trois jours avant, les membres qui gèrent la facturation reçoivent un rappel, avec ce que l’espace de travail possède au-delà de l’offre gratuite.
+## Les compteurs d’usage [#meters]
+
+Ce qui coûte à Peal à l’usage a un compteur, avec une franchise mensuelle par compte de facturation pour tous ses espaces de travail, à partir du premier de chaque mois civil (UTC).
+
+| Compteur                                                                                                   | Inclus chaque mois        | Au-delà de la franchise                                            |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------ |
+| Messages envoyés depuis la [boîte de réception](/guides/engage/inbox), réponses aux commentaires comprises | {{messages-allowance-fr}} | {{messages-price-fr}} pour {{messages-per-fr}}, facturé au message |
+| [Publicités gérées](/guides/engage/ads), chaque publicité active dans le mois                              | {{ads-allowance-fr}}      | {{ads-price-fr}} par publicité                                     |
+| Les demandes et les images de l’assistant de rédaction, sur les modèles de l’instance                      | bientôt                   | bientôt                                                            |
+
+Sans moyen de paiement, un compteur s’arrête à sa franchise jusqu’au premier du mois suivant, tandis que la lecture, les statistiques et la publication continuent. Avec un moyen de paiement, chaque unité au-delà de la franchise est facturée sur la facture du mois. Tant qu’un paiement a échoué, les franchises s’appliquent toujours et rien n’est utilisé au-delà jusqu’à ce qu’il passe. Tant que la première facture d’un compte de facturation n’est pas payée, ce que ses compteurs facturent dans un mois est plafonné, quels que soient les plafonds choisis.
+
+Au-delà de ce qu’un compteur permet, l’action est refusée et rien n’est compté : l’API répond 402 `UsageAllowanceReached`, avec le compteur (`meter`), ce qu’il permet (`allowed`), ce qui a été utilisé (`used`), quand il repart (`resetsAt`) et la raison (`reason`) ([Erreurs](/developers/conventions/errors)).
+
+L’assistant de rédaction sur les modèles de l’instance demande un moyen de paiement. Avec un moyen de paiement, ses demandes et ses images ont chacune une franchise mensuelle par compte de facturation, qu’indique la page de facturation ; tant que leurs prix ne sont pas fixés, rien n’est facturé au-delà, et l’assistant s’y arrête jusqu’au mois suivant. Une génération qui échoue une fois que le fournisseur l’a reçue n’est pas comptée, dans la limite de la franchise. Les fournisseurs d’[images](/guides/workspace#image-provider) et de [texte](/guides/workspace#text-provider) propres à un espace de travail ne coûtent rien, quel que soit l’abonnement.
+
+## Un moyen de paiement [#payment-method]
+
+Commander le tarif par compte ([Commander](#ordering)) ajoute un moyen de paiement au compte de facturation, et le fait sortir de l’offre gratuite :
+
+| Quoi                                                  | Sans moyen de paiement                                | Avec un moyen de paiement                                                       |
+| ----------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Comptes connectés                                     | Les {{free-accounts}} premiers, et pas davantage      | Autant qu’il en faut, facturés selon le barème                                  |
+| Compteurs                                             | Chacun s’arrête à sa franchise                        | L’usage au-delà de la franchise est facturé                                     |
+| Assistant de rédaction, sur les modèles de l’instance | Aucun                                                 | Une franchise mensuelle                                                         |
+| Stockage des médias (usage raisonnable)               | {{free-storage-fr}} sur tout le compte de facturation | {{storage-per-account-fr}} par compte connecté, {{storage-minimum-fr}} au moins |
+
+Un compte de facturation peut créer autant d’espaces de travail qu’il veut : ils partagent un barème, un lot de comptes gratuits et une franchise de chaque compteur, si bien qu’un espace de plus n’apporte rien de gratuit. L’offre gratuite est unique par personne : une personne paie un seul compte de facturation au plus, et l’équipe de Peal peut fusionner des comptes de facturation ouverts pour la multiplier, ou exiger un moyen de paiement de l’un d’eux.
 
 ## Comptes de facturation [#accounts]
 
@@ -57,7 +87,7 @@ Chaque espace de travail appartient à un compte de facturation, qui le paie.
 
 Les espaces d’un compte partagent un abonnement et comptent leurs canaux ensemble : un compte gratuit a les {{free-accounts}} comptes de l’offre gratuite pour tous ses espaces.
 
-L’abonnement se commande, se résilie et se rétracte sur l’espace de facturation du compte, son plus ancien (l’espace principal d’un partenaire), qui porte l’abonnement. La page Facturation de chaque autre espace du compte le nomme, avec un lien pour ses membres, et ne commande rien (409 `billed_elsewhere`). Un espace qui avait déjà un abonnement à lui le garde seul jusqu’à sa fin, puis rejoint le compte de son payeur. Sur un serveur qui ne facture pas, les comptes sont tenus et ne limitent rien.
+L’abonnement se commande, se résilie et se rétracte sur l’espace de facturation du compte, son plus ancien (l’espace principal d’un partenaire), qui porte l’abonnement. La page Facturation de chaque autre espace du compte le nomme, avec un lien pour ses membres, et ne commande rien (409 `billed_elsewhere`). Chaque autre espace de travail du compte lit son abonnement, ses comptes connectés et ses limites, mais rien de son argent ni de son contrat. Un espace qui avait déjà un abonnement à lui le garde seul jusqu’à sa fin, puis rejoint le compte de son payeur. Sur un serveur qui ne facture pas, les comptes sont tenus et ne limitent rien.
 
 ### Confier un espace à un autre propriétaire [#transfer]
 
@@ -93,13 +123,13 @@ Dans l’API, `POST …/billing/transfer`, `POST …/billing/transfer/acceptance
 
 Un espace de travail ne dépasse jamais son abonnement : chaque limite est vérifiée quand quelque chose est ajouté, y compris pour des demandes envoyées en même temps, et ce pour quoi l’abonnement n’a pas de place est refusé.
 
-| Limite                              | Comment elle est vérifiée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Canaux                              | Sur l’offre gratuite, connecter un compte au-delà des {{free-accounts}} premiers du compte de facturation est refusé, et avec un moyen de paiement rien ne l’est. Un compte Instagram est un seul canal, quelle que soit la façon dont il est connecté : le passer d’une Page Facebook à Instagram, ou l’inverse, n’en ajoute aucun, même quand l’abonnement est plein.                                                                                                                                                                                                                       |
-| Membres                             | Invitations en attente comprises, à l’invitation puis à nouveau quand une invitation est acceptée, sur les seuls abonnements par paliers de canaux qui les limitent.                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Publications                        | Les publications qui partent dans un mois civil (UTC), sur les seuls abonnements par paliers de canaux qui les limitent. Vérifiées à nouveau à l’heure de chaque publication.                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Demandes à l’assistant de rédaction | Par jour UTC, pour chaque espace de travail : aucune sur les modèles de Peal sans moyen de paiement, et un quota quotidien avec. Une image que crée le modèle de l’instance en coûte 5 ([Générer une image](/guides/media#generate)). Une image du [fournisseur d’images](/guides/workspace#image-provider) propre à l’espace de travail, et une suggestion de son propre [fournisseur de texte](/guides/workspace#text-provider), n’en coûtent aucune, quel que soit l’abonnement : elles sont hors de cette limite, et ne sont pas comptées dans l’usage que montre la page de facturation. |
-| Médias                              | Les octets d’images et de vidéos stockés, envois en cours compris. Un envoi pour lequel l’abonnement n’a pas de place est refusé avant que rien ne parte ; supprimez des médias pour en faire. La place donnée à un envoi lui est gardée six heures : terminé plus tard, il lui en faut à nouveau.                                                                                                                                                                                                                                                                                            |
+| Limite                              | Comment elle est vérifiée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canaux                              | Sur l’offre gratuite, connecter un compte au-delà des {{free-accounts}} premiers du compte de facturation est refusé, et avec un moyen de paiement rien ne l’est. Un compte Instagram est un seul canal, quelle que soit la façon dont il est connecté : le passer d’une Page Facebook à Instagram, ou l’inverse, n’en ajoute aucun, même quand l’abonnement est plein.                                                                                                                                                                                                                                                                                                           |
+| Membres                             | Invitations en attente comprises, à l’invitation puis à nouveau quand une invitation est acceptée, sur les seuls abonnements par paliers de canaux qui les limitent.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Publications                        | Les publications qui partent dans un mois civil (UTC), sur les seuls abonnements par paliers de canaux qui les limitent. Vérifiées à nouveau à l’heure de chaque publication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Demandes à l’assistant de rédaction | Sur l’offre gratuite et le tarif par compte, un [compteur d’usage](#meters) : chaque demande et chaque image compte une fois dans le mois du compte de facturation, aucune sans moyen de paiement. Sur un abonnement par paliers de canaux, des demandes par jour UTC, telles que l’abonnement les donne, une image du modèle de l’instance en coûtant 5 ([Générer une image](/guides/media#generate)). Une image du [fournisseur d’images](/guides/workspace#image-provider) propre à l’espace de travail, et une suggestion de son propre [fournisseur de texte](/guides/workspace#text-provider), n’en coûtent aucune, quel que soit l’abonnement, et ne sont jamais comptées. |
+| Médias                              | Les octets d’images et de vidéos stockés, envois en cours compris. Un envoi pour lequel l’abonnement n’a pas de place est refusé avant que rien ne parte ; supprimez des médias pour en faire. La place donnée à un envoi lui est gardée six heures : terminé plus tard, il lui en faut à nouveau.                                                                                                                                                                                                                                                                                                                                                                                |
 
 Dans l’application web, un refus ouvre une fenêtre qui dit quelle limite est atteinte, avec ce que l’espace de travail possède et son abonnement. Elle propose le tarif par compte, avec ce que coûte le compte suivant.
 
@@ -217,7 +247,8 @@ Résiliez en ligne à tout moment avec **Résilier votre contrat** : le lien fig
 
 Dans tous les cas, la résiliation compte à partir du moment où Peal l’a reçue, que l’accusé de réception indique : un renouvellement facturé après ce moment est remboursé.
 
-- Un abonnement payant prend fin avec la période payée, et plus rien n’est facturé.
+- Le tarif par compte prend fin avec le mois, dont la dernière facture porte l’usage.
+- Un abonnement par paliers de canaux prend fin avec la période payée, et plus rien n’est facturé.
 - Avec une date ultérieure, il prend fin ce jour-là et la dernière période n’est facturée que jusqu’à cette date.
 - Un essai prend fin immédiatement.
 
@@ -235,6 +266,24 @@ La rétractation met fin à l’abonnement immédiatement et rembourse, pour cha
   Une entreprise qui a donné un numéro de TVA vérifié par Stripe n’a pas de
   droit de rétractation, et peut résilier.
 </Callout>
+
+## Les abonnements par paliers de canaux [#legacy-plans]
+
+Ces abonnements ne sont plus vendus : un abonnement à l’un d’eux le garde, avec son prix et les limites ci-dessous, jusqu’à sa fin. Un tel abonnement est payé d’avance et porte son espace de travail seul, à part de son compte de facturation, jusqu’à sa fin ; l’espace rejoint ensuite l’abonnement de son compte de facturation.
+
+| Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                            | Annuel                                           |
+| ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Starter    | {{starter-channels-fr}}  | {{starter-members-fr}}  | {{starter-scheduledPosts-fr}}  | {{starter-assistantRequests-fr}}  | {{starter-mediaStorage-fr}}  | {{starter-month-fr}} ({{starter-month-excl-fr}})   | {{starter-year-fr}} ({{starter-year-excl-fr}})   |
+| Pro        | {{pro-channels-fr}}      | {{pro-members-fr}}      | {{pro-scheduledPosts-fr}}      | {{pro-assistantRequests-fr}}      | {{pro-mediaStorage-fr}}      | {{pro-month-fr}} ({{pro-month-excl-fr}})           | {{pro-year-fr}} ({{pro-year-excl-fr}})           |
+| Business   | {{business-channels-fr}} | {{business-members-fr}} | {{business-scheduledPosts-fr}} | {{business-assistantRequests-fr}} | {{business-mediaStorage-fr}} | {{business-month-fr}} ({{business-month-excl-fr}}) | {{business-year-fr}} ({{business-year-excl-fr}}) |
+| Agency     | {{agency-channels-fr}}   | {{agency-members-fr}}   | {{agency-scheduledPosts-fr}}   | {{agency-assistantRequests-fr}}   | {{agency-mediaStorage-fr}}   | {{agency-month-fr}} ({{agency-month-excl-fr}})     | {{agency-year-fr}} ({{agency-year-excl-fr}})     |
+
+- Leurs prix sont en euros, TTC avec la TVA française de {{vat-rate}} % ; le prix HT est entre parenthèses.
+- Une année coûte dix mois.
+
+## Les essais [#trial]
+
+Aucun essai n’est plus proposé : les comptes gratuits le remplacent. Un essai commencé avant va jusqu’à sa fin, sans rien facturer, et l’espace de travail passe ensuite à l’offre gratuite, avec son contenu. Trois jours avant, les membres qui gèrent la facturation reçoivent un rappel, avec ce que l’espace de travail possède au-delà de l’offre gratuite.
 
 ## Abonnements annuels [#renewal]
 

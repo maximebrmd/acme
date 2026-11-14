@@ -235,7 +235,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 - storage: any S3 API (R2 in production, SeaweedFS in development), with the
   upload CORS rule that `media-cors` writes;
 - email: Resend or SMTP (Mailpit in development);
-- billing: Stripe, off when no key is set (no plan limits);
+- billing: Stripe, off when no key is set (nothing limited); Peal Cloud
+  bills per connected account and by use, in US dollars, as the rate card
+  (`peal-contract/rate-card`) says;
 - ads: off until `PEAL_ADS` is `read` or `spend`, with the operator's own
   Meta app holding the ads permissions (see
   [`src/ads/AGENTS.md`](packages/peal-server/src/ads/AGENTS.md));
@@ -296,8 +298,14 @@ self-hoster needs only Postgres and an S3-compatible store:
   `--isolated` for that reason). Leave Blume's own TypeScript 6 alone.
 - The site's pricing page (`src/pages/[...locale]/pricing.astro`, its
   logic in `src/pricing.ts`) and the docs' **Plans and billing** page
-  (`docs/guides/workspace/billing.mdx`, with the variables of `pricing-variables.ts`) show
-  the contract's catalogue; the legal pages' plans section follows it.
+  (`docs/guides/workspace/billing.mdx`, with the variables of
+  `pricing-variables.ts`) show the contract's rate card and never type a
+  figure (`test/pricing.test.ts`): US dollars, each price excluding VAT and
+  with France's VAT, labelled, in every language, and no exchange rate. A
+  figure the rate card marks as awaiting a decision shows as coming
+  (`comingMeters`). Both work out the rate card's `pricingExamples`, a part
+  month with `accountsCharge`, as the invoice bills it. The legal pages'
+  plans section follows it, pointing to the pricing page for figures.
 - Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,

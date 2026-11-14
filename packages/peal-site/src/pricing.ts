@@ -1,39 +1,38 @@
 import {
-  billingCurrency,
-  displayVatRate,
-  planCatalogue,
-  trialOffer,
-  withDisplayVat,
-} from "peal-contract/billing-plans";
-import type {
-  LegacyPlan,
-  PlanLimit,
-  PlanLimits,
-  PlanPrices,
-} from "peal-contract/billing-plans";
+  accountsCharge,
+  accountsMonthly,
+  freeAccountsOf,
+  partMonthAccountDays,
+  pricingExamples,
+  rateCard,
+  unconfirmedMeters,
+} from "peal-contract/rate-card";
+import type { AccountBand, Meter } from "peal-contract/rate-card";
 
 import type { Locale } from "./i18n/locales.ts";
 import type { Messages } from "./i18n/messages.ts";
 
-// The plans as the pricing page lists them, from the contract's catalogue,
-// which the server bills from (a test there keeps them equal).
+// Per-account pricing as the pricing page states it, from the contract's
+// rate card, which the server bills from (a test there keeps them equal).
+// Prices are US dollars excluding VAT, each also shown with France's VAT,
+// in every language.
+// Nothing here converts a currency: checkout does.
 
-/** The plans, from the smallest. */
-export const pricedPlans: readonly LegacyPlan[] = [
-  "free",
-  "starter",
-  "pro",
-  "business",
-  "agency",
+/** The meters whose allowance and price the page states. */
+export const pricedMeters: readonly Meter[] = [
+  "outboundMessages",
+  "managedAds",
 ];
 
-const limitOrder: readonly PlanLimit[] = [
-  "channels",
-  "members",
-  "scheduledPosts",
-  "assistantRequests",
-  "mediaStorage",
-];
+/**
+ * The meters the page names without a figure, as the rate card marks
+ * them (`unconfirmedMeters`): the writing assistant's allowance and prices
+ * are placeholders until the owner sets them. X's API is not on the page
+ * until its pass-through is billed.
+ */
+export const comingMeters: readonly Meter[] = unconfirmedMeters;
+
+type PricingMessages = Messages["pricing"];
 
 const gigabyte = 1_000_000_000;
 
@@ -47,119 +46,262 @@ const fill = (
     (whole, name: string) => values[name] ?? whole
   );
 
-const money = (locale: Locale) => (cents: number) =>
+// Dollars, to the cent, or finer for a price below a cent with VAT.
+const dollars = (locale: Locale, cents: number) =>
   new Intl.NumberFormat(locale, {
-    currency: billingCurrency.toUpperCase(),
+    currency: "USD",
+    maximumFractionDigits: 4,
+    minimumFractionDigits: 2,
     style: "currency",
   }).format(cents / 100);
-
-const size = (locale: Locale, bytes: number) =>
-  bytes >= gigabyte
-    ? new Intl.NumberFormat(locale, {
-        style: "unit",
-        unit: "gigabyte",
-      }).format(bytes / gigabyte)
-    : new Intl.NumberFormat(locale, {
-        style: "unit",
-        unit: "megabyte",
-      }).format(bytes / 1_000_000);
 
 const count = (locale: Locale, value: number) =>
   new Intl.NumberFormat(locale).format(value);
 
-/** A paid plan's prices, written out. */
-export interface PlanCardPrices {
-  readonly monthly: string;
-  readonly monthlyExcluded: string;
-  readonly perChannel: string;
-  readonly yearly: string;
-  readonly yearlyExcluded: string;
-  readonly yearlyMonthly: string;
+const size = (locale: Locale, bytes: number) =>
+  new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 1,
+    style: "unit",
+    unit: "gigabyte",
+  }).format(bytes / gigabyte);
+
+/** An amount, excluding VAT and with France's VAT. */
+export interface Amount {
+  readonly excluded: string;
+  readonly included: string;
+  /** What the page writes. */
+  readonly text: string;
 }
 
-/** What one plan's card says. */
-export interface PlanCard {
-  readonly limits: readonly string[];
-  readonly name: string;
-  readonly plan: LegacyPlan;
-  /** None for the free plan. */
-  readonly prices?: PlanCardPrices;
-}
-
-const limitLine = (
+const amountOf = (
   locale: Locale,
-  t: Messages["pricing"],
-  limit: PlanLimit,
-  value: number | null
-): string => {
-  if (value === null) {
-    return t.unlimited[limit];
-  }
+  t: PricingMessages,
+  cents: number
+): Amount => {
+  const excluded = dollars(locale, cents);
 
-  return fill(t.limits[limit], {
-    count:
-      limit === "mediaStorage" ? size(locale, value) : count(locale, value),
-  });
-};
-
-const pricesOf = (
-  locale: Locale,
-  t: Messages["pricing"],
-  price: PlanPrices,
-  limits: PlanLimits
-): PlanCardPrices => {
-  const format = money(locale);
-  const monthly = withDisplayVat(price.month);
-  const yearly = withDisplayVat(price.year);
-  const channels = limits.channels ?? 1;
+  // Exact, not rounded to the cent: a cent's price with VAT is 1.2 cents.
+  const included = dollars(
+    locale,
+    (cents * (100 + rateCard.displayVatRate)) / 100
+  );
 
   return {
-    monthly: fill(t.monthly, { price: format(monthly) }),
-    monthlyExcluded: fill(t.excluded, { price: format(price.month) }),
-    perChannel: fill(t.perChannel, {
-      price: format(Math.round(monthly / channels)),
-    }),
-    yearly: fill(t.yearly, { price: format(yearly) }),
-    yearlyExcluded: fill(t.excluded, { price: format(price.year) }),
-    yearlyMonthly: fill(t.yearlyMonthly, {
-      price: format(Math.round(yearly / 12)),
+    excluded,
+    included,
+    text: fill(t.taxes.withVat, {
+      excluded,
+      included,
+      rate: count(locale, rateCard.displayVatRate),
     }),
   };
 };
 
-/** Every plan's card, in the reader's language. */
-export const planCards = (
+/** A band of the account ladder. */
+export interface LadderRow {
+  readonly accounts: string;
+  /** None for the free band. */
+  readonly price: Amount | null;
+  readonly text: string;
+}
+
+const ladderRow = (
   locale: Locale,
-  t: Messages["pricing"]
-): readonly PlanCard[] =>
-  pricedPlans.map((plan) => {
-    const { limits, price } = planCatalogue[plan];
+  t: PricingMessages,
+  band: AccountBand,
+  from: number
+): LadderRow => {
+  const accounts =
+    band.upTo === null
+      ? fill(t.ladder.last, { from: count(locale, from) })
+      : fill(t.ladder.range, {
+          from: count(locale, from),
+          to: count(locale, band.upTo),
+        });
 
-    const card: PlanCard = {
-      limits: limitOrder.map((limit) =>
-        limitLine(locale, t, limit, limits[limit])
+  if (band.monthly === 0) {
+    return { accounts, price: null, text: t.ladder.free };
+  }
+
+  const price = amountOf(locale, t, band.monthly);
+
+  return {
+    accounts,
+    price,
+    text: fill(t.ladder.perAccount, { price: price.text }),
+  };
+};
+
+/** What a month costs with some accounts connected all month. */
+export interface ExampleRow {
+  readonly accounts: string;
+  /** None when it costs nothing. */
+  readonly price: Amount | null;
+  readonly text: string;
+}
+
+const exampleRow = (
+  locale: Locale,
+  t: PricingMessages,
+  accounts: number
+): ExampleRow => {
+  const cents = accountsMonthly(accounts);
+
+  if (cents === 0) {
+    return {
+      accounts: count(locale, accounts),
+      price: null,
+      text: t.ladder.free,
+    };
+  }
+
+  const price = amountOf(locale, t, cents);
+
+  return { accounts: count(locale, accounts), price, text: price.text };
+};
+
+/** A month not held in full, worked out as the invoice bills it. */
+export interface PartMonth {
+  readonly accountDays: string;
+  readonly price: Amount;
+  readonly text: string;
+  readonly units: string;
+}
+
+const partMonthOf = (locale: Locale, t: PricingMessages): PartMonth => {
+  const { allMonth, forDays } = pricingExamples.partMonth;
+  const accountDays = partMonthAccountDays(rateCard);
+  const price = amountOf(locale, t, accountsCharge(accountDays));
+
+  const days = (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit: "day",
+      unitDisplay: "long",
+    }).format(value);
+
+  const units = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 3,
+  }).format(accountDays / rateCard.daysPerMonth);
+
+  return {
+    accountDays: count(locale, accountDays),
+    price,
+    text: fill(t.partMonth.body, {
+      accountDays: count(locale, accountDays),
+      allMonth: count(locale, allMonth),
+      days: count(locale, rateCard.daysPerMonth),
+      extras: new Intl.ListFormat(locale, { type: "conjunction" }).format(
+        forDays.map((each) => fill(t.partMonth.extra, { days: days(each) }))
       ),
-      name: t.plans[plan],
-      plan,
+      price: price.text,
+      units,
+    }),
+    units,
+  };
+};
+
+/** A meter: what a month includes, and what each unit past it costs. */
+export interface MeterRow {
+  readonly allowance: string;
+  readonly meter: Meter;
+  readonly name: string;
+  readonly note: string | null;
+  readonly per: number;
+  /** None while its figures are not final. */
+  readonly price: Amount | null;
+  readonly priceText: string | null;
+}
+
+const meterRow = (
+  locale: Locale,
+  t: PricingMessages,
+  meter: Meter
+): MeterRow => {
+  const name = t.meters.names[meter];
+  const note = t.meters.notes[meter];
+  const { cents, per } = rateCard.prices.usd.meters[meter];
+
+  if (comingMeters.includes(meter)) {
+    return {
+      allowance: t.coming,
+      meter,
+      name,
+      note,
+      per,
+      price: null,
+      priceText: null,
     };
+  }
 
-    if (price === null) {
-      return card;
-    }
+  const { allowance, allowanceWithout } = rateCard.meters[meter];
 
-    const paid: PlanCard = {
-      ...card,
-      prices: pricesOf(locale, t, price, limits),
-    };
+  // The page states one allowance, the same with or without a payment
+  // method, as every priced meter has.
+  if (allowance !== allowanceWithout) {
+    throw new RangeError(`The page states one allowance for ${meter}`);
+  }
 
-    return paid;
-  });
+  const price = amountOf(locale, t, cents);
 
-/** The page's notes that name the VAT rate and the trial. */
-export const pricingNotes = (t: Messages["pricing"]) => ({
-  trial: fill(t.trial, {
-    days: String(trialOffer.days),
-    plan: t.plans[trialOffer.plan],
-  }),
-  vat: fill(t.vat, { rate: String(displayVatRate) }),
-});
+  return {
+    allowance: fill(t.meters.allowance, { count: count(locale, allowance) }),
+    meter,
+    name,
+    note,
+    per,
+    price,
+    priceText: fill(t.meters.prices[meter], {
+      per: count(locale, per),
+      price: price.text,
+    }),
+  };
+};
+
+/** Everything the pricing page states, in the reader's language. */
+export interface PricingPage {
+  readonly dayRule: string;
+  readonly examples: readonly ExampleRow[];
+  readonly ladder: readonly LadderRow[];
+  readonly lead: string;
+  readonly meters: readonly MeterRow[];
+  readonly partMonth: PartMonth;
+  readonly storage: string;
+  /** How amounts show France's VAT. */
+  readonly vat: string;
+}
+
+/** The pricing page's figures, from the rate card, in the reader's language. */
+export const pricingPage = (
+  locale: Locale,
+  t: PricingMessages
+): PricingPage => {
+  const { bands } = rateCard.prices.usd.accounts;
+  const { storage } = rateCard;
+
+  return {
+    dayRule: fill(t.dayRule, {
+      days: count(locale, rateCard.daysPerMonth),
+      after: count(locale, rateCard.daysPerMonth + 1),
+      first: count(locale, 1),
+      freeDays: count(locale, freeAccountsOf(rateCard) * rateCard.daysPerMonth),
+    }),
+    examples: pricingExamples.fullMonths.map((accounts) =>
+      exampleRow(locale, t, accounts)
+    ),
+    ladder: bands.map((band, index) =>
+      ladderRow(locale, t, band, (bands[index - 1]?.upTo ?? 0) + 1)
+    ),
+    lead: fill(t.lead, { free: count(locale, freeAccountsOf(rateCard)) }),
+    meters: [...pricedMeters, ...comingMeters].map((meter) =>
+      meterRow(locale, t, meter)
+    ),
+    partMonth: partMonthOf(locale, t),
+    storage: fill(t.storage.body, {
+      minimum: size(locale, storage.minimum),
+      perAccount: size(locale, storage.perAccount),
+      without: size(locale, storage.withoutPaymentMethod),
+    }),
+    vat: fill(t.taxes.shown, { rate: count(locale, rateCard.displayVatRate) }),
+  };
+};

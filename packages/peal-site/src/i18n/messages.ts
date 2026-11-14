@@ -75,55 +75,108 @@ const en = {
     main: "Main",
   },
   pricing: {
+    coming: "Coming soon: prices to be announced",
+    dayRule:
+      "Counted by the day: each UTC day of the month counts the most accounts connected at once that day, across every workspace of the billing account, for days {first} to {days} only (day {after} is never counted). The month's account-days are added up and divided by {days}, and that number of accounts goes through the ladder, so the first {freeDays} account-days are free. An account you disconnect stops counting from the next day, and nothing else is charged for accounts: no fee of any kind.",
     description:
-      "Peal Cloud's plans, priced by connected accounts, with VAT included.",
-    excluded: "{price} excl. VAT",
-    freePrice: "Free",
-    lead: "Priced by connected accounts: the more you connect, the less each costs. Every plan has every platform, the calendar, analytics, the API, the MCP server and the command line.",
+      "Peal Cloud's prices: per connected account, by the day, with your first accounts free, in US dollars, excluding VAT and with France's VAT.",
+    examples: {
+      accounts: "Accounts",
+      caption: "What a month costs, each account connected all month",
+      lead: "With every account connected all month.",
+      month: "A month",
+      title: "What a month costs",
+    },
+    ladder: {
+      free: "Free",
+      last: "Accounts {from} and up",
+      accounts: "Accounts",
+      caption: "The ladder, per account and month",
+      lead: "One ladder per billing account: the person, or the partner, who pays for its workspaces. The month's accounts, counted by the day as below, are priced band by band: the first ones cost nothing, and each further band costs less.",
+      perAccount: "{price} per account a month",
+      price: "A month, per account",
+      range: "Accounts {from} to {to}",
+      title: "Connected accounts",
+    },
+    lead: "Pay for the accounts you connect, by the day: your first {free} are free, and each one costs less the more you connect. Members, workspaces and posts are unlimited, and every account has every platform, the calendar, analytics, the API, the MCP server and the command line.",
     legal: {
+      billing:
+        "Billed each month, on the first, for the month past: nothing is paid in advance.",
       cancel:
-        "Cancel online at any time, with “Cancel your contract”, at the foot of every page and on the billing page, signed in or not: the plan ends with the period paid for, and nothing more is charged.",
+        "Cancel online at any time, with “Cancel your contract”, at the foot of every page and on the billing page, signed in or not: billing ends with the month, whose use is invoiced, and nothing more is charged.",
+      legacy:
+        "A subscription to one of the earlier plans, priced by channels, keeps its plan and price until it ends.",
       prices:
-        "A price change is announced by email 30 days ahead, and applies from the next renewal: you may cancel before it.",
-      renewal:
-        "Monthly plans renew each month and yearly plans each year until cancelled; we remind you 45 days before a yearly plan renews.",
+        "A price change is announced by email 30 days ahead: you may cancel before it applies.",
       terms: "Read the terms of service",
       title: "Clear terms",
       withdrawal:
-        "As a consumer, you may withdraw within 14 days of subscribing, with “Withdraw from contract here”, at the foot of every page and on the billing page: the plan ends at once and the unused part is refunded.",
+        "As a consumer, you may withdraw within 14 days of subscribing, with “Withdraw from contract here”, at the foot of every page and on the billing page: the subscription ends at once, and you pay only for what was used until then.",
     },
-    limits: {
-      assistantRequests: "{count} writing assistant requests a day",
-      channels: "{count} connected channels",
-      mediaStorage: "{count} of media",
-      members: "{count} members",
-      scheduledPosts: "{count} posts a month",
+    meters: {
+      allowance: "{count} a month included",
+      lead: "What costs Peal by use has a monthly allowance per billing account, across all its workspaces, from the first of each month (UTC). Without a payment method, such a use pauses at its allowance until the next month; with one, each unit past it is billed. Until your first invoice is paid, what usage bills in a month is capped.",
+      names: {
+        assistantImages: "Writing assistant images",
+        assistantRequests: "Writing assistant",
+        managedAds: "Managed ads",
+        outboundMessages: "Inbox messages sent",
+        xApi: "X's API",
+      },
+      notes: {
+        assistantImages:
+          "Needs a payment method. A workspace's own image provider costs nothing, on any plan.",
+        assistantRequests:
+          "Needs a payment method. A workspace's own text provider costs nothing, on any plan.",
+        managedAds:
+          "Each ad active in the month, among those Peal manages for you.",
+        outboundMessages:
+          "Each reply sent from the inbox, to a message or a comment.",
+        xApi: "Passed through at X's published rates, with nothing added. Needs a payment method.",
+      },
+      prices: {
+        assistantImages: "then {price} per image",
+        assistantRequests: "then {price} per request",
+        managedAds: "then {price} per active ad a month",
+        outboundMessages:
+          "then {price} for {per} messages, billed by the message",
+        xApi: "at X's rates",
+      },
+      title: "Usage",
     },
-    monthly: "{price} a month",
     nav: "Pricing",
-    perChannel: "{price} per channel a month",
-    plans: {
-      agency: "Agency",
-      business: "Business",
-      free: "Free",
-      pro: "Pro",
-      starter: "Starter",
+    partMonth: {
+      body: "{allMonth} accounts connected all month, plus {extras}, come to {accountDays} account-days. Divided by {days}, that is {units} accounts through the ladder: {price} for the month.",
+      extra: "one for {days}",
+      title: "A month not held in full",
     },
     selfHost:
-      "A server you run yourself bills nothing and limits nothing: these plans are Peal Cloud's.",
-    title: "Pricing",
-    trial:
-      "Try {plan} free for {days} days, without a payment card. When it ends, the workspace moves to the free plan unless you order. The workspaces you create share one plan and count their channels together.",
-    unlimited: {
-      assistantRequests: "Unlimited assistant requests",
-      channels: "Unlimited channels",
-      mediaStorage: "Unlimited media",
-      members: "Unlimited members",
-      scheduledPosts: "Unlimited posts",
+      "A server you run yourself bills nothing and limits nothing: these prices are Peal Cloud's.",
+    storage: {
+      body: "Fair use, across every workspace of the billing account: {without} without a payment method; with one, {perAccount} per connected account, {minimum} at least.",
+      title: "Media storage",
     },
-    vat: "Prices include {rate}% VAT, France's. In another EU country, its own VAT applies at checkout; a business with a valid VAT number pays the price excluding VAT.",
-    yearly: "or {price} a year",
-    yearlyMonthly: "that is {price} a month",
+    taxes: {
+      currency:
+        "At checkout you can pay in your own currency, converted by our payment provider at the day's rate; otherwise your card is charged in US dollars.",
+      excluded: "Prices are in US dollars and exclude tax.",
+      reverseCharge:
+        "A business with a valid VAT number pays the price excluding VAT, the VAT being reverse-charged; in France, French VAT applies.",
+      shown:
+        "Each price is shown excluding VAT and with France's {rate}% VAT, in US dollars.",
+      vat: "The VAT you pay depends on your country: it is added at checkout for customers in the EU, at their country's rate.",
+      withVat: "{excluded} excl. VAT · {included} with France's {rate}% VAT",
+    },
+    title: "Pricing",
+    unlimited: {
+      items: [
+        "Unlimited members",
+        "Unlimited workspaces",
+        "Unlimited posts",
+        "Every platform, the calendar, analytics, the API, the MCP server and the command line",
+      ],
+      title: "With every account",
+    },
   },
 };
 
@@ -201,55 +254,108 @@ const fr: Messages = {
     main: "Principal",
   },
   pricing: {
+    coming: "Bientôt : tarifs à venir",
+    dayRule:
+      "Compté au jour : chaque jour UTC du mois compte le plus grand nombre de comptes connectés en même temps ce jour-là, dans tous les espaces de travail du compte de facturation, pour les jours {first} à {days} seulement (le jour {after} n’est jamais compté). Les jours-comptes du mois sont additionnés et divisés par {days}, et ce nombre de comptes passe au barème : les {freeDays} premiers jours-comptes sont donc gratuits. Un compte que vous déconnectez cesse de compter dès le lendemain, et rien d’autre n’est facturé pour les comptes : aucuns frais.",
     description:
-      "Les abonnements de Peal Cloud, au nombre de comptes connectés, TVA comprise.",
-    excluded: "{price} HT",
-    freePrice: "Gratuit",
-    lead: "Au nombre de comptes connectés : plus vous en connectez, moins chacun coûte. Chaque abonnement comprend toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande.",
+      "Les tarifs de Peal Cloud : au compte connecté, au jour, vos premiers comptes gratuits, en dollars américains, HT et avec la TVA française.",
+    examples: {
+      accounts: "Comptes",
+      caption: "Ce que coûte un mois, chaque compte connecté tout le mois",
+      lead: "Chaque compte connecté tout le mois.",
+      month: "Par mois",
+      title: "Ce que coûte un mois",
+    },
+    ladder: {
+      free: "Gratuit",
+      last: "Comptes {from} et au-delà",
+      accounts: "Comptes",
+      caption: "Le barème, par compte et par mois",
+      lead: "Un barème par compte de facturation : la personne, ou le partenaire, qui paie ses espaces de travail. Les comptes du mois, comptés au jour comme ci-dessous, sont facturés tranche par tranche : les premiers ne coûtent rien, et chaque tranche suivante coûte moins.",
+      perAccount: "{price} par compte et par mois",
+      price: "Par mois et par compte",
+      range: "Comptes {from} à {to}",
+      title: "Comptes connectés",
+    },
+    lead: "Payez les comptes que vous connectez, au jour : vos {free} premiers sont gratuits, et chacun coûte moins à mesure que vous en connectez. Membres, espaces de travail et publications sont illimités, et chaque compte comprend toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande.",
     legal: {
+      billing:
+        "Facturé chaque mois, le premier, pour le mois écoulé : rien n’est payé d’avance.",
       cancel:
-        "Résiliez en ligne à tout moment, avec « Résilier votre contrat », au pied de chaque page et sur la page de facturation, connecté ou non : l’abonnement prend fin avec la période payée, et plus rien n’est facturé.",
+        "Résiliez en ligne à tout moment, avec « Résilier votre contrat », au pied de chaque page et sur la page de facturation, connecté ou non : la facturation prend fin avec le mois, dont l’usage est facturé, et plus rien n’est facturé ensuite.",
+      legacy:
+        "Un abonnement à l’une des offres précédentes, au nombre de canaux, garde son offre et son prix jusqu’à sa fin.",
       prices:
-        "Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant : vous pouvez résilier avant.",
-      renewal:
-        "Les abonnements mensuels se renouvellent chaque mois et les annuels chaque année jusqu’à résiliation ; nous vous le rappelons 45 jours avant le renouvellement d’un abonnement annuel.",
+        "Un changement de prix est annoncé par e-mail 30 jours à l’avance : vous pouvez résilier avant qu’il s’applique.",
       terms: "Lire les conditions d’utilisation",
       title: "Des conditions claires",
       withdrawal:
-        "En tant que consommateur, vous pouvez vous rétracter dans les 14 jours suivant la souscription, avec « Renoncer au contrat ici », au pied de chaque page et sur la page de facturation : l’abonnement prend fin immédiatement et la part non utilisée vous est remboursée.",
+        "En tant que consommateur, vous pouvez vous rétracter dans les 14 jours suivant la souscription, avec « Renoncer au contrat ici », au pied de chaque page et sur la page de facturation : l’abonnement prend fin immédiatement, et vous ne payez que ce qui a été utilisé jusque-là.",
     },
-    limits: {
-      assistantRequests: "{count} demandes à l’assistant de rédaction par jour",
-      channels: "{count} canaux connectés",
-      mediaStorage: "{count} de médias",
-      members: "{count} membres",
-      scheduledPosts: "{count} publications par mois",
+    meters: {
+      allowance: "{count} inclus par mois",
+      lead: "Ce qui coûte à Peal à l’usage a une franchise mensuelle par compte de facturation, pour tous ses espaces de travail, à partir du premier de chaque mois (UTC). Sans moyen de paiement, cet usage s’interrompt à sa franchise jusqu’au mois suivant ; avec un moyen de paiement, chaque unité au-delà est facturée. Tant que votre première facture n’est pas payée, ce que l’usage facture dans un mois est plafonné.",
+      names: {
+        assistantImages: "Images de l’assistant de rédaction",
+        assistantRequests: "Assistant de rédaction",
+        managedAds: "Publicités gérées",
+        outboundMessages: "Messages envoyés depuis la boîte de réception",
+        xApi: "API de X",
+      },
+      notes: {
+        assistantImages:
+          "Demande un moyen de paiement. Le fournisseur d’images d’un espace de travail ne coûte rien, quelle que soit l’offre.",
+        assistantRequests:
+          "Demande un moyen de paiement. Le fournisseur de texte d’un espace de travail ne coûte rien, quelle que soit l’offre.",
+        managedAds:
+          "Chaque publicité active dans le mois, parmi celles que Peal gère pour vous.",
+        outboundMessages:
+          "Chaque réponse envoyée depuis la boîte de réception, à un message ou à un commentaire.",
+        xApi: "Refacturée aux tarifs publiés par X, sans rien ajouter. Demande un moyen de paiement.",
+      },
+      prices: {
+        assistantImages: "puis {price} par image",
+        assistantRequests: "puis {price} par demande",
+        managedAds: "puis {price} par publicité active et par mois",
+        outboundMessages:
+          "puis {price} pour {per} messages, facturé au message",
+        xApi: "aux tarifs de X",
+      },
+      title: "Usage",
     },
-    monthly: "{price} TTC par mois",
     nav: "Tarifs",
-    perChannel: "{price} par canal et par mois",
-    plans: {
-      agency: "Agency",
-      business: "Business",
-      free: "Gratuit",
-      pro: "Pro",
-      starter: "Starter",
+    partMonth: {
+      body: "{allMonth} comptes connectés tout le mois, plus {extras}, font {accountDays} jours-comptes. Divisés par {days}, cela fait {units} comptes passés au barème : {price} pour le mois.",
+      extra: "un pendant {days}",
+      title: "Un mois incomplet",
     },
     selfHost:
-      "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces abonnements sont ceux de Peal Cloud.",
-    title: "Tarifs",
-    trial:
-      "Essayez {plan} gratuitement pendant {days} jours, sans carte de paiement. À la fin de l’essai, l’espace de travail passe à l’offre gratuite, sauf si vous commandez. Les espaces de travail que vous créez partagent un abonnement et comptent leurs canaux ensemble.",
-    unlimited: {
-      assistantRequests: "Demandes à l’assistant illimitées",
-      channels: "Canaux illimités",
-      mediaStorage: "Médias illimités",
-      members: "Membres illimités",
-      scheduledPosts: "Publications illimitées",
+      "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces tarifs sont ceux de Peal Cloud.",
+    storage: {
+      body: "Usage raisonnable, pour tous les espaces de travail du compte de facturation : {without} sans moyen de paiement ; avec un moyen de paiement, {perAccount} par compte connecté, {minimum} au moins.",
+      title: "Stockage des médias",
     },
-    vat: "Prix TTC, TVA française de {rate} % comprise. Dans un autre pays de l’UE, sa propre TVA s’applique au paiement ; une entreprise avec un numéro de TVA valide paie le prix HT.",
-    yearly: "ou {price} TTC par an",
-    yearlyMonthly: "soit {price} par mois",
+    taxes: {
+      currency:
+        "Au paiement, vous pouvez régler dans votre propre devise, convertie par notre prestataire de paiement au taux du jour ; sinon, votre carte est débitée en dollars américains.",
+      excluded: "Les prix sont fixés en dollars américains, hors taxes.",
+      reverseCharge:
+        "Une entreprise avec un numéro de TVA valide paie le prix HT, la TVA étant autoliquidée ; en France, la TVA française s’applique.",
+      shown:
+        "Chaque prix est affiché HT et avec la TVA française de {rate} %, en dollars américains.",
+      vat: "La TVA que vous payez dépend de votre pays : elle est ajoutée au paiement pour les clients de l’UE, au taux de leur pays.",
+      withVat: "{excluded} HT · {included} avec la TVA française de {rate} %",
+    },
+    title: "Tarifs",
+    unlimited: {
+      items: [
+        "Membres illimités",
+        "Espaces de travail illimités",
+        "Publications illimitées",
+        "Toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande",
+      ],
+      title: "Avec chaque compte",
+    },
   },
 };
 

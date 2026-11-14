@@ -139,18 +139,19 @@ Your partner account closes, and your home workspace is deleted, only once the a
 
 ## Plans and limits [#limits]
 
-On an instance that bills, the workspaces your partner account owns have no subscription of their own: they are on your home workspace's plan.
+On an instance that bills, the workspaces your partner account owns have no subscription of their own: with your home workspace, they make up your partner account's billing account, which one subscription, on the home workspace, pays for, on one invoice a month.
 
-| Limit                                                | How it is counted                                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Channels                                             | Together. The plan's channels cover those of your home workspace and of every workspace you own. Connecting one more when they are all taken answers 402 `PlanLimitReached`, and a hosted page says no more accounts can be connected for now.                                                     |
-| Media stored, the writing assistant's requests a day | Together too. They cover your home workspace and every workspace you own, as one payer's: a customer that spends the day's requests leaves none for the others until midnight UTC. Images from a customer's own image provider, and requests to its own text provider, count against none of them. |
-| Posts scheduled in a month                           | For each workspace, as the plan gives them.                                                                                                                                                                                                                                                        |
+| Limit                                                | How it is counted                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Channels                                             | Together. The free accounts and the ladder of [per-account pricing](/guides/workspace/billing#pricing) count the channels of your home workspace and of every workspace you own as one. On the free tier, connecting one more than it includes answers 402 `PlanLimitReached`, and a hosted page says no more accounts can be connected for now; with a payment method, each is billed by the ladder. |
+| Usage meters                                         | Together: each [meter](/guides/workspace/billing#meters)'s monthly allowance covers all your workspaces.                                                                                                                                                                                                                                                                                              |
+| Media stored, the writing assistant's requests a day | Together too. They cover your home workspace and every workspace you own, as one payer's: a customer that spends the day's requests leaves none for the others until midnight UTC. Images from a customer's own image provider, and requests to its own text provider, count against none of them.                                                                                                    |
+| Posts scheduled in a month                           | Unlimited; on a plan priced by channels that limits them, for each workspace, as the plan gives them.                                                                                                                                                                                                                                                                                                 |
 
 <Callout type="warning" title="Over the plan">
   If your plan shrinks under what you hold, nothing is deleted, but until the
-  channels held are back within it, by disconnecting some or taking a larger
-  plan, your workspaces schedule and publish nothing ([A workspace over its
+  channels held are back within it, by disconnecting some or adding a payment
+  method, your workspaces schedule and publish nothing ([A workspace over its
   plan](/guides/workspace/billing#over)).
 </Callout>
 

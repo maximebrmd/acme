@@ -9,12 +9,12 @@ Billing, the captcha and closed sign-up are all off on a new server. Each sectio
 
 ## Billing [#billing]
 
-Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free tier, 2 connected accounts across its billing account. A Stripe subscription to per-account pricing, monthly, gives it any number, billed by the account and by use (the plans priced by channels are no longer sold). [Plans and billing](/guides/workspace/billing) explains both, with what each limits, ordering, cancelling and withdrawing.
+Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free tier, {{free-accounts}} connected accounts across its billing account. A Stripe subscription to per-account pricing, monthly, gives it any number, billed by the account and by use (the plans priced by channels are no longer sold). [Plans and billing](/guides/workspace/billing) explains both, with what each limits, ordering, cancelling and withdrawing.
 
 <Callout type="warning" title="Set a grace before turning billing on">
   Turning billing on, or upgrading a server that billed on the plans priced by
   channels (whose free plan held 3 accounts), puts every workspace that holds
-  more than 2 accounts over the free tier. Set `PEAL_BILLING_GRACE_UNTIL` first,
+  more than {{free-accounts}} accounts over the free tier. Set `PEAL_BILLING_GRACE_UNTIL` first,
   to keep them publishing on the accounts they had until a day, while their
   billing managers are told ([Environment
   variables](/self-hosting/environment-variables#billing)). Without it the
@@ -100,7 +100,7 @@ A limit applies when something is added, so a workspace on a smaller plan than i
   </Step>
   <Step title="Turn on Stripe Tax and the customer portal">
     Checkout always has Stripe Tax add the VAT, as the prices are
-    tax-exclusive and Peal shows them VAT included. Turn on the customer portal,
+    tax-exclusive and Peal shows each excluding VAT and with France's VAT. Turn on the customer portal,
     where members update their payment method and download invoices, without
     retention offers, and with plan switching (subscription updates) and
     cancellation turned off: plans change and end on the billing page only,
@@ -176,7 +176,7 @@ The command's key needs write access to meters, products and prices. It prints w
 
 The plans priced by channels are no longer sold, and a new Stripe account needs none of their prices. The server checks them only while a subscription to one still runs: keep then a product for each paid plan, with a monthly and a yearly EUR price, both tax-exclusive, under the lookup keys `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), with the same prefix.
 
-Their amounts are those of [Plans and billing](/guides/workspace/billing#plans): Peal shows them before checkout, so keep them equal. The server checks that each one exists, is active, costs what Peal publishes at the right interval, and is tax-exclusive.
+Their amounts are those of [Plans and billing](/guides/workspace/billing#legacy-plans): keep them equal. The server checks that each one exists, is active, costs what Peal publishes at the right interval, and is tax-exclusive.
 
 ### How subscriptions behave [#subscriptions]
 

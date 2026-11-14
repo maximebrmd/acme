@@ -9,12 +9,12 @@ La facturation, le captcha et l’inscription fermée sont tous désactivés sur
 
 ## Facturation [#billing]
 
-La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, 2 comptes connectés sur tout son compte de facturation. Un abonnement Stripe au tarif par compte, au mois, lui en donne autant qu’il veut, facturés au compte et à l’usage (les abonnements par paliers de canaux ne sont plus vendus). [Abonnements et facturation](/guides/workspace/billing) présente les deux, avec ce que chacun limite, la commande, la résiliation et la rétractation.
+La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, {{free-accounts}} comptes connectés sur tout son compte de facturation. Un abonnement Stripe au tarif par compte, au mois, lui en donne autant qu’il veut, facturés au compte et à l’usage (les abonnements par paliers de canaux ne sont plus vendus). [Abonnements et facturation](/guides/workspace/billing) présente les deux, avec ce que chacun limite, la commande, la résiliation et la rétractation.
 
 <Callout type="warning" title="Définir un délai avant d’activer la facturation">
   Activer la facturation, ou mettre à jour un serveur qui facturait avec les
   abonnements par paliers de canaux (dont l’offre gratuite comptait 3 comptes),
-  met au-delà de l’offre gratuite chaque espace de travail qui compte plus de 2
+  met au-delà de l’offre gratuite chaque espace de travail qui compte plus de {{free-accounts}}
   comptes. Définissez d’abord `PEAL_BILLING_GRACE_UNTIL`, pour les laisser
   publier sur les comptes qu’ils avaient jusqu’à un jour, pendant que ceux qui
   gèrent leur facturation sont prévenus ([Variables
@@ -105,7 +105,7 @@ Une limite s’applique quand on ajoute quelque chose : un espace de travail pas
   </Step>
   <Step title="Activer Stripe Tax et l’espace client">
     Le paiement fait toujours ajouter la TVA par Stripe Tax, car les prix sont
-    hors taxes et Peal les affiche TVA comprise. Activez l’espace client, où les
+    hors taxes et Peal affiche chacun HT et avec la TVA française. Activez l’espace client, où les
     membres changent de moyen de paiement et téléchargent leurs factures, sans
     offre de rétention, et avec le changement d’abonnement (mises à jour
     d’abonnement) et la résiliation désactivés : les abonnements changent et
@@ -185,7 +185,7 @@ La clé de la commande doit pouvoir écrire les compteurs, les produits et les p
 
 Les abonnements par paliers de canaux ne sont plus vendus, et un nouveau compte Stripe n’a besoin d’aucun de leurs prix. Le serveur ne les vérifie que tant qu’un abonnement à l’un d’eux court encore : gardez alors un produit pour chaque abonnement payant, avec un prix mensuel et un prix annuel en euros, tous deux hors taxes, sous les clés de recherche `peal_<plan>_monthly` et `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), avec le même préfixe.
 
-Leurs montants sont ceux d’[Abonnements et facturation](/guides/workspace/billing#plans) : Peal les affiche avant le paiement, gardez-les égaux. Le serveur vérifie que chacun existe, est actif, coûte ce que Peal publie à la bonne périodicité et est hors taxes.
+Leurs montants sont ceux d’[Abonnements et facturation](/guides/workspace/billing#legacy-plans) : gardez-les égaux. Le serveur vérifie que chacun existe, est actif, coûte ce que Peal publie à la bonne périodicité et est hors taxes.
 
 ### Le comportement des abonnements [#subscriptions]
 
