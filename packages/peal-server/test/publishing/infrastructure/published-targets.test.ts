@@ -683,6 +683,7 @@ layer(ListingTest)("the published targets", (it) => {
           yield* posts.markRemoved(removed, utc("2045-02-08T08:00:00.000Z"));
 
           const targets = yield* posts.targets(postId);
+
           const channelOf = (targetId: PostTargetId) =>
             targets.find(({ id }) => id === targetId)?.channelId;
 

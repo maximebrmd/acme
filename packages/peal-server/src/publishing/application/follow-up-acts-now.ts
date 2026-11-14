@@ -10,7 +10,9 @@ import type { RuleStarter, StartedIn } from "./recycling-actors.ts";
 /** Who a rule's starter is now (`RecyclingActors.of`), and whether the policy holds them (`ApprovalGate.holds`). */
 export interface StarterNow {
   readonly holds: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
-  readonly of: (started: StartedIn) => Effect.Effect<RuleStarter, DatabaseError>;
+  readonly of: (
+    started: StartedIn
+  ) => Effect.Effect<RuleStarter, DatabaseError>;
 }
 
 /**
@@ -20,7 +22,7 @@ export interface StarterNow {
  * (`mayAct`). Judged again just before each call.
  */
 export const actsNow = (rule: FollowUpRule, starters: StarterNow) =>
-  Effect.gen(function* actsNow() {
+  Effect.gen(function* judged() {
     if (rule.status._tag !== "active") {
       return false;
     }

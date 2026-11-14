@@ -216,7 +216,10 @@ export const followUpPutOffMost = Duration.hours(6);
 
 // How long a follow-up put off on its `attempt` waits: what the platform
 // asked, and at least ten minutes doubled each attempt, six hours at most.
-const putOffFor = (attempt: number, asked: Option.Option<Duration.Duration>) => {
+const putOffFor = (
+  attempt: number,
+  asked: Option.Option<Duration.Duration>
+) => {
   const doubled = Duration.times(
     followUpPutOffFirst,
     2 ** Math.min(Math.max(attempt - 1, 0), 10)

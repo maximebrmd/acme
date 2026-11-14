@@ -21,6 +21,7 @@ import type {
   ArmedFollowUp,
   UnarmedTarget,
 } from "#publishing/application/follow-up-store.ts";
+import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   FollowUpApprovalSchema,
   FollowUpRule,
@@ -31,13 +32,9 @@ import {
   FollowUpStatusSchema,
 } from "#publishing/domain/follow-up.ts";
 import type { FollowUpStatus } from "#publishing/domain/follow-up.ts";
-import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
-import {
-  PostTargetIdSchema,
-  WorkspaceIdSchema,
-} from "#shared/domain/ids.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { PostTargetIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { followUpRules, followUps } from "./schema.ts";
@@ -60,6 +57,7 @@ const decodeUnarmed = Schema.decodeUnknownEffect(
     })
   )
 );
+
 const decodeFollowUp = Schema.decodeUnknownEffect(FollowUp);
 
 const ApprovalJson = Schema.toCodecJson(FollowUpApprovalSchema);

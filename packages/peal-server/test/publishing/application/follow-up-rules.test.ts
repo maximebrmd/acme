@@ -6,8 +6,8 @@ import { TestClock } from "effect/testing";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
 import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
-import { FollowUpStore } from "#publishing/application/follow-up-store.ts";
 import type { StartFollowUpRequest } from "#publishing/application/follow-up-rules.ts";
+import { FollowUpStore } from "#publishing/application/follow-up-store.ts";
 import { FollowUps } from "#publishing/application/follow-ups.ts";
 import { PlatformClients } from "#publishing/application/platform-client.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
@@ -453,7 +453,7 @@ describe("follow-up rules", () => {
           );
 
           // The platform holds the first attempt's call until told.
-          const release = yield* Deferred.make<void>();
+          const release = yield* Deferred.make<boolean>();
 
           yield* followUpsAnswer((request) =>
             Deferred.await(release).pipe(
@@ -498,7 +498,7 @@ describe("follow-up rules", () => {
               sql`UPDATE publishing.follow_ups SET attempt = attempt + 1 WHERE id = ${followUp.id}`
           ).pipe(Effect.orDie);
 
-          yield* Deferred.succeed(release, undefined);
+          yield* Deferred.succeed(release, true);
           yield* TestClock.withLive(Effect.sleep("200 millis"));
 
           const after = yield* ruleNow(workspaceId, started.rule.id);
@@ -539,13 +539,13 @@ describe("follow-up rules", () => {
           yield* likesOf(target.id, 10);
 
           // Another transaction holds the channel's day.
-          const held = yield* Deferred.make<void>();
-          const release = yield* Deferred.make<void>();
+          const held = yield* Deferred.make<boolean>();
+          const release = yield* Deferred.make<boolean>();
           const { transaction } = yield* TransactionRunner;
 
           const holder = yield* transaction(
             FollowUpStore.use((store) => store.claimChannelDay(mastodon)).pipe(
-              Effect.andThen(Deferred.succeed(held, undefined)),
+              Effect.andThen(Deferred.succeed(held, true)),
               Effect.andThen(Deferred.await(release))
             )
           ).pipe(Effect.forkChild);
@@ -558,7 +558,7 @@ describe("follow-up rules", () => {
 
           const waited = run.pollUnsafe() === undefined;
 
-          yield* Deferred.succeed(release, undefined);
+          yield* Deferred.succeed(release, true);
           yield* Fiber.join(holder);
 
           assert.isTrue(waited);

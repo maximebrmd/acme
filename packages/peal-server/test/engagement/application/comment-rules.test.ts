@@ -6,12 +6,12 @@ import { SqlClient } from "effect/sql";
 import { CommentRules } from "#engagement/application/comment-rules.ts";
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
+import { CommentRuleStore } from "#engagement/application/ports/comment-rule-store.ts";
 import { EngagementChannels } from "#engagement/application/ports/engagement-channels.ts";
 import { EngagementOutcomes } from "#engagement/application/ports/engagement-outcomes.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
-import { CommentRuleStore } from "#engagement/application/ports/comment-rule-store.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
@@ -112,51 +112,51 @@ const FailingForOutage = Layer.effect(
 
 const rulesTestWith = <E, R>(store: Layer.Layer<CommentRuleStore, E, R>) =>
   CommentRules.layer.pipe(
-  Layer.provideMerge(EngagementReplies.layer),
-  Layer.provideMerge(DrizzleEngagementRecords),
-  Layer.provideMerge(
-    Layer.mergeAll(
-      store,
-      DrizzleEngagementStore,
-      FakeChannels,
-      FakeFollowedPosts,
-      PublishingReplyLimits,
-      Layer.succeed(
-        ReplyJobs,
-        ReplyJobs.of({
-          cancel: () => Effect.void,
-          start: (replyId) => Ref.update(started, (ids) => [...ids, replyId]),
-        })
-      ),
-      Layer.succeed(
-        EngagementOutcomes,
-        EngagementOutcomes.of({
-          received: () => Effect.void,
-          replied: () => Effect.void,
-        })
-      ),
-      Layer.succeed(
-        RuleStarters,
-        RuleStarters.of({
-          of: (rule) =>
-            Effect.succeed({
-              _tag: "acting",
-              actor: actorIn(rule.workspaceId, permissionsFor("editor")),
-            }),
-        })
-      ),
-      UnreadComments,
-      MeteredUsage.layerUnmetered
-    )
-  ),
-  Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
-  // The transaction runner's, though nothing here starts a job of the
-  // cluster's: replies' jobs are a fake's.
-  Layer.provideMerge(
-    MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
-  ),
-  Layer.provideMerge(DatabaseTest)
-);
+    Layer.provideMerge(EngagementReplies.layer),
+    Layer.provideMerge(DrizzleEngagementRecords),
+    Layer.provideMerge(
+      Layer.mergeAll(
+        store,
+        DrizzleEngagementStore,
+        FakeChannels,
+        FakeFollowedPosts,
+        PublishingReplyLimits,
+        Layer.succeed(
+          ReplyJobs,
+          ReplyJobs.of({
+            cancel: () => Effect.void,
+            start: (replyId) => Ref.update(started, (ids) => [...ids, replyId]),
+          })
+        ),
+        Layer.succeed(
+          EngagementOutcomes,
+          EngagementOutcomes.of({
+            received: () => Effect.void,
+            replied: () => Effect.void,
+          })
+        ),
+        Layer.succeed(
+          RuleStarters,
+          RuleStarters.of({
+            of: (rule) =>
+              Effect.succeed({
+                _tag: "acting",
+                actor: actorIn(rule.workspaceId, permissionsFor("editor")),
+              }),
+          })
+        ),
+        UnreadComments,
+        MeteredUsage.layerUnmetered
+      )
+    ),
+    Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
+    // The transaction runner's, though nothing here starts a job of the
+    // cluster's: replies' jobs are a fake's.
+    Layer.provideMerge(
+      MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
+    ),
+    Layer.provideMerge(DatabaseTest)
+  );
 
 const RulesTest = rulesTestWith(DrizzleCommentRuleStore);
 
@@ -368,7 +368,11 @@ describe("comment rules", () => {
 
         // Nor one written before it started that Peal read only after.
         yield* Effect.sleep("5 millis");
-        yield* received(thread, [{ author: 5, text: "price, late" }], beforeStart);
+        yield* received(
+          thread,
+          [{ author: 5, text: "price, late" }],
+          beforeStart
+        );
         yield* Effect.sleep("5 millis");
         assert.strictEqual((yield* rules.runDue).looked, 0);
 
@@ -437,57 +441,61 @@ describe("comment rules", () => {
     }).pipe(Effect.provide(RulesTest))
   );
 
-  it.live("take a claim back that was left for over half an hour, and answer it", () =>
-    Effect.gen(function* reclaims() {
-      const workspaceId = yield* freshWorkspace;
+  it.live(
+    "take a claim back that was left for over half an hour, and answer it",
+    () =>
+      Effect.gen(function* reclaims() {
+        const workspaceId = yield* freshWorkspace;
 
-      yield* Effect.gen(function* checks() {
-        const thread = yield* threadOn(workspaceId, "mastodon");
-        const rules = yield* CommentRules;
+        yield* Effect.gen(function* checks() {
+          const thread = yield* threadOn(workspaceId, "mastodon");
+          const rules = yield* CommentRules;
 
-        const rule = yield* rules.start(actorIn(workspaceId), {
-          keywords: ["price"],
-          reply: "On our site.",
-          scope: { _tag: "channel", channelId: thread.channelId },
-        });
+          const rule = yield* rules.start(actorIn(workspaceId), {
+            keywords: ["price"],
+            reply: "On our site.",
+            scope: { _tag: "channel", channelId: thread.channelId },
+          });
 
-        yield* Effect.sleep("5 millis");
+          yield* Effect.sleep("5 millis");
 
-        const [stale, fresh] = yield* received(thread, [
-          { author: 1, text: "price?" },
-          { author: 2, text: "price, please" },
-        ]);
+          const [stale, fresh] = yield* received(thread, [
+            { author: 1, text: "price?" },
+            { author: 2, text: "price, please" },
+          ]);
 
-        assert.isDefined(stale);
-        assert.isDefined(fresh);
+          assert.isDefined(stale);
+          assert.isDefined(fresh);
 
-        // A run that stopped after claiming them: one long ago, one now.
-        const sql = yield* SqlClient.SqlClient;
+          // A run that stopped after claiming them: one long ago, one now.
+          const sql = yield* SqlClient.SqlClient;
 
-        yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+          yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
           VALUES (${rule.rule.id}, ${stale.id}, 'claimed', now() - interval '31 minutes'),
-            (${rule.rule.id}, ${fresh.id}, 'claimed', now())`.pipe(Effect.orDie);
+            (${rule.rule.id}, ${fresh.id}, 'claimed', now())`.pipe(
+            Effect.orDie
+          );
 
-        const run = yield* rules.runDue;
+          const run = yield* rules.runDue;
 
-        assert.strictEqual(run.replied, 1);
+          assert.strictEqual(run.replied, 1);
 
-        const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+          const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
 
-        assert.deepStrictEqual(
-          new Map(
-            after.matches.map(({ commentId, outcome }) => [
-              commentId,
-              outcome._tag,
+          assert.deepStrictEqual(
+            new Map(
+              after.matches.map(({ commentId, outcome }) => [
+                commentId,
+                outcome._tag,
+              ])
+            ),
+            new Map([
+              [stale.id, "replied"],
+              [fresh.id, "claimed"],
             ])
-          ),
-          new Map([
-            [stale.id, "replied"],
-            [fresh.id, "claimed"],
-          ])
-        );
-      }).pipe(Effect.ensuring(forget(workspaceId)));
-    }).pipe(Effect.provide(RulesTest))
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }).pipe(Effect.provide(RulesTest))
   );
 
   it.live("go on to the other rules when one meets a database error", () =>

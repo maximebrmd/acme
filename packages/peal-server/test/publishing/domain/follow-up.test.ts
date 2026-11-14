@@ -312,10 +312,13 @@ describe("a follow-up", () => {
       notBefore: later(5),
       until: actsUntil(now),
     });
-    expect(Result.isFailure(triggerFollowUp(putOff, 99, later(4)))).toBeTruthy();
+    expect(
+      Result.isFailure(triggerFollowUp(putOff, 99, later(4)))
+    ).toBeTruthy();
     expect(isPutOff(putOff, later(4))).toBeTruthy();
 
     const third = Result.getOrThrow(triggerFollowUp(putOff, 99, later(5)));
+
     const thirdBegun = Result.getOrThrow(
       beginFollowUpCall(
         Result.getOrThrow(

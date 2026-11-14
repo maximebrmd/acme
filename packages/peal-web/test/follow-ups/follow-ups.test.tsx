@@ -18,6 +18,11 @@ import { loadMessages } from "#i18n/messages.ts";
 
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
+// A button's handler that does nothing: the markup is what is checked.
+const allowNothing = (channelId: string): void => {
+  expect(channelId).toBeTypeOf("string");
+};
+
 const postId = "0190f3a0-0000-7000-8000-00000000d002";
 
 const rule: FollowUpRule = {
@@ -183,33 +188,35 @@ describe("the workspace's follow-up rules", () => {
       "en",
       <FollowUpRuleView
         actions={null}
-        onAllowReposts={() => undefined}
+        onAllowReposts={() => {}}
         rule={waiting}
         scope="On a post"
       />
     );
 
     expect(allowed).toContain("Allow reposts");
-    expect(allowed).toContain("Bluesky: comment yes, repost connect the channel again");
+    expect(allowed).toContain(
+      "Bluesky: comment yes, repost connect the channel again"
+    );
 
     // Nobody who may not change rules is offered it, nor on a channel
     // that reposts already.
-    expect(
-      await render(
+    await expect(
+      render(
         "en",
         <FollowUpRuleView actions={null} rule={waiting} scope="On a post" />
       )
-    ).not.toContain("Allow reposts");
-    expect(
-      await render(
+    ).resolves.not.toContain("Allow reposts");
+    await expect(
+      render(
         "fr",
         <FollowUpRuleView
           actions={null}
-          onAllowReposts={() => undefined}
+          onAllowReposts={allowNothing}
           rule={rule}
           scope="Sur une publication"
         />
       )
-    ).not.toContain("Autoriser les repartages");
+    ).resolves.not.toContain("Autoriser les repartages");
   });
 });
