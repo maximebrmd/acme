@@ -10,4 +10,6 @@
 export interface GetConversationInboxMessagesRequest {
     workspaceId: string;
     conversationId: string;
+    cursor?: string;
+    limit?: string;
 }

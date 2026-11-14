@@ -60,6 +60,7 @@ public class GetConversationTest : BaseMockServerTest
                   "text": "text"
                 }
               ],
+              "nextCursor": "nextCursor",
               "platform": "x",
               "sent": [
                 {
@@ -154,6 +155,7 @@ public class GetConversationTest : BaseMockServerTest
                   "text": "text"
                 }
               ],
+              "nextCursor": "nextCursor",
               "platform": "x",
               "sent": [
                 {

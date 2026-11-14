@@ -37,7 +37,7 @@ public class ConfirmMessageTest : BaseMockServerTest
                 WireMock
                     .RequestBuilders.Request.Create()
                     .WithPath(
-                        "/api/workspaces/workspaceId/inbox/messages/messages/messageId/confirmation"
+                        "/api/workspaces/workspaceId/inbox/messages/outgoing/messageId/confirmation"
                     )
                     .WithHeader("Content-Type", "application/json")
                     .UsingPost()
@@ -89,7 +89,7 @@ public class ConfirmMessageTest : BaseMockServerTest
                 WireMock
                     .RequestBuilders.Request.Create()
                     .WithPath(
-                        "/api/workspaces/workspaceId/inbox/messages/messages/messageId/confirmation"
+                        "/api/workspaces/workspaceId/inbox/messages/outgoing/messageId/confirmation"
                     )
                     .WithHeader("Content-Type", "application/json")
                     .UsingPost()

@@ -7,6 +7,9 @@ pub struct InboxConversationDetail {
     pub conversation: InboxConversation,
     #[serde(default)]
     pub messages: Vec<InboxDirectMessage>,
+    #[serde(rename = "nextCursor")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub platform: Option<Platform>,
     #[serde(default)]
@@ -27,6 +30,7 @@ pub struct InboxConversationDetailBuilder {
     abilities: Option<InboxMessageAbilities>,
     conversation: Option<InboxConversation>,
     messages: Option<Vec<InboxDirectMessage>>,
+    next_cursor: Option<String>,
     platform: Option<Platform>,
     sent: Option<Vec<InboxOutgoingMessage>>,
     window: Option<InboxReplyWindow>,
@@ -45,6 +49,11 @@ impl InboxConversationDetailBuilder {
 
     pub fn messages(mut self, value: Vec<InboxDirectMessage>) -> Self {
         self.messages = Some(value);
+        self
+    }
+
+    pub fn next_cursor(mut self, value: impl Into<String>) -> Self {
+        self.next_cursor = Some(value.into());
         self
     }
 
@@ -81,6 +90,7 @@ impl InboxConversationDetailBuilder {
             messages: self
                 .messages
                 .ok_or_else(|| BuildError::missing_field("messages"))?,
+            next_cursor: self.next_cursor,
             platform: self.platform,
             sent: self.sent.ok_or_else(|| BuildError::missing_field("sent"))?,
             window: self

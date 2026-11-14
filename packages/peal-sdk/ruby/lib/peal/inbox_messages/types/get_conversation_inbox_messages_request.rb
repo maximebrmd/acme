@@ -7,6 +7,10 @@ module Peal
         field :workspace_id, -> { String }, optional: false, nullable: false, api_name: "workspaceId"
 
         field :conversation_id, -> { String }, optional: false, nullable: false, api_name: "conversationId"
+
+        field :cursor, -> { String }, optional: true, nullable: false
+
+        field :limit, -> { String }, optional: true, nullable: false
       end
     end
   end

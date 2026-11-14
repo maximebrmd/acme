@@ -62,6 +62,9 @@ public final class Permission {
 
     public static final Permission PARTNER_MANAGE = new Permission(Value.PARTNER_MANAGE, "partner:manage");
 
+    public static final Permission ENGAGEMENT_READ_MESSAGES =
+            new Permission(Value.ENGAGEMENT_READ_MESSAGES, "engagement:readMessages");
+
     public static final Permission POST_APPROVE = new Permission(Value.POST_APPROVE, "post:approve");
 
     public static final Permission PARTNER_READ = new Permission(Value.PARTNER_READ, "partner:read");
@@ -180,6 +183,8 @@ public final class Permission {
                 return visitor.visitApiKeyUpdate();
             case PARTNER_MANAGE:
                 return visitor.visitPartnerManage();
+            case ENGAGEMENT_READ_MESSAGES:
+                return visitor.visitEngagementReadMessages();
             case POST_APPROVE:
                 return visitor.visitPostApprove();
             case PARTNER_READ:
@@ -273,6 +278,8 @@ public final class Permission {
                 return API_KEY_UPDATE;
             case "partner:manage":
                 return PARTNER_MANAGE;
+            case "engagement:readMessages":
+                return ENGAGEMENT_READ_MESSAGES;
             case "post:approve":
                 return POST_APPROVE;
             case "partner:read":
@@ -348,6 +355,8 @@ public final class Permission {
         ENGAGEMENT_REPLY,
 
         ENGAGEMENT_MESSAGE,
+
+        ENGAGEMENT_READ_MESSAGES,
 
         INVITATION_CREATE,
 
@@ -436,6 +445,8 @@ public final class Permission {
         T visitEngagementReply();
 
         T visitEngagementMessage();
+
+        T visitEngagementReadMessages();
 
         T visitInvitationCreate();
 

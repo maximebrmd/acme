@@ -176,6 +176,9 @@ require_relative "peal/inbox_messages/types/list_conversations_inbox_messages_re
 require_relative "peal/inbox_messages/types/get_conversation_inbox_messages_request"
 require_relative "peal/inbox_messages/types/new_inbox_message"
 require_relative "peal/inbox_messages/types/set_conversation_read_inbox_messages_request"
+require_relative "peal/inbox_messages/types/get_message_settings_inbox_messages_request"
+require_relative "peal/inbox_messages/types/set_channel_messages_inbox_messages_request"
+require_relative "peal/inbox_messages/types/set_message_application_inbox_messages_request"
 require_relative "peal/inbox_messages/types/confirm_message_inbox_messages_request"
 require_relative "peal/ads/client"
 require_relative "peal/ads/types/status_ads_request"
@@ -864,7 +867,10 @@ module Peal
     autoload :InboxConversationDetail, ::File.join(__dir__, "peal/types/inbox_conversation_detail")
     autoload :InboxConversationNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_conversation_not_found_encoded")
     autoload :InboxConversationPage, ::File.join(__dir__, "peal/types/inbox_conversation_page")
+    autoload :InboxMessageApplication, ::File.join(__dir__, "peal/types/inbox_message_application")
+    autoload :InboxMessageChannel, ::File.join(__dir__, "peal/types/inbox_message_channel")
     autoload :InboxMessageNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_message_not_found_encoded")
+    autoload :InboxMessageSettings, ::File.join(__dir__, "peal/types/inbox_message_settings")
     autoload :InboxModerationAction, ::File.join(__dir__, "peal/types/inbox_moderation_action")
     autoload :InboxOwnerReplyModeration, ::File.join(__dir__, "peal/types/inbox_owner_reply_moderation")
     autoload :InboxOwnerReply, ::File.join(__dir__, "peal/types/inbox_owner_reply")
@@ -946,6 +952,7 @@ module Peal
     autoload :MediaTooLargeEncodedKind, ::File.join(__dir__, "peal/types/media_too_large_encoded_kind")
     autoload :MediaTooLargeEncoded, ::File.join(__dir__, "peal/types/media_too_large_encoded")
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
+    autoload :MessageMentionsOutsideEncoded, ::File.join(__dir__, "peal/types/message_mentions_outside_encoded")
     autoload :MessagePendingEncoded, ::File.join(__dir__, "peal/types/message_pending_encoded")
     autoload :MeteredPosts, ::File.join(__dir__, "peal/types/metered_posts")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")

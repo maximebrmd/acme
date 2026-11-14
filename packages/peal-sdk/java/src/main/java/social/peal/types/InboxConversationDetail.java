@@ -32,6 +32,8 @@ public final class InboxConversationDetail {
 
     private final List<InboxDirectMessage> messages;
 
+    private final Optional<String> nextCursor;
+
     private final Optional<Platform> platform;
 
     private final List<InboxOutgoingMessage> sent;
@@ -44,6 +46,7 @@ public final class InboxConversationDetail {
             InboxMessageAbilities abilities,
             InboxConversation conversation,
             List<InboxDirectMessage> messages,
+            Optional<String> nextCursor,
             Optional<Platform> platform,
             List<InboxOutgoingMessage> sent,
             InboxReplyWindow window,
@@ -51,6 +54,7 @@ public final class InboxConversationDetail {
         this.abilities = abilities;
         this.conversation = conversation;
         this.messages = messages;
+        this.nextCursor = nextCursor;
         this.platform = platform;
         this.sent = sent;
         this.window = window;
@@ -73,6 +77,14 @@ public final class InboxConversationDetail {
     }
 
     @JsonIgnore
+    public Optional<String> getNextCursor() {
+        if (nextCursor == null) {
+            return Optional.empty();
+        }
+        return nextCursor;
+    }
+
+    @JsonIgnore
     public Optional<Platform> getPlatform() {
         if (platform == null) {
             return Optional.empty();
@@ -88,6 +100,12 @@ public final class InboxConversationDetail {
     @JsonProperty("window")
     public InboxReplyWindow getWindow() {
         return window;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("nextCursor")
+    private Optional<String> _getNextCursor() {
+        return nextCursor;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -111,6 +129,7 @@ public final class InboxConversationDetail {
         return abilities.equals(other.abilities)
                 && conversation.equals(other.conversation)
                 && messages.equals(other.messages)
+                && nextCursor.equals(other.nextCursor)
                 && platform.equals(other.platform)
                 && sent.equals(other.sent)
                 && window.equals(other.window);
@@ -118,7 +137,14 @@ public final class InboxConversationDetail {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.abilities, this.conversation, this.messages, this.platform, this.sent, this.window);
+        return Objects.hash(
+                this.abilities,
+                this.conversation,
+                this.messages,
+                this.nextCursor,
+                this.platform,
+                this.sent,
+                this.window);
     }
 
     @java.lang.Override
@@ -157,6 +183,12 @@ public final class InboxConversationDetail {
 
         _FinalStage addAllMessages(List<InboxDirectMessage> messages);
 
+        _FinalStage nextCursor(Optional<String> nextCursor);
+
+        _FinalStage nextCursor(String nextCursor);
+
+        _FinalStage nextCursor(Nullable<String> nextCursor);
+
         _FinalStage platform(Optional<Platform> platform);
 
         _FinalStage platform(Platform platform);
@@ -182,6 +214,8 @@ public final class InboxConversationDetail {
 
         private Optional<Platform> platform = Optional.empty();
 
+        private Optional<String> nextCursor = Optional.empty();
+
         private List<InboxDirectMessage> messages = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -193,6 +227,7 @@ public final class InboxConversationDetail {
             abilities(other.getAbilities());
             conversation(other.getConversation());
             messages(other.getMessages());
+            nextCursor(other.getNextCursor());
             platform(other.getPlatform());
             sent(other.getSent());
             window(other.getWindow());
@@ -270,6 +305,31 @@ public final class InboxConversationDetail {
         }
 
         @java.lang.Override
+        public _FinalStage nextCursor(Nullable<String> nextCursor) {
+            if (nextCursor.isNull()) {
+                this.nextCursor = null;
+            } else if (nextCursor.isEmpty()) {
+                this.nextCursor = Optional.empty();
+            } else {
+                this.nextCursor = Optional.of(nextCursor.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage nextCursor(String nextCursor) {
+            this.nextCursor = Optional.ofNullable(nextCursor);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "nextCursor", nulls = Nulls.SKIP)
+        public _FinalStage nextCursor(Optional<String> nextCursor) {
+            this.nextCursor = nextCursor;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllMessages(List<InboxDirectMessage> messages) {
             if (messages != null) {
                 this.messages.addAll(messages);
@@ -296,7 +356,7 @@ public final class InboxConversationDetail {
         @java.lang.Override
         public InboxConversationDetail build() {
             return new InboxConversationDetail(
-                    abilities, conversation, messages, platform, sent, window, additionalProperties);
+                    abilities, conversation, messages, nextCursor, platform, sent, window, additionalProperties);
         }
 
         @JsonAnySetter
@@ -304,6 +364,7 @@ public final class InboxConversationDetail {
             if (key.equalsIgnoreCase("abilities")
                     || key.equalsIgnoreCase("conversation")
                     || key.equalsIgnoreCase("messages")
+                    || key.equalsIgnoreCase("nextCursor")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("sent")
                     || key.equalsIgnoreCase("window")) {

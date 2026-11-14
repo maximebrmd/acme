@@ -27,6 +27,7 @@ module Peal
       ENGAGEMENT_READ = "engagement:read"
       ENGAGEMENT_REPLY = "engagement:reply"
       ENGAGEMENT_MESSAGE = "engagement:message"
+      ENGAGEMENT_READ_MESSAGES = "engagement:readMessages"
       INVITATION_CREATE = "invitation:create"
       INVITATION_CANCEL = "invitation:cancel"
       MEDIA_READ = "media:read"

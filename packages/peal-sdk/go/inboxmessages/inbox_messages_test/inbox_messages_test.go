@@ -186,6 +186,88 @@ func TestInboxMessagesSetConversationReadWithWireMock(
 	VerifyRequestCount(t, "TestInboxMessagesSetConversationReadWithWireMock", "POST", "/api/workspaces/workspaceId/inbox/messages/conversations/conversationId/read", nil, 1)
 }
 
+func TestInboxMessagesGetMessageSettingsWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.GetMessageSettingsInboxMessagesRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.InboxMessages.GetMessageSettings(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestInboxMessagesGetMessageSettingsWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestInboxMessagesGetMessageSettingsWithWireMock", "GET", "/api/workspaces/workspaceId/inbox/messages/settings", nil, 1)
+}
+
+func TestInboxMessagesSetChannelMessagesWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.SetChannelMessagesInboxMessagesRequest{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+		Enabled:     true,
+	}
+	_, invocationErr := client.InboxMessages.SetChannelMessages(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestInboxMessagesSetChannelMessagesWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestInboxMessagesSetChannelMessagesWithWireMock", "PUT", "/api/workspaces/workspaceId/inbox/messages/channels/channelId", nil, 1)
+}
+
+func TestInboxMessagesSetMessageApplicationWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.SetMessageApplicationInboxMessagesRequest{
+		WorkspaceID: "workspaceId",
+		Allowed:     true,
+		ClientID:    "clientId",
+	}
+	_, invocationErr := client.InboxMessages.SetMessageApplication(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestInboxMessagesSetMessageApplicationWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestInboxMessagesSetMessageApplicationWithWireMock", "PUT", "/api/workspaces/workspaceId/inbox/messages/applications", nil, 1)
+}
+
 func TestInboxMessagesConfirmMessageWithWireMock(
 	t *testing.T,
 ) {
@@ -211,5 +293,5 @@ func TestInboxMessagesConfirmMessageWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestInboxMessagesConfirmMessageWithWireMock", "POST", "/api/workspaces/workspaceId/inbox/messages/messages/messageId/confirmation", nil, 1)
+	VerifyRequestCount(t, "TestInboxMessagesConfirmMessageWithWireMock", "POST", "/api/workspaces/workspaceId/inbox/messages/outgoing/messageId/confirmation", nil, 1)
 }

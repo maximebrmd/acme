@@ -6,6 +6,7 @@ export interface InboxConversationDetail {
     abilities: Peal.InboxMessageAbilities;
     conversation: Peal.InboxConversation;
     messages: Peal.InboxDirectMessage[];
+    nextCursor: string | null;
     platform: Peal.Platform | null;
     sent: Peal.InboxOutgoingMessage[];
     window: Peal.InboxReplyWindow;

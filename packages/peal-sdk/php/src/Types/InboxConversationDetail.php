@@ -27,6 +27,12 @@ class InboxConversationDetail extends JsonSerializableType
     public array $messages;
 
     /**
+     * @var ?string $nextCursor
+     */
+    #[JsonProperty('nextCursor')]
+    public ?string $nextCursor;
+
+    /**
      * @var ?value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -51,6 +57,7 @@ class InboxConversationDetail extends JsonSerializableType
      *   messages: array<InboxDirectMessage>,
      *   sent: array<InboxOutgoingMessage>,
      *   window: InboxReplyWindow,
+     *   nextCursor?: ?string,
      *   platform?: ?value-of<Platform>,
      * } $values
      */
@@ -60,6 +67,7 @@ class InboxConversationDetail extends JsonSerializableType
         $this->abilities = $values['abilities'];
         $this->conversation = $values['conversation'];
         $this->messages = $values['messages'];
+        $this->nextCursor = $values['nextCursor'] ?? null;
         $this->platform = $values['platform'] ?? null;
         $this->sent = $values['sent'];
         $this->window = $values['window'];

@@ -3,7 +3,9 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
 from .inbox_conversation import InboxConversation
 from .inbox_direct_message import InboxDirectMessage
 from .inbox_message_abilities import InboxMessageAbilities
@@ -16,6 +18,9 @@ class InboxConversationDetail(UniversalBaseModel):
     abilities: InboxMessageAbilities
     conversation: InboxConversation
     messages: typing.List[InboxDirectMessage]
+    next_cursor: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="nextCursor"), pydantic.Field(alias="nextCursor")
+    ] = None
     platform: typing.Optional[Platform] = None
     sent: typing.List[InboxOutgoingMessage]
     window: InboxReplyWindow

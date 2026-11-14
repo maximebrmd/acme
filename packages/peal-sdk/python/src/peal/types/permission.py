@@ -24,6 +24,7 @@ Permission = typing.Union[
         "engagement:read",
         "engagement:reply",
         "engagement:message",
+        "engagement:readMessages",
         "invitation:create",
         "invitation:cancel",
         "media:read",

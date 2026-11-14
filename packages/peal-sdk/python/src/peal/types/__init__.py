@@ -449,7 +449,10 @@ if typing.TYPE_CHECKING:
     from .inbox_conversation_page import InboxConversationPage
     from .inbox_direct_message import InboxDirectMessage
     from .inbox_message_abilities import InboxMessageAbilities
+    from .inbox_message_application import InboxMessageApplication
+    from .inbox_message_channel import InboxMessageChannel
     from .inbox_message_not_found_encoded import InboxMessageNotFoundEncoded
+    from .inbox_message_settings import InboxMessageSettings
     from .inbox_moderation_action import InboxModerationAction
     from .inbox_outgoing_message import InboxOutgoingMessage
     from .inbox_outgoing_message_reason import InboxOutgoingMessageReason
@@ -568,6 +571,7 @@ if typing.TYPE_CHECKING:
     from .media_too_large_encoded_kind import MediaTooLargeEncodedKind
     from .media_usage import MediaUsage
     from .membership import Membership
+    from .message_mentions_outside_encoded import MessageMentionsOutsideEncoded
     from .message_pending_encoded import MessagePendingEncoded
     from .meter import Meter
     from .meter_terms import MeterTerms
@@ -1481,7 +1485,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InboxConversationPage": ".inbox_conversation_page",
     "InboxDirectMessage": ".inbox_direct_message",
     "InboxMessageAbilities": ".inbox_message_abilities",
+    "InboxMessageApplication": ".inbox_message_application",
+    "InboxMessageChannel": ".inbox_message_channel",
     "InboxMessageNotFoundEncoded": ".inbox_message_not_found_encoded",
+    "InboxMessageSettings": ".inbox_message_settings",
     "InboxModerationAction": ".inbox_moderation_action",
     "InboxOutgoingMessage": ".inbox_outgoing_message",
     "InboxOutgoingMessageReason": ".inbox_outgoing_message_reason",
@@ -1596,6 +1603,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaTooLargeEncodedKind": ".media_too_large_encoded_kind",
     "MediaUsage": ".media_usage",
     "Membership": ".membership",
+    "MessageMentionsOutsideEncoded": ".message_mentions_outside_encoded",
     "MessagePendingEncoded": ".message_pending_encoded",
     "Meter": ".meter",
     "MeterTerms": ".meter_terms",
@@ -2522,7 +2530,10 @@ __all__ = [
     "InboxConversationPage",
     "InboxDirectMessage",
     "InboxMessageAbilities",
+    "InboxMessageApplication",
+    "InboxMessageChannel",
     "InboxMessageNotFoundEncoded",
+    "InboxMessageSettings",
     "InboxModerationAction",
     "InboxOutgoingMessage",
     "InboxOutgoingMessageReason",
@@ -2637,6 +2648,7 @@ __all__ = [
     "MediaTooLargeEncodedKind",
     "MediaUsage",
     "Membership",
+    "MessageMentionsOutsideEncoded",
     "MessagePendingEncoded",
     "Meter",
     "MeterTerms",

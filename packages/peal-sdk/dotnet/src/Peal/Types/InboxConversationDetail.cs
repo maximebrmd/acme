@@ -20,6 +20,9 @@ public record InboxConversationDetail : IJsonOnDeserialized
     [JsonPropertyName("messages")]
     public IEnumerable<InboxDirectMessage> Messages { get; set; } = new List<InboxDirectMessage>();
 
+    [JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; }
+
     [JsonPropertyName("platform")]
     public Platform? Platform { get; set; }
 

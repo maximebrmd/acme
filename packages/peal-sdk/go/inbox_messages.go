@@ -78,11 +78,15 @@ func (c *ConfirmMessageInboxMessagesRequest) MarshalJSON() ([]byte, error) {
 var (
 	getConversationInboxMessagesRequestFieldWorkspaceID    = big.NewInt(1 << 0)
 	getConversationInboxMessagesRequestFieldConversationID = big.NewInt(1 << 1)
+	getConversationInboxMessagesRequestFieldCursor         = big.NewInt(1 << 2)
+	getConversationInboxMessagesRequestFieldLimit          = big.NewInt(1 << 3)
 )
 
 type GetConversationInboxMessagesRequest struct {
-	WorkspaceID    string `json:"-" url:"-"`
-	ConversationID string `json:"-" url:"-"`
+	WorkspaceID    string  `json:"-" url:"-"`
+	ConversationID string  `json:"-" url:"-"`
+	Cursor         *string `json:"-" url:"cursor,omitempty"`
+	Limit          *string `json:"-" url:"limit,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -109,6 +113,47 @@ func (g *GetConversationInboxMessagesRequest) SetWorkspaceID(workspaceID string)
 func (g *GetConversationInboxMessagesRequest) SetConversationID(conversationID string) {
 	g.ConversationID = conversationID
 	g.require(getConversationInboxMessagesRequestFieldConversationID)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetConversationInboxMessagesRequest) SetCursor(cursor *string) {
+	g.Cursor = cursor
+	g.require(getConversationInboxMessagesRequestFieldCursor)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetConversationInboxMessagesRequest) SetLimit(limit *string) {
+	g.Limit = limit
+	g.require(getConversationInboxMessagesRequestFieldLimit)
+}
+
+var (
+	getMessageSettingsInboxMessagesRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type GetMessageSettingsInboxMessagesRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetMessageSettingsInboxMessagesRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if g.explicitFields != nil {
+		next.Set(g.explicitFields)
+	}
+	next.Or(next, field)
+	g.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetMessageSettingsInboxMessagesRequest) SetWorkspaceID(workspaceID string) {
+	g.WorkspaceID = workspaceID
+	g.require(getMessageSettingsInboxMessagesRequestFieldWorkspaceID)
 }
 
 var (
@@ -250,6 +295,72 @@ func (n *NewInboxMessage) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	setChannelMessagesInboxMessagesRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	setChannelMessagesInboxMessagesRequestFieldChannelID   = big.NewInt(1 << 1)
+	setChannelMessagesInboxMessagesRequestFieldEnabled     = big.NewInt(1 << 2)
+)
+
+type SetChannelMessagesInboxMessagesRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	ChannelID   string `json:"-" url:"-"`
+	Enabled     bool   `json:"enabled" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (s *SetChannelMessagesInboxMessagesRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetChannelMessagesInboxMessagesRequest) SetWorkspaceID(workspaceID string) {
+	s.WorkspaceID = workspaceID
+	s.require(setChannelMessagesInboxMessagesRequestFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetChannelMessagesInboxMessagesRequest) SetChannelID(channelID string) {
+	s.ChannelID = channelID
+	s.require(setChannelMessagesInboxMessagesRequestFieldChannelID)
+}
+
+// SetEnabled sets the Enabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetChannelMessagesInboxMessagesRequest) SetEnabled(enabled bool) {
+	s.Enabled = enabled
+	s.require(setChannelMessagesInboxMessagesRequestFieldEnabled)
+}
+
+func (s *SetChannelMessagesInboxMessagesRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler SetChannelMessagesInboxMessagesRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*s = SetChannelMessagesInboxMessagesRequest(body)
+	return nil
+}
+
+func (s *SetChannelMessagesInboxMessagesRequest) MarshalJSON() ([]byte, error) {
+	type embed SetChannelMessagesInboxMessagesRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	setConversationReadInboxMessagesRequestFieldWorkspaceID    = big.NewInt(1 << 0)
 	setConversationReadInboxMessagesRequestFieldConversationID = big.NewInt(1 << 1)
 	setConversationReadInboxMessagesRequestFieldRead           = big.NewInt(1 << 2)
@@ -306,6 +417,72 @@ func (s *SetConversationReadInboxMessagesRequest) UnmarshalJSON(data []byte) err
 
 func (s *SetConversationReadInboxMessagesRequest) MarshalJSON() ([]byte, error) {
 	type embed SetConversationReadInboxMessagesRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	setMessageApplicationInboxMessagesRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	setMessageApplicationInboxMessagesRequestFieldAllowed     = big.NewInt(1 << 1)
+	setMessageApplicationInboxMessagesRequestFieldClientID    = big.NewInt(1 << 2)
+)
+
+type SetMessageApplicationInboxMessagesRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	Allowed     bool   `json:"allowed" url:"-"`
+	ClientID    string `json:"clientId" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (s *SetMessageApplicationInboxMessagesRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetMessageApplicationInboxMessagesRequest) SetWorkspaceID(workspaceID string) {
+	s.WorkspaceID = workspaceID
+	s.require(setMessageApplicationInboxMessagesRequestFieldWorkspaceID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetMessageApplicationInboxMessagesRequest) SetAllowed(allowed bool) {
+	s.Allowed = allowed
+	s.require(setMessageApplicationInboxMessagesRequestFieldAllowed)
+}
+
+// SetClientID sets the ClientID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SetMessageApplicationInboxMessagesRequest) SetClientID(clientID string) {
+	s.ClientID = clientID
+	s.require(setMessageApplicationInboxMessagesRequestFieldClientID)
+}
+
+func (s *SetMessageApplicationInboxMessagesRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler SetMessageApplicationInboxMessagesRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*s = SetMessageApplicationInboxMessagesRequest(body)
+	return nil
+}
+
+func (s *SetMessageApplicationInboxMessagesRequest) MarshalJSON() ([]byte, error) {
+	type embed SetMessageApplicationInboxMessagesRequest
 	var marshaler = struct {
 		embed
 	}{
@@ -546,20 +723,23 @@ var (
 	inboxConversationDetailFieldAbilities    = big.NewInt(1 << 0)
 	inboxConversationDetailFieldConversation = big.NewInt(1 << 1)
 	inboxConversationDetailFieldMessages     = big.NewInt(1 << 2)
-	inboxConversationDetailFieldPlatform     = big.NewInt(1 << 3)
-	inboxConversationDetailFieldSent         = big.NewInt(1 << 4)
-	inboxConversationDetailFieldWindow       = big.NewInt(1 << 5)
+	inboxConversationDetailFieldNextCursor   = big.NewInt(1 << 3)
+	inboxConversationDetailFieldPlatform     = big.NewInt(1 << 4)
+	inboxConversationDetailFieldSent         = big.NewInt(1 << 5)
+	inboxConversationDetailFieldWindow       = big.NewInt(1 << 6)
 )
 
 // inboxConversationDetailNullableFields maps the wire names of InboxConversationDetail's nullable fields (required or optional) to their field bits.
 var inboxConversationDetailNullableFields = map[string]*big.Int{
-	"platform": inboxConversationDetailFieldPlatform,
+	"nextCursor": inboxConversationDetailFieldNextCursor,
+	"platform":   inboxConversationDetailFieldPlatform,
 }
 
 type InboxConversationDetail struct {
 	Abilities    *InboxMessageAbilities  `json:"abilities" url:"abilities"`
 	Conversation *InboxConversation      `json:"conversation" url:"conversation"`
 	Messages     []*InboxDirectMessage   `json:"messages" url:"messages"`
+	NextCursor   *string                 `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
 	Platform     *Platform               `json:"platform,omitempty" url:"platform,omitempty"`
 	Sent         []*InboxOutgoingMessage `json:"sent" url:"sent"`
 	Window       *InboxReplyWindow       `json:"window" url:"window"`
@@ -590,6 +770,13 @@ func (i *InboxConversationDetail) GetMessages() []*InboxDirectMessage {
 		return nil
 	}
 	return i.Messages
+}
+
+func (i *InboxConversationDetail) GetNextCursor() *string {
+	if i == nil {
+		return nil
+	}
+	return i.NextCursor
 }
 
 func (i *InboxConversationDetail) GetPlatform() *Platform {
@@ -648,6 +835,13 @@ func (i *InboxConversationDetail) SetConversation(conversation *InboxConversatio
 func (i *InboxConversationDetail) SetMessages(messages []*InboxDirectMessage) {
 	i.Messages = messages
 	i.require(inboxConversationDetailFieldMessages)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxConversationDetail) SetNextCursor(nextCursor *string) {
+	i.NextCursor = nextCursor
+	i.require(inboxConversationDetailFieldNextCursor)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -1116,6 +1310,368 @@ func (i *InboxMessageAbilities) MarshalJSON() ([]byte, error) {
 }
 
 func (i *InboxMessageAbilities) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	inboxMessageApplicationFieldClientID  = big.NewInt(1 << 0)
+	inboxMessageApplicationFieldGrantedAt = big.NewInt(1 << 1)
+	inboxMessageApplicationFieldGrantedBy = big.NewInt(1 << 2)
+)
+
+// inboxMessageApplicationNullableFields maps the wire names of InboxMessageApplication's nullable fields (required or optional) to their field bits.
+var inboxMessageApplicationNullableFields = map[string]*big.Int{
+	"grantedBy": inboxMessageApplicationFieldGrantedBy,
+}
+
+type InboxMessageApplication struct {
+	ClientID  string  `json:"clientId" url:"clientId"`
+	GrantedAt string  `json:"grantedAt" url:"grantedAt"`
+	GrantedBy *string `json:"grantedBy,omitempty" url:"grantedBy,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InboxMessageApplication) GetClientID() string {
+	if i == nil {
+		return ""
+	}
+	return i.ClientID
+}
+
+func (i *InboxMessageApplication) GetGrantedAt() string {
+	if i == nil {
+		return ""
+	}
+	return i.GrantedAt
+}
+
+func (i *InboxMessageApplication) GetGrantedBy() *string {
+	if i == nil {
+		return nil
+	}
+	return i.GrantedBy
+}
+
+func (i *InboxMessageApplication) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InboxMessageApplication) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetClientID sets the ClientID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageApplication) SetClientID(clientID string) {
+	i.ClientID = clientID
+	i.require(inboxMessageApplicationFieldClientID)
+}
+
+// SetGrantedAt sets the GrantedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageApplication) SetGrantedAt(grantedAt string) {
+	i.GrantedAt = grantedAt
+	i.require(inboxMessageApplicationFieldGrantedAt)
+}
+
+// SetGrantedBy sets the GrantedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageApplication) SetGrantedBy(grantedBy *string) {
+	i.GrantedBy = grantedBy
+	i.require(inboxMessageApplicationFieldGrantedBy)
+}
+
+func (i *InboxMessageApplication) UnmarshalJSON(data []byte) error {
+	type unmarshaler InboxMessageApplication
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InboxMessageApplication(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, inboxMessageApplicationNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		i.require(presentFields)
+	}
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InboxMessageApplication) MarshalJSON() ([]byte, error) {
+	type embed InboxMessageApplication
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InboxMessageApplication) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	inboxMessageChannelFieldChannelID = big.NewInt(1 << 0)
+	inboxMessageChannelFieldEnabledAt = big.NewInt(1 << 1)
+	inboxMessageChannelFieldEnabledBy = big.NewInt(1 << 2)
+)
+
+// inboxMessageChannelNullableFields maps the wire names of InboxMessageChannel's nullable fields (required or optional) to their field bits.
+var inboxMessageChannelNullableFields = map[string]*big.Int{
+	"enabledBy": inboxMessageChannelFieldEnabledBy,
+}
+
+type InboxMessageChannel struct {
+	ChannelID string  `json:"channelId" url:"channelId"`
+	EnabledAt string  `json:"enabledAt" url:"enabledAt"`
+	EnabledBy *string `json:"enabledBy,omitempty" url:"enabledBy,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InboxMessageChannel) GetChannelID() string {
+	if i == nil {
+		return ""
+	}
+	return i.ChannelID
+}
+
+func (i *InboxMessageChannel) GetEnabledAt() string {
+	if i == nil {
+		return ""
+	}
+	return i.EnabledAt
+}
+
+func (i *InboxMessageChannel) GetEnabledBy() *string {
+	if i == nil {
+		return nil
+	}
+	return i.EnabledBy
+}
+
+func (i *InboxMessageChannel) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InboxMessageChannel) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageChannel) SetChannelID(channelID string) {
+	i.ChannelID = channelID
+	i.require(inboxMessageChannelFieldChannelID)
+}
+
+// SetEnabledAt sets the EnabledAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageChannel) SetEnabledAt(enabledAt string) {
+	i.EnabledAt = enabledAt
+	i.require(inboxMessageChannelFieldEnabledAt)
+}
+
+// SetEnabledBy sets the EnabledBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageChannel) SetEnabledBy(enabledBy *string) {
+	i.EnabledBy = enabledBy
+	i.require(inboxMessageChannelFieldEnabledBy)
+}
+
+func (i *InboxMessageChannel) UnmarshalJSON(data []byte) error {
+	type unmarshaler InboxMessageChannel
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InboxMessageChannel(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, inboxMessageChannelNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		i.require(presentFields)
+	}
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InboxMessageChannel) MarshalJSON() ([]byte, error) {
+	type embed InboxMessageChannel
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InboxMessageChannel) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	inboxMessageSettingsFieldApplications = big.NewInt(1 << 0)
+	inboxMessageSettingsFieldChannels     = big.NewInt(1 << 1)
+)
+
+type InboxMessageSettings struct {
+	Applications []*InboxMessageApplication `json:"applications" url:"applications"`
+	Channels     []*InboxMessageChannel     `json:"channels" url:"channels"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InboxMessageSettings) GetApplications() []*InboxMessageApplication {
+	if i == nil {
+		return nil
+	}
+	return i.Applications
+}
+
+func (i *InboxMessageSettings) GetChannels() []*InboxMessageChannel {
+	if i == nil {
+		return nil
+	}
+	return i.Channels
+}
+
+func (i *InboxMessageSettings) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InboxMessageSettings) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetApplications sets the Applications field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageSettings) SetApplications(applications []*InboxMessageApplication) {
+	i.Applications = applications
+	i.require(inboxMessageSettingsFieldApplications)
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxMessageSettings) SetChannels(channels []*InboxMessageChannel) {
+	i.Channels = channels
+	i.require(inboxMessageSettingsFieldChannels)
+}
+
+func (i *InboxMessageSettings) UnmarshalJSON(data []byte) error {
+	type unmarshaler InboxMessageSettings
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InboxMessageSettings(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InboxMessageSettings) MarshalJSON() ([]byte, error) {
+	type embed InboxMessageSettings
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InboxMessageSettings) String() string {
 	if i == nil {
 		return "<nil>"
 	}

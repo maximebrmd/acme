@@ -15262,6 +15262,140 @@ func (m MediaTooLargeEncodedKind) Ptr() *MediaTooLargeEncodedKind {
 }
 
 var (
+	messageMentionsOutsideEncodedFieldCode      = big.NewInt(1 << 0)
+	messageMentionsOutsideEncodedFieldMessage   = big.NewInt(1 << 1)
+	messageMentionsOutsideEncodedFieldRequestID = big.NewInt(1 << 2)
+	messageMentionsOutsideEncodedFieldMentions  = big.NewInt(1 << 3)
+)
+
+type MessageMentionsOutsideEncoded struct {
+	Code      *string  `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string  `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string  `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Mentions  []string `json:"mentions" url:"mentions"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MessageMentionsOutsideEncoded) GetCode() *string {
+	if m == nil {
+		return nil
+	}
+	return m.Code
+}
+
+func (m *MessageMentionsOutsideEncoded) GetMessage() *string {
+	if m == nil {
+		return nil
+	}
+	return m.Message
+}
+
+func (m *MessageMentionsOutsideEncoded) GetRequestID() *string {
+	if m == nil {
+		return nil
+	}
+	return m.RequestID
+}
+
+func (m *MessageMentionsOutsideEncoded) GetMentions() []string {
+	if m == nil {
+		return nil
+	}
+	return m.Mentions
+}
+
+func (m *MessageMentionsOutsideEncoded) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MessageMentionsOutsideEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MessageMentionsOutsideEncoded) SetCode(code *string) {
+	m.Code = code
+	m.require(messageMentionsOutsideEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MessageMentionsOutsideEncoded) SetMessage(message *string) {
+	m.Message = message
+	m.require(messageMentionsOutsideEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MessageMentionsOutsideEncoded) SetRequestID(requestID *string) {
+	m.RequestID = requestID
+	m.require(messageMentionsOutsideEncodedFieldRequestID)
+}
+
+// SetMentions sets the Mentions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MessageMentionsOutsideEncoded) SetMentions(mentions []string) {
+	m.Mentions = mentions
+	m.require(messageMentionsOutsideEncodedFieldMentions)
+}
+
+func (m *MessageMentionsOutsideEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler MessageMentionsOutsideEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MessageMentionsOutsideEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MessageMentionsOutsideEncoded) MarshalJSON() ([]byte, error) {
+	type embed MessageMentionsOutsideEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MessageMentionsOutsideEncoded) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
 	messagePendingEncodedFieldCode      = big.NewInt(1 << 0)
 	messagePendingEncodedFieldMessage   = big.NewInt(1 << 1)
 	messagePendingEncodedFieldRequestID = big.NewInt(1 << 2)
@@ -18653,48 +18787,49 @@ func (p *PeriodUsage) String() string {
 type Permission string
 
 const (
-	PermissionActivityRead       Permission = "activity:read"
-	PermissionAdsRead            Permission = "ads:read"
-	PermissionAdsManage          Permission = "ads:manage"
-	PermissionAdsSpend           Permission = "ads:spend"
-	PermissionAdsAuthorize       Permission = "ads:authorize"
-	PermissionAnalyticsRead      Permission = "analytics:read"
-	PermissionAPIKeyCreate       Permission = "apiKey:create"
-	PermissionAPIKeyRead         Permission = "apiKey:read"
-	PermissionAPIKeyUpdate       Permission = "apiKey:update"
-	PermissionAPIKeyDelete       Permission = "apiKey:delete"
-	PermissionAssistantUse       Permission = "assistant:use"
-	PermissionAssistantConfigure Permission = "assistant:configure"
-	PermissionBillingRead        Permission = "billing:read"
-	PermissionBillingManage      Permission = "billing:manage"
-	PermissionChannelRead        Permission = "channel:read"
-	PermissionChannelConnect     Permission = "channel:connect"
-	PermissionChannelDisconnect  Permission = "channel:disconnect"
-	PermissionEngagementRead     Permission = "engagement:read"
-	PermissionEngagementReply    Permission = "engagement:reply"
-	PermissionEngagementMessage  Permission = "engagement:message"
-	PermissionInvitationCreate   Permission = "invitation:create"
-	PermissionInvitationCancel   Permission = "invitation:cancel"
-	PermissionMediaRead          Permission = "media:read"
-	PermissionMediaUpload        Permission = "media:upload"
-	PermissionMediaDelete        Permission = "media:delete"
-	PermissionMemberCreate       Permission = "member:create"
-	PermissionMemberUpdate       Permission = "member:update"
-	PermissionMemberDelete       Permission = "member:delete"
-	PermissionOrganizationUpdate Permission = "organization:update"
-	PermissionOrganizationDelete Permission = "organization:delete"
-	PermissionOrganizationSecure Permission = "organization:secure"
-	PermissionPartnerRead        Permission = "partner:read"
-	PermissionPartnerManage      Permission = "partner:manage"
-	PermissionPostRead           Permission = "post:read"
-	PermissionPostCreate         Permission = "post:create"
-	PermissionPostUpdate         Permission = "post:update"
-	PermissionPostDelete         Permission = "post:delete"
-	PermissionPostSchedule       Permission = "post:schedule"
-	PermissionPostApprove        Permission = "post:approve"
-	PermissionPostPublish        Permission = "post:publish"
-	PermissionWebhookRead        Permission = "webhook:read"
-	PermissionWebhookManage      Permission = "webhook:manage"
+	PermissionActivityRead           Permission = "activity:read"
+	PermissionAdsRead                Permission = "ads:read"
+	PermissionAdsManage              Permission = "ads:manage"
+	PermissionAdsSpend               Permission = "ads:spend"
+	PermissionAdsAuthorize           Permission = "ads:authorize"
+	PermissionAnalyticsRead          Permission = "analytics:read"
+	PermissionAPIKeyCreate           Permission = "apiKey:create"
+	PermissionAPIKeyRead             Permission = "apiKey:read"
+	PermissionAPIKeyUpdate           Permission = "apiKey:update"
+	PermissionAPIKeyDelete           Permission = "apiKey:delete"
+	PermissionAssistantUse           Permission = "assistant:use"
+	PermissionAssistantConfigure     Permission = "assistant:configure"
+	PermissionBillingRead            Permission = "billing:read"
+	PermissionBillingManage          Permission = "billing:manage"
+	PermissionChannelRead            Permission = "channel:read"
+	PermissionChannelConnect         Permission = "channel:connect"
+	PermissionChannelDisconnect      Permission = "channel:disconnect"
+	PermissionEngagementRead         Permission = "engagement:read"
+	PermissionEngagementReply        Permission = "engagement:reply"
+	PermissionEngagementMessage      Permission = "engagement:message"
+	PermissionEngagementReadMessages Permission = "engagement:readMessages"
+	PermissionInvitationCreate       Permission = "invitation:create"
+	PermissionInvitationCancel       Permission = "invitation:cancel"
+	PermissionMediaRead              Permission = "media:read"
+	PermissionMediaUpload            Permission = "media:upload"
+	PermissionMediaDelete            Permission = "media:delete"
+	PermissionMemberCreate           Permission = "member:create"
+	PermissionMemberUpdate           Permission = "member:update"
+	PermissionMemberDelete           Permission = "member:delete"
+	PermissionOrganizationUpdate     Permission = "organization:update"
+	PermissionOrganizationDelete     Permission = "organization:delete"
+	PermissionOrganizationSecure     Permission = "organization:secure"
+	PermissionPartnerRead            Permission = "partner:read"
+	PermissionPartnerManage          Permission = "partner:manage"
+	PermissionPostRead               Permission = "post:read"
+	PermissionPostCreate             Permission = "post:create"
+	PermissionPostUpdate             Permission = "post:update"
+	PermissionPostDelete             Permission = "post:delete"
+	PermissionPostSchedule           Permission = "post:schedule"
+	PermissionPostApprove            Permission = "post:approve"
+	PermissionPostPublish            Permission = "post:publish"
+	PermissionWebhookRead            Permission = "webhook:read"
+	PermissionWebhookManage          Permission = "webhook:manage"
 )
 
 func NewPermissionFromString(s string) (Permission, error) {
@@ -18739,6 +18874,8 @@ func NewPermissionFromString(s string) (Permission, error) {
 		return PermissionEngagementReply, nil
 	case "engagement:message":
 		return PermissionEngagementMessage, nil
+	case "engagement:readMessages":
+		return PermissionEngagementReadMessages, nil
 	case "invitation:create":
 		return PermissionInvitationCreate, nil
 	case "invitation:cancel":

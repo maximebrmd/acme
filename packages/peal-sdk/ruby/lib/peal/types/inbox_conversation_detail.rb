@@ -11,6 +11,8 @@ module Peal
 
       field :messages, -> { Internal::Types::Array[Peal::Types::InboxDirectMessage] }, optional: false, nullable: false
 
+      field :next_cursor, -> { String }, optional: false, nullable: true, api_name: "nextCursor"
+
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: true
 
       field :sent, -> { Internal::Types::Array[Peal::Types::InboxOutgoingMessage] }, optional: false, nullable: false
