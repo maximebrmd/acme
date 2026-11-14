@@ -7,7 +7,7 @@ sidebar:
 
 ## Rate limits [#rate-limits]
 
-A credential may send 600 requests a minute:
+A credential may send a number of requests a minute, counted in one-minute windows:
 
 | Credential                             | Counted                                                              |
 | -------------------------------------- | -------------------------------------------------------------------- |
@@ -18,7 +18,21 @@ A credential may send 600 requests a minute:
 
 - The count is shared between the API and the [MCP endpoint](/developers/mcp).
 - It is kept in fixed windows of one minute that start on the minute.
-- On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets another number ([Environment variables](/self-hosting/environment-variables#core)).
+- On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets the number, {{api-with-en}} unless set ([Environment variables](/self-hosting/environment-variables#core)).
+
+### By billing account [#standing]
+
+On a server that bills, as Peal Cloud does, the number depends on the [billing account](/guides/workspace/billing#accounts) that pays for the workspace the credential acts in:
+
+| Policy     | Requests a minute                     | When                                                                                                    |
+| ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `free`     | {{api-without-en}}                    | The billing account has no payment method                                                               |
+| `default`  | {{api-with-en}}, the server's setting | It has one ([A payment method](/guides/workspace/billing#payment-method)), or a plan priced by channels |
+| `override` | What Peal set for the workspace       | On request, {{api-on-request-en}} usually: write to us                                                  |
+
+- An API key counts by its workspace's account, a partner key by its partner's home workspace's, and an application by the workspace its token is bound to, or else, as the command line's, the most generous of its member's workspaces.
+- A payment method added raises the limit within a minute.
+- A server that does not bill applies its one setting to every credential.
 
 Every answer to a counted credential says where it stands, in the headers of the IETF draft "RateLimit header fields for HTTP":
 
@@ -52,15 +66,18 @@ X-Request-Id: 019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a
 {
   "_tag": "TooManyRequests",
   "code": "too_many_requests",
-  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.",
+  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left. `policy` says which limit applied: on a server that bills, a billing account without a payment method sends fewer (`free`), and `withPaymentMethod` is what a payment method gives.",
   "requestId": "019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a",
   "limit": 600,
+  "policy": "default",
   "windowSeconds": 60,
   "retryAfterSeconds": 17
 }
 ```
 
 Wait `retryAfterSeconds`, then send the request again. A client that reads `RateLimit` slows down before it is refused.
+
+On the `free` policy, the error also carries `withPaymentMethod`, the limit a payment method gives, and its `message` says so. `policy` and `withPaymentMethod` are absent from servers older than them.
 
 - The MCP endpoint answers the same status and headers, with a JSON-RPC error.
 - When the server cannot keep the count, it lets the request through.

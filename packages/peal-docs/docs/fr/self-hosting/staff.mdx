@@ -124,6 +124,15 @@ Les points d’accès de la console, par l’API :
 | `GET /api/admin/workspaces/{workspaceId}/short-links` | Liste les liens courts d’un espace de travail   |
 | `POST …/short-links/disable`                          | Désactive tous les liens d’un espace de travail |
 
+## Limites de débit de l’API [#rate-limits]
+
+Sur un serveur qui facture, la page d’un espace de travail montre la [limite de débit](/developers/conventions/rate-limits#standing) sous laquelle envoient ses clés et les applications qui y agissent : {{api-without-fr}} requêtes par minute sans moyen de paiement, le réglage du serveur avec un moyen de paiement, ou une limite propre. L’équipe lui en donne une sur demande, {{api-on-request-fr}} en général, de 1 à 10 000, avec un motif, et la retire de la même façon : elle s’applique dans la minute, quoi que paie le compte de facturation, et part avec l’espace de travail. Chaque changement est d’abord inscrit au journal d’audit (`setRequestLimit`, avec la limite). Sur un serveur qui ne facture pas, le réglage vaut pour tous, et rien ne se fixe.
+
+| Point d’accès                                                   | Ce qu’il fait                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `GET /api/admin/workspaces/{workspaceId}/request-limit`         | Ce sous quoi l’espace de travail envoie                             |
+| `POST …/request-limit`, avec `requestsPerMinute` et un `reason` | Fixe sa limite propre, ou la retire avec `requestsPerMinute` à null |
+
 ## Le journal d’audit [#audit-log]
 
 Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit.

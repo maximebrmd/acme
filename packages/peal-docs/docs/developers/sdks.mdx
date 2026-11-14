@@ -211,7 +211,7 @@ Each SDK raises (or returns, in Go and Rust) a typed error for each error status
 | GET, PUT or DELETE | Retries, with backoff, when the API answers 408, 429 or a 5xx. Each request's options set how many times (`maxRetries`, `max_retries`, `option.WithMaxAttempts`, `MaxRetries`: each README says). |
 | POST or PATCH      | Never sends it twice: the first may have made the post before its answer was lost.                                                                                                                |
 
-To send a POST again safely, give it an `Idempotency-Key` ([Idempotency](/developers/conventions/idempotency#idempotency)): the API then answers the same post, and makes no other. A key sends 600 requests a minute at most ([Rate limits](/developers/conventions/rate-limits#rate-limits)).
+To send a POST again safely, give it an `Idempotency-Key` ([Idempotency](/developers/conventions/idempotency#idempotency)): the API then answers the same post, and makes no other. A key sends {{api-with-en}} requests a minute at most, {{api-without-en}} on a billing account without a payment method ([Rate limits](/developers/conventions/rate-limits#rate-limits)).
 
 ## Pages [#paging]
 

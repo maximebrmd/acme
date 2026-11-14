@@ -7,6 +7,7 @@ import path from "node:path";
 import {
   accountsCharge,
   accountsMonthly,
+  defaultApiRequestsPerMinute,
   pricingExamples,
   rateCard,
   unconfirmedMeters,
@@ -166,6 +167,21 @@ describe("the pricing page", () => {
       );
     }
   });
+
+  it.each(locales)(
+    "states the API's rate limit by standing in %s",
+    (locale) => {
+      const count = (value: number) =>
+        new Intl.NumberFormat(locale).format(value);
+      const { api } = pageOf(locale);
+
+      expect(api).toContain(
+        count(rateCard.apiRequestsPerMinute.withoutPaymentMethod)
+      );
+      expect(api).toContain(count(defaultApiRequestsPerMinute));
+      expect(api).toContain(count(rateCard.apiRequestsPerMinute.onRequest));
+    }
+  );
 
   it("prices managed ads per ad, as its words say", () => {
     expect(rateCard.prices.usd.meters.managedAds.per).toBe(1);

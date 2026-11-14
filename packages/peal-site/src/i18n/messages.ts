@@ -152,6 +152,10 @@ const en = {
     },
     selfHost:
       "A server you run yourself bills nothing and limits nothing: these prices are Peal Cloud's.",
+    api: {
+      body: "Each API key, and each application acting for a member, sends {without} requests a minute to the API and the MCP server together without a payment method, and {withPaymentMethod} with one; {onRequest} on request.",
+      title: "API rate limit",
+    },
     storage: {
       body: "Fair use, across every workspace of the billing account: {without} without a payment method; with one, {perAccount} per connected account, {minimum} at least.",
       title: "Media storage",
@@ -331,6 +335,10 @@ const fr: Messages = {
     },
     selfHost:
       "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces tarifs sont ceux de Peal Cloud.",
+    api: {
+      body: "Chaque clé d’API, et chaque application qui agit pour un membre, envoie {without} requêtes par minute à l’API et au serveur MCP réunis sans moyen de paiement, et {withPaymentMethod} avec un moyen de paiement ; {onRequest} sur demande.",
+      title: "Limite de débit de l’API",
+    },
     storage: {
       body: "Usage raisonnable, pour tous les espaces de travail du compte de facturation : {without} sans moyen de paiement ; avec un moyen de paiement, {perAccount} par compte connecté, {minimum} au moins.",
       title: "Stockage des médias",

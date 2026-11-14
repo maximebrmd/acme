@@ -120,6 +120,15 @@ The console's own endpoints, through the API:
 | `GET /api/admin/workspaces/{workspaceId}/short-links` | Lists a workspace's short links   |
 | `POST …/short-links/disable`                          | Turns a workspace's links all off |
 
+## API rate limits [#rate-limits]
+
+On a server that bills, a workspace's page shows the [rate limit](/developers/conventions/rate-limits#standing) its keys and the applications acting in it send under: {{api-without-en}} requests a minute without a payment method, the server's setting with one, or a limit of its own. Staff give it one on request, {{api-on-request-en}} usually, from 1 to 10,000, with a reason, and remove it the same way: it applies within a minute, whatever the billing account pays, and goes with the workspace. Each change is recorded in the audit log first (`setRequestLimit`, with the limit). On a server that does not bill, the setting is everyone's, and nothing is set.
+
+| Endpoint                                                        | What it does                                                    |
+| --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `GET /api/admin/workspaces/{workspaceId}/request-limit`         | What the workspace sends under now                              |
+| `POST …/request-limit`, with `requestsPerMinute` and a `reason` | Sets its own limit, or removes it with `requestsPerMinute` null |
+
 ## The audit log [#audit-log]
 
 Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote.

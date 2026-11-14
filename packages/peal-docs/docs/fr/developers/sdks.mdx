@@ -211,7 +211,7 @@ Chaque SDK lève (ou renvoie, en Go et en Rust) une erreur typée par statut d�
 | GET, PUT ou DELETE | La renvoie, avec un délai croissant, quand l’API répond 408, 429 ou 5xx. Les options de chaque requête fixent combien de fois (`maxRetries`, `max_retries`, `option.WithMaxAttempts`, `MaxRetries` : chaque README le dit). |
 | POST ou PATCH      | Ne l’envoie jamais deux fois : le premier a pu créer la publication avant que sa réponse ne se perde.                                                                                                                       |
 
-Pour renvoyer un POST sans risque, donnez-lui une `Idempotency-Key` ([Idempotence](/developers/conventions/idempotency#idempotency)) : l’API répond alors la même publication, et n’en crée pas d’autre. Une clé envoie au plus 600 requêtes par minute ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
+Pour renvoyer un POST sans risque, donnez-lui une `Idempotency-Key` ([Idempotence](/developers/conventions/idempotency#idempotency)) : l’API répond alors la même publication, et n’en crée pas d’autre. Une clé envoie au plus {{api-with-fr}} requêtes par minute, {{api-without-fr}} pour un compte de facturation sans moyen de paiement ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
 
 ## Pages [#paging]
 

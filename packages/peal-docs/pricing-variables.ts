@@ -7,6 +7,7 @@ import type { LegacyPlan, PlanLimit } from "peal-contract/billing-plans";
 import {
   accountsCharge,
   accountsMonthly,
+  defaultApiRequestsPerMinute,
   freeAccountsOf,
   partMonthAccountDays,
   pricingExamples,
@@ -204,6 +205,15 @@ const rateCardVariables = (locale: Locale): [string, string][] => {
     [`free-storage-${locale}`, size(locale, storage.withoutPaymentMethod)],
     [`storage-per-account-${locale}`, size(locale, storage.perAccount)],
     [`storage-minimum-${locale}`, size(locale, storage.minimum)],
+    [
+      `api-without-${locale}`,
+      count(locale, rateCard.apiRequestsPerMinute.withoutPaymentMethod),
+    ],
+    [`api-with-${locale}`, count(locale, defaultApiRequestsPerMinute)],
+    [
+      `api-on-request-${locale}`,
+      count(locale, rateCard.apiRequestsPerMinute.onRequest),
+    ],
   ];
 };
 

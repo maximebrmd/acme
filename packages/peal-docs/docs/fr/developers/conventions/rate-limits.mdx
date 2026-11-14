@@ -7,7 +7,7 @@ sidebar:
 
 ## Limites de débit [#rate-limits]
 
-Un moyen d’authentification peut envoyer 600 requêtes par minute :
+Un moyen d’authentification peut envoyer un certain nombre de requêtes par minute, comptées par fenêtres d’une minute :
 
 | Moyen                                       | Compté                                                                                               |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -18,7 +18,21 @@ Un moyen d’authentification peut envoyer 600 requêtes par minute :
 
 - Le compte est commun à l’API et au [point d’accès MCP](/developers/mcp).
 - Il est tenu par fenêtres fixes d’une minute, qui commencent à la minute ronde.
-- Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe un autre nombre ([Variables d’environnement](/self-hosting/environment-variables#core)).
+- Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe ce nombre, {{api-with-fr}} par défaut ([Variables d’environnement](/self-hosting/environment-variables#core)).
+
+### Selon le compte de facturation [#standing]
+
+Sur un serveur qui facture, comme Peal Cloud, le nombre dépend du [compte de facturation](/guides/workspace/billing#accounts) qui paie l’espace de travail où le moyen d’authentification agit :
+
+| Règle      | Requêtes par minute                         | Quand                                                                                                                 |
+| ---------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `free`     | {{api-without-fr}}                          | Le compte de facturation n’a pas de moyen de paiement                                                                 |
+| `default`  | {{api-with-fr}}, le réglage du serveur      | Il en a un ([Un moyen de paiement](/guides/workspace/billing#payment-method)), ou un abonnement par paliers de canaux |
+| `override` | Ce que Peal a fixé pour l’espace de travail | Sur demande, {{api-on-request-fr}} en général : écrivez-nous                                                          |
+
+- Une clé d’API compte selon le compte de son espace de travail, une clé partenaire selon celui de l’espace principal de son partenaire, et une application selon l’espace de travail auquel son jeton est lié, sinon, comme la ligne de commande, le plus favorable des espaces de travail de son membre.
+- Un moyen de paiement ajouté relève la limite dans la minute.
+- Un serveur qui ne facture pas applique son seul réglage à tous.
 
 Chaque réponse à une clé ou à un jeton compté dit où il en est, dans les en-têtes du brouillon de l’IETF « RateLimit header fields for HTTP » :
 
@@ -53,15 +67,18 @@ X-Request-Id: 019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a
 {
   "_tag": "TooManyRequests",
   "code": "too_many_requests",
-  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.",
+  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left. `policy` says which limit applied: on a server that bills, a billing account without a payment method sends fewer (`free`), and `withPaymentMethod` is what a payment method gives.",
   "requestId": "019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a",
   "limit": 600,
+  "policy": "default",
   "windowSeconds": 60,
   "retryAfterSeconds": 17
 }
 ```
 
 Attendez `retryAfterSeconds`, puis renvoyez la requête. Un client qui lit `RateLimit` ralentit avant d’être refusé.
+
+Sous la règle `free`, l’erreur porte aussi `withPaymentMethod`, la limite qu’un moyen de paiement donne, et son `message` le dit. `policy` et `withPaymentMethod` manquent aux serveurs plus anciens qu’eux.
 
 - Le point d’accès MCP répond le même statut et les mêmes en-têtes, avec une erreur JSON-RPC.
 - Quand le serveur ne parvient pas à tenir le compte, il laisse passer la requête.

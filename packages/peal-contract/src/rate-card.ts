@@ -136,6 +136,15 @@ export type RateCard = typeof RateCardSchema.Type;
 const gigabytes = (count: number): number => count * 1_000_000_000;
 
 /**
+ * The API's requests a minute, per key and per application, with a payment
+ * method on Peal Cloud: the server's `PEAL_API_REQUESTS_PER_MINUTE` unless
+ * set otherwise (the server's `defaultRequestsPerMinute`, kept equal by a
+ * test). The rate card holds the two others: without a payment method,
+ * and on request.
+ */
+export const defaultApiRequestsPerMinute = 600;
+
+/**
  * Not decided yet, as the server marks them. Placeholders, to be replaced
  * with the owner's figures before a pricing page shows them: the
  * assistant's allowances with a payment method, its two prices and its
