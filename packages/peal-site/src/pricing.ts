@@ -5,6 +5,7 @@ import {
   partMonthAccountDays,
   pricingExamples,
   rateCard,
+  unconfirmedMeters,
 } from "peal-contract/rate-card";
 import type { AccountBand, Meter } from "peal-contract/rate-card";
 
@@ -24,16 +25,12 @@ export const pricedMeters: readonly Meter[] = [
 ];
 
 /**
- * The meters the page names without a figure: the writing assistant's
- * allowance and prices are placeholders in the rate card until the owner
- * sets them, and X's pass-through is not billed yet. Move a meter to
- * `pricedMeters` once its figures are final.
+ * The meters the page names without a figure, as the rate card marks
+ * them (`unconfirmedMeters`): the writing assistant's allowance and prices
+ * are placeholders until the owner sets them. X's API is not on the page
+ * until its pass-through is billed.
  */
-export const comingMeters: readonly Meter[] = [
-  "assistantRequests",
-  "assistantImages",
-  "xApi",
-];
+export const comingMeters: readonly Meter[] = unconfirmedMeters;
 
 type PricingMessages = Messages["pricing"];
 

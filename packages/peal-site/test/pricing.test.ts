@@ -9,6 +9,7 @@ import {
   accountsMonthly,
   pricingExamples,
   rateCard,
+  unconfirmedMeters,
 } from "peal-contract/rate-card";
 import { describe, expect, it } from "vitest";
 
@@ -155,6 +156,16 @@ describe("the pricing page", () => {
       }
     }
   );
+
+  it("shows as coming what the rate card has not confirmed, and no X", () => {
+    expect(comingMeters).toStrictEqual(unconfirmedMeters);
+
+    for (const locale of locales) {
+      expect(pageOf(locale).meters.map(({ meter }) => meter)).not.toContain(
+        "xApi"
+      );
+    }
+  });
 
   it("prices managed ads per ad, as its words say", () => {
     expect(rateCard.prices.usd.meters.managedAds.per).toBe(1);

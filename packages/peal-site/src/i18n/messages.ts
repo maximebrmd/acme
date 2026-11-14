@@ -115,7 +115,7 @@ const en = {
     },
     meters: {
       allowance: "{count} a month included",
-      lead: "What costs Peal by use has a monthly allowance per billing account, across all its workspaces, from the first of each month (UTC). Without a payment method, such a use pauses at its allowance until the next month; with one, each unit past it is billed.",
+      lead: "What costs Peal by use has a monthly allowance per billing account, across all its workspaces, from the first of each month (UTC). Without a payment method, such a use pauses at its allowance until the next month; with one, each unit past it is billed. Until your first invoice is paid, what usage bills in a month is capped.",
       names: {
         assistantImages: "Writing assistant images",
         assistantRequests: "Writing assistant",
@@ -294,7 +294,7 @@ const fr: Messages = {
     },
     meters: {
       allowance: "{count} inclus par mois",
-      lead: "Ce qui coûte à Peal à l’usage a une franchise mensuelle par compte de facturation, pour tous ses espaces de travail, à partir du premier de chaque mois (UTC). Sans moyen de paiement, cet usage s’interrompt à sa franchise jusqu’au mois suivant ; avec un moyen de paiement, chaque unité au-delà est facturée.",
+      lead: "Ce qui coûte à Peal à l’usage a une franchise mensuelle par compte de facturation, pour tous ses espaces de travail, à partir du premier de chaque mois (UTC). Sans moyen de paiement, cet usage s’interrompt à sa franchise jusqu’au mois suivant ; avec un moyen de paiement, chaque unité au-delà est facturée. Tant que votre première facture n’est pas payée, ce que l’usage facture dans un mois est plafonné.",
       names: {
         assistantImages: "Images de l’assistant de rédaction",
         assistantRequests: "Assistant de rédaction",
