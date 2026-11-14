@@ -22,4 +22,7 @@ enum AttemptResult: string
     case RepliesNotAllowed = "repliesNotAllowed";
     case PaymentMethodRequired = "paymentMethodRequired";
     case XCeilingReached = "xCeilingReached";
+    case PaymentFailed = "paymentFailed";
+    case PerAccountPricingRequired = "perAccountPricingRequired";
+    case XThreadCut = "xThreadCut";
 }

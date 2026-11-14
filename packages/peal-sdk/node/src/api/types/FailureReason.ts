@@ -18,6 +18,9 @@ export const FailureReason = {
         PartsNotSent: "partsNotSent",
         RepliesNotAllowed: "repliesNotAllowed",
         PaymentMethodRequired: "paymentMethodRequired",
-        XCeilingReached: "xCeilingReached"
+        XCeilingReached: "xCeilingReached",
+        PaymentFailed: "paymentFailed",
+        PerAccountPricingRequired: "perAccountPricingRequired",
+        XThreadCut: "xThreadCut"
     } as const;
 export type FailureReason = typeof FailureReason[keyof typeof FailureReason];

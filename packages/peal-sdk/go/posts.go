@@ -1422,27 +1422,64 @@ func (p *PostTags) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
+type AllowanceReason string
+
+const (
+	AllowanceReasonPaymentMethodRequired AllowanceReason = "paymentMethodRequired"
+	AllowanceReasonCeilingReached        AllowanceReason = "ceilingReached"
+	AllowanceReasonNotEnabled            AllowanceReason = "notEnabled"
+	AllowanceReasonPlanAllowance         AllowanceReason = "planAllowance"
+	AllowanceReasonPaymentFailed         AllowanceReason = "paymentFailed"
+	AllowanceReasonSpendCapReached       AllowanceReason = "spendCapReached"
+)
+
+func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
+	switch s {
+	case "paymentMethodRequired":
+		return AllowanceReasonPaymentMethodRequired, nil
+	case "ceilingReached":
+		return AllowanceReasonCeilingReached, nil
+	case "notEnabled":
+		return AllowanceReasonNotEnabled, nil
+	case "planAllowance":
+		return AllowanceReasonPlanAllowance, nil
+	case "paymentFailed":
+		return AllowanceReasonPaymentFailed, nil
+	case "spendCapReached":
+		return AllowanceReasonSpendCapReached, nil
+	}
+	var t AllowanceReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AllowanceReason) Ptr() *AllowanceReason {
+	return &a
+}
+
 type AttemptResult string
 
 const (
-	AttemptResultPublished             AttemptResult = "published"
-	AttemptResultUnconfirmed           AttemptResult = "unconfirmed"
-	AttemptResultContentRejected       AttemptResult = "contentRejected"
-	AttemptResultChannelDisconnected   AttemptResult = "channelDisconnected"
-	AttemptResultChannelDisabled       AttemptResult = "channelDisabled"
-	AttemptResultMediaRemoved          AttemptResult = "mediaRemoved"
-	AttemptResultMediaRejected         AttemptResult = "mediaRejected"
-	AttemptResultRateLimited           AttemptResult = "rateLimited"
-	AttemptResultTokenExpired          AttemptResult = "tokenExpired"
-	AttemptResultUnavailable           AttemptResult = "unavailable"
-	AttemptResultAppNotAudited         AttemptResult = "appNotAudited"
-	AttemptResultQuotaExceeded         AttemptResult = "quotaExceeded"
-	AttemptResultAppBillingLimit       AttemptResult = "appBillingLimit"
-	AttemptResultPlanLimit             AttemptResult = "planLimit"
-	AttemptResultPartsNotSent          AttemptResult = "partsNotSent"
-	AttemptResultRepliesNotAllowed     AttemptResult = "repliesNotAllowed"
-	AttemptResultPaymentMethodRequired AttemptResult = "paymentMethodRequired"
-	AttemptResultXCeilingReached       AttemptResult = "xCeilingReached"
+	AttemptResultPublished                 AttemptResult = "published"
+	AttemptResultUnconfirmed               AttemptResult = "unconfirmed"
+	AttemptResultContentRejected           AttemptResult = "contentRejected"
+	AttemptResultChannelDisconnected       AttemptResult = "channelDisconnected"
+	AttemptResultChannelDisabled           AttemptResult = "channelDisabled"
+	AttemptResultMediaRemoved              AttemptResult = "mediaRemoved"
+	AttemptResultMediaRejected             AttemptResult = "mediaRejected"
+	AttemptResultRateLimited               AttemptResult = "rateLimited"
+	AttemptResultTokenExpired              AttemptResult = "tokenExpired"
+	AttemptResultUnavailable               AttemptResult = "unavailable"
+	AttemptResultAppNotAudited             AttemptResult = "appNotAudited"
+	AttemptResultQuotaExceeded             AttemptResult = "quotaExceeded"
+	AttemptResultAppBillingLimit           AttemptResult = "appBillingLimit"
+	AttemptResultPlanLimit                 AttemptResult = "planLimit"
+	AttemptResultPartsNotSent              AttemptResult = "partsNotSent"
+	AttemptResultRepliesNotAllowed         AttemptResult = "repliesNotAllowed"
+	AttemptResultPaymentMethodRequired     AttemptResult = "paymentMethodRequired"
+	AttemptResultXCeilingReached           AttemptResult = "xCeilingReached"
+	AttemptResultPaymentFailed             AttemptResult = "paymentFailed"
+	AttemptResultPerAccountPricingRequired AttemptResult = "perAccountPricingRequired"
+	AttemptResultXThreadCut                AttemptResult = "xThreadCut"
 )
 
 func NewAttemptResultFromString(s string) (AttemptResult, error) {
@@ -1483,6 +1520,12 @@ func NewAttemptResultFromString(s string) (AttemptResult, error) {
 		return AttemptResultPaymentMethodRequired, nil
 	case "xCeilingReached":
 		return AttemptResultXCeilingReached, nil
+	case "paymentFailed":
+		return AttemptResultPaymentFailed, nil
+	case "perAccountPricingRequired":
+		return AttemptResultPerAccountPricingRequired, nil
+	case "xThreadCut":
+		return AttemptResultXThreadCut, nil
 	}
 	var t AttemptResult
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -15129,6 +15172,7 @@ type PostWarning struct {
 	Type                 string
 	ChannelsDropped      *PostWarningChannelsDropped
 	QueueChannelsDropped *PostWarningQueueChannelsDropped
+	XNotBilled           *PostWarningXNotBilled
 
 	rawJSON json.RawMessage
 }
@@ -15152,6 +15196,13 @@ func (p *PostWarning) GetQueueChannelsDropped() *PostWarningQueueChannelsDropped
 		return nil
 	}
 	return p.QueueChannelsDropped
+}
+
+func (p *PostWarning) GetXNotBilled() *PostWarningXNotBilled {
+	if p == nil {
+		return nil
+	}
+	return p.XNotBilled
 }
 
 func (p *PostWarning) UnmarshalJSON(data []byte) error {
@@ -15178,6 +15229,12 @@ func (p *PostWarning) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.QueueChannelsDropped = value
+	case "xNotBilled":
+		value := new(PostWarningXNotBilled)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.XNotBilled = value
 	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
@@ -15193,6 +15250,9 @@ func (p PostWarning) MarshalJSON() ([]byte, error) {
 	if p.QueueChannelsDropped != nil {
 		return internal.MarshalJSONWithExtraProperty(p.QueueChannelsDropped, "_tag", "queueChannelsDropped")
 	}
+	if p.XNotBilled != nil {
+		return internal.MarshalJSONWithExtraProperty(p.XNotBilled, "_tag", "xNotBilled")
+	}
 	if len(p.rawJSON) > 0 {
 		return p.rawJSON, nil
 	}
@@ -15202,6 +15262,7 @@ func (p PostWarning) MarshalJSON() ([]byte, error) {
 type PostWarningVisitor interface {
 	VisitChannelsDropped(*PostWarningChannelsDropped) error
 	VisitQueueChannelsDropped(*PostWarningQueueChannelsDropped) error
+	VisitXNotBilled(*PostWarningXNotBilled) error
 }
 
 func (p *PostWarning) Accept(visitor PostWarningVisitor) error {
@@ -15210,6 +15271,9 @@ func (p *PostWarning) Accept(visitor PostWarningVisitor) error {
 	}
 	if p.QueueChannelsDropped != nil {
 		return visitor.VisitQueueChannelsDropped(p.QueueChannelsDropped)
+	}
+	if p.XNotBilled != nil {
+		return visitor.VisitXNotBilled(p.XNotBilled)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", p)
 }
@@ -15224,6 +15288,9 @@ func (p *PostWarning) validate() error {
 	}
 	if p.QueueChannelsDropped != nil {
 		fields = append(fields, "queueChannelsDropped")
+	}
+	if p.XNotBilled != nil {
+		fields = append(fields, "xNotBilled")
 	}
 	if len(fields) == 0 {
 		if p.Type != "" {
@@ -15473,6 +15540,108 @@ func (p *PostWarningQueueChannelsDropped) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PostWarningQueueChannelsDropped) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	postWarningXNotBilledFieldChannelIDs = big.NewInt(1 << 0)
+	postWarningXNotBilledFieldReason     = big.NewInt(1 << 1)
+)
+
+type PostWarningXNotBilled struct {
+	ChannelIDs []string        `json:"channelIds" url:"channelIds"`
+	Reason     AllowanceReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostWarningXNotBilled) GetChannelIDs() []string {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelIDs
+}
+
+func (p *PostWarningXNotBilled) GetReason() AllowanceReason {
+	if p == nil {
+		return ""
+	}
+	return p.Reason
+}
+
+func (p *PostWarningXNotBilled) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostWarningXNotBilled) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChannelIDs sets the ChannelIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningXNotBilled) SetChannelIDs(channelIDs []string) {
+	p.ChannelIDs = channelIDs
+	p.require(postWarningXNotBilledFieldChannelIDs)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningXNotBilled) SetReason(reason AllowanceReason) {
+	p.Reason = reason
+	p.require(postWarningXNotBilledFieldReason)
+}
+
+func (p *PostWarningXNotBilled) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostWarningXNotBilled
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostWarningXNotBilled(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostWarningXNotBilled) MarshalJSON() ([]byte, error) {
+	type embed PostWarningXNotBilled
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostWarningXNotBilled) String() string {
 	if p == nil {
 		return "<nil>"
 	}

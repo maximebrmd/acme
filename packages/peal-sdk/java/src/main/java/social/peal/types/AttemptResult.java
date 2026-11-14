@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class AttemptResult {
     public static final AttemptResult CONTENT_REJECTED = new AttemptResult(Value.CONTENT_REJECTED, "contentRejected");
 
+    public static final AttemptResult PER_ACCOUNT_PRICING_REQUIRED =
+            new AttemptResult(Value.PER_ACCOUNT_PRICING_REQUIRED, "perAccountPricingRequired");
+
     public static final AttemptResult MEDIA_REMOVED = new AttemptResult(Value.MEDIA_REMOVED, "mediaRemoved");
 
     public static final AttemptResult UNAVAILABLE = new AttemptResult(Value.UNAVAILABLE, "unavailable");
@@ -24,11 +27,15 @@ public final class AttemptResult {
 
     public static final AttemptResult APP_NOT_AUDITED = new AttemptResult(Value.APP_NOT_AUDITED, "appNotAudited");
 
+    public static final AttemptResult PAYMENT_FAILED = new AttemptResult(Value.PAYMENT_FAILED, "paymentFailed");
+
     public static final AttemptResult CHANNEL_DISABLED = new AttemptResult(Value.CHANNEL_DISABLED, "channelDisabled");
 
     public static final AttemptResult PLAN_LIMIT = new AttemptResult(Value.PLAN_LIMIT, "planLimit");
 
     public static final AttemptResult UNCONFIRMED = new AttemptResult(Value.UNCONFIRMED, "unconfirmed");
+
+    public static final AttemptResult X_THREAD_CUT = new AttemptResult(Value.X_THREAD_CUT, "xThreadCut");
 
     public static final AttemptResult PUBLISHED = new AttemptResult(Value.PUBLISHED, "published");
 
@@ -80,6 +87,8 @@ public final class AttemptResult {
         switch (value) {
             case CONTENT_REJECTED:
                 return visitor.visitContentRejected();
+            case PER_ACCOUNT_PRICING_REQUIRED:
+                return visitor.visitPerAccountPricingRequired();
             case MEDIA_REMOVED:
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
@@ -94,12 +103,16 @@ public final class AttemptResult {
                 return visitor.visitTokenExpired();
             case APP_NOT_AUDITED:
                 return visitor.visitAppNotAudited();
+            case PAYMENT_FAILED:
+                return visitor.visitPaymentFailed();
             case CHANNEL_DISABLED:
                 return visitor.visitChannelDisabled();
             case PLAN_LIMIT:
                 return visitor.visitPlanLimit();
             case UNCONFIRMED:
                 return visitor.visitUnconfirmed();
+            case X_THREAD_CUT:
+                return visitor.visitXThreadCut();
             case PUBLISHED:
                 return visitor.visitPublished();
             case CHANNEL_DISCONNECTED:
@@ -125,6 +138,8 @@ public final class AttemptResult {
         switch (value) {
             case "contentRejected":
                 return CONTENT_REJECTED;
+            case "perAccountPricingRequired":
+                return PER_ACCOUNT_PRICING_REQUIRED;
             case "mediaRemoved":
                 return MEDIA_REMOVED;
             case "unavailable":
@@ -139,12 +154,16 @@ public final class AttemptResult {
                 return TOKEN_EXPIRED;
             case "appNotAudited":
                 return APP_NOT_AUDITED;
+            case "paymentFailed":
+                return PAYMENT_FAILED;
             case "channelDisabled":
                 return CHANNEL_DISABLED;
             case "planLimit":
                 return PLAN_LIMIT;
             case "unconfirmed":
                 return UNCONFIRMED;
+            case "xThreadCut":
+                return X_THREAD_CUT;
             case "published":
                 return PUBLISHED;
             case "channelDisconnected":
@@ -201,6 +220,12 @@ public final class AttemptResult {
 
         X_CEILING_REACHED,
 
+        PAYMENT_FAILED,
+
+        PER_ACCOUNT_PRICING_REQUIRED,
+
+        X_THREAD_CUT,
+
         UNKNOWN
     }
 
@@ -240,6 +265,12 @@ public final class AttemptResult {
         T visitPaymentMethodRequired();
 
         T visitXCeilingReached();
+
+        T visitPaymentFailed();
+
+        T visitPerAccountPricingRequired();
+
+        T visitXThreadCut();
 
         T visitUnknown(String unknownType);
     }

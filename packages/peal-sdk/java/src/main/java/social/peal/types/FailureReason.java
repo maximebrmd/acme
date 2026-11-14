@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class FailureReason {
     public static final FailureReason CONTENT_REJECTED = new FailureReason(Value.CONTENT_REJECTED, "contentRejected");
 
+    public static final FailureReason PER_ACCOUNT_PRICING_REQUIRED =
+            new FailureReason(Value.PER_ACCOUNT_PRICING_REQUIRED, "perAccountPricingRequired");
+
     public static final FailureReason NOT_PUBLISHED = new FailureReason(Value.NOT_PUBLISHED, "notPublished");
 
     public static final FailureReason MEDIA_REMOVED = new FailureReason(Value.MEDIA_REMOVED, "mediaRemoved");
@@ -28,9 +31,13 @@ public final class FailureReason {
 
     public static final FailureReason APP_NOT_AUDITED = new FailureReason(Value.APP_NOT_AUDITED, "appNotAudited");
 
+    public static final FailureReason PAYMENT_FAILED = new FailureReason(Value.PAYMENT_FAILED, "paymentFailed");
+
     public static final FailureReason CHANNEL_DISABLED = new FailureReason(Value.CHANNEL_DISABLED, "channelDisabled");
 
     public static final FailureReason PLAN_LIMIT = new FailureReason(Value.PLAN_LIMIT, "planLimit");
+
+    public static final FailureReason X_THREAD_CUT = new FailureReason(Value.X_THREAD_CUT, "xThreadCut");
 
     public static final FailureReason CHANNEL_DISCONNECTED =
             new FailureReason(Value.CHANNEL_DISCONNECTED, "channelDisconnected");
@@ -80,6 +87,8 @@ public final class FailureReason {
         switch (value) {
             case CONTENT_REJECTED:
                 return visitor.visitContentRejected();
+            case PER_ACCOUNT_PRICING_REQUIRED:
+                return visitor.visitPerAccountPricingRequired();
             case NOT_PUBLISHED:
                 return visitor.visitNotPublished();
             case MEDIA_REMOVED:
@@ -98,10 +107,14 @@ public final class FailureReason {
                 return visitor.visitTokenExpired();
             case APP_NOT_AUDITED:
                 return visitor.visitAppNotAudited();
+            case PAYMENT_FAILED:
+                return visitor.visitPaymentFailed();
             case CHANNEL_DISABLED:
                 return visitor.visitChannelDisabled();
             case PLAN_LIMIT:
                 return visitor.visitPlanLimit();
+            case X_THREAD_CUT:
+                return visitor.visitXThreadCut();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case QUOTA_EXCEEDED:
@@ -125,6 +138,8 @@ public final class FailureReason {
         switch (value) {
             case "contentRejected":
                 return CONTENT_REJECTED;
+            case "perAccountPricingRequired":
+                return PER_ACCOUNT_PRICING_REQUIRED;
             case "notPublished":
                 return NOT_PUBLISHED;
             case "mediaRemoved":
@@ -143,10 +158,14 @@ public final class FailureReason {
                 return TOKEN_EXPIRED;
             case "appNotAudited":
                 return APP_NOT_AUDITED;
+            case "paymentFailed":
+                return PAYMENT_FAILED;
             case "channelDisabled":
                 return CHANNEL_DISABLED;
             case "planLimit":
                 return PLAN_LIMIT;
+            case "xThreadCut":
+                return X_THREAD_CUT;
             case "channelDisconnected":
                 return CHANNEL_DISCONNECTED;
             case "quotaExceeded":
@@ -201,6 +220,12 @@ public final class FailureReason {
 
         X_CEILING_REACHED,
 
+        PAYMENT_FAILED,
+
+        PER_ACCOUNT_PRICING_REQUIRED,
+
+        X_THREAD_CUT,
+
         UNKNOWN
     }
 
@@ -240,6 +265,12 @@ public final class FailureReason {
         T visitPaymentMethodRequired();
 
         T visitXCeilingReached();
+
+        T visitPaymentFailed();
+
+        T visitPerAccountPricingRequired();
+
+        T visitXThreadCut();
 
         T visitUnknown(String unknownType);
     }

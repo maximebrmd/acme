@@ -44,6 +44,14 @@ public readonly record struct FailureReason : IStringEnum
 
     public static readonly FailureReason XCeilingReached = new(Values.XCeilingReached);
 
+    public static readonly FailureReason PaymentFailed = new(Values.PaymentFailed);
+
+    public static readonly FailureReason PerAccountPricingRequired = new(
+        Values.PerAccountPricingRequired
+    );
+
+    public static readonly FailureReason XThreadCut = new(Values.XThreadCut);
+
     public FailureReason(string value)
     {
         Value = value;
@@ -175,5 +183,11 @@ public readonly record struct FailureReason : IStringEnum
         public const string PaymentMethodRequired = "paymentMethodRequired";
 
         public const string XCeilingReached = "xCeilingReached";
+
+        public const string PaymentFailed = "paymentFailed";
+
+        public const string PerAccountPricingRequired = "perAccountPricingRequired";
+
+        public const string XThreadCut = "xThreadCut";
     }
 }

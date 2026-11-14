@@ -595,6 +595,7 @@ module Peal
     autoload :PostTarget, ::File.join(__dir__, "peal/types/post_target")
     autoload :PostWarningChannelsDropped, ::File.join(__dir__, "peal/types/post_warning_channels_dropped")
     autoload :PostWarningQueueChannelsDropped, ::File.join(__dir__, "peal/types/post_warning_queue_channels_dropped")
+    autoload :PostWarningXNotBilled, ::File.join(__dir__, "peal/types/post_warning_x_not_billed")
     autoload :PostWarning, ::File.join(__dir__, "peal/types/post_warning")
     autoload :Post, ::File.join(__dir__, "peal/types/post")
     autoload :BulkPostResultCreated, ::File.join(__dir__, "peal/types/bulk_post_result_created")

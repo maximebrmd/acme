@@ -30599,6 +30599,39 @@ func TestGettersPostWarning(t *testing.T) {
 		_ = obj.GetQueueChannelsDropped() // Should return zero value
 	})
 
+	t.Run("GetXNotBilled", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarning{}
+		var expected *PostWarningXNotBilled
+		obj.XNotBilled = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetXNotBilled(), "getter should return the property value")
+	})
+
+	t.Run("GetXNotBilled_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarning{}
+		obj.XNotBilled = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetXNotBilled(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetXNotBilled_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PostWarning
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetXNotBilled() // Should return zero value
+	})
+
 }
 
 func TestSettersPostWarningChannelsDropped(t *testing.T) {
@@ -30986,6 +31019,149 @@ func TestSettersMarkExplicitPostWarningQueueChannelsDropped(t *testing.T) {
 
 		// Act
 		obj.SetQueueName(fernTestValueQueueName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersPostWarningXNotBilled(t *testing.T) {
+	t.Run("SetChannelIDs", func(t *testing.T) {
+		obj := &PostWarningXNotBilled{}
+		var fernTestValueChannelIDs []string
+		obj.SetChannelIDs(fernTestValueChannelIDs)
+		assert.Equal(t, fernTestValueChannelIDs, obj.ChannelIDs)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReason", func(t *testing.T) {
+		obj := &PostWarningXNotBilled{}
+		var fernTestValueReason AllowanceReason
+		obj.SetReason(fernTestValueReason)
+		assert.Equal(t, fernTestValueReason, obj.Reason)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersPostWarningXNotBilled(t *testing.T) {
+	t.Run("GetChannelIDs", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+		var expected []string
+		obj.ChannelIDs = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetChannelIDs(), "getter should return the property value")
+	})
+
+	t.Run("GetChannelIDs_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+		obj.ChannelIDs = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetChannelIDs(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetChannelIDs_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PostWarningXNotBilled
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetChannelIDs() // Should return zero value
+	})
+
+	t.Run("GetReason", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+		var expected AllowanceReason
+		obj.Reason = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReason(), "getter should return the property value")
+	})
+
+	t.Run("GetReason_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PostWarningXNotBilled
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReason() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitPostWarningXNotBilled(t *testing.T) {
+	t.Run("SetChannelIDs_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+		var fernTestValueChannelIDs []string
+
+		// Act
+		obj.SetChannelIDs(fernTestValueChannelIDs)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReason_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+		var fernTestValueReason AllowanceReason
+
+		// Act
+		obj.SetReason(fernTestValueReason)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -37627,6 +37803,39 @@ func TestJSONMarshalingPostWarningQueueChannelsDropped(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingPostWarningXNotBilled(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PostWarningXNotBilled{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled PostWarningXNotBilled
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj PostWarningXNotBilled
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj PostWarningXNotBilled
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingPublicationAttempt(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -39864,6 +40073,22 @@ func TestStringPostWarningQueueChannelsDropped(t *testing.T) {
 	})
 }
 
+func TestStringPostWarningXNotBilled(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &PostWarningXNotBilled{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PostWarningXNotBilled
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringPublicationAttempt(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -40056,6 +40281,63 @@ func TestStringUnknownTagsEncoded(t *testing.T) {
 	})
 }
 
+func TestEnumAllowanceReason(t *testing.T) {
+	t.Run("NewFromString_paymentMethodRequired", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("paymentMethodRequired")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("paymentMethodRequired"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_ceilingReached", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("ceilingReached")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("ceilingReached"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_notEnabled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("notEnabled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("notEnabled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_planAllowance", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("planAllowance")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("planAllowance"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_paymentFailed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("paymentFailed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("paymentFailed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_spendCapReached", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAllowanceReasonFromString("spendCapReached")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AllowanceReason("spendCapReached"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewAllowanceReasonFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewAllowanceReasonFromString("paymentMethodRequired")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumAttemptResult(t *testing.T) {
 	t.Run("NewFromString_published", func(t *testing.T) {
 		t.Parallel()
@@ -40181,6 +40463,27 @@ func TestEnumAttemptResult(t *testing.T) {
 		val, err := NewAttemptResultFromString("xCeilingReached")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, AttemptResult("xCeilingReached"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_paymentFailed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAttemptResultFromString("paymentFailed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AttemptResult("paymentFailed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_perAccountPricingRequired", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAttemptResultFromString("perAccountPricingRequired")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AttemptResult("perAccountPricingRequired"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_xThreadCut", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewAttemptResultFromString("xThreadCut")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, AttemptResult("xThreadCut"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
@@ -42771,6 +43074,29 @@ func TestExtraPropertiesPostWarningQueueChannelsDropped(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *PostWarningQueueChannelsDropped
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesPostWarningXNotBilled(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &PostWarningXNotBilled{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PostWarningXNotBilled
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

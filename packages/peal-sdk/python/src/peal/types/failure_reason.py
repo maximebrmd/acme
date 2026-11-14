@@ -22,6 +22,9 @@ FailureReason = typing.Union[
         "repliesNotAllowed",
         "paymentMethodRequired",
         "xCeilingReached",
+        "paymentFailed",
+        "perAccountPricingRequired",
+        "xThreadCut",
     ],
     typing.Any,
 ]

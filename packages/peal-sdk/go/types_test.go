@@ -68001,63 +68001,6 @@ func TestEnumAdSignInFailedEncodedTag(t *testing.T) {
 	})
 }
 
-func TestEnumAllowanceReason(t *testing.T) {
-	t.Run("NewFromString_paymentMethodRequired", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("paymentMethodRequired")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("paymentMethodRequired"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_ceilingReached", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("ceilingReached")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("ceilingReached"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_notEnabled", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("notEnabled")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("notEnabled"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_planAllowance", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("planAllowance")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("planAllowance"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_paymentFailed", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("paymentFailed")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("paymentFailed"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_spendCapReached", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewAllowanceReasonFromString("spendCapReached")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, AllowanceReason("spendCapReached"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewAllowanceReasonFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewAllowanceReasonFromString("paymentMethodRequired")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestEnumAltTextTooLongEncodedTag(t *testing.T) {
 	t.Run("NewFromString_AltTextTooLong", func(t *testing.T) {
 		t.Parallel()
@@ -68970,6 +68913,27 @@ func TestEnumFailureReason(t *testing.T) {
 		val, err := NewFailureReasonFromString("xCeilingReached")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, FailureReason("xCeilingReached"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_paymentFailed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFailureReasonFromString("paymentFailed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FailureReason("paymentFailed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_perAccountPricingRequired", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFailureReasonFromString("perAccountPricingRequired")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FailureReason("perAccountPricingRequired"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_xThreadCut", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFailureReasonFromString("xThreadCut")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FailureReason("xThreadCut"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
