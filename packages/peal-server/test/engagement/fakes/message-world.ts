@@ -237,6 +237,15 @@ export const makeMessageWorld = (
           state.applications.splice(index, 1);
         }
       }),
+    unsentOf: (channelId) =>
+      Effect.sync(() =>
+        [...state.outgoing.values()].filter(
+          (message) =>
+            message.channelId === channelId &&
+            message.status._tag === "sending" &&
+            Option.isNone(message.status.attemptedAt)
+        )
+      ),
     switchedOn: (workspaceId) =>
       Effect.sync(() =>
         [...state.switchedOn.values()].filter(

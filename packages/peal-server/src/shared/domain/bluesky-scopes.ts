@@ -115,7 +115,7 @@ export type BlueskyChatMethod = (typeof blueskyChatMethods)[number];
  * Bluesky's messages.
  */
 export const blueskyChatScopes = blueskyChatMethods.map(
-  (method) => `rpc:${method}?aud=${encodeURIComponent(blueskyChatService)}`
+  (method) => `rpc:${method}?aud=${blueskyChatService.replace("#", "%23")}`
 );
 
 const rpcScope = /^rpc(?::(?<positional>[^?]+))?(?:\?(?<query>.*))?$/u;

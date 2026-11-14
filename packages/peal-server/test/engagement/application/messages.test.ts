@@ -597,6 +597,27 @@ describe("a message on a server that bills", () => {
     ).pipe(Effect.provide(Layer.merge(world.layer, meters)));
   });
 
+  it.effect(
+    "gives it back when the channel's messages are turned off before it set out",
+    () => {
+      const { meters, world } = billed(5);
+      const admin = actorWith("channel:connect");
+
+      return at(
+        Effect.gen(function* off() {
+          yield* sending("Hello");
+
+          yield* MessageSettings.use((settings) =>
+            settings.switchChannel(admin, channelId(1), false)
+          );
+
+          assert.strictEqual(world.state.outgoing.size, 0);
+          assert.strictEqual((yield* ledger).used.get("outboundMessages"), 0);
+        })
+      ).pipe(Effect.provide(Layer.merge(world.layer, meters)));
+    }
+  );
+
   it.effect("gives it back when the message never went out", () => {
     const { meters, world } = billed(5);
 

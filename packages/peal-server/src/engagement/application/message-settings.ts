@@ -4,6 +4,7 @@ import { readsMessagesOn } from "#engagement/domain/message-abilities.ts";
 import { followBox } from "#engagement/domain/message-box.ts";
 import { CurrentInboxMessages } from "#shared/application/current-inbox-messages.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -12,6 +13,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { MessageAbilityUnavailable } from "./message-ability-unavailable.ts";
 import { MessagesNeedPerson } from "./messages-need-person.ts";
+import { claimOf } from "./outgoing-message-claim.ts";
 import { EngagementChannels } from "./ports/engagement-channels.ts";
 import { MessageStore } from "./ports/message-store.ts";
 import type {
@@ -72,6 +74,7 @@ export class MessageSettings extends Context.Service<
       const channels = yield* EngagementChannels;
       const messages = yield* CurrentInboxMessages;
       const { transaction } = yield* TransactionRunner;
+      const meters = yield* MeteredUsage;
 
       const viewOf = (actor: Actor) =>
         Effect.all({
@@ -104,7 +107,17 @@ export class MessageSettings extends Context.Service<
           }
 
           if (!on) {
-            yield* store.channelGone(channelId);
+            // What was on its way and never set out is not sent: its
+            // outbound message is given back as its row goes.
+            yield* transaction(
+              Effect.gen(function* off() {
+                for (const unsent of yield* store.unsentOf(channelId)) {
+                  yield* meters.giveBack(claimOf(unsent));
+                }
+
+                yield* store.channelGone(channelId);
+              })
+            );
 
             return yield* viewOf(actor);
           }

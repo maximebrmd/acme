@@ -2,6 +2,7 @@ import { Cause, Exit, Option, Schema } from "effect";
 import {
   InboxActionFailed,
   InboxActionUnavailable,
+  MessageMentionsOutside,
   ReplyInvalid,
   ReplyStatusConflict,
 } from "peal-contract";
@@ -39,6 +40,8 @@ export type InboxError =
       readonly length: number;
       readonly maximum: number;
     }
+  // A Mastodon message would reach accounts outside its conversation.
+  | { readonly key: "mentionsOutside"; readonly mentions: string }
   | {
       readonly key: "unavailable";
       readonly standing: InboxActionUnavailable["standing"];
@@ -70,6 +73,8 @@ const isFailed = Schema.is(InboxActionFailed);
 
 const isConflict = Schema.is(ReplyStatusConflict);
 
+const isOutside = Schema.is(MessageMentionsOutside);
+
 const explain = (error: { readonly _tag: string }): InboxError => {
   if (isInvalid(error)) {
     return error.reason === "tooLong" &&
@@ -85,6 +90,10 @@ const explain = (error: { readonly _tag: string }): InboxError => {
 
   if (isFailed(error)) {
     return { key: "actionFailed", reason: error.reason };
+  }
+
+  if (isOutside(error)) {
+    return { key: "mentionsOutside", mentions: error.mentions.join(", ") };
   }
 
   if (isConflict(error)) {

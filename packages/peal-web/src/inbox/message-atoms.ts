@@ -36,19 +36,48 @@ export const conversationList = Atom.family((workspaceId: string) =>
 );
 
 const conversations = Atom.family((key: string) => {
-  const [workspaceId = "", conversationId = ""] = key.split("/");
+  const [workspaceId = "", conversationId = "", cursor = ""] = key.split("/");
 
   return PealApi.query("inboxMessages", "getConversation", {
     params: { conversationId, workspaceId },
+    query: cursor === "" ? {} : { cursor },
     reactivityKeys: conversationChanged(conversationId),
   });
 });
 
-/** A conversation whole, the messages sent from Peal, its abilities. */
+/**
+ * A page of a conversation, the messages sent from Peal, its abilities:
+ * the latest messages, or those before `cursor`.
+ */
 export const conversationDetail = (
   workspaceId: string,
-  conversationId: string
-) => conversations(`${workspaceId}/${conversationId}`);
+  conversationId: string,
+  cursor = ""
+) => conversations(`${workspaceId}/${conversationId}/${cursor}`);
+
+/** What refreshes the direct messages' settings. */
+export const messageSettingsChanged = (workspaceId: string) => [
+  `inbox-message-settings:${workspaceId}`,
+  ...conversationListChanged(workspaceId),
+];
+
+/** The channels whose messages are on, and the applications let in. */
+export const messageSettings = Atom.family((workspaceId: string) =>
+  PealApi.query("inboxMessages", "getMessageSettings", {
+    params: { workspaceId },
+    reactivityKeys: messageSettingsChanged(workspaceId),
+  })
+);
+
+export const setChannelMessages = PealApi.mutation(
+  "inboxMessages",
+  "setChannelMessages"
+);
+
+export const setMessageApplication = PealApi.mutation(
+  "inboxMessages",
+  "setMessageApplication"
+);
 
 export const sendMessage = PealApi.mutation("inboxMessages", "sendMessage");
 

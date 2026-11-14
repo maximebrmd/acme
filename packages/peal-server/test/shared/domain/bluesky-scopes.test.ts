@@ -70,6 +70,12 @@ describe("a Bluesky account's scopes", () => {
 describe("a Bluesky account's chat scopes", () => {
   const chat = "did:web:api.bsky.chat#bsky_chat";
 
+  it("are written as the permission spec writes them", () => {
+    expect(blueskyChatScopes[0]).toBe(
+      "rpc:chat.bsky.convo.listConvos?aud=did:web:api.bsky.chat%23bsky_chat"
+    );
+  });
+
   it("let Peal call the chat methods Peal asks for, at the chat service", () => {
     expect(
       blueskyChatMethods.every((method) =>

@@ -4107,7 +4107,8 @@
       "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain.",
       "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve.",
       "conversationNotFound": "Cette conversation n’existe plus : elle est partie avec son canal, ou a dépassé la durée pendant laquelle Peal la conserve.",
-      "messagePending": "Un message à cette conversation est en route, ou est peut-être parti. Attendez qu’il soit réglé avant d’en écrire un autre, pour que le même message ne parte jamais deux fois."
+      "messagePending": "Un message à cette conversation est en route, ou est peut-être parti. Attendez qu’il soit réglé avant d’en écrire un autre, pour que le même message ne parte jamais deux fois.",
+      "mentionsOutside": "Le message mentionne des comptes extérieurs à la conversation ({mentions}), qu’un message privé Mastodon atteindrait aussi. Retirez ces mentions : rien n’a été envoyé."
     }
   },
   "InboxReviews": {
@@ -4156,7 +4157,7 @@
   },
   "InboxMessages": {
     "title": "Messages privés",
-    "description": "Les conversations privées que des personnes tiennent avec vos comptes Mastodon et Bluesky. Peal conserve une conversation {days, number} jours après son dernier message, et n’en engage jamais.",
+    "description": "Les conversations privées que des personnes tiennent avec vos comptes Mastodon et Bluesky, pour les canaux dont votre espace de travail a activé les messages. Peal conserve chaque message {days, number} jours après son envoi, et n’engage jamais de conversation.",
     "loadFailed": "Les conversations n’ont pas pu être chargées.",
     "retry": "Réessayer",
     "row": {
@@ -4173,7 +4174,9 @@
       "private": "Ces messages sont privés : ne les montrez qu’aux personnes qui en ont besoin.",
       "markRead": "Marquer comme lue",
       "markUnread": "Marquer comme non lue",
-      "request": "Cette personne n’a pas encore été acceptée : répondre accepte la conversation."
+      "request": "Cette personne n’a pas encore été acceptée : répondre accepte la conversation.",
+      "older": "Messages plus anciens",
+      "latest": "Derniers messages"
     },
     "message": {
       "them": "Eux",
@@ -4192,7 +4195,23 @@
       "sending": "Envoi…",
       "sentToast": "Le message est en route.",
       "pending": "Un message à cette conversation est en route. Attendez qu’il soit parti pour en écrire un autre.",
-      "closed": "La plateforme ne permet plus au compte de répondre à cette conversation."
+      "closed": "Personne d’autre n’a encore écrit dans cette conversation : Peal répond, et n’écrit jamais le premier."
+    },
+    "settings": {
+      "title": "Messages privés : ce que Peal lit",
+      "description": "Rien des conversations privées d’un canal n’est lu tant que vous ne les activez pas pour lui. Les désactiver supprime aussitôt tout ce que Peal en a conservé.",
+      "on": "Messages lus",
+      "off": "Non lus",
+      "turnOn": "Lire ses messages",
+      "turnOff": "Arrêter, et supprimer ce qui a été conservé",
+      "none": "Aucun canal Mastodon ou Bluesky dans cet espace de travail.",
+      "applications": "Applications qui peuvent les lire et y répondre",
+      "applicationsDescription": "Une application connectée par OAuth, comme un assistant IA, liste les conversations, et ne les lit ou n’y répond qu’une fois que vous l’y autorisez. Indiquez l’identifiant de client qu’elle affiche dans son refus.",
+      "clientId": "Identifiant de client",
+      "allow": "Autoriser",
+      "revoke": "Retirer",
+      "noApplications": "Aucune application ne peut les lire.",
+      "failed": "Les réglages n’ont pas pu être enregistrés."
     }
   },
   "TwoStep": {

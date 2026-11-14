@@ -208,6 +208,14 @@ export class MessageStore extends Context.Service<
       calledBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly OutgoingMessage[], DatabaseError>;
+    /**
+     * The channel's messages sent from Peal still on their way whose call
+     * was never set out: deleting them sends nothing, so their outbound
+     * message is given back.
+     */
+    readonly unsentOf: (
+      channelId: ChannelId
+    ) => Effect.Effect<readonly OutgoingMessage[], DatabaseError>;
     /** The channels of the workspace whose direct messages it turned on. */
     readonly switchedOn: (
       workspaceId: WorkspaceId

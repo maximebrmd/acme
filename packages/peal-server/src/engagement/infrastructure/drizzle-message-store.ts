@@ -883,6 +883,24 @@ export const DrizzleMessageStore = Layer.effect(
       }
     );
 
+    const unsentOf = Effect.fn("MessageStore.unsentOf")(function* unsentOf(
+      channelId: string
+    ) {
+      const rows = yield* db
+        .select()
+        .from(outgoingMessages)
+        .where(
+          and(
+            eq(outgoingMessages.channelId, channelId),
+            eq(outgoingMessages.status, "sending"),
+            isNull(outgoingMessages.attemptedAt)
+          )
+        )
+        .pipe(Effect.mapError(failed));
+
+      return yield* Effect.all(rows.map(outgoingOfRow));
+    });
+
     const switchedOn = Effect.fn("MessageStore.switchedOn")(
       function* switchedOn(workspaceId: string) {
         const rows = yield* db
@@ -1012,6 +1030,7 @@ export const DrizzleMessageStore = Layer.effect(
       revokeApplication,
       switchedOn,
       switchOn,
+      unsentOf,
       box,
       channelGone,
       claimCall,

@@ -4107,7 +4107,8 @@
       "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month.",
       "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one.",
       "conversationNotFound": "This conversation no longer exists: it went with its channel, or past the time Peal keeps one.",
-      "messagePending": "A message to this conversation is on its way, or may have gone out. Wait until it is settled before writing another, so the same message never goes twice."
+      "messagePending": "A message to this conversation is on its way, or may have gone out. Wait until it is settled before writing another, so the same message never goes twice.",
+      "mentionsOutside": "The message mentions accounts outside the conversation ({mentions}), which a Mastodon direct message would reach too. Take the mentions out: nothing was sent."
     }
   },
   "InboxReviews": {
@@ -4156,7 +4157,7 @@
   },
   "InboxMessages": {
     "title": "Direct messages",
-    "description": "The private conversations people hold with your Mastodon and Bluesky accounts. Peal keeps a conversation {days, number} days after its last message, and never starts one.",
+    "description": "The private conversations people hold with your Mastodon and Bluesky accounts, for the channels whose messages your workspace turned on. Peal keeps each message {days, number} days after it was sent, and never starts a conversation.",
     "loadFailed": "The conversations could not be loaded.",
     "retry": "Try again",
     "row": {
@@ -4173,7 +4174,9 @@
       "private": "These messages are private: show them only to the people who need them.",
       "markRead": "Mark as read",
       "markUnread": "Mark as unread",
-      "request": "This person has not been accepted yet: answering accepts the conversation."
+      "request": "This person has not been accepted yet: answering accepts the conversation.",
+      "older": "Older messages",
+      "latest": "Latest messages"
     },
     "message": {
       "them": "Them",
@@ -4192,7 +4195,23 @@
       "sending": "Sending…",
       "sentToast": "The message is on its way.",
       "pending": "A message to this conversation is on its way. Wait until it has gone out to write another.",
-      "closed": "The platform no longer lets the account answer this conversation."
+      "closed": "Nobody else wrote in this conversation yet: Peal answers, and never writes first."
+    },
+    "settings": {
+      "title": "Direct messages: what Peal reads",
+      "description": "Nothing of a channel's private conversations is read until you turn them on for it. Turning them off deletes at once everything Peal kept of them.",
+      "on": "Messages read",
+      "off": "Not read",
+      "turnOn": "Read its messages",
+      "turnOff": "Stop, and delete what was kept",
+      "none": "No Mastodon or Bluesky channel in this workspace.",
+      "applications": "Applications that may read and answer them",
+      "applicationsDescription": "An application connected through OAuth, such as an AI assistant, lists conversations, and reads or answers them only once you let it. Give the client id it shows in its refusal.",
+      "clientId": "Client id",
+      "allow": "Allow",
+      "revoke": "Take back",
+      "noApplications": "No application may read them.",
+      "failed": "The settings could not be saved."
     }
   },
   "TwoStep": {
