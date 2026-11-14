@@ -1,8 +1,8 @@
-import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import { contentWithout } from "#publishing/domain/article-content.ts";
 import type { ArticleId } from "#publishing/domain/article-id.ts";
-import { edited as editedArticle } from "#publishing/domain/article.ts";
+import { fileDeleted, mayStillBeSent } from "#publishing/domain/article.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { keepingMedia, namesMedia } from "#publishing/domain/named-media.ts";
@@ -35,8 +35,8 @@ export interface MediaUse {
   readonly scheduled: readonly PostId[];
   /**
    * Articles that show it: those scheduled or publishing keep it from
-   * being deleted; drafts and failed ones lose it when it is, and one
-   * already on its site keeps the id it went out with.
+   * being deleted; drafts, failed ones and those to check lose it when it
+   * is, and one already on its site keeps the id it went out with.
    */
   readonly articles: {
     readonly drafts: readonly ArticleId[];
@@ -72,9 +72,12 @@ const ids = (posts: readonly Post[]) => posts.map(({ id }) => id);
 const goesOut = (article: Article) =>
   article.state._tag === "scheduled" || article.state._tag === "publishing";
 
-// The articles that show the media, by where they are.
+// The articles that show the media, by where they are: those on their
+// site, which keep the id they went out with, are in neither.
 const articleUse = (shown: readonly Article[]) => ({
-  drafts: shown.flatMap((article) => (goesOut(article) ? [] : [article.id])),
+  drafts: shown.flatMap((article) =>
+    mayStillBeSent(article) ? [article.id] : []
+  ),
   scheduled: shown.flatMap((article) => (goesOut(article) ? [article.id] : [])),
 });
 
@@ -271,19 +274,20 @@ export class MediaInPosts extends Context.Service<
           )
         );
 
-      // A draft or failed article without the media, under its row lock.
+      // An article that may still be sent without the media, under its
+      // row lock.
       const detachArticle = (article: Article, mediaId: MediaAssetId) =>
         DateTime.now.pipe(
           Effect.flatMap((now) =>
-            Result.match(
-              editedArticle(
+            Option.match(
+              fileDeleted(
                 article,
                 contentWithout(article.content, mediaId),
                 now
               ),
               {
-                onFailure: () => Effect.void,
-                onSuccess: (detached) =>
+                onNone: () => Effect.void,
+                onSome: (detached) =>
                   articles
                     .update(detached, article)
                     .pipe(

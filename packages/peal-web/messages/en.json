@@ -1913,7 +1913,7 @@
       "inUse": "{count, plural, one {A scheduled post shows it.} other {# scheduled posts show it.}} Take {count, plural, one {it} other {them}} back to draft and remove it first, or wait until {count, plural, one {it has} other {they have}} gone out.",
       "inUsePost": "Open scheduled post {number}",
       "inUseArticles": "{count, plural, one {A scheduled article shows it.} other {# scheduled articles show it.}} Take {count, plural, one {it} other {them}} back to draft and remove it first, or wait until {count, plural, one {it has} other {they have}} gone out.",
-      "draftArticlesKeep": "{count, plural, one {An article not yet sent shows it, and will lose it.} other {# articles not yet sent show it, and will lose it.}}",
+      "draftArticlesKeep": "{count, plural, one {An article not yet on its site shows it, and will lose it.} other {# articles not yet on their site show it, and will lose it.}}",
       "draftsLose": "{count, plural, one {A draft shows it, and will lose it.} other {# drafts show it, and will lose it.}}",
       "inUseFailed": "Scheduled posts show it now: take them back to draft first.",
       "deleteConfirm": "Delete",

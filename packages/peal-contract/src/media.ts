@@ -205,8 +205,8 @@ export const MediaUsageSchema = Schema.Struct({
   drafts: Schema.Array(Schema.String),
   // Posts scheduled or publishing, which keep it from being deleted.
   scheduled: Schema.Array(Schema.String),
-  // Articles not on their way out: drafts and failed ones lose it when it
-  // is deleted.
+  // Articles not yet on their site, nor on their way: drafts, failed ones
+  // and those to check, which lose it when it is deleted.
   draftArticles: Schema.Array(Schema.String),
   // Articles scheduled or publishing, which keep it from being deleted.
   scheduledArticles: Schema.Array(Schema.String),

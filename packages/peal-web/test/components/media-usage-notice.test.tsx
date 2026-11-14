@@ -91,7 +91,7 @@ describe(MediaUsageNotice, () => {
         scheduledArticles: [],
       })
     ).resolves.toContain(
-      "2 articles pas encore envoyés l’utilisent, et la perdront."
+      "2 articles pas encore sur leur site l’utilisent, et la perdront."
     );
   });
 });

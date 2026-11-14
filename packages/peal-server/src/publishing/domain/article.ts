@@ -275,6 +275,27 @@ export const edited = (
   );
 };
 
+/**
+ * The library deleted a file the article shows: a draft, one that failed
+ * or one to check loses it, as each may still be sent; one scheduled or
+ * being sent keeps the library from deleting it, and one on the site
+ * keeps the id it went out with.
+ */
+export const fileDeleted = (
+  article: Article,
+  content: ArticleContent,
+  now: DateTime.Utc
+): Option.Option<Article> =>
+  mayStillBeSent(article)
+    ? Option.some(changed(article, now, { content }))
+    : Option.none();
+
+/** A draft, one that failed, or one to check: none of them on its way. */
+export const mayStillBeSent = (article: Article): boolean =>
+  article.state._tag === "draft" ||
+  article.state._tag === "failed" ||
+  article.state._tag === "unconfirmed";
+
 /** The article goes out at `schedule`: a draft, or one scheduled or failed. */
 export const scheduled = (
   article: Article,

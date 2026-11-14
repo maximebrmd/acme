@@ -60,9 +60,6 @@ const uploadTimeout = Duration.minutes(10);
 // site's clock and Peal's may differ.
 const clockSlack = Duration.minutes(1);
 
-// The site's refusal of a featured image it does not have.
-const lostFileCode = "rest_invalid_featured_media";
-
 // The longest of WordPress's codes kept.
 const maxCodeLength = 100;
 
@@ -71,9 +68,15 @@ type Client = HttpClient.HttpClient.With<
 >;
 
 const PostSchema = Schema.Struct({
+  featured_media: Schema.optionalKey(Schema.Number),
   id: Schema.Number,
   link: Schema.optionalKey(Schema.String),
 });
+
+// Its id, address and featured image are all Peal reads of a post's
+// answer: WordPress drops a featured image its library no longer has, and
+// says so only by answering 0.
+const postFields = "featured_media,id,link";
 
 const FoundPostSchema = Schema.Struct({
   id: Schema.Number,
@@ -238,7 +241,7 @@ const postRoute = (
   routeUrl(
     token.root,
     `/wp/v2/posts/${encodeURIComponent(platformPostId)}`,
-    answered ? { _fields: "id,link" } : {}
+    answered ? { _fields: postFields } : {}
   );
 
 // The post's address, when it is a web page's: anything else the site
@@ -249,6 +252,12 @@ const webAddress = (link: string | undefined) => {
 
   return protocol === "https:" || protocol === "http:" ? link : undefined;
 };
+
+// Whether the site dropped the featured image Peal sent.
+const lostCover = (
+  fields: PostFields,
+  post: { readonly featured_media?: number }
+) => fields.featured_media !== 0 && post.featured_media === 0;
 
 const published = (post: {
   readonly id: number;
@@ -583,7 +592,7 @@ export const WordPressSitePublisherLive = Layer.effect(
               signed(
                 token,
                 HttpClientRequest.post(
-                  routeUrl(token.root, "/wp/v2/posts", { _fields: "id,link" })
+                  routeUrl(token.root, "/wp/v2/posts", { _fields: postFields })
                 ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
               )
             )
@@ -607,6 +616,16 @@ export const WordPressSitePublisherLive = Layer.effect(
           const post = yield* HttpClientResponse.schemaBodyJson(PostSchema)(
             response.value
           ).pipe(Effect.option);
+
+          if (Option.isSome(post) && lostCover(fields, post.value)) {
+            // Made without the cover the site lost: the files go once more,
+            // over the post just made, never as another. Should that fail,
+            // the post stands without it.
+            yield* journal.forgetFiles(article.id).pipe(Effect.ignore);
+            yield* updatePost(token, article, String(post.value.id)).pipe(
+              Effect.ignore
+            );
+          }
 
           return Option.isSome(post)
             ? published(post.value)
@@ -667,6 +686,46 @@ export const WordPressSitePublisherLive = Layer.effect(
       );
     });
 
+    // Sends what the article says over its post. A featured image the
+    // site's library lost, as when its administrator deleted it, comes
+    // back as 0: the article's files are sent once more.
+    const updatePost = Effect.fn("WordPressArticles.updatePost")(
+      function* updatePost(
+        token: SiteToken,
+        article: Article,
+        platformPostId: string
+      ) {
+        const send = fieldsOf(token, article, false).pipe(
+          Effect.flatMap((fields) =>
+            execute(
+              api,
+              signed(
+                token,
+                HttpClientRequest.post(
+                  postRoute(token, platformPostId, true)
+                ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
+              )
+            ).pipe(
+              Effect.flatMap(sentJson(PostSchema, [200])),
+              Effect.map((post) => ({ fields, post }))
+            )
+          )
+        );
+
+        const first = yield* send;
+
+        if (!lostCover(first.fields, first.post)) {
+          return first.post;
+        }
+
+        yield* journal
+          .forgetFiles(article.id)
+          .pipe(Effect.mapError(() => new PlatformUnavailable()));
+
+        return (yield* send).post;
+      }
+    );
+
     const update = Effect.fn("WordPressArticles.update")(function* update(
       article: Article,
       platformPostId: string
@@ -674,33 +733,7 @@ export const WordPressSitePublisherLive = Layer.effect(
       yield* credentials.withToken(article.channelId, (token) =>
         Effect.gen(function* updating() {
           // What it says, never how it stands: the site keeps its status.
-          const send = fieldsOf(token, article, false).pipe(
-            Effect.flatMap((fields) =>
-              execute(
-                api,
-                signed(
-                  token,
-                  HttpClientRequest.post(
-                    postRoute(token, platformPostId, true)
-                  ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
-                )
-              )
-            ),
-            Effect.flatMap(sentJson(PostSchema, [200]))
-          );
-
-          // The site lost a file it took, as when its administrator
-          // deleted it: the files are sent once more.
-          yield* send.pipe(
-            Effect.catchTag("BadRequest", (refused) =>
-              refused.code === lostFileCode
-                ? journal.forgetFiles(article.id).pipe(
-                    Effect.mapError(() => new PlatformUnavailable()),
-                    Effect.andThen(send)
-                  )
-                : Effect.fail(refused)
-            )
-          );
+          yield* updatePost(token, article, platformPostId);
         })
       );
     });

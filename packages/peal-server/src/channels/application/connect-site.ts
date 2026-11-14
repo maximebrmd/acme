@@ -44,9 +44,10 @@ export type ConnectSiteFailure =
   | SiteConnectLimited
   | SiteRefused;
 
-// The origin of an API root, as the channel keeps it.
-const originOf = (root: string) =>
-  URL.canParse(root) ? new URL(root).origin : root;
+// The host of an API root, as the channel keeps it: a site that moved to
+// HTTPS on its host is still that site.
+const rootHostOf = (root: string) =>
+  URL.canParse(root) ? new URL(root).host : root;
 
 // The host a site's handle (its home page, host and path) or a typed
 // address names, as the two compare.
@@ -262,7 +263,7 @@ export class ConnectSite extends Context.Service<
         )).find(
           (channel) =>
             channel.handle === connected.handle &&
-            originOf(channel.accountId) === originOf(site.accountId)
+            rootHostOf(channel.accountId) === rootHostOf(site.accountId)
         );
 
         if (moved !== undefined) {

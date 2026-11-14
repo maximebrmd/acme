@@ -244,12 +244,6 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
       const knownMedia = (id: number | undefined) =>
         id === undefined || id === 0 || files.some((file) => file.id === id);
 
-      const invalidFeaturedMedia = error(
-        400,
-        "rest_invalid_featured_media",
-        "Invalid featured media ID."
-      );
-
       const rootUrl = () =>
         pretty ? `${origin}/wp-json/` : `${origin}/?rest_route=/`;
 
@@ -340,10 +334,6 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
 
         const fields = postFieldsOf(request.body);
 
-        if (!knownMedia(fields.featured_media)) {
-          return invalidFeaturedMedia;
-        }
-
         nextId += 1;
 
         const post: FakeWordPressPost = {
@@ -352,7 +342,11 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
           content: fields.content ?? "",
           date_gmt: fields.date_gmt ?? null,
           excerpt: fields.excerpt ?? "",
-          featured_media: fields.featured_media ?? 0,
+          // A file the library does not have is dropped, as WordPress
+          // drops it: the post is saved without it, and no error said.
+          featured_media: knownMedia(fields.featured_media)
+            ? (fields.featured_media ?? 0)
+            : 0,
           id: nextId,
           modified_gmt: new Date().toISOString().slice(0, 19),
           status: fields.status ?? "draft",
@@ -431,12 +425,11 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
         if (request.method === "POST") {
           const fields = postFieldsOf(request.body);
 
-          if (!knownMedia(fields.featured_media)) {
-            return invalidFeaturedMedia;
-          }
-
           Object.assign(post, {
             ...fields,
+            featured_media: knownMedia(fields.featured_media)
+              ? (fields.featured_media ?? post.featured_media)
+              : 0,
             categories: [...(fields.categories ?? post.categories)],
             tags: [...(fields.tags ?? post.tags)],
           });

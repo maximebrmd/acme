@@ -41,6 +41,10 @@ const rootFor = (address: string) => {
     return "https://garden.example/?rest_route=/";
   }
 
+  if (address.endsWith("/before-tls")) {
+    return "http://garden.example/wp-json/";
+  }
+
   return address.startsWith("clone.example")
     ? "https://clone.example/wp-json/"
     : root;
@@ -232,6 +236,25 @@ layer(ConnectSiteTest)("connecting a website", (it) => {
         again.accountId,
         "https://garden.example/?rest_route=/"
       );
+      assert.lengthOf(yield* repository.list(workspaceId), 1);
+    })
+  );
+
+  it.effect("follows a site that moved to HTTPS on its host", () =>
+    Effect.gen(function* secured() {
+      const workspaceId = yield* freshWorkspace;
+      const sites = yield* ConnectSite;
+      const repository = yield* ChannelRepository;
+
+      const first = yield* sites.connect(manager(workspaceId), {
+        ...signIn(),
+        address: "garden.example/before-tls",
+      });
+
+      const again = yield* sites.connect(manager(workspaceId), signIn());
+
+      assert.strictEqual(again.id, first.id);
+      assert.strictEqual(again.accountId, root);
       assert.lengthOf(yield* repository.list(workspaceId), 1);
     })
   );

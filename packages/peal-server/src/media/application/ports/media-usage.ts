@@ -11,7 +11,10 @@ export interface AssetUse {
   readonly drafts: readonly PostId[];
   /** Posts scheduled or publishing, which keep it from being deleted. */
   readonly scheduled: readonly PostId[];
-  /** Articles not on their way out, which lose it when it is deleted. */
+  /**
+   * Articles not yet on their site nor on their way (drafts, failed, to
+   * check), which lose it when it is deleted.
+   */
   readonly draftArticles: readonly string[];
   /** Articles scheduled or publishing, which keep it from being deleted. */
   readonly scheduledArticles: readonly string[];

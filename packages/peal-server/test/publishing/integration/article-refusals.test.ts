@@ -396,4 +396,40 @@ describe("a file of the library an article shows", () => {
       })
     )
   );
+
+  it.effect(
+    "is taken off an article to check, which may then be sent again",
+    () =>
+      onArticles(
+        Effect.gen(function* toCheck() {
+          // Its answer lost, and nothing like it found: to check.
+          const { actor, sent } = yield* sentTo({
+            intercept: (request) =>
+              request.route === "/wp/v2/posts" &&
+              request.method === "POST" &&
+              request.query.get("search") === null
+                ? { body: "Bad Gateway", status: 502 }
+                : undefined,
+          });
+
+          assert.strictEqual(sent.state._tag, "unconfirmed");
+
+          const inPosts = yield* MediaInPosts.pipe(
+            Effect.provide(
+              MediaInPosts.layer.pipe(
+                Layer.provide(
+                  Layer.merge(DrizzlePostRepository, DrizzleArticleStore)
+                )
+              )
+            )
+          );
+
+          yield* inPosts.release(sent.workspaceId, coverImage.media.mediaId);
+
+          const kept = yield* (yield* Articles).get(actor, sent.id);
+
+          assert.isTrue(Option.isNone(kept.content.coverMediaId));
+        })
+      )
+  );
 });
