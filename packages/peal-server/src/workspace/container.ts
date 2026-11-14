@@ -31,6 +31,7 @@ import { CredentialCheck } from "#workspace/application/credential-check.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
+import { MoveCustomerChannel } from "#workspace/application/move-customer-channel.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
 import { Overview } from "#workspace/application/overview.ts";
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
@@ -59,6 +60,7 @@ import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextChannelCountsLive } from "#workspace/infrastructure/context-channel-counts.ts";
+import { ContextChannelMoverLive } from "#workspace/infrastructure/context-channel-mover.ts";
 import { ContextOverviewSourcesLive } from "#workspace/infrastructure/context-overview-sources.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
 import { CountedRequestLimits } from "#workspace/infrastructure/counted-request-limits.ts";
@@ -242,6 +244,7 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
   ConnectedApps.layer,
   DeleteWorkspace.layer,
   OffboardWorkspace.layer,
+  MoveCustomerChannel.layer.pipe(Layer.provide(ContextChannelMoverLive)),
   MeterPartnerUsage.layer.pipe(Layer.provideMerge(PartnerWorkspaces.layer))
 ).pipe(
   Layer.provide(

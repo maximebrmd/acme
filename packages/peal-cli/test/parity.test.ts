@@ -195,6 +195,7 @@ const coverage = {
   "partner.deleteWorkspace": exempt(partnerApi),
   "partner.getWorkspace": exempt(partnerApi),
   "partner.listWorkspaces": exempt(partnerApi),
+  "partner.moveChannel": exempt(partnerApi),
   "partner.overview": exempt(partnerApi),
   "partner.updateWorkspace": exempt(partnerApi),
   "partnerAccount.close": exempt(partnerSettings),

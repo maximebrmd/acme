@@ -3,6 +3,7 @@ import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import { ChannelMoves } from "#channels/application/channel-moves.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { ChannelOverview } from "#channels/application/channel-overview.ts";
 import { ChannelSettings } from "#channels/application/channel-settings.ts";
@@ -106,6 +107,7 @@ const UseCasesLive = Layer.mergeAll(
   ListChannels.layer,
   ChannelSettings.layer,
   DisconnectChannel.layer,
+  ChannelMoves.layer,
   // The links' sign-ins are ConnectChannel's, and their retention the
   // links' own.
   PurgeConnectLinks.layer.pipe(

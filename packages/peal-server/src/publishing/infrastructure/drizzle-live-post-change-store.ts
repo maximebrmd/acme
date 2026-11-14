@@ -177,7 +177,7 @@ export const DrizzleLivePostChangeStore = Layer.effect(
         select(changeId)
           .for("update")
           .pipe(Effect.mapError(failed), Effect.flatMap(changeFrom)),
-      lockOpen: (workspaceId) =>
+      lockOpen: (workspaceId, channelId) =>
         db
           .select({
             callFinishedAt: livePostChanges.callFinishedAt,
@@ -188,7 +188,10 @@ export const DrizzleLivePostChangeStore = Layer.effect(
           .where(
             and(
               eq(livePostChanges.workspaceId, workspaceId),
-              eq(livePostChanges.status, "pending")
+              eq(livePostChanges.status, "pending"),
+              channelId === undefined
+                ? undefined
+                : eq(livePostChanges.channelId, channelId)
             )
           )
           .orderBy(asc(livePostChanges.id))

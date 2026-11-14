@@ -120,6 +120,38 @@ Les pages suivent la liste de vos espaces de travail : du plus récent au plus a
 
 Les propriétaires et administrateurs de votre espace principal lisent la même chose à `GET /api/workspaces/{homeWorkspaceId}/partner/overview` (`partner:read`), dans **Paramètres**, puis **Partenaire**, et avec `peal partner overview` ([ligne de commande](/developers/cli/workspace#partner)). Ils voient chaque section là où ils en détiennent la permission dans l’espace principal (l’équipe qui agit à leur place ne lit pas la boîte de réception), et `mayApprove` vaut toujours faux, car ils ne sont membres d’aucun espace de client.
 
+## Déplacer un canal vers un autre client [#move-channel]
+
+Quand un compte a été connecté à l’espace de travail du mauvais client, ou que le compte d’un client revient désormais à un autre de vos clients, déplacez-y son canal. Personne ne se reconnecte : le compte, ses jetons et son état le suivent, et rien n’est demandé à la plateforme.
+
+```bash
+curl -X POST https://api.example.com/api/partner/workspaces/$FROM/channels/$CHANNEL/move \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toWorkspaceId": "'$TO'"}'
+```
+
+La réponse est le canal dans l’espace de travail où il est allé, sous un nouvel identifiant : gardez celui-là. L’espace de travail qu’il a quitté envoie [`channel.disconnected`](/developers/webhooks/events/channels#channel-disconnected), l’autre [`channel.connected`](/developers/webhooks/events/channels#channel-connected), et le [journal d’activité](/guides/workspace#activity) de chacun garde le déplacement.
+
+| Quoi                                      | Après le déplacement                                                                                                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le compte, ses jetons, son état           | Dans l’espace de travail où il est allé. Un canal désactivé le reste ; un canal à reconnecter le reste aussi.                                                                     |
+| Son nom dans l’espace de travail          | Laissé derrière : l’autre espace de travail lui donne le sien.                                                                                                                    |
+| Publications, brouillons et programmées   | Restent dans l’espace de travail où elles ont été faites. Celles encore à publier sur le canal y échouent comme celles d’un canal déconnecté : déplacez-les ou changez-les avant. |
+| Files, ensembles de canaux, recyclage     | Restent, et passent le canal comme un canal déconnecté.                                                                                                                           |
+| Statistiques                              | Les chiffres de l’espace de travail quitté y restent, gardés une semaine comme ceux d’un canal déconnecté, et reviennent s’il revient dans la semaine. L’autre repart de zéro.    |
+| Fils de la boîte de réception et messages | Finissent dans l’espace de travail quitté, comme ceux d’un canal déconnecté. L’autre lit à nouveau les commentaires et les messages du compte.                                    |
+| Abonnement et utilisation                 | Vos espaces de travail partagent un abonnement : le déplacement ne compte aucun canal de plus, et aucune limite ne le refuse.                                                     |
+
+| Réponse                   | Pourquoi                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 404 `WorkspaceNotFound`   | L’un des espaces de travail n’appartient pas à votre compte partenaire : votre espace de travail principal et ceux des autres compris |
+| 404 `ChannelNotFound`     | L’espace de travail n’a aucun canal portant cet identifiant                                                                           |
+| 409 `ChannelAccountTaken` | L’espace de travail visé a un canal du même compte (`channelId`), ou est celui où il se trouve                                        |
+| 409 `WorkspaceBusy`       | Une publication, ou un changement d’une publication en ligne, part par le canal : renvoyez la requête un instant plus tard            |
+
+Il faut la portée `workspaces:write`, et les permissions `channel:connect` et `channel:disconnect` sur la clé.
+
 ## Retirer un client [#offboard]
 
 ```typescript

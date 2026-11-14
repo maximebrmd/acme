@@ -120,6 +120,38 @@ Pages follow the list of your workspaces: newest first, 50 a page unless `limit`
 
 The owners and admins of your home workspace read the same at `GET /api/workspaces/{homeWorkspaceId}/partner/overview` (`partner:read`), in **Settings**, then **Partner**, and with `peal partner overview` ([command line](/developers/cli/workspace#partner)). They see each section where they hold its permission in the home workspace (staff acting as one read no inbox), and `mayApprove` is always false, as they are members of no customer's workspace.
 
+## Move a channel to another customer [#move-channel]
+
+When an account was connected to the wrong customer's workspace, or a customer's account now belongs with another of your customers, move its channel there. Nobody signs in again: the account, its tokens and its status go with it, and the platform is asked nothing.
+
+```bash
+curl -X POST https://api.example.com/api/partner/workspaces/$FROM/channels/$CHANNEL/move \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toWorkspaceId": "'$TO'"}'
+```
+
+The answer is the channel in the workspace it went to, under a new id: keep that one. The workspace it left sends [`channel.disconnected`](/developers/webhooks/events/channels#channel-disconnected), the other [`channel.connected`](/developers/webhooks/events/channels#channel-connected), and both workspaces' [activity logs](/guides/workspace#activity) keep the move.
+
+| What                                | After the move                                                                                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The account, its tokens, its status | In the workspace it went to. A channel turned off stays off; one to reconnect stays to reconnect.                                                                    |
+| Its name in the workspace           | Left behind: the other workspace gives it its own.                                                                                                                   |
+| Posts, drafts and scheduled posts   | Stay in the workspace they were made in. Those still to go out on the channel fail there as a disconnected channel's do: move or change them before.                 |
+| Queues, channel sets, recycling     | Stay, and pass the channel over as a disconnected one.                                                                                                               |
+| Analytics                           | The numbers of the workspace it left stay there, kept a week as a disconnected channel's are, and come back if it returns within that week. The other starts afresh. |
+| Inbox threads and direct messages   | End in the workspace it left, as a disconnected channel's do. The other reads the account's comments and messages afresh.                                            |
+| Plan and usage                      | Your workspaces share one plan: the move counts no channel more, and no plan limit refuses it.                                                                       |
+
+| Answer                    | Why                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 404 `WorkspaceNotFound`   | Either workspace is not one your partner account owns: your home workspace and anyone else's included |
+| 404 `ChannelNotFound`     | The workspace has no channel with this id                                                             |
+| 409 `ChannelAccountTaken` | The workspace it goes to has a channel of the same account (`channelId`), or is the one it is in      |
+| 409 `WorkspaceBusy`       | A post, or a change of a live post, is being sent through the channel: send it again a moment later   |
+
+It needs the scope `workspaces:write`, and the key's permissions `channel:connect` and `channel:disconnect`.
+
 ## Offboard a customer [#offboard]
 
 ```typescript

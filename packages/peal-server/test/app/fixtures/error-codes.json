@@ -165,6 +165,11 @@
     "tag": "CeilingCurrencyMismatch"
   },
   {
+    "code": "channel_account_taken",
+    "status": 409,
+    "tag": "ChannelAccountTaken"
+  },
+  {
     "code": "channel_cannot_post",
     "status": 409,
     "tag": "ChannelCannotPost"

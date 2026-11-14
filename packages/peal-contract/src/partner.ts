@@ -9,6 +9,9 @@ import {
 
 import { Authentication } from "./authentication.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
+import { ChannelAccountTaken } from "./channel-account-taken.ts";
+import { ChannelNotFound } from "./channel-not-found.ts";
+import { ChannelSchema } from "./channels.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { ExternalIdTaken } from "./external-id-taken.ts";
 import { Forbidden } from "./forbidden.ts";
@@ -149,6 +152,14 @@ export const CustomerWorkspaceChangeSchema = Schema.Struct({
 
 export type CustomerWorkspaceChange = typeof CustomerWorkspaceChangeSchema.Type;
 
+/** Where to move a channel: another workspace of the partner. */
+export const ChannelMoveSchema = Schema.Struct({
+  // The workspace the channel goes to, which the partner owns.
+  toWorkspaceId: Schema.String,
+}).annotate({ identifier: "ChannelMove" });
+
+export type ChannelMove = typeof ChannelMoveSchema.Type;
+
 /** The filters and the page of a list of a partner's workspaces. */
 export const workspaceListQuery = {
   before: Schema.optionalKey(Schema.String),
@@ -261,6 +272,27 @@ export class PartnerApi extends HttpApiGroup.make("partner")
       OpenApi.annotations({
         description: `Changes a workspace's name or external id: what is left out stays as it is, and a null \`externalId\` removes it. An external id another of the partner's workspaces has answers 409 \`ExternalIdTaken\`. Needs the scope workspaces:write. ${keyOnly}`,
         summary: "Change a workspace of the partner",
+      })
+    ),
+    HttpApiEndpoint.post(
+      "moveChannel",
+      "/workspaces/:workspaceId/channels/:channelId/move",
+      {
+        error: [
+          Forbidden,
+          WorkspaceNotFound,
+          ChannelNotFound,
+          ChannelAccountTaken,
+          WorkspaceBusy,
+        ],
+        params: { ...workspace, channelId: Schema.String },
+        payload: ChannelMoveSchema,
+        success: ChannelSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description: `Moves a channel from a workspace the partner owns to another one it owns (\`toWorkspaceId\`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (\`channel.disconnected\` there, \`channel.connected\` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 \`ChannelAccountTaken\`; while a post or a change of a live post is being sent through the channel, 409 \`WorkspaceBusy\`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. ${keyOnly}`,
+        summary: "Move a channel to another workspace of the partner",
       })
     ),
     HttpApiEndpoint.delete("deleteWorkspace", "/workspaces/:workspaceId", {

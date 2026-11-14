@@ -252,6 +252,7 @@ const signedInGroupsLive = (
         deleteWorkspace: () => refusing,
         getWorkspace: () => refusing,
         listWorkspaces: () => refusing,
+        moveChannel: () => refusing,
         overview: () => refusing,
         updateWorkspace: () => refusing,
       })

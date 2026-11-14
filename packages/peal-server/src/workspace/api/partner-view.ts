@@ -1,5 +1,6 @@
 import { Option } from "effect";
 import type {
+  Channel as ChannelView,
   PartnerHealth,
   CustomerWorkspace as CustomerWorkspaceView,
   CustomerWorkspacePage as CustomerWorkspacePageView,
@@ -8,6 +9,7 @@ import type {
   PartnerUsage as PartnerUsageView,
 } from "peal-contract";
 
+import type { MovedChannel } from "#workspace/application/channel-mover.ts";
 import type { HealthPage } from "#workspace/application/partner-health.ts";
 import type {
   CountedWorkspace,
@@ -81,4 +83,20 @@ export const partnerHealthView = (page: HealthPage): PartnerHealth => ({
     name: workspace.name,
     posts: Option.getOrNull(posts),
   })),
+});
+
+/**
+ * A channel moved to another workspace, as the channels endpoints show
+ * one: never its tokens, and without a name there yet.
+ */
+export const movedChannelView = (channel: MovedChannel): ChannelView => ({
+  avatarUrl: Option.getOrNull(channel.avatarUrl),
+  connection: Option.getOrNull(channel.connection),
+  displayName: Option.getOrNull(channel.displayName),
+  handle: channel.handle,
+  id: channel.id,
+  label: null,
+  platform: channel.platform,
+  status: channel.status,
+  tokenExpiresAt: Option.getOrNull(channel.tokenExpiresAt),
 });

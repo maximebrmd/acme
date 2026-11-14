@@ -17,11 +17,28 @@
   (connected, `refreshNeeded` to reconnect, `disabled` off) and gives the
   platforms of the channels an agenda names, for the overview across
   workspaces: ids as one `anyUuid` parameter, no permission checked.
-- A channel added (`ConnectChannel.addChannel`, the one path that inserts
-  one) is counted for billing in the same `addingTo` transaction, after
+- A channel added (`ConnectChannel.addChannel`, or a move, below) is
+  counted for billing in the same `addingTo` transaction, after
   the insert: `ChannelAllowance.counted` with the pool's count, which only
   a server that bills reads (billing's account-days). A new path that adds
-  a channel calls it too; moving or reconnecting one adds none.
+  a channel calls it too; reconnecting one adds none.
+- A channel moves to another workspace of its pool through `ChannelMoves`
+  (the caller decides who may: the workspace context's
+  `MoveCustomerChannel`, a partner's customers): a new channel there with
+  a new id (`movedChannel`: same account, scopes, token and status, no
+  label, `createdAt` now), its tokens re-bound to it (`rebindTokens`:
+  decrypted for the old id, encrypted for the new, `granted_by` and
+  `token_owner` kept, which `credentials` reads), the platform asked
+  nothing. Under the channel's lock, then one transaction: the caller's
+  `inside` check, both workspaces' `addingTo` (smaller id first), the old
+  row removed and `ChannelEvents.disconnected` (`moved`), the new one
+  inserted, `ChannelAllowance.counted` with the pool, then
+  `ChannelEvents.connected`. So the workspace it leaves sees a
+  disconnection (posts fail as a disconnected channel's, analytics keeps
+  a week, the inbox ends its threads and deletes its messages) and the
+  other a new connection; no plan limit is asked, as the pool holds as
+  many accounts. An account the other workspace has is
+  `ChannelAccountTaken`.
 - On a server that bills, an account of a platform whose calls are passed
   through at the platform's rates (X, on the `xApi` meter) is connected
   only on per-account pricing that pays: `ChannelAllowance.passedThrough`

@@ -2,7 +2,7 @@
 // workspace, and what reaches the outbox to Stripe: on Postgres, with the
 // billing accounts, subscriptions and channels as the server keeps them.
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Redacted } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { AccountDays } from "#billing/application/account-days.ts";
@@ -20,7 +20,9 @@ import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-acco
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
+import { ChannelMoves } from "#channels/application/channel-moves.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { encryptTokens } from "#channels/application/channel-tokens.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
@@ -94,6 +96,7 @@ const AccountDaysTest = AccountDays.layer.pipe(
 // read from its billing workspace's subscriptions.
 const ConnectingTest = Layer.mergeAll(
   ConnectChannel.layer,
+  ChannelMoves.layer,
   ChannelUsage.layer
 ).pipe(
   Layer.provideMerge(
@@ -162,6 +165,30 @@ const fill = Effect.fn("fill")(function* fill(
 
     yield* repository.insert(channel, syntheticCredentials(channel));
   }
+});
+
+// A channel of the workspace whose tokens open, as a move reads them.
+const connectedIn = Effect.fn("connectedIn")(function* connectedIn(
+  workspaceId: WorkspaceId
+) {
+  const repository = yield* ChannelRepository;
+  const channel = yield* freshChannel(workspaceId);
+
+  yield* repository.insert(
+    channel,
+    yield* encryptTokens(
+      {
+        accessToken: Redacted.make("synthetic-access-token"),
+        expiresAt: Option.none(),
+        refreshToken: Option.none(),
+        renewable: false,
+        scopes: [],
+      },
+      channel.id
+    )
+  );
+
+  return channel;
 });
 
 interface Row {
@@ -422,6 +449,47 @@ layer(DaysTest)("the account-days", (it) => {
         assert.deepStrictEqual(yield* keptOf(empty), { days: [], reports: [] });
 
         yield* cleanUp([holder, empty]);
+      })
+  );
+
+  it.effect(
+    "hold a channel moved between a partner's customers once, on its home's day",
+    () =>
+      Effect.gen(function* moved() {
+        const days = yield* AccountDays;
+        const moves = yield* ChannelMoves;
+        const day = yield* today;
+        const home = yield* paying;
+        const from = yield* workspaceOwnedBy([]);
+        const to = yield* workspaceOwnedBy([]);
+
+        yield* partnerOf(home, [from, to]);
+
+        const channel = yield* connectedIn(from);
+
+        yield* connectedIn(from);
+        // As their connections counted them.
+        yield* days.counted(from, Effect.succeed(2));
+
+        yield* moves.move({
+          channelId: channel.id,
+          from,
+          inside: Effect.void,
+          to,
+        });
+
+        const kept = yield* keptOf(home);
+
+        // Still two accounts in the pool: the day, and what it reported,
+        // are as they were.
+        assert.deepStrictEqual(kept.days, [{ day, peak: 2, reported: 2 }]);
+        assert.deepStrictEqual(
+          kept.reports.map(({ identifier, value }) => ({ identifier, value })),
+          [{ identifier: identifierOf(home, day, 2), value: 2 }]
+        );
+        assert.deepStrictEqual((yield* keptOf(to)).days, []);
+
+        yield* cleanUp([home, from, to]);
       })
   );
 

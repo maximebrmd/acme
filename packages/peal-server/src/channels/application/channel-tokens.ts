@@ -32,6 +32,49 @@ export const encryptTokens = Effect.fn("ChannelTokens.encrypt")(
   }
 );
 
+/**
+ * A channel's stored tokens bound to another channel's id, as a channel
+ * that moves to another workspace becomes a new channel there: decrypted
+ * for the one, encrypted for the other, with whom they rest on and belong
+ * to kept as they are.
+ */
+export const rebindTokens = Effect.fn("ChannelTokens.rebind")(
+  function* rebindTokens(
+    credentials: ChannelCredentials,
+    from: ChannelId,
+    to: ChannelId
+  ) {
+    const cipher = yield* TokenCipher;
+
+    const accessToken = yield* cipher.encrypt(
+      yield* cipher.decrypt(credentials.accessToken, from),
+      to
+    );
+
+    const refreshToken = Option.isSome(credentials.refreshToken)
+      ? Option.some(
+          yield* cipher.encrypt(
+            yield* cipher.decrypt(credentials.refreshToken.value, from),
+            to
+          )
+        )
+      : Option.none();
+
+    return new ChannelCredentials({
+      accessToken,
+      refreshToken,
+      ...Option.match(Option.fromUndefinedOr(credentials.grantedBy), {
+        onNone: () => ({}),
+        onSome: (grantedBy) => ({ grantedBy }),
+      }),
+      ...Option.match(Option.fromUndefinedOr(credentials.tokenOwner), {
+        onNone: () => ({}),
+        onSome: (tokenOwner) => ({ tokenOwner }),
+      }),
+    });
+  }
+);
+
 /** A channel's stored tokens, decrypted for the platform call that needs them. */
 export const decryptTokens = Effect.fn("ChannelTokens.decrypt")(
   function* decryptTokens(

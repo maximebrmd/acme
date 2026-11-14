@@ -208,6 +208,51 @@ describe("PostRecords.eraseWorkspace", () => {
     timeout
   );
 
+  it.effect(
+    "keeps a channel while a post goes out through it, and only that channel",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* channelBusy() {
+          const platform = yield* FakePlatform;
+          const records = yield* PostRecords;
+          const channel = yield* newChannel;
+          const other = yield* newChannel;
+
+          yield* platform.script(channel, [{ _tag: "hang" }]);
+
+          const post = yield* schedulePost(
+            [channel],
+            scheduleIn("2026-06-15T08:00:00Z")
+          );
+
+          // Scheduled, not yet going out: nothing keeps the channel.
+          yield* records.ensureChannelIdle(post.workspaceId, channel);
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually(
+            "the call is in flight",
+            platform.calls.pipe(Effect.map((calls) => calls.length === 1))
+          );
+
+          const refused = yield* records
+            .ensureChannelIdle(post.workspaceId, channel)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "PostsPublishing");
+
+          // Another channel of the workspace is not kept by it.
+          yield* records.ensureChannelIdle(post.workspaceId, other);
+
+          yield* platform.release(channel);
+          yield* eventually("the post finishes", isFinished(post.id));
+          yield* records.ensureChannelIdle(post.workspaceId, channel);
+        }).pipe(Effect.provide(PostRecordsTest))
+      ),
+    timeout
+  );
+
   // A post of two parts, the second an hour after the first, at 08:00.
   const scheduleThread = Effect.fn("test.scheduleThread")(
     function* scheduleThread(channel: ChannelId) {

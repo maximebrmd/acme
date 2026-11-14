@@ -559,7 +559,7 @@ export const DrizzleWorkspacePostStore = Layer.effect(
     );
 
     const lockRounds = Effect.fn("WorkspacePostStore.lockRounds")(
-      function* lockRounds(workspaceId: string) {
+      function* lockRounds(workspaceId: string, channelId?: string) {
         // FOR UPDATE waits for a call that is writing its journal row,
         // which holds the target's key, and then sees the row.
         const targets = yield* db
@@ -569,7 +569,10 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .where(
             and(
               eq(posts.workspaceId, workspaceId),
-              eq(posts.status, "publishing")
+              eq(posts.status, "publishing"),
+              channelId === undefined
+                ? undefined
+                : eq(postTargets.channelId, channelId)
             )
           )
           .orderBy(asc(postTargets.id))
