@@ -513,6 +513,38 @@ groups:
                     type: gt
                     params: [2.5]
 
+      - uid: peal-reviews-behind
+        title: The reviews collection falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three hourly collections of reviews stopped at their budget with locations still due (peal.engagement.reviews.unfinished). Reviews reach the inbox later than their schedule says, and a review may be forgotten before it was shown. Read the server's warnings for Google refusing or slowing the reads (a project without access to the Business Profile APIs has no quota).
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run every hour: three in the window.
+              expr: sum(increase(peal_engagement_reviews_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-comments-thread-failing
         title: A thread's comments keep failing to be kept
         condition: B
