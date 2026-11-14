@@ -6,10 +6,10 @@ it, its R2 buckets with their lifecycle and CORS rules, the addresses
 Email Routing forwards, the short-link domain, peal.link, and the uptime
 server's records and service token. TypeScript, run by Bun (`runtime: bun`).
 
-| Project       | Stacks                  | What it holds                                                                                                                                      |
-| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `account`     | `peal`                  | What the account shares: the Access policies, the forwarded addresses, the short-link domain, the uptime server's records                          |
-| `environment` | `sandbox`, `production` | An environment's tunnel, host names (its short-link one included), Access applications, buckets, the sandbox's service token for the uptime server |
+| Project       | Stacks                  | What it holds                                                                                                                                          |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `account`     | `peal`                  | What the account shares: the Access policies, the forwarded addresses, the short-link domain, the uptime server's records, the Bluesky handle's record |
+| `environment` | `sandbox`, `production` | An environment's tunnel, host names (its short-link one included), Access applications, buckets, the sandbox's service token for the uptime server     |
 
 Each environment's stack reads the policies from the account's stack, so
 the account comes first. Pulumi comes before Ansible: the Ansible project

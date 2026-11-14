@@ -57,6 +57,7 @@ const uptimeRecords = (
  * The owner's address is a secret of the stack.
  */
 export class PealAccount extends pulumi.ComponentResource {
+  readonly blueskyHandleRecord: cloudflare.DnsRecord | undefined;
   readonly forwardedAddresses: readonly pulumi.Output<string>[];
   readonly ownerPolicyId: pulumi.Output<string>;
   readonly publicCallbacksPolicyId: pulumi.Output<string>;
@@ -128,6 +129,24 @@ export class PealAccount extends pulumi.ComponentResource {
             parent: this,
             protect: true,
           });
+
+    // The domain is the handle of Peal's Bluesky account: Bluesky reads the
+    // account's DID from this record.
+    this.blueskyHandleRecord =
+      settings.blueskyDid === undefined
+        ? undefined
+        : new cloudflare.DnsRecord(
+            "bluesky-handle",
+            {
+              content: `"did=${settings.blueskyDid}"`,
+              name: `_atproto.${domain}`,
+              proxied: false,
+              ttl: 1,
+              type: "TXT",
+              zoneId,
+            },
+            { parent: this }
+          );
 
     this.forwardedAddresses = forwards.map((rule) =>
       rule.matchers.apply((matchers) => matchers[0]?.value ?? "")
