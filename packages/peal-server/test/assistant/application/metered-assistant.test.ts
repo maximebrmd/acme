@@ -1,7 +1,7 @@
 // The writing assistant on a server that bills: the server's model
 // claims the billing account's meters, a workspace's own provider none.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Fiber, Option, Ref } from "effect";
+import { Deferred, Effect, Fiber, Option, Ref } from "effect";
 import { AiError } from "effect/ai";
 import { TestClock } from "effect/testing";
 
@@ -198,6 +198,51 @@ layer(DatabaseTest, { timeout: "60 seconds" })(
         assert.lengthOf(forgiven, 1);
         assert.strictEqual(used.get("assistantRequests"), 0);
       }).pipe(Effect.provide(paying(2)))
+    );
+
+    // The claim is counted, then the request is interrupted before it
+    // answers: the unit must still be taken back, never left claimed.
+    const claimed = Deferred.makeUnsafe<boolean>();
+
+    it.effect(
+      "takes back the request interrupted between its claim and the model",
+      () =>
+        Effect.gen(function* interrupted() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* FakeModel.use((model) => model.replyWith(silence));
+
+          const asking = yield* ask(workspaceId).pipe(Effect.forkChild);
+
+          while ((yield* ledger).claims.length === 0) {
+            yield* TestClock.withLive(Effect.sleep("5 millis"));
+          }
+
+          const stopping = yield* Fiber.interrupt(asking).pipe(
+            Effect.forkChild
+          );
+
+          yield* TestClock.withLive(Effect.sleep("20 millis"));
+          yield* Deferred.succeed(claimed, true);
+          yield* Fiber.join(stopping);
+
+          const { claims, forgiven, givenBack, used } = yield* ledger;
+
+          assert.lengthOf(claims, 1);
+          assert.lengthOf([...forgiven, ...givenBack], 1);
+          assert.strictEqual(used.get("assistantRequests"), 0);
+          assert.lengthOf(yield* prompts, 0);
+        }).pipe(
+          Effect.provide(
+            assistantTest({
+              meters: fakeMeters({
+                afterClaim: Deferred.await(claimed).pipe(Effect.asVoid),
+                allowed: Option.some(2),
+              }),
+              metered: true,
+            })
+          )
+        )
     );
 
     it.effect(
