@@ -21,9 +21,23 @@ class MediaUsage extends JsonSerializableType
     public array $scheduled;
 
     /**
+     * @var array<string> $draftArticles
+     */
+    #[JsonProperty('draftArticles'), ArrayType(['string'])]
+    public array $draftArticles;
+
+    /**
+     * @var array<string> $scheduledArticles
+     */
+    #[JsonProperty('scheduledArticles'), ArrayType(['string'])]
+    public array $scheduledArticles;
+
+    /**
      * @param array{
      *   drafts: array<string>,
      *   scheduled: array<string>,
+     *   draftArticles: array<string>,
+     *   scheduledArticles: array<string>,
      * } $values
      */
     public function __construct(
@@ -31,6 +45,8 @@ class MediaUsage extends JsonSerializableType
     ) {
         $this->drafts = $values['drafts'];
         $this->scheduled = $values['scheduled'];
+        $this->draftArticles = $values['draftArticles'];
+        $this->scheduledArticles = $values['scheduledArticles'];
     }
 
     /**

@@ -19,14 +19,18 @@ import {
   Layer,
   Logger,
   Option,
+  Redacted,
   References,
   Schema,
   Tracer,
 } from "effect";
+import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 import sharp from "sharp";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { SiteVerifier } from "#channels/application/site-verifier.ts";
+import { WordPressSiteVerifierLive } from "#channels/infrastructure/platforms/wordpress/wordpress-site-verifier.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
@@ -43,7 +47,12 @@ import {
   DatabaseTest as AssistantDatabaseTest,
   imagesTest,
 } from "#test/assistant/support.ts";
-import { DatabaseTest, syntheticKeyring } from "#test/channels/support.ts";
+import { editor, fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
+import {
+  OpenOutboundGuard,
+  DatabaseTest,
+  syntheticKeyring,
+} from "#test/channels/support.ts";
 import { storageSettings } from "#test/media/support.ts";
 import {
   facebookPageId,
@@ -429,6 +438,54 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
         // The upload was written about, with its address.
         assert.include(written(), "/video-upload/");
         assert.notInclude(written(), token);
+      }).pipe(Effect.scoped)
+  );
+});
+
+// The site's password goes on the wire, to a fake site on loopback with
+// the guard open: what is written about those calls never holds it.
+layer(
+  Layer.mergeAll(
+    capture,
+    Layer.succeed(Tracer.Tracer, tracer),
+    WordPressSiteVerifierLive.pipe(
+      Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+    )
+  ),
+  { excludeTestServices: true, timeout: "60 seconds" }
+)("what the server writes about checking a website", (it) => {
+  it.effect(
+    "holds no application password, which every call carries in its Authorization header",
+    () =>
+      Effect.gen(function* searched() {
+        const onTheWire = "synthetic site password on the wire";
+
+        const site = yield* fakeWordPress({
+          users: [{ ...editor, password: onTheWire }],
+        });
+
+        const verified = yield* SiteVerifier.use((verifier) =>
+          verifier.verify({
+            address: site.home,
+            applicationPassword: Redacted.make(onTheWire),
+            platform: "wordpress",
+            userName: editor.login,
+          })
+        ).pipe(Effect.withSpan("test.website"));
+
+        assert.strictEqual(verified.accountId, site.root);
+        // It went on the wire.
+        assert.isTrue(
+          site
+            .requests()
+            .some(
+              ({ authorization }) =>
+                authorization?.startsWith("Basic ") === true
+            )
+        );
+        assert.include(written(), "/wp/v2/users/me");
+        assert.notInclude(written(), onTheWire);
+        assert.notInclude(written(), onTheWire.replaceAll(" ", ""));
       }).pipe(Effect.scoped)
   );
 });

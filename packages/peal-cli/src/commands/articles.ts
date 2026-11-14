@@ -212,7 +212,7 @@ const create = Command.make(
     channel: Flag.String("channel").pipe(
       Flag.withMetavar("<channel-id>"),
       Flag.withDescription(
-        "The website's channel, as peal channels list --platform wordpress shows its id."
+        "The website's channel, as peal channels list shows its id."
       )
     ),
     json: jsonFlag,

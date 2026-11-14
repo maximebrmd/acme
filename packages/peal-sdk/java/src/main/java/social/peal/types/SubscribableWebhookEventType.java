@@ -55,6 +55,9 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType REVIEW_REPLIED =
             new SubscribableWebhookEventType(Value.REVIEW_REPLIED, "review.replied");
 
+    public static final SubscribableWebhookEventType ARTICLE_PUBLISHED =
+            new SubscribableWebhookEventType(Value.ARTICLE_PUBLISHED, "article.published");
+
     public static final SubscribableWebhookEventType MESSAGE_SENT =
             new SubscribableWebhookEventType(Value.MESSAGE_SENT, "message.sent");
 
@@ -114,6 +117,9 @@ public final class SubscribableWebhookEventType {
 
     public static final SubscribableWebhookEventType POST_UNPUBLISHED =
             new SubscribableWebhookEventType(Value.POST_UNPUBLISHED, "post.unpublished");
+
+    public static final SubscribableWebhookEventType ARTICLE_FAILED =
+            new SubscribableWebhookEventType(Value.ARTICLE_FAILED, "article.failed");
 
     private final Value value;
 
@@ -180,6 +186,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitBoostUnconfirmed();
             case REVIEW_REPLIED:
                 return visitor.visitReviewReplied();
+            case ARTICLE_PUBLISHED:
+                return visitor.visitArticlePublished();
             case MESSAGE_SENT:
                 return visitor.visitMessageSent();
             case POST_UNCONFIRMED:
@@ -220,6 +228,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitMediaReady();
             case POST_UNPUBLISHED:
                 return visitor.visitPostUnpublished();
+            case ARTICLE_FAILED:
+                return visitor.visitArticleFailed();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -261,6 +271,8 @@ public final class SubscribableWebhookEventType {
                 return BOOST_UNCONFIRMED;
             case "review.replied":
                 return REVIEW_REPLIED;
+            case "article.published":
+                return ARTICLE_PUBLISHED;
             case "message.sent":
                 return MESSAGE_SENT;
             case "post.unconfirmed":
@@ -301,6 +313,8 @@ public final class SubscribableWebhookEventType {
                 return MEDIA_READY;
             case "post.unpublished":
                 return POST_UNPUBLISHED;
+            case "article.failed":
+                return ARTICLE_FAILED;
             default:
                 return new SubscribableWebhookEventType(Value.UNKNOWN, value);
         }
@@ -379,6 +393,10 @@ public final class SubscribableWebhookEventType {
 
         BOOST_BUDGET_REACHED,
 
+        ARTICLE_PUBLISHED,
+
+        ARTICLE_FAILED,
+
         UNKNOWN
     }
 
@@ -454,6 +472,10 @@ public final class SubscribableWebhookEventType {
         T visitBoostUnconfirmed();
 
         T visitBoostBudgetReached();
+
+        T visitArticlePublished();
+
+        T visitArticleFailed();
 
         T visitUnknown(String unknownType);
     }

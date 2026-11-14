@@ -12,7 +12,8 @@ export type ArticleViolation =
     | Peal.ArticleViolation.TermInvalid
     | Peal.ArticleViolation.SiteTimeInPast
     | Peal.ArticleViolation.TimeInPast
-    | Peal.ArticleViolation.CoverNotImage;
+    | Peal.ArticleViolation.CoverNotImage
+    | Peal.ArticleViolation.ApprovalRequired;
 
 export namespace ArticleViolation {
     export interface TitleMissing extends Peal.ArticleViolationTitleMissing {
@@ -53,5 +54,9 @@ export namespace ArticleViolation {
 
     export interface CoverNotImage extends Peal.ArticleViolationCoverNotImage {
         _tag: "coverNotImage";
+    }
+
+    export interface ApprovalRequired extends Peal.ArticleViolationApprovalRequired {
+        _tag: "approvalRequired";
     }
 }

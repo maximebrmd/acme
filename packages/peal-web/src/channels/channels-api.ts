@@ -73,6 +73,7 @@ export type ChannelErrorKey =
   | "forbidden"
   | "notFound"
   | "planLimit"
+  | "tooManyTries"
   | "unknown"
   | "unreachable"
   | "xPaymentFailed"
@@ -115,6 +116,10 @@ const keyOf = (error: Tagged): ChannelErrorKey => {
 
     case "PlanLimitReached": {
       return "planLimit";
+    }
+
+    case "SiteConnectLimited": {
+      return "tooManyTries";
     }
 
     // X, billed at its rates, needs per-account pricing that pays: told

@@ -11,7 +11,7 @@ A website counts as one channel, as any connected account does: on a plan priced
 
 ## Connect a WordPress site [#connect]
 
-Peal publishes as one of the site's users, with an **application password**: a password WordPress makes for one application, which the user can revoke at any time, never their own password. Application passwords come with WordPress 5.6 and later, on sites served over HTTPS.
+Peal publishes as one of the site's users, with an **application password**: a password WordPress makes for one application, which the user can revoke at any time, never their own password. Peal needs WordPress 5.7 or later, on a site served over HTTPS: application passwords come with 5.6, and 5.7 lets Peal find a post by when it changed.
 
 <Steps>
   <Step title="Make an application password">
@@ -27,7 +27,9 @@ Peal publishes as one of the site's users, with an **application password**: a p
   </Step>
 </Steps>
 
-Peal finds the site's REST API from its home page, checks that the user may publish posts and upload files, then keeps the password encrypted: it is never shown again. Connecting the same site again replaces the password.
+Peal finds the site's REST API from its home page, checks that the user may publish posts and upload files, then keeps the password encrypted: it is never shown again. It sends the password only to the REST API of the site itself, never to one the home page names elsewhere. Connecting the same site again, at the same home page, replaces the password, even when its REST API moved, as when its permalinks change.
+
+A new website needs room in the workspace's plan, which Peal checks before it calls the site. A workspace tries 30 times an hour at most.
 
 Peal reaches websites over HTTPS at public addresses only. A site on a private network needs its server's operator to allow it ([PEAL_OUTBOUND_ALLOWED_HOSTS](/self-hosting/environment-variables#channels)); Peal's own service never does.
 
@@ -36,7 +38,7 @@ Peal reaches websites over HTTPS at public addresses only. A site on a private n
 | Message                                                     | What to do                                                                                                   |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | The address leads to no WordPress site                      | Give the site's home page. A site whose REST API is turned off by a plugin cannot be connected.              |
-| Peal reaches websites over HTTPS, at public addresses only  | Serve the site over HTTPS, on a public address.                                                              |
+| Peal reaches websites over HTTPS, at public addresses only  | Serve the site over HTTPS, on a public address, with its REST API on the same site.                          |
 | The site refused the user name and the application password | Check both. Some hosts strip the `Authorization` header that carries them: ask your host to pass it through. |
 | This user may not publish posts or upload files             | Use an Author, an Editor or an Administrator.                                                                |
 
@@ -64,17 +66,23 @@ Choose what the site makes of the article, then when Peal sends it:
 | A draft there     | Keeps it as a draft, to finish and publish on the site.                               |
 | Scheduled there   | Publishes it itself at the article's time: Peal sends it at once, and the site waits. |
 
-Leave the time empty to send it now, or give one: Peal sends it then. Peal checks the article before it is scheduled, everything at once: a title, a body, at most 20 tags and 20 categories, and a time ahead.
+Leave the time empty to send it now, or give one: Peal sends it then. Peal checks the article before it is scheduled, everything at once: a title, a body, at most 20 tags and 20 categories, a time ahead, and that the library still has its images. The title and the excerpt go to the site as plain text, as you typed them.
+
+A workspace over its plan, as after its trial, sends no article until it is back within it, as for its posts. An image a scheduled article shows cannot be deleted from the library until the article is back to draft or has gone out.
 
 What goes out is public. Peal never sends an article twice: when the site's answer is lost, Peal looks for the post among the user's posts, by its title, and takes it when exactly one matches; when it cannot tell, the article is **To check**: look on the site, then send it again only if it is not there.
 
 ## Once it is on the site [#on-site]
 
-- **Update on the site** sends the title, body, excerpt, tags, categories and featured image again over the site's post, at once. The site keeps its status and its date. Images are sent again.
-- **Unpublish** moves the post to the site's trash, which WordPress empties after 30 days by default. The article stays in Peal, shown as in the site's trash.
+- **Update on the site** sends the title, body, excerpt, tags, categories and featured image again over the site's post, at once: a featured image or an excerpt removed in Peal is removed there. The site keeps its status and its date. Images the site has already are not sent again.
+- **Unpublish** moves the post to the site's trash, which WordPress empties after 30 days by default. The article stays in Peal, shown as in the site's trash. A site whose trash is turned off refuses it: delete the post there.
 - **Send again** sends a failed article again, at once.
 
 Deleting an article in Peal leaves its post on the site.
+
+## Approvals [#approvals]
+
+Articles cannot be approved yet. In a workspace whose posts wait for an approval (see [Which posts wait](/guides/posts/review#policy)), whatever would put an article on its site, or change it there, is refused for whoever's posts would wait: sending it, scheduling it, sending it again, editing it while it is scheduled, and updating it on the site. Drafts can still be written, and an article can still leave its site. Someone whose posts go out without an approval sends it.
 
 ## In the API [#api]
 

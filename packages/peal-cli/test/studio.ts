@@ -4724,12 +4724,14 @@ export const studioGroupsLive = (studio: Studio) =>
             );
 
             return {
+              draftArticles: [],
               drafts: showing
                 .filter(({ status }) => status === "draft")
                 .map(({ id }) => id),
               scheduled: showing
                 .filter(({ status }) => status !== "draft")
                 .map(({ id }) => id),
+              scheduledArticles: [],
             };
           }),
       })

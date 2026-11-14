@@ -39,9 +39,16 @@ class MediaInUseEncoded extends JsonSerializableType
     public array $postIds;
 
     /**
+     * @var array<string> $articleIds
+     */
+    #[JsonProperty('articleIds'), ArrayType(['string'])]
+    public array $articleIds;
+
+    /**
      * @param array{
      *   tag: value-of<MediaInUseEncodedTag>,
      *   postIds: array<string>,
+     *   articleIds: array<string>,
      *   code?: ?string,
      *   message?: ?string,
      *   requestId?: ?string,
@@ -55,6 +62,7 @@ class MediaInUseEncoded extends JsonSerializableType
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;
         $this->postIds = $values['postIds'];
+        $this->articleIds = $values['articleIds'];
     }
 
     /**

@@ -26,6 +26,9 @@ public record MediaInUseEncoded : IJsonOnDeserialized
     [JsonPropertyName("postIds")]
     public IEnumerable<string> PostIds { get; set; } = new List<string>();
 
+    [JsonPropertyName("articleIds")]
+    public IEnumerable<string> ArticleIds { get; set; } = new List<string>();
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

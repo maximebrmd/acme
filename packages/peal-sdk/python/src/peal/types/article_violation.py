@@ -167,6 +167,21 @@ class ArticleViolation_CoverNotImage(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class ArticleViolation_ApprovalRequired(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["approvalRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "approvalRequired"
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 ArticleViolation = typing_extensions.Annotated[
     typing.Union[
         ArticleViolation_TitleMissing,
@@ -179,6 +194,7 @@ ArticleViolation = typing_extensions.Annotated[
         ArticleViolation_SiteTimeInPast,
         ArticleViolation_TimeInPast,
         ArticleViolation_CoverNotImage,
+        ArticleViolation_ApprovalRequired,
     ],
     pydantic.Field(discriminator="type"),
 ]

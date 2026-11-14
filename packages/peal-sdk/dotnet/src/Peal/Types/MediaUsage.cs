@@ -17,6 +17,12 @@ public record MediaUsage : IJsonOnDeserialized
     [JsonPropertyName("scheduled")]
     public IEnumerable<string> Scheduled { get; set; } = new List<string>();
 
+    [JsonPropertyName("draftArticles")]
+    public IEnumerable<string> DraftArticles { get; set; } = new List<string>();
+
+    [JsonPropertyName("scheduledArticles")]
+    public IEnumerable<string> ScheduledArticles { get; set; } = new List<string>();
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

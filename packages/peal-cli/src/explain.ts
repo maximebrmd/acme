@@ -699,9 +699,9 @@ const reasonOf =
         refused(
           "The workspace already imports two files at once, or has two images being made, or the server runs as many as it takes together: nothing was fetched or made. Try again in a moment."
         ),
-      MediaInUse: ({ postIds }) =>
+      MediaInUse: ({ articleIds, postIds }) =>
         refused(
-          `The media was not deleted: posts that are scheduled or being published show it (${postIds.join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
+          `The media was not deleted: posts or articles that are scheduled or being published show it (${[...postIds, ...articleIds].join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
         ),
       MediaNotFound: () => refused("The workspace has no such media."),
       MediaSourceNotPublic: () =>
@@ -837,12 +837,16 @@ const reasonOf =
         refused(
           "The workspace has no short link with that id: peal short-links list shows them."
         ),
+      SiteConnectLimited: () =>
+        refused(
+          "The workspace tried to connect websites too many times in the last hour: try again later. Nothing was saved."
+        ),
       SiteNotConnected: ({ reason }) =>
         refused(
           `The website was not connected: ${
             {
               addressNotAllowed:
-                "Peal reaches websites over HTTPS, on the default port, at public addresses only",
+                "Peal reaches websites over HTTPS, on the default port, at public addresses only, and sends the password to the REST API of the site itself",
               cannotPublish:
                 "the user may not publish posts or upload files there: use an Author, an Editor or an Administrator",
               credentialsRefused:

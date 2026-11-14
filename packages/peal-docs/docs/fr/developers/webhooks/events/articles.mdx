@@ -10,6 +10,8 @@ sidebar:
 
 Un [article](/guides/channels/websites#articles) part vers un site web, par son canal. Ses événements nomment l’article et le canal, jamais ce que dit l’article : lisez-le par l’API pour cela, avec `GET /api/workspaces/{workspaceId}/articles/{articleId}`.
 
+Un article dont la réponse du site s’est perdue, et que Peal n’a pas pu y retrouver, finit `unconfirmed`, et aucun événement ne le dit : une intégration qui attend la fin d’un article lit son état dans l’API.
+
 | Champ       | Type           | Contenu                                                                            |
 | ----------- | -------------- | ---------------------------------------------------------------------------------- |
 | `articleId` | chaîne         | L’article                                                                          |

@@ -6,9 +6,10 @@ import { Alert, AlertDescription } from "peal-ui/components/alert";
 import type { ReactNode } from "react";
 
 /**
- * What deleting the media would do to the posts that show it: refused while
- * scheduled posts show it, each with its link from `postLinks`, in order;
- * drafts lose it.
+ * What deleting the media would do to the posts and articles that show
+ * it: refused while scheduled posts show it, each with its link from
+ * `postLinks`, in order, or scheduled articles; drafts lose it, and
+ * articles keep its id, which their sending then refuses.
  */
 export const MediaUsageNotice = ({
   postLinks,
@@ -18,6 +19,16 @@ export const MediaUsageNotice = ({
   readonly usage: MediaUsage;
 }) => {
   const t = useTranslations("Media.library");
+
+  if (usage.scheduledArticles.length > 0 && usage.scheduled.length === 0) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          {t("inUseArticles", { count: usage.scheduledArticles.length })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (usage.scheduled.length > 0) {
     return (
@@ -36,11 +47,20 @@ export const MediaUsageNotice = ({
     );
   }
 
-  return usage.drafts.length > 0 ? (
+  if (usage.drafts.length === 0 && usage.draftArticles.length === 0) {
+    return null;
+  }
+
+  return (
     <Alert>
       <AlertDescription>
-        {t("draftsLose", { count: usage.drafts.length })}
+        {usage.drafts.length > 0
+          ? t("draftsLose", { count: usage.drafts.length })
+          : null}{" "}
+        {usage.draftArticles.length > 0
+          ? t("draftArticlesKeep", { count: usage.draftArticles.length })
+          : null}
       </AlertDescription>
     </Alert>
-  ) : null;
+  );
 };

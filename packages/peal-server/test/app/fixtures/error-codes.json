@@ -735,6 +735,11 @@
     "tag": "SignedRequestRefused"
   },
   {
+    "code": "site_connect_limited",
+    "status": 429,
+    "tag": "SiteConnectLimited"
+  },
+  {
     "code": "site_not_connected",
     "status": 422,
     "tag": "SiteNotConnected"

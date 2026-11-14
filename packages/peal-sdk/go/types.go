@@ -2652,17 +2652,18 @@ func (a ArticleStateConflictEncodedTag) Ptr() *ArticleStateConflictEncodedTag {
 }
 
 type ArticleViolation struct {
-	Type           string
-	TitleMissing   *ArticleViolationTitleMissing
-	TitleTooLong   *ArticleViolationTitleTooLong
-	BodyMissing    *ArticleViolationBodyMissing
-	BodyInvalid    *ArticleViolationBodyInvalid
-	ExcerptTooLong *ArticleViolationExcerptTooLong
-	TooManyTerms   *ArticleViolationTooManyTerms
-	TermInvalid    *ArticleViolationTermInvalid
-	SiteTimeInPast *ArticleViolationSiteTimeInPast
-	TimeInPast     *ArticleViolationTimeInPast
-	CoverNotImage  *ArticleViolationCoverNotImage
+	Type             string
+	TitleMissing     *ArticleViolationTitleMissing
+	TitleTooLong     *ArticleViolationTitleTooLong
+	BodyMissing      *ArticleViolationBodyMissing
+	BodyInvalid      *ArticleViolationBodyInvalid
+	ExcerptTooLong   *ArticleViolationExcerptTooLong
+	TooManyTerms     *ArticleViolationTooManyTerms
+	TermInvalid      *ArticleViolationTermInvalid
+	SiteTimeInPast   *ArticleViolationSiteTimeInPast
+	TimeInPast       *ArticleViolationTimeInPast
+	CoverNotImage    *ArticleViolationCoverNotImage
+	ApprovalRequired *ArticleViolationApprovalRequired
 
 	rawJSON json.RawMessage
 }
@@ -2744,6 +2745,13 @@ func (a *ArticleViolation) GetCoverNotImage() *ArticleViolationCoverNotImage {
 	return a.CoverNotImage
 }
 
+func (a *ArticleViolation) GetApprovalRequired() *ArticleViolationApprovalRequired {
+	if a == nil {
+		return nil
+	}
+	return a.ApprovalRequired
+}
+
 func (a *ArticleViolation) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -2816,6 +2824,12 @@ func (a *ArticleViolation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		a.CoverNotImage = value
+	case "approvalRequired":
+		value := new(ArticleViolationApprovalRequired)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		a.ApprovalRequired = value
 	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
@@ -2855,6 +2869,9 @@ func (a ArticleViolation) MarshalJSON() ([]byte, error) {
 	if a.CoverNotImage != nil {
 		return internal.MarshalJSONWithExtraProperty(a.CoverNotImage, "_tag", "coverNotImage")
 	}
+	if a.ApprovalRequired != nil {
+		return internal.MarshalJSONWithExtraProperty(a.ApprovalRequired, "_tag", "approvalRequired")
+	}
 	if len(a.rawJSON) > 0 {
 		return a.rawJSON, nil
 	}
@@ -2872,6 +2889,7 @@ type ArticleViolationVisitor interface {
 	VisitSiteTimeInPast(*ArticleViolationSiteTimeInPast) error
 	VisitTimeInPast(*ArticleViolationTimeInPast) error
 	VisitCoverNotImage(*ArticleViolationCoverNotImage) error
+	VisitApprovalRequired(*ArticleViolationApprovalRequired) error
 }
 
 func (a *ArticleViolation) Accept(visitor ArticleViolationVisitor) error {
@@ -2904,6 +2922,9 @@ func (a *ArticleViolation) Accept(visitor ArticleViolationVisitor) error {
 	}
 	if a.CoverNotImage != nil {
 		return visitor.VisitCoverNotImage(a.CoverNotImage)
+	}
+	if a.ApprovalRequired != nil {
+		return visitor.VisitApprovalRequired(a.ApprovalRequired)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", a)
 }
@@ -2943,6 +2964,9 @@ func (a *ArticleViolation) validate() error {
 	if a.CoverNotImage != nil {
 		fields = append(fields, "coverNotImage")
 	}
+	if a.ApprovalRequired != nil {
+		fields = append(fields, "approvalRequired")
+	}
 	if len(fields) == 0 {
 		if a.Type != "" {
 			if len(a.rawJSON) > 0 {
@@ -2967,6 +2991,73 @@ func (a *ArticleViolation) validate() error {
 		}
 	}
 	return nil
+}
+
+type ArticleViolationApprovalRequired struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *ArticleViolationApprovalRequired) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *ArticleViolationApprovalRequired) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+func (a *ArticleViolationApprovalRequired) UnmarshalJSON(data []byte) error {
+	type unmarshaler ArticleViolationApprovalRequired
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = ArticleViolationApprovalRequired(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *ArticleViolationApprovalRequired) MarshalJSON() ([]byte, error) {
+	type embed ArticleViolationApprovalRequired
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *ArticleViolationApprovalRequired) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
 }
 
 type ArticleViolationBodyInvalid struct {
@@ -15531,19 +15622,21 @@ func (m *MediaImportBusyEncoded) String() string {
 }
 
 var (
-	mediaInUseEncodedFieldTag       = big.NewInt(1 << 0)
-	mediaInUseEncodedFieldCode      = big.NewInt(1 << 1)
-	mediaInUseEncodedFieldMessage   = big.NewInt(1 << 2)
-	mediaInUseEncodedFieldRequestID = big.NewInt(1 << 3)
-	mediaInUseEncodedFieldPostIDs   = big.NewInt(1 << 4)
+	mediaInUseEncodedFieldTag        = big.NewInt(1 << 0)
+	mediaInUseEncodedFieldCode       = big.NewInt(1 << 1)
+	mediaInUseEncodedFieldMessage    = big.NewInt(1 << 2)
+	mediaInUseEncodedFieldRequestID  = big.NewInt(1 << 3)
+	mediaInUseEncodedFieldPostIDs    = big.NewInt(1 << 4)
+	mediaInUseEncodedFieldArticleIDs = big.NewInt(1 << 5)
 )
 
 type MediaInUseEncoded struct {
-	Tag       MediaInUseEncodedTag `json:"_tag" url:"_tag"`
-	Code      *string              `json:"code,omitempty" url:"code,omitempty"`
-	Message   *string              `json:"message,omitempty" url:"message,omitempty"`
-	RequestID *string              `json:"requestId,omitempty" url:"requestId,omitempty"`
-	PostIDs   []string             `json:"postIds" url:"postIds"`
+	Tag        MediaInUseEncodedTag `json:"_tag" url:"_tag"`
+	Code       *string              `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string              `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string              `json:"requestId,omitempty" url:"requestId,omitempty"`
+	PostIDs    []string             `json:"postIds" url:"postIds"`
+	ArticleIDs []string             `json:"articleIds" url:"articleIds"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -15585,6 +15678,13 @@ func (m *MediaInUseEncoded) GetPostIDs() []string {
 		return nil
 	}
 	return m.PostIDs
+}
+
+func (m *MediaInUseEncoded) GetArticleIDs() []string {
+	if m == nil {
+		return nil
+	}
+	return m.ArticleIDs
 }
 
 func (m *MediaInUseEncoded) GetExtraProperties() map[string]interface{} {
@@ -15636,6 +15736,13 @@ func (m *MediaInUseEncoded) SetRequestID(requestID *string) {
 func (m *MediaInUseEncoded) SetPostIDs(postIDs []string) {
 	m.PostIDs = postIDs
 	m.require(mediaInUseEncodedFieldPostIDs)
+}
+
+// SetArticleIDs sets the ArticleIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaInUseEncoded) SetArticleIDs(articleIDs []string) {
+	m.ArticleIDs = articleIDs
+	m.require(mediaInUseEncodedFieldArticleIDs)
 }
 
 func (m *MediaInUseEncoded) UnmarshalJSON(data []byte) error {
@@ -24586,6 +24693,124 @@ func NewSignatureNameTakenEncodedTagFromString(s string) (SignatureNameTakenEnco
 
 func (s SignatureNameTakenEncodedTag) Ptr() *SignatureNameTakenEncodedTag {
 	return &s
+}
+
+var (
+	siteConnectLimitedEncodedFieldCode      = big.NewInt(1 << 0)
+	siteConnectLimitedEncodedFieldMessage   = big.NewInt(1 << 1)
+	siteConnectLimitedEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type SiteConnectLimitedEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SiteConnectLimitedEncoded) GetCode() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Code
+}
+
+func (s *SiteConnectLimitedEncoded) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *SiteConnectLimitedEncoded) GetRequestID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.RequestID
+}
+
+func (s *SiteConnectLimitedEncoded) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SiteConnectLimitedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SiteConnectLimitedEncoded) SetCode(code *string) {
+	s.Code = code
+	s.require(siteConnectLimitedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SiteConnectLimitedEncoded) SetMessage(message *string) {
+	s.Message = message
+	s.require(siteConnectLimitedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SiteConnectLimitedEncoded) SetRequestID(requestID *string) {
+	s.RequestID = requestID
+	s.require(siteConnectLimitedEncodedFieldRequestID)
+}
+
+func (s *SiteConnectLimitedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler SiteConnectLimitedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SiteConnectLimitedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SiteConnectLimitedEncoded) MarshalJSON() ([]byte, error) {
+	type embed SiteConnectLimitedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SiteConnectLimitedEncoded) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
 }
 
 var (

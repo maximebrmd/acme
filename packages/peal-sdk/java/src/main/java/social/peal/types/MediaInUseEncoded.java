@@ -33,6 +33,8 @@ public final class MediaInUseEncoded {
 
     private final List<String> postIds;
 
+    private final List<String> articleIds;
+
     private final Map<String, Object> additionalProperties;
 
     private MediaInUseEncoded(
@@ -41,12 +43,14 @@ public final class MediaInUseEncoded {
             Optional<String> message,
             Optional<String> requestId,
             List<String> postIds,
+            List<String> articleIds,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.postIds = postIds;
+        this.articleIds = articleIds;
         this.additionalProperties = additionalProperties;
     }
 
@@ -75,6 +79,11 @@ public final class MediaInUseEncoded {
         return postIds;
     }
 
+    @JsonProperty("articleIds")
+    public List<String> getArticleIds() {
+        return articleIds;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -91,12 +100,13 @@ public final class MediaInUseEncoded {
                 && code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
-                && postIds.equals(other.postIds);
+                && postIds.equals(other.postIds)
+                && articleIds.equals(other.articleIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.postIds);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.postIds, this.articleIds);
     }
 
     @java.lang.Override
@@ -138,11 +148,19 @@ public final class MediaInUseEncoded {
         _FinalStage addPostIds(String postIds);
 
         _FinalStage addAllPostIds(List<String> postIds);
+
+        _FinalStage articleIds(List<String> articleIds);
+
+        _FinalStage addArticleIds(String articleIds);
+
+        _FinalStage addAllArticleIds(List<String> articleIds);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements TagStage, _FinalStage {
         private MediaInUseEncodedTag tag;
+
+        private List<String> articleIds = new ArrayList<>();
 
         private List<String> postIds = new ArrayList<>();
 
@@ -163,6 +181,7 @@ public final class MediaInUseEncoded {
             message(other.getMessage());
             requestId(other.getRequestId());
             postIds(other.getPostIds());
+            articleIds(other.getArticleIds());
             return this;
         }
 
@@ -170,6 +189,30 @@ public final class MediaInUseEncoded {
         @JsonSetter("_tag")
         public _FinalStage tag(@NotNull MediaInUseEncodedTag tag) {
             this.tag = Objects.requireNonNull(tag, "tag must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllArticleIds(List<String> articleIds) {
+            if (articleIds != null) {
+                this.articleIds.addAll(articleIds);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addArticleIds(String articleIds) {
+            this.articleIds.add(articleIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "articleIds", nulls = Nulls.SKIP)
+        public _FinalStage articleIds(List<String> articleIds) {
+            this.articleIds.clear();
+            if (articleIds != null) {
+                this.articleIds.addAll(articleIds);
+            }
             return this;
         }
 
@@ -238,7 +281,7 @@ public final class MediaInUseEncoded {
 
         @java.lang.Override
         public MediaInUseEncoded build() {
-            return new MediaInUseEncoded(tag, code, message, requestId, postIds, additionalProperties);
+            return new MediaInUseEncoded(tag, code, message, requestId, postIds, articleIds, additionalProperties);
         }
 
         @JsonAnySetter
@@ -247,7 +290,8 @@ public final class MediaInUseEncoded {
                     || key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
-                    || key.equalsIgnoreCase("postIds")) {
+                    || key.equalsIgnoreCase("postIds")
+                    || key.equalsIgnoreCase("articleIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

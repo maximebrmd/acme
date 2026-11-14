@@ -7,7 +7,7 @@ import {
   defaultChannelPageSize,
   maxChannelPageSize,
   maxChannelQueryLength,
-  ChannelPlatformSchema,
+  PlatformSchema,
   TikTokAccountSchema,
 } from "peal-contract";
 import type {
@@ -111,7 +111,7 @@ const list = Command.make(
       ),
       Flag.optional
     ),
-    platform: Flag.Literals("platform", ChannelPlatformSchema.literals).pipe(
+    platform: Flag.Literals("platform", PlatformSchema.literals).pipe(
       Flag.withDescription("Only the channels of this platform."),
       Flag.optional
     ),

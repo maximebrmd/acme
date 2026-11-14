@@ -5,6 +5,7 @@ import {
   ArticleBodySchema,
   bodyMediaOf,
   bodyTextLength,
+  NestedWithinSchema,
 } from "#publishing/domain/article-body.ts";
 import type { ArticleBody } from "#publishing/domain/article-body.ts";
 import { articleHtml } from "#publishing/domain/article-html.ts";
@@ -214,5 +215,32 @@ describe("an article's HTML", () => {
       '<figure><img src="https://garden.example/wp-content/uploads/peas.jpg" alt="Peas &quot;in a row&quot;"></figure>'
     );
     expect(articleHtml(body([image]), new Map())).toBe("");
+  });
+
+  it("is measured before it is read, however deep it nests", () => {
+    // 100,000 levels, which reading would overflow the stack on.
+    interface Nested {
+      readonly content?: readonly Nested[];
+      readonly text?: string;
+      readonly type: string;
+    }
+
+    let deep: Nested = { text: "synthetic", type: "text" };
+
+    for (let level = 0; level < 100_000; level += 1) {
+      deep = { content: [deep], type: "blockquote" };
+    }
+
+    const within = Schema.is(NestedWithinSchema);
+
+    expect(within({ content: [deep], type: "doc" })).toBeFalsy();
+    expect(
+      within({
+        content: [
+          { content: [{ text: "Sow", type: "text" }], type: "paragraph" },
+        ],
+        type: "doc",
+      })
+    ).toBeTruthy();
   });
 });

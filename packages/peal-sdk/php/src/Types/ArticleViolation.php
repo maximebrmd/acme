@@ -19,6 +19,7 @@ class ArticleViolation extends JsonSerializableType
      *   |'siteTimeInPast'
      *   |'timeInPast'
      *   |'coverNotImage'
+     *   |'approvalRequired'
      *   |'_unknown'
      * ) $type
      */
@@ -36,6 +37,7 @@ class ArticleViolation extends JsonSerializableType
      *   |ArticleViolationSiteTimeInPast
      *   |ArticleViolationTimeInPast
      *   |ArticleViolationCoverNotImage
+     *   |ArticleViolationApprovalRequired
      *   |mixed
      * ) $value
      */
@@ -54,6 +56,7 @@ class ArticleViolation extends JsonSerializableType
      *   |'siteTimeInPast'
      *   |'timeInPast'
      *   |'coverNotImage'
+     *   |'approvalRequired'
      *   |'_unknown'
      * ),
      *   value: (
@@ -67,6 +70,7 @@ class ArticleViolation extends JsonSerializableType
      *   |ArticleViolationSiteTimeInPast
      *   |ArticleViolationTimeInPast
      *   |ArticleViolationCoverNotImage
+     *   |ArticleViolationApprovalRequired
      *   |mixed
      * ),
      * } $values
@@ -195,6 +199,18 @@ class ArticleViolation extends JsonSerializableType
         return new ArticleViolation([
             'type' => 'coverNotImage',
             'value' => $coverNotImage,
+        ]);
+    }
+
+    /**
+     * @param ArticleViolationApprovalRequired $approvalRequired
+     * @return ArticleViolation
+     */
+    public static function approvalRequired(ArticleViolationApprovalRequired $approvalRequired): ArticleViolation
+    {
+        return new ArticleViolation([
+            'type' => 'approvalRequired',
+            'value' => $approvalRequired,
         ]);
     }
 
@@ -419,6 +435,28 @@ class ArticleViolation extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isApprovalRequired(): bool
+    {
+        return $this->value instanceof ArticleViolationApprovalRequired && $this->type === 'approvalRequired';
+    }
+
+    /**
+     * @return ArticleViolationApprovalRequired
+     */
+    public function asApprovalRequired(): ArticleViolationApprovalRequired
+    {
+        if (!($this->value instanceof ArticleViolationApprovalRequired && $this->type === 'approvalRequired')) {
+            throw new Exception(
+                "Expected approvalRequired; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -476,6 +514,10 @@ class ArticleViolation extends JsonSerializableType
                 break;
             case 'coverNotImage':
                 $value = $this->asCoverNotImage()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'approvalRequired':
+                $value = $this->asApprovalRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -543,6 +585,9 @@ class ArticleViolation extends JsonSerializableType
                 break;
             case 'coverNotImage':
                 $args['value'] = ArticleViolationCoverNotImage::jsonDeserialize($data);
+                break;
+            case 'approvalRequired':
+                $args['value'] = ArticleViolationApprovalRequired::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

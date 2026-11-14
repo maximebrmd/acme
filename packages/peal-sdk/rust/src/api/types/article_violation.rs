@@ -56,6 +56,10 @@ pub enum ArticleViolation {
     #[non_exhaustive]
     CoverNotImage {},
 
+    #[serde(rename = "approvalRequired")]
+    #[non_exhaustive]
+    ApprovalRequired {},
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -102,6 +106,10 @@ impl ArticleViolation {
 
     pub fn cover_not_image() -> Self {
         Self::CoverNotImage {}
+    }
+
+    pub fn approval_required() -> Self {
+        Self::ApprovalRequired {}
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

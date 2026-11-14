@@ -28,6 +28,8 @@ module Peal
       member -> { Peal::Types::ArticleViolationTimeInPast }, key: "TIME_IN_PAST"
 
       member -> { Peal::Types::ArticleViolationCoverNotImage }, key: "COVER_NOT_IMAGE"
+
+      member -> { Peal::Types::ArticleViolationApprovalRequired }, key: "APPROVAL_REQUIRED"
     end
   end
 end

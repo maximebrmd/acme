@@ -66,6 +66,10 @@ public final class ArticleViolation {
         return new ArticleViolation(new CoverNotImageValue(value));
     }
 
+    public static ArticleViolation approvalRequired(ArticleViolationApprovalRequired value) {
+        return new ArticleViolation(new ApprovalRequiredValue(value));
+    }
+
     public boolean isTitleMissing() {
         return value instanceof TitleMissingValue;
     }
@@ -104,6 +108,10 @@ public final class ArticleViolation {
 
     public boolean isCoverNotImage() {
         return value instanceof CoverNotImageValue;
+    }
+
+    public boolean isApprovalRequired() {
+        return value instanceof ApprovalRequiredValue;
     }
 
     public boolean _isUnknown() {
@@ -180,6 +188,13 @@ public final class ArticleViolation {
         return Optional.empty();
     }
 
+    public Optional<ArticleViolationApprovalRequired> getApprovalRequired() {
+        if (isApprovalRequired()) {
+            return Optional.of(((ApprovalRequiredValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -229,6 +244,8 @@ public final class ArticleViolation {
 
         T visitCoverNotImage(ArticleViolationCoverNotImage coverNotImage);
 
+        T visitApprovalRequired(ArticleViolationApprovalRequired approvalRequired);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -243,7 +260,8 @@ public final class ArticleViolation {
         @JsonSubTypes.Type(TermInvalidValue.class),
         @JsonSubTypes.Type(SiteTimeInPastValue.class),
         @JsonSubTypes.Type(TimeInPastValue.class),
-        @JsonSubTypes.Type(CoverNotImageValue.class)
+        @JsonSubTypes.Type(CoverNotImageValue.class),
+        @JsonSubTypes.Type(ApprovalRequiredValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -636,6 +654,46 @@ public final class ArticleViolation {
         }
 
         private boolean equalTo(CoverNotImageValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ArticleViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("approvalRequired")
+    @JsonIgnoreProperties("_tag")
+    private static final class ApprovalRequiredValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ArticleViolationApprovalRequired value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private ApprovalRequiredValue() {}
+
+        private ApprovalRequiredValue(ArticleViolationApprovalRequired value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitApprovalRequired(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof ApprovalRequiredValue && equalTo((ApprovalRequiredValue) other);
+        }
+
+        private boolean equalTo(ApprovalRequiredValue other) {
             return value.equals(other.value);
         }
 

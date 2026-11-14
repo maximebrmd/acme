@@ -27,8 +27,10 @@ const render = async (locale: "en" | "fr", usage: MediaUsage) => {
 describe(MediaUsageNotice, () => {
   it("lists the scheduled posts that keep the media from going", async () => {
     const html = await render("en", {
+      draftArticles: [],
       drafts: ["d1"],
       scheduled: ["p1", "p2"],
+      scheduledArticles: [],
     });
 
     expect(html).toContain(
@@ -42,14 +44,54 @@ describe(MediaUsageNotice, () => {
 
   it("warns that drafts lose the media", async () => {
     await expect(
-      render("en", { drafts: ["d1"], scheduled: [] })
+      render("en", {
+        draftArticles: [],
+        drafts: ["d1"],
+        scheduled: [],
+        scheduledArticles: [],
+      })
     ).resolves.toContain("A draft shows it, and will lose it.");
     await expect(
-      render("fr", { drafts: ["d1", "d2"], scheduled: [] })
+      render("fr", {
+        draftArticles: [],
+        drafts: ["d1", "d2"],
+        scheduled: [],
+        scheduledArticles: [],
+      })
     ).resolves.toContain("2 brouillons l’utilisent, et le perdront.");
   });
 
   it("says nothing when no post shows it", async () => {
-    await expect(render("en", { drafts: [], scheduled: [] })).resolves.toBe("");
+    await expect(
+      render("en", {
+        draftArticles: [],
+        drafts: [],
+        scheduled: [],
+        scheduledArticles: [],
+      })
+    ).resolves.toBe("");
+  });
+
+  it("says a scheduled article keeps the media, and warns of a draft's", async () => {
+    await expect(
+      render("en", {
+        draftArticles: [],
+        drafts: [],
+        scheduled: [],
+        scheduledArticles: ["a1"],
+      })
+    ).resolves.toContain(
+      "A scheduled article shows it. Take it back to draft and remove it first, or wait until it has gone out."
+    );
+    await expect(
+      render("fr", {
+        draftArticles: ["a1", "a2"],
+        drafts: [],
+        scheduled: [],
+        scheduledArticles: [],
+      })
+    ).resolves.toContain(
+      "2 articles l’utilisent : ils ne pourront plus être envoyés sans elle."
+    );
   });
 });

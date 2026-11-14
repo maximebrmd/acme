@@ -22,7 +22,6 @@ from ..types.authorization import Authorization
 from ..types.channel import Channel
 from ..types.channel_connection import ChannelConnection
 from ..types.channel_page import ChannelPage
-from ..types.channel_platform import ChannelPlatform
 from ..types.channel_status_name import ChannelStatusName
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
@@ -132,7 +131,7 @@ class RawChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[ChannelPlatform] = None,
+        platform: typing.Optional[Platform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -148,7 +147,7 @@ class RawChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[ChannelPlatform]
+        platform : typing.Optional[Platform]
 
         q : typing.Optional[str]
 
@@ -345,7 +344,7 @@ class RawChannelsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Channel]:
         """
-        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.
 
         Parameters
         ----------
@@ -1506,7 +1505,7 @@ class AsyncRawChannelsClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
-        platform: typing.Optional[ChannelPlatform] = None,
+        platform: typing.Optional[Platform] = None,
         q: typing.Optional[str] = None,
         status: typing.Optional[ChannelStatusName] = None,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1522,7 +1521,7 @@ class AsyncRawChannelsClient:
 
         limit : typing.Optional[str]
 
-        platform : typing.Optional[ChannelPlatform]
+        platform : typing.Optional[Platform]
 
         q : typing.Optional[str]
 
@@ -1719,7 +1718,7 @@ class AsyncRawChannelsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Channel]:
         """
-        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+        Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.
 
         Parameters
         ----------

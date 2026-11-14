@@ -30,8 +30,8 @@ export type Platform = typeof PlatformSchema.Type;
  * equal.
  */
 // One kind so far: a single literal, which the document writes as a plain
-// enum (a list of one would be an anyOf of one). Hosted WordPress, Dev.to
-// and Hashnode join it as `Schema.Literals`.
+// enum (a list of one would be an anyOf of one). Further kinds of site
+// join it as `Schema.Literals`.
 export const SitePlatformSchema = Schema.Literal("wordpress").annotate({
   description: "A kind of website a channel publishes articles to.",
   identifier: "SitePlatform",

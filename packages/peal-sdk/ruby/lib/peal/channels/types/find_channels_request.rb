@@ -10,7 +10,7 @@ module Peal
 
         field :limit, -> { String }, optional: true, nullable: false
 
-        field :platform, -> { Peal::Types::ChannelPlatform }, optional: true, nullable: false
+        field :platform, -> { Peal::Types::Platform }, optional: true, nullable: false
 
         field :q, -> { String }, optional: true, nullable: false
 

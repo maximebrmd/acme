@@ -109,6 +109,15 @@ public record ArticleViolation
     }
 
     /// <summary>
+    /// Create an instance of ArticleViolation with <see cref="ArticleViolation.ApprovalRequired"/>.
+    /// </summary>
+    public ArticleViolation(ArticleViolation.ApprovalRequired value)
+    {
+        Type = "approvalRequired";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -168,6 +177,11 @@ public record ArticleViolation
     /// Returns true if <see cref="Type"/> is "coverNotImage"
     /// </summary>
     public bool IsCoverNotImage => Type == "coverNotImage";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "approvalRequired"
+    /// </summary>
+    public bool IsApprovalRequired => Type == "approvalRequired";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.ArticleViolationTitleMissing"/> if <see cref="Type"/> is 'titleMissing', otherwise throws an exception.
@@ -259,6 +273,15 @@ public record ArticleViolation
             ? (Peal.ArticleViolationCoverNotImage)Value!
             : throw new global::System.Exception("ArticleViolation.Type is not 'coverNotImage'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ArticleViolationApprovalRequired"/> if <see cref="Type"/> is 'approvalRequired', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'approvalRequired'.</exception>
+    public Peal.ArticleViolationApprovalRequired AsApprovalRequired() =>
+        IsApprovalRequired
+            ? (Peal.ArticleViolationApprovalRequired)Value!
+            : throw new global::System.Exception("ArticleViolation.Type is not 'approvalRequired'");
+
     public T Match<T>(
         Func<Peal.ArticleViolationTitleMissing, T> onTitleMissing,
         Func<Peal.ArticleViolationTitleTooLong, T> onTitleTooLong,
@@ -270,6 +293,7 @@ public record ArticleViolation
         Func<Peal.ArticleViolationSiteTimeInPast, T> onSiteTimeInPast,
         Func<Peal.ArticleViolationTimeInPast, T> onTimeInPast,
         Func<Peal.ArticleViolationCoverNotImage, T> onCoverNotImage,
+        Func<Peal.ArticleViolationApprovalRequired, T> onApprovalRequired,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -285,6 +309,7 @@ public record ArticleViolation
             "siteTimeInPast" => onSiteTimeInPast(AsSiteTimeInPast()),
             "timeInPast" => onTimeInPast(AsTimeInPast()),
             "coverNotImage" => onCoverNotImage(AsCoverNotImage()),
+            "approvalRequired" => onApprovalRequired(AsApprovalRequired()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -300,6 +325,7 @@ public record ArticleViolation
         Action<Peal.ArticleViolationSiteTimeInPast> onSiteTimeInPast,
         Action<Peal.ArticleViolationTimeInPast> onTimeInPast,
         Action<Peal.ArticleViolationCoverNotImage> onCoverNotImage,
+        Action<Peal.ArticleViolationApprovalRequired> onApprovalRequired,
         Action<string, object?> onUnknown_
     )
     {
@@ -334,6 +360,9 @@ public record ArticleViolation
                 break;
             case "coverNotImage":
                 onCoverNotImage(AsCoverNotImage());
+                break;
+            case "approvalRequired":
+                onApprovalRequired(AsApprovalRequired());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -481,6 +510,20 @@ public record ArticleViolation
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ArticleViolationApprovalRequired"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsApprovalRequired(out Peal.ArticleViolationApprovalRequired? value)
+    {
+        if (Type == "approvalRequired")
+        {
+            value = (Peal.ArticleViolationApprovalRequired)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator ArticleViolation(ArticleViolation.TitleMissing value) =>
@@ -511,6 +554,9 @@ public record ArticleViolation
         new(value);
 
     public static implicit operator ArticleViolation(ArticleViolation.CoverNotImage value) =>
+        new(value);
+
+    public static implicit operator ArticleViolation(ArticleViolation.ApprovalRequired value) =>
         new(value);
 
     [Serializable]
@@ -616,6 +662,13 @@ public record ArticleViolation
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.ArticleViolationCoverNotImage"
                         ),
+                "approvalRequired" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ArticleViolationApprovalRequired?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ArticleViolationApprovalRequired"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new ArticleViolation(discriminator, value);
@@ -640,6 +693,7 @@ public record ArticleViolation
                     "siteTimeInPast" => JsonSerializer.SerializeToNode(value.Value, options),
                     "timeInPast" => JsonSerializer.SerializeToNode(value.Value, options),
                     "coverNotImage" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "approvalRequired" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -865,6 +919,26 @@ public record ArticleViolation
 
         public static implicit operator ArticleViolation.CoverNotImage(
             Peal.ArticleViolationCoverNotImage value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for approvalRequired
+    /// </summary>
+    [Serializable]
+    public struct ApprovalRequired
+    {
+        public ApprovalRequired(Peal.ArticleViolationApprovalRequired value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ArticleViolationApprovalRequired Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ArticleViolation.ApprovalRequired(
+            Peal.ArticleViolationApprovalRequired value
         ) => new(value);
     }
 }

@@ -304,7 +304,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
             Schema.isBetween({ maximum: maxChannelPageSize, minimum: 1 })
           )
         ),
-        platform: Schema.optionalKey(ChannelPlatformSchema),
+        platform: Schema.optionalKey(PlatformSchema),
         q: Schema.optionalKey(
           Schema.String.check(Schema.isBetweenLength(1, maxChannelQueryLength))
         ),

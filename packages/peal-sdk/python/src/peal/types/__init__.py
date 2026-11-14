@@ -132,6 +132,7 @@ if typing.TYPE_CHECKING:
     from .article_time import ArticleTime
     from .article_violation import (
         ArticleViolation,
+        ArticleViolation_ApprovalRequired,
         ArticleViolation_BodyInvalid,
         ArticleViolation_BodyMissing,
         ArticleViolation_CoverNotImage,
@@ -143,6 +144,7 @@ if typing.TYPE_CHECKING:
         ArticleViolation_TitleTooLong,
         ArticleViolation_TooManyTerms,
     )
+    from .article_violation_approval_required import ArticleViolationApprovalRequired
     from .article_violation_body_invalid import ArticleViolationBodyInvalid
     from .article_violation_body_missing import ArticleViolationBodyMissing
     from .article_violation_cover_not_image import ArticleViolationCoverNotImage
@@ -938,6 +940,7 @@ if typing.TYPE_CHECKING:
     from .signature_scope_workspace import SignatureScopeWorkspace
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
+    from .site_connect_limited_encoded import SiteConnectLimitedEncoded
     from .site_not_connected_encoded import SiteNotConnectedEncoded
     from .site_not_connected_reason import SiteNotConnectedReason
     from .site_platform import SitePlatform
@@ -1231,6 +1234,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ArticleState_Unconfirmed": ".article_state",
     "ArticleTime": ".article_time",
     "ArticleViolation": ".article_violation",
+    "ArticleViolationApprovalRequired": ".article_violation_approval_required",
     "ArticleViolationBodyInvalid": ".article_violation_body_invalid",
     "ArticleViolationBodyMissing": ".article_violation_body_missing",
     "ArticleViolationCoverNotImage": ".article_violation_cover_not_image",
@@ -1243,6 +1247,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ArticleViolationTitleTooLong": ".article_violation_title_too_long",
     "ArticleViolationTooManyTerms": ".article_violation_too_many_terms",
     "ArticleViolationTooManyTermsField": ".article_violation_too_many_terms_field",
+    "ArticleViolation_ApprovalRequired": ".article_violation",
     "ArticleViolation_BodyInvalid": ".article_violation",
     "ArticleViolation_BodyMissing": ".article_violation",
     "ArticleViolation_CoverNotImage": ".article_violation",
@@ -2013,6 +2018,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "SignatureScope_Workspace": ".signature_scope",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
+    "SiteConnectLimitedEncoded": ".site_connect_limited_encoded",
     "SiteNotConnectedEncoded": ".site_not_connected_encoded",
     "SiteNotConnectedReason": ".site_not_connected_reason",
     "SitePlatform": ".site_platform",
@@ -2332,6 +2338,7 @@ __all__ = [
     "ArticleState_Unconfirmed",
     "ArticleTime",
     "ArticleViolation",
+    "ArticleViolationApprovalRequired",
     "ArticleViolationBodyInvalid",
     "ArticleViolationBodyMissing",
     "ArticleViolationCoverNotImage",
@@ -2344,6 +2351,7 @@ __all__ = [
     "ArticleViolationTitleTooLong",
     "ArticleViolationTooManyTerms",
     "ArticleViolationTooManyTermsField",
+    "ArticleViolation_ApprovalRequired",
     "ArticleViolation_BodyInvalid",
     "ArticleViolation_BodyMissing",
     "ArticleViolation_CoverNotImage",
@@ -3114,6 +3122,7 @@ __all__ = [
     "SignatureScope_Workspace",
     "SignedRequest",
     "SignedRequestMethod",
+    "SiteConnectLimitedEncoded",
     "SiteNotConnectedEncoded",
     "SiteNotConnectedReason",
     "SitePlatform",

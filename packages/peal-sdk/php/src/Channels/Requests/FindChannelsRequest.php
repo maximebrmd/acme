@@ -3,7 +3,7 @@
 namespace Peal\Channels\Requests;
 
 use Peal\Core\Json\JsonSerializableType;
-use Peal\Types\ChannelPlatform;
+use Peal\Types\Platform;
 use Peal\Types\ChannelStatusName;
 
 class FindChannelsRequest extends JsonSerializableType
@@ -19,7 +19,7 @@ class FindChannelsRequest extends JsonSerializableType
     public ?string $limit;
 
     /**
-     * @var ?value-of<ChannelPlatform> $platform
+     * @var ?value-of<Platform> $platform
      */
     public ?string $platform;
 
@@ -37,7 +37,7 @@ class FindChannelsRequest extends JsonSerializableType
      * @param array{
      *   cursor?: ?string,
      *   limit?: ?string,
-     *   platform?: ?value-of<ChannelPlatform>,
+     *   platform?: ?value-of<Platform>,
      *   q?: ?string,
      *   status?: ?value-of<ChannelStatusName>,
      * } $values

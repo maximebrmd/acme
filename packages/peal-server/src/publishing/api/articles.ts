@@ -25,7 +25,10 @@ import type {
   SiteChangeFailure,
 } from "#publishing/application/articles.ts";
 import { Articles } from "#publishing/application/articles.ts";
-import { ArticleBodySchema } from "#publishing/domain/article-body.ts";
+import {
+  ArticleBodySchema,
+  NestedWithinSchema,
+} from "#publishing/domain/article-body.ts";
 import { ArticleContent } from "#publishing/domain/article-content.ts";
 import { ArticleIdSchema } from "#publishing/domain/article-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -36,6 +39,8 @@ import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 import { articleView } from "./article-view.ts";
+
+const decodeNested = Schema.decodeUnknownEffect(NestedWithinSchema);
 
 const decodeBody = Schema.decodeUnknownEffect(ArticleBodySchema);
 
@@ -53,7 +58,11 @@ const bodyInvalid = () =>
 // What the request asks the article to say, as the domain holds it: a
 // body that is not the editor's document of the allow-list is refused.
 const contentOf = Effect.fnUntraced(function* contentOf(input: ArticleInput) {
-  const body = yield* decodeBody(input.body).pipe(Effect.catch(bodyInvalid));
+  // Measured first: one nested deeper than any document is not read.
+  const body = yield* decodeNested(input.body).pipe(
+    Effect.flatMap(decodeBody),
+    Effect.catch(bodyInvalid)
+  );
 
   const cover =
     input.coverMediaId === undefined || input.coverMediaId === null

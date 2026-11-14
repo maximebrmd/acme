@@ -551,7 +551,7 @@ async fn main() {
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">find</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, platform: Option&lt;Option&lt;ChannelPlatform&gt;&gt;, q: Option&lt;Option&lt;String&gt;&gt;, status: Option&lt;Option&lt;ChannelStatusName&gt;&gt;) -> Result&lt;ChannelPage, ApiError&gt;</code></summary>
+<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">find</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, platform: Option&lt;Option&lt;Platform&gt;&gt;, q: Option&lt;Option&lt;String&gt;&gt;, status: Option&lt;Option&lt;ChannelStatusName&gt;&gt;) -> Result&lt;ChannelPage, ApiError&gt;</code></summary>
 <dl>
 <dd>
 
@@ -636,7 +636,7 @@ async fn main() {
 <dl>
 <dd>
 
-**platform:** `Option<ChannelPlatform>` 
+**platform:** `Option<Platform>` 
     
 </dd>
 </dl>
@@ -743,7 +743,7 @@ async fn main() {
 <dl>
 <dd>
 
-Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.
+Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.
 </dd>
 </dl>
 </dd>

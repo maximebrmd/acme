@@ -304,6 +304,45 @@ const measure = (blocks: readonly Block[]): Measure => {
  * An article's body: the editor's document, its nodes and marks on the
  * allow-list, within the bounds above.
  */
+// How deep a body's JSON may nest before it is read: a document of the
+// allow-list nests at most three levels of JSON for each of its own
+// (`maxBodyDepth`), and reading one deeper would only exhaust the stack.
+const maxJsonDepth = 4 * (maxBodyDepth + 2);
+
+const isJsonArray = Schema.is(Schema.Array(Schema.Unknown));
+
+const isJsonRecord = Schema.is(Schema.Record(Schema.String, Schema.Unknown));
+
+/**
+ * JSON that nests no deeper than any document of the allow-list may,
+ * measured level by level, without recursion: what a request gives as a
+ * body passes it before it is read as one (`ArticleBodySchema`).
+ */
+export const NestedWithinSchema = Schema.Unknown.check(
+  Schema.makeFilter(
+    (json) => {
+      let level: readonly unknown[] = [json];
+
+      for (let depth = 0; level.length > 0; depth += 1) {
+        if (depth > maxJsonDepth) {
+          return false;
+        }
+
+        level = level.flatMap((value) => {
+          if (isJsonArray(value)) {
+            return value;
+          }
+
+          return isJsonRecord(value) ? Object.values(value) : [];
+        });
+      }
+
+      return true;
+    },
+    { expected: "a document nested no deeper than an article's may be" }
+  )
+);
+
 export const ArticleBodySchema = Schema.Struct({
   content: Schema.Array(BlockSchema),
   type: Schema.Literal("doc"),

@@ -19,6 +19,9 @@ class MediaInUseEncoded(UniversalBaseModel):
     post_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="postIds"), pydantic.Field(alias="postIds")
     ]
+    article_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="articleIds"), pydantic.Field(alias="articleIds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

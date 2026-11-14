@@ -1079,6 +1079,22 @@ func TestSettersMediaUsage(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetDraftArticles", func(t *testing.T) {
+		obj := &MediaUsage{}
+		var fernTestValueDraftArticles []string
+		obj.SetDraftArticles(fernTestValueDraftArticles)
+		assert.Equal(t, fernTestValueDraftArticles, obj.DraftArticles)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetScheduledArticles", func(t *testing.T) {
+		obj := &MediaUsage{}
+		var fernTestValueScheduledArticles []string
+		obj.SetScheduledArticles(fernTestValueScheduledArticles)
+		assert.Equal(t, fernTestValueScheduledArticles, obj.ScheduledArticles)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestGettersMediaUsage(t *testing.T) {
@@ -1148,6 +1164,72 @@ func TestGettersMediaUsage(t *testing.T) {
 		_ = obj.GetScheduled() // Should return zero value
 	})
 
+	t.Run("GetDraftArticles", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		var expected []string
+		obj.DraftArticles = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDraftArticles(), "getter should return the property value")
+	})
+
+	t.Run("GetDraftArticles_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		obj.DraftArticles = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetDraftArticles(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetDraftArticles_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaUsage
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDraftArticles() // Should return zero value
+	})
+
+	t.Run("GetScheduledArticles", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		var expected []string
+		obj.ScheduledArticles = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetScheduledArticles(), "getter should return the property value")
+	})
+
+	t.Run("GetScheduledArticles_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		obj.ScheduledArticles = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetScheduledArticles(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetScheduledArticles_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaUsage
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetScheduledArticles() // Should return zero value
+	})
+
 }
 
 func TestSettersMarkExplicitMediaUsage(t *testing.T) {
@@ -1190,6 +1272,68 @@ func TestSettersMarkExplicitMediaUsage(t *testing.T) {
 
 		// Act
 		obj.SetScheduled(fernTestValueScheduled)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetDraftArticles_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		var fernTestValueDraftArticles []string
+
+		// Act
+		obj.SetDraftArticles(fernTestValueDraftArticles)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetScheduledArticles_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaUsage{}
+		var fernTestValueScheduledArticles []string
+
+		// Act
+		obj.SetScheduledArticles(fernTestValueScheduledArticles)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
