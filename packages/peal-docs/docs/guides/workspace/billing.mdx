@@ -57,12 +57,26 @@ What costs Peal by use has a meter, with a monthly allowance per billing account
 | Messages sent from the [inbox](/guides/engage/inbox), comment replies included | {{messages-allowance-en}} | {{messages-price-en}} for {{messages-per-en}}, billed by the message |
 | [Managed ads](/guides/engage/ads), each ad active in the month                 | {{ads-allowance-en}}      | {{ads-price-en}} per ad                                              |
 | The writing assistant's requests and images, on the instance's models          | coming soon               | coming soon                                                          |
+| [X](/platforms/x)'s API: posts sent and, where turned on, counts read          | nothing                   | at X's rates ([below](#x))                                           |
 
-Without a payment method, a meter pauses at its allowance until the first of the next month, while reading, analytics and publishing go on. With one, each unit past the allowance is billed on the month's invoice. While a payment has failed, the allowances still apply and nothing past them is used until it goes through. Until a billing account's first invoice is paid, what its meters bill in a month is capped, whatever the ceilings.
+Without a payment method, a meter pauses at its allowance until the first of the next month, while reading, analytics and publishing go on. With one, each unit past the allowance is billed on the month's invoice. While a payment has failed, the allowances still apply and nothing past them is used until it goes through. Until a billing account's first invoice is paid, what its meters bill is capped, whatever the ceilings, the months since its subscription began included.
 
 Past what a meter allows, the action is refused and nothing is counted: the API answers 402 `UsageAllowanceReached`, with the `meter`, what it `allowed`, what was `used`, when it `resetsAt` and the `reason` ([Errors](/developers/conventions/errors)).
 
 The writing assistant on the instance's models needs a payment method. With one, its requests and its images each have a monthly allowance per billing account, which the billing page shows; until their prices are set, nothing past it is billed, and the assistant stops there until the next month. A generation that fails once the provider had it is not counted, up to the allowance. A workspace's own [image](/guides/workspace#image-provider) and [text](/guides/workspace#text-provider) providers cost nothing, on any plan.
+
+### X, at X's rates [#x]
+
+X bills each call to its API, and Peal passes it on at X's published pay-per-use rates, with nothing added. A billing account needs a payment method before it connects an X account, and X's use is billed on its monthly invoice, up to a ceiling of {{x-ceiling-en}} excluding tax a month unless its billing managers change it on the billing page.
+
+| A call                                      | X's rate           |
+| ------------------------------------------- | ------------------ |
+| A post sent, each part of a thread          | {{x-post-en}}      |
+| A post sent with a link                     | {{x-post-link-en}} |
+| A post's counts read, once a UTC day        | {{x-post-read-en}} |
+| An account's followers read, once a UTC day | {{x-user-read-en}} |
+
+The rates are those X's developer pricing page gave on {{x-rates-read-en}}; X may change them, and the billing page shows those billed. Reading counts is off until a member who manages billing turns it on for the workspace, on the billing page ([Analytics](/guides/engage/analytics)). At the ceiling, posts to X fail without being sent (`xCeilingReached`) and counts wait for the next month, while every other platform goes on; billing managers are told at 80% and at 100% of it. An X post of a billing account without a payment method fails the same way (`paymentMethodRequired`). A server you run yourself bills nothing for X: its operator's settings decide ([Environment variables](/self-hosting/environment-variables)).
 
 ## A payment method [#payment-method]
 
