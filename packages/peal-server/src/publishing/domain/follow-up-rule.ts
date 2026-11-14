@@ -316,9 +316,13 @@ export const isDoneFor = (target: PostTarget, now: DateTime.Utc): boolean => {
   const { status } = target;
 
   if (status._tag === "failed" || status._tag === "unconfirmed") {
-    const since = status._tag === "failed" ? status.failedAt : status.attemptedAt;
+    const since =
+      status._tag === "failed" ? status.failedAt : status.attemptedAt;
 
-    return !DateTime.isLessThan(now, DateTime.addDuration(since, followUpWindow));
+    return !DateTime.isLessThan(
+      now,
+      DateTime.addDuration(since, followUpWindow)
+    );
   }
 
   return isSettled(target);

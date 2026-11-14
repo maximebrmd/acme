@@ -1210,7 +1210,6 @@ describe("follow-up rules", () => {
             ["cancelled", "cancelled"]
           );
 
-
           yield* TestClock.adjust("8 days");
 
           // The comment past its window, and the repost never granted.
@@ -1429,6 +1428,7 @@ describe("follow-up rules", () => {
           const stopped = yield* FollowUpRules.use((rules) =>
             rules.start(actorIn(workspaceId), onPost(first))
           );
+
           const changed = yield* FollowUpRules.use((rules) =>
             rules.start(actorIn(workspaceId), onPost(second))
           );
@@ -1468,6 +1468,7 @@ describe("follow-up rules", () => {
           assert.strictEqual(run.cancelled, 1);
 
           const stoppedNow = yield* ruleNow(workspaceId, stopped.rule.id);
+
           const repost = stoppedNow.followUps.find(
             ({ kind }) => kind === "repost"
           );

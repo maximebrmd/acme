@@ -19,10 +19,10 @@ import {
   followUpsShown,
   maxFollowUpCommentLength,
 } from "#publishing/application/follow-up-rules.ts";
-import { FollowUpIdSchema } from "#publishing/domain/follow-up-id.ts";
-import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import { FollowUpAbilitySchema as AbilitySchema } from "#publishing/domain/follow-up-ability.ts";
 import { FollowUpEndReasonSchema } from "#publishing/domain/follow-up-end-reason.ts";
+import { FollowUpIdSchema } from "#publishing/domain/follow-up-id.ts";
+import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   followUpWindow,
   maxFollowUpRulesPerWorkspace,
@@ -120,6 +120,8 @@ describe("the follow-ups' contract", () => {
     const shown = followUpView(waiting);
 
     expect(shown.status).toBe("waiting");
-    expect(shown.until).toStrictEqual(DateTime.makeUnsafe("2026-07-13T07:00:00Z"));
+    expect(shown.until).toStrictEqual(
+      DateTime.makeUnsafe("2026-07-13T07:00:00Z")
+    );
   });
 });
