@@ -57,7 +57,7 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
  * `workspace:publish` leaves to an OAuth client
  * (`#workspace/domain/oauth-grant.ts`). Whatever answers, settles or
  * moderates a comment is among them: its use cases check
- * `engagement:reply`. A test calls each with a connection that lacks the
+ * `engagement:reply`; and what sends a direct message, `engagement:message`. A test calls each with a connection that lacks the
  * scope.
  */
 export const publishingTools: ReadonlySet<string> = new Set([
@@ -87,6 +87,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "resume_recycling_rule",
   "revoke_review_link",
   "schedule_post",
+  "send_message",
   "stop_recycling_rule",
   "unpublish_post",
   "unschedule_post",
