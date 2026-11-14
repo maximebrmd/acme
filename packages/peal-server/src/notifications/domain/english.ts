@@ -406,6 +406,20 @@ export const english: EmailCatalog = {
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "{workspaceName} used this month's {meter}",
   },
+  xCeilingNearing: {
+    action: "Open the billing page",
+    body: "{workspaceName}'s billing account has spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's own rates. Once it is reached, posts to X and the reading of X's counts stop until {resetsAt}. Raise the ceiling on the billing page if you need more.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "{workspaceName} spent {percent}% of its X ceiling",
+  },
+  xCeilingReached: {
+    action: "Raise the ceiling",
+    body: "{workspaceName}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax, at X's own rates. Until {resetsAt}, posts to X fail without being sent and X's counts are not read; every other platform goes on. Raise the ceiling on the billing page to go on now.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "{workspaceName} reached its X ceiling",
+  },
   meters: {
     assistantImages: "writing assistant images",
     assistantRequests: "writing assistant requests",

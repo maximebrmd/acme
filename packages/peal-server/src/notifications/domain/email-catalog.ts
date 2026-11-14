@@ -181,6 +181,8 @@ export interface EmailCatalog {
    * the `{allowed}` `{meter}` its month includes, until `{resetsAt}`.
    */
   readonly allowanceReached: EmailMessages;
+  readonly xCeilingNearing: EmailMessages;
+  readonly xCeilingReached: EmailMessages;
   /** What each meter counts, as `{meter}`: "inbox messages sent". */
   readonly meters: Readonly<Record<Meter, string>>;
   /** "month" or "year", as `{interval}`. */

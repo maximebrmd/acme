@@ -416,6 +416,20 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "{workspaceName} a utilisé ses {meter} du mois",
   },
+  xCeilingNearing: {
+    action: "Ouvrir la page de facturation",
+    body: "Le compte de facturation de {workspaceName} a dépensé {percent} % de son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Une fois le plafond atteint, les publications sur X et la lecture des chiffres de X s’arrêtent jusqu’au {resetsAt}. Relevez le plafond sur la page de facturation s’il vous en faut davantage.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "{workspaceName} a dépensé {percent} % de son plafond X",
+  },
+  xCeilingReached: {
+    action: "Relever le plafond",
+    body: "Le compte de facturation de {workspaceName} a atteint son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Jusqu’au {resetsAt}, les publications sur X échouent sans être envoyées et les chiffres de X ne sont pas lus ; les autres plateformes continuent. Relevez le plafond sur la page de facturation pour continuer dès maintenant.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "{workspaceName} a atteint son plafond X",
+  },
   meters: {
     assistantImages: "images de l’assistant de rédaction",
     assistantRequests: "demandes à l’assistant de rédaction",

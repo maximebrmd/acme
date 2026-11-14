@@ -312,6 +312,26 @@ export const mostUnits = (
 ): Option.Option<number> =>
   meterBound(meter, asked, card).pipe(Option.map(({ most }) => most));
 
+/** The shares of a ceiling, in percent, its billing managers are told of. */
+export const ceilingNotices = [80, 100] as const;
+
+/**
+ * The shares of `ceiling` (`ceilingNotices`) a spend that went from
+ * `before` to `after` cents reached, in cents: none for a ceiling of
+ * nothing, which nothing reaches.
+ */
+export const ceilingSharesReached = (
+  before: number,
+  after: number,
+  ceiling: number
+): readonly number[] =>
+  ceiling <= 0
+    ? []
+    : ceilingNotices.filter(
+        (percent) =>
+          before * 100 < percent * ceiling && after * 100 >= percent * ceiling
+      );
+
 /** Why a meter refuses, by standing. */
 export const reasons = {
   free: "paymentMethodRequired",

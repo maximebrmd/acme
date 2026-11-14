@@ -743,6 +743,12 @@ export type NoticeEventRecord =
       readonly resetsAt: DateTime.Utc;
     }
   | {
+      readonly _tag: "XSpendCeiling";
+      readonly ceiling: number;
+      readonly percent: number;
+      readonly resetsAt: DateTime.Utc;
+    }
+  | {
       readonly _tag: "TrialEnding";
       readonly endsAt: DateTime.Utc;
       /** What the workspace held beyond the free plan when it was told. */

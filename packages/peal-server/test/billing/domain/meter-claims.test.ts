@@ -3,6 +3,7 @@ import { DateTime, Option, Result } from "effect";
 
 import { unverifiedThreshold } from "#billing/domain/account-days.ts";
 import {
+  ceilingSharesReached,
   decideClaim,
   defaultCeilingOf,
   includedUnits,
@@ -395,5 +396,13 @@ describe("meter claims", () => {
         unpaidBefore: unverifiedThreshold - 3,
       })
     );
+  });
+
+  it("tells the shares of a ceiling a spend reached, once each", () => {
+    expect(ceilingSharesReached(0, 79, 100)).toStrictEqual([]);
+    expect(ceilingSharesReached(79, 80, 100)).toStrictEqual([80]);
+    expect(ceilingSharesReached(80, 99, 100)).toStrictEqual([]);
+    expect(ceilingSharesReached(70, 100, 100)).toStrictEqual([80, 100]);
+    expect(ceilingSharesReached(0, 10, 0)).toStrictEqual([]);
   });
 });

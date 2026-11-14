@@ -266,7 +266,12 @@
   billing:manage in person (`PUT …/billing/x`, in `billingActions`) on any
   workspace of the account, answered as `x` on `GET …/billing`, kept in
   the export (`xReads`) and erased with the workspace. A server that does
-  not bill answers `BillingNotEnabled` and reads none of it.
+  not bill answers `BillingNotEnabled` and reads none of it. A claim
+  whose X spend reaches 80% or 100% of the `x` ceiling
+  (`ceilingSharesReached`) tells the billing managers (`XSpendCeiling`,
+  keyed `x-ceiling:<holder>:<YYYY-MM>:<percent>`, always emailed); a
+  claim refused at the ceiling tells the 100% one after its transaction
+  rolled back, so a ceiling never quite reached is told too.
 - Sandbox runbook for the meters (the owner, test mode, never in tests):
   on a `payAsYouGo` subscription with a test clock, send 10,001 replies'
   worth (seed `meter_usage` at 10,000, then reply once) and read the

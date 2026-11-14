@@ -230,6 +230,15 @@ export const NoticeEventSchema = Schema.Union([
     meter: MeterSchema,
     resetsAt: Schema.DateTimeUtc,
   }),
+  // The billing account spent `percent` (80, then 100) of its monthly
+  // ceiling for X, `ceiling` US dollar cents, at X's rates: at 100, X's
+  // posts and reads stop until `resetsAt`, the first of next month,
+  // unless the ceiling is raised.
+  Schema.TaggedStruct("XSpendCeiling", {
+    ceiling: Schema.Int,
+    percent: Schema.Int,
+    resetsAt: Schema.DateTimeUtc,
+  }),
   // A yearly plan renews at `renewsAt`, for `price`, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
@@ -353,6 +362,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     PaymentMethodNeeded: () => Option.none<EmailKind>(),
     AllowanceReached: () => Option.none<EmailKind>(),
+    XSpendCeiling: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
     WebhookDeliveriesFailing: () => Option.some<EmailKind>("webhookFailing"),
     WebhookEndpointDisabled: () => Option.none<EmailKind>(),
@@ -390,6 +400,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     PaymentMethodNeeded: (): Permission => "billing:manage",
     AllowanceReached: (): Permission => "billing:manage",
+    XSpendCeiling: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
     WebhookDeliveriesFailing: (): Permission => "webhook:manage",
     WebhookEndpointDisabled: (): Permission => "webhook:manage",
@@ -418,6 +429,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionWithdrawn: () => false,
     PaymentMethodNeeded: () => false,
     AllowanceReached: () => false,
+    XSpendCeiling: () => false,
     TrialEnding: () => false,
     WebhookDeliveriesFailing: () => false,
     WebhookEndpointDisabled: () => false,
@@ -544,6 +556,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     PaymentMethodNeeded: () => `/app/${workspaceId}/billing`,
     AllowanceReached: () => `/app/${workspaceId}/billing`,
+    XSpendCeiling: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
     WebhookDeliveriesFailing: () => `/app/${workspaceId}/settings/webhooks`,
     WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,

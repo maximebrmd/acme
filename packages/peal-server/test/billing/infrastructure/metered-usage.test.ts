@@ -506,6 +506,50 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
   );
 
   it.effect(
+    "tell the billing managers once a month when X's spend reaches 80% of its ceiling, and when it reaches the ceiling",
+    () =>
+      Effect.gen(function* xNotices() {
+        const ceilings = yield* SpendCeilings;
+        const sql = yield* SqlClient.SqlClient;
+        const { payer, workspaceId: paid } = yield* paying;
+
+        // Paid once, so only the ceiling bounds it: $1.00, 1,000 units.
+        yield* sql`UPDATE billing.subscriptions SET paid_invoice_at = now() WHERE workspace_id = ${paid}`.pipe(
+          Effect.orDie
+        );
+        yield* ceilings.set(ownerOf(paid, payer), "x", 100);
+
+        const xTold = Told.use(Ref.get).pipe(
+          Effect.map((all) =>
+            all.flatMap(({ key, notice }) =>
+              notice._tag === "XSpendCeiling" && key.includes(paid)
+                ? [notice.percent]
+                : []
+            )
+          )
+        );
+
+        yield* claimOf(paid, "xApi", 790);
+
+        assert.deepStrictEqual(yield* xTold, []);
+
+        yield* claimOf(paid, "xApi", 10);
+
+        assert.deepStrictEqual(yield* xTold, [80]);
+
+        yield* claimOf(paid, "xApi", 190);
+
+        const refused = yield* claimOf(paid, "xApi", 20).pipe(Effect.flip);
+
+        assert.strictEqual(refused.reason, "ceilingReached");
+        yield* claimOf(paid, "xApi", 15).pipe(Effect.flip);
+        assert.deepStrictEqual(yield* xTold, [80, 100]);
+
+        yield* cleanUp([paid]);
+      })
+  );
+
+  it.effect(
     "cap what every meter bills at the threshold until a first invoice is paid, whatever the ceiling",
     () =>
       Effect.gen(function* unverified() {

@@ -1,4 +1,4 @@
-import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Layer, Option, Ref, Result } from "effect";
 
 import { AccountDayStore } from "#billing/application/ports/account-day-store.ts";
 import type { MeterReport } from "#billing/application/ports/account-day-store.ts";
@@ -18,10 +18,12 @@ import {
   meterEventIdentifier,
   meterMonthOf,
   meterResetsAt,
+  ceilingSharesReached,
   meterBound,
   reasons,
   refusalOf,
   spendCapOf,
+  spendOf,
   spendOfMonths,
   standingOfEntitlements,
   metersOf,
@@ -228,6 +230,25 @@ const BilledMeteredUsageLive = Layer.effect(
       }
     });
 
+    // Tells the billing managers that X's spend reached a share of its
+    // ceiling, once per share and month.
+    const tellCeiling = (
+      holder: WorkspaceId,
+      month: DateTime.Utc,
+      ceiling: number,
+      percent: number
+    ) =>
+      notices.tell({
+        key: `x-ceiling:${holder}:${DateTime.formatIsoDateUtc(month).slice(0, 7)}:${String(percent)}`,
+        notice: {
+          _tag: "XSpendCeiling",
+          ceiling,
+          percent,
+          resetsAt: meterResetsAt(month),
+        },
+        workspaceId: holder,
+      });
+
     const claim = Effect.fn("MeteredUsage.claim")(function* claim(
       workspaceId: WorkspaceId,
       meter: Meter,
@@ -236,6 +257,14 @@ const BilledMeteredUsageLive = Layer.effect(
     ) {
       const at = given ?? (yield* DateTime.now);
       const month = meterMonthOf(at);
+
+      // X's ceiling a refusal met, told once the refused claim rolled back.
+      const ceilingMet = yield* Ref.make(
+        Option.none<{
+          readonly ceiling: number;
+          readonly holder: WorkspaceId;
+        }>()
+      );
 
       return yield* transaction(
         Effect.gen(function* claiming() {
@@ -265,13 +294,43 @@ const BilledMeteredUsageLive = Layer.effect(
             unpaidBefore: payer.unpaidBefore,
           });
 
+          const xCeiling = ceiling.pipe(
+            Option.filter(
+              () =>
+                payer.standing === "payAsYouGo" &&
+                Option.contains(spendGroupOf(meter), "x")
+            )
+          );
+
           if (Result.isFailure(decided)) {
+            if (decided.failure.reason === "ceilingReached") {
+              yield* Ref.set(
+                ceilingMet,
+                xCeiling.pipe(
+                  Option.map((cents) => ({ ceiling: cents, holder }))
+                )
+              );
+            }
+
             return yield* new AllowanceReached({
               ...decided.failure,
               meter,
               resetsAt: meterResetsAt(month),
             });
           }
+
+          // X's spend crossing a share of its ceiling is told with the claim.
+          yield* Effect.forEach(
+            Option.toArray(xCeiling).flatMap((cents) =>
+              ceilingSharesReached(
+                spendOf(rows.filter((row) => row.meter === meter)),
+                spendOf([{ meter, used: decided.success.used }]),
+                cents
+              ).map((percent) => ({ cents, percent }))
+            ),
+            ({ cents, percent }) => tellCeiling(holder, month, cents, percent),
+            { discard: true }
+          );
 
           yield* settle(
             holder,
@@ -323,6 +382,18 @@ const BilledMeteredUsageLive = Layer.effect(
 
           return granted;
         })
+      ).pipe(
+        Effect.tapError(() =>
+          Ref.get(ceilingMet).pipe(
+            Effect.flatMap(
+              Option.match({
+                onNone: () => Effect.void,
+                onSome: ({ ceiling, holder }) =>
+                  transaction(tellCeiling(holder, month, ceiling, 100)),
+              })
+            )
+          )
+        )
       );
     });
 
