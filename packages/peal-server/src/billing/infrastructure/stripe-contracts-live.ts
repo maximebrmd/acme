@@ -24,6 +24,8 @@ const comments: Readonly<Record<EndReason, string>> = {
   duplicateSubscription:
     "Second per-account subscription of the same billing account",
   duplicateTrial: "Second trial of the same account or workspace",
+  movedToRateCard:
+    "Moved to per-account pricing on Peal: its unused time is credited",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",
   withdrawn: "Consumer withdrawal on Peal",
@@ -73,6 +75,7 @@ const decodeNotes = (notes: readonly unknown[]) =>
 // What each credit note says it is for, on the invoice's page.
 const memos: Readonly<Record<CreditReason["_tag"], string>> = {
   lateCancellation: "Renewal charged after the cancellation was received",
+  movedToRateCard: "Unused time of a plan moved to per-account pricing",
   withdrawal: "Consumer withdrawal",
 };
 
@@ -116,10 +119,15 @@ const periodOf = (
 // A credit note's key, kept in its metadata: Stripe forgets an
 // idempotency key after a day, and a request can be taken up again
 // weeks later, from its link or by staff.
-const creditKeyOf = (reason: CreditReason, id: string, invoiceId: string) =>
-  reason._tag === "withdrawal"
-    ? `withdrawal-credit-${id}-${invoiceId}`
+const creditKeyOf = (reason: CreditReason, id: string, invoiceId: string) => {
+  if (reason._tag === "withdrawal") {
+    return `withdrawal-credit-${id}-${invoiceId}`;
+  }
+
+  return reason._tag === "movedToRateCard"
+    ? `moved-credit-${id}-${invoiceId}`
     : `late-cancellation-credit-${reason.requestKey}-${invoiceId}`;
+};
 
 /**
  * Billing's calls to Stripe through the server's key: each one bounded in

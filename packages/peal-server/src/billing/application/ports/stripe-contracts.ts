@@ -26,12 +26,14 @@ export interface InvoiceCredit {
 }
 
 /**
- * Why money goes back: a consumer's withdrawal, once per subscription, or
- * the renewals a cancellation received before them should have stopped,
- * once per request.
+ * Why money goes back: a consumer's withdrawal, once per subscription; the
+ * renewals a cancellation received before them should have stopped, once
+ * per request; or the unused time of a legacy plan ended as it moved to
+ * per-account pricing, once per subscription.
  */
 export type CreditReason =
   | { readonly _tag: "lateCancellation"; readonly requestKey: string }
+  | { readonly _tag: "movedToRateCard" }
   | { readonly _tag: "withdrawal" };
 
 /** Why a subscription is ended at once. */
@@ -41,6 +43,9 @@ export type EndReason =
   | "duplicateTrial"
   // A second per-account subscription of one billing account.
   | "duplicateSubscription"
+  // A legacy plan ended as per-account pricing started, its unused time
+  // credited.
+  | "movedToRateCard"
   | "orderedDuringTrial"
   | "trialCancelled"
   | "withdrawn";

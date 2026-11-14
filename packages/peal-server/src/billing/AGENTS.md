@@ -282,9 +282,19 @@
   (`peal.billing.threshold_unset`, alert `peal-threshold-unset`) and the
   subscription recorded all the same; the daily step lifts both after
   the first paid invoice.
-- Until T10's move, a legacy subscriber who orders per-account pricing
-  is billed both until the legacy plan's period ends (it is set to end
-  then, without credit): no server bills a legacy plan today.
+- A legacy subscriber moves by ordering per-account pricing (the billing
+  page's "Move to per-account pricing": an order, then its own checkout).
+  Once that subscription is recorded paying, `RecordSubscription` ends
+  each legacy plan that entitles at once (`endNow`, `movedToRateCard`,
+  set to end with its period or not) after crediting its unused time
+  (`movedCredits`: each paid invoice's own period, to the second, at the
+  moment per-account pricing started, so a retry computes the same; an
+  invoice whose lines give no period credits nothing) through a credit
+  note refunded to the card (`CreditReason` `movedToRateCard`, key
+  `moved-credit-<subscription>-<invoice>`, looked for before one is
+  made). Not the customer's balance, which Stripe's own proration would
+  use: the legacy plan was paid in euros, and a balance in euros pays no
+  dollar invoice.
 - `GET …/billing` answers `accounts` (the workspace's own and the
   pooled count, and for the billing workspace's members only the month's
   account-days, `estimate` by `accountsCharge` of what was reported once
@@ -642,9 +652,8 @@
   month past's usage (`creditsAt`).
   `planOf` reads `payAsYouGo` from `<prefix>_accounts` among the items.
   Once `payAsYouGo` is recorded, `RecordSubscription` ends a trial
-  (`orderedDuringTrial`) and sets a legacy plan to end with its period
-  (`cancelAtPeriodEnd`, key `moved-<subscription>`; the move with a credit
-  is T10's `movedToRateCard`). One per-account subscription per billing
+  (`orderedDuringTrial`) and a legacy plan, credited (`movedToRateCard`,
+  above). One per-account subscription per billing
   account: an order is refused while one Stripe may still bill exists,
   past due and unpaid included (`AlreadySubscribed`, in `PlaceOrder` and
   again in `CheckoutOrders.take`), and one recorded beside another (two

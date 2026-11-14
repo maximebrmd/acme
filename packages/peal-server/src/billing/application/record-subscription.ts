@@ -30,6 +30,7 @@ import type { RecordOutcome } from "./ports/subscriptions.ts";
 import { Trials } from "./ports/trials.ts";
 import { UsageBilling } from "./ports/usage-billing.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
+import { movedCredits } from "./unused-time.ts";
 
 /** What a Stripe webhook event says of a workspace's subscription. */
 export interface SubscriptionEvent {
@@ -331,8 +332,14 @@ export class RecordSubscription extends Context.Service<
         }
 
         // Per-account pricing now runs: a legacy plan the workspace still
-        // pays for ends with the period it paid for (it is not ended at
-        // once: no credit is made for its unused time here).
+        // pays for ends at once, set to end with its period or not, and
+        // the part of its period not supplied goes back to the payment
+        // method it was paid with, through a credit note on each invoice
+        // (its own currency: a legacy plan's euros cannot pay a dollar
+        // invoice from the customer's balance). Computed at the moment
+        // per-account pricing started, the same on every retry, each
+        // note under its key, so it is credited once; credited before it
+        // is ended, so an end Stripe refused leaves the credit to try again.
         if (
           outcome !== "ignored" &&
           recorded.plan === "payAsYouGo" &&
@@ -340,20 +347,47 @@ export class RecordSubscription extends Context.Service<
         ) {
           const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
 
+          const movedAt = Option.getOrElse(
+            recorded.startedAt,
+            () => occurredAt
+          );
+
           yield* Effect.forEach(
             held.filter(
               (legacy) =>
                 legacy.plan !== "payAsYouGo" &&
                 legacy.status !== "trialing" &&
-                !legacy.cancelAtPeriodEnd &&
                 entitles(legacy)
             ),
             ({ stripeSubscriptionId }) =>
-              stripe.cancelAtPeriodEnd(
-                recorded.workspaceId,
-                stripeSubscriptionId,
-                `moved-${recorded.stripeSubscriptionId}`
-              ),
+              Effect.gen(function* moved() {
+                const invoices = yield* stripe.paidInvoices(
+                  recorded.workspaceId,
+                  stripeSubscriptionId
+                );
+
+                yield* stripe.credit(
+                  recorded.workspaceId,
+                  stripeSubscriptionId,
+                  movedCredits(invoices, movedAt),
+                  { _tag: "movedToRateCard" }
+                );
+
+                yield* stripe.endNow(
+                  recorded.workspaceId,
+                  stripeSubscriptionId,
+                  "movedToRateCard"
+                );
+
+                yield* Effect.logInfo(
+                  "Ended a legacy plan moved to per-account pricing, its unused time credited"
+                ).pipe(
+                  Effect.annotateLogs({
+                    stripeSubscriptionId,
+                    workspaceId: recorded.workspaceId,
+                  })
+                );
+              }),
             { discard: true }
           );
         }

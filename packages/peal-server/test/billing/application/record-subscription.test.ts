@@ -4,6 +4,7 @@ import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 import { AccountDays } from "#billing/application/account-days.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
+import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
@@ -68,6 +69,36 @@ const refusalOf = (workspace: WorkspaceId, id: string) => {
     : Effect.void;
 };
 
+// What each legacy plan was paid, invoice by invoice, in euro cents: a
+// month from November 1st, and a year from January 1st, 2026, with an
+// older month's invoice, whose period is over.
+const paid = (
+  invoiceId: string,
+  amount: number,
+  start: string,
+  end: string
+): PaidInvoice => ({
+  invoiceId,
+  lines: [{ amount, start: at(start) }],
+  paid: { amount, currency: "eur" },
+  periodEnd: Option.some(at(end)),
+  periodStart: Option.some(at(start)),
+});
+
+const legacyInvoices = new Map<string, readonly PaidInvoice[]>([
+  [
+    "sub_synthetic_legacy",
+    [
+      paid("in_november", 1900, "2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z"),
+      paid("in_october", 1900, "2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z"),
+    ],
+  ],
+  [
+    "sub_synthetic_yearly",
+    [paid("in_year", 19_000, "2026-01-01T00:00:00Z", "2027-01-01T00:00:00Z")],
+  ],
+]);
+
 const PortsInMemory = Layer.mergeAll(
   Layer.effect(
     Subscriptions,
@@ -131,14 +162,20 @@ const PortsInMemory = Layer.mergeAll(
           cancelAt: () => Effect.void,
           cancelAtPeriodEnd: (_workspace, id) =>
             asked(`cancelAtPeriodEnd ${id}`),
-          credit: (_workspace, id) => asked(`credit ${id}`),
+          credit: (_workspace, id, credits, reason) =>
+            asked(
+              `credit ${id} ${credits
+                .map(({ amount, invoiceId }) => `${invoiceId}:${amount}`)
+                .join(",")} ${reason._tag}`
+            ),
           endAtTrialEnd: (_workspace, id, end) =>
             asked(`endAtTrialEnd ${id} ${DateTime.formatIso(end)}`),
           endAndInvoice: (_workspace, id, reason) =>
             asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
           isBusiness: () => Effect.succeed(false),
-          paidInvoices: () => Effect.succeed([]),
+          paidInvoices: (_workspace, id) =>
+            Effect.succeed(legacyInvoices.get(id) ?? []),
           upcomingTotal: () => Effect.succeed(Option.none()),
         })
       );
@@ -317,7 +354,7 @@ layer(RecordTest)("recording a subscription", (it) => {
   );
 
   it.effect(
-    "ends a trial at once, and a legacy plan at its period's end, once per-account pricing is recorded",
+    "ends a trial at once once per-account pricing is recorded, and a legacy plan at once, credited its unused time",
     () =>
       Effect.gen(function* moved() {
         yield* reset;
@@ -331,32 +368,97 @@ layer(RecordTest)("recording a subscription", (it) => {
         });
         yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
 
+        // Per-account pricing starts on November 16th, 00:00: 15 of
+        // November's 30 days were not used.
+        const moving = {
+          plan: "payAsYouGo" as const,
+          startedAt: Option.some(at("2026-11-16T00:00:00Z")),
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        };
+
+        yield* record(moving);
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "setThreshold sub_synthetic_accounts 10000",
+          "endNow sub_synthetic_trial orderedDuringTrial",
+          "credit sub_synthetic_legacy in_november:950,in_october:0 movedToRateCard",
+          "endNow sub_synthetic_legacy movedToRateCard",
+        ]);
+
+        // Recorded again, the same credit is asked under the same key,
+        // which Stripe's credit notes keep: it is made once.
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+        yield* record({ ...moving, occurredAt: at("2026-11-17T09:00:00Z") });
+
+        assert.includeDeepMembers(
+          [...(yield* askedOfStripe)],
+          [
+            "credit sub_synthetic_legacy in_november:950,in_october:0 movedToRateCard",
+          ]
+        );
+      })
+  );
+
+  it.effect(
+    "credits a yearly legacy plan its unused time, and one already set to end with its period too",
+    () =>
+      Effect.gen(function* yearly() {
+        yield* reset;
+        yield* record({
+          cancelAtPeriodEnd: true,
+          interval: "year",
+          plan: "pro",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_yearly",
+          trialEnd: Option.none(),
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
         yield* record({
           plan: "payAsYouGo",
+          startedAt: Option.some(at("2026-11-16T00:00:00Z")),
           startedBy: Option.none(),
           status: "active",
           stripeSubscriptionId: "sub_synthetic_accounts",
           trialEnd: Option.none(),
         });
 
+        // 46 of the year's 365 days were not used: 19,000 × 46 / 365.
         assert.deepStrictEqual(yield* askedOfStripe, [
           "setThreshold sub_synthetic_accounts 10000",
-          "endNow sub_synthetic_trial orderedDuringTrial",
-          "cancelAtPeriodEnd sub_synthetic_legacy",
+          "credit sub_synthetic_yearly in_year:2394 movedToRateCard",
+          "endNow sub_synthetic_yearly movedToRateCard",
         ]);
+      })
+  );
 
-        // Recorded again, Stripe is asked again under the same keys.
-        const entitlements = (yield* RecordLog.use(({ held }) =>
-          Ref.get(held)
-        )).map(({ plan, stripeSubscriptionId }) => [
-          stripeSubscriptionId,
-          plan,
-        ]);
+  it.effect(
+    "leaves a legacy plan alone while per-account pricing is not paid for",
+    () =>
+      Effect.gen(function* unpaid() {
+        yield* reset;
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
 
-        assert.deepInclude(entitlements, [
-          "sub_synthetic_accounts",
-          "payAsYouGo",
-        ]);
+        yield* record({
+          plan: "payAsYouGo",
+          startedBy: Option.none(),
+          status: "incomplete",
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        });
+
+        assert.deepStrictEqual(yield* askedOfStripe, []);
       })
   );
 

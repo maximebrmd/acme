@@ -270,6 +270,52 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
   );
 
   it.effect(
+    "credit a legacy plan moved to per-account pricing its unused time once, refunded, then end it",
+    () =>
+      Effect.gen(function* moved() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 950, invoiceId: "in_proration" }],
+          { _tag: "movedToRateCard" }
+        );
+        yield* contracts.endNow(workspaceId, "sub_paid", "movedToRateCard");
+
+        const [, creditNote, ended] = stripe.requests();
+
+        const form = new URLSearchParams(
+          creditNote === undefined ? "" : textOf(creditNote)
+        );
+
+        assert.strictEqual(form.get("amount"), "950");
+        assert.strictEqual(form.get("refund_amount"), "950");
+        assert.strictEqual(form.get("metadata[reason]"), "movedToRateCard");
+        assert.strictEqual(
+          form.get("memo"),
+          "Unused time of a plan moved to per-account pricing"
+        );
+        assert.strictEqual(
+          creditNote === undefined
+            ? ""
+            : headerOf(creditNote, "idempotency-key"),
+          "moved-credit-sub_paid-in_proration"
+        );
+        assert.strictEqual(
+          ended === undefined ? "" : headerOf(ended, "idempotency-key"),
+          "movedToRateCard-sub_paid"
+        );
+        assert.strictEqual(
+          ended?.query.get("cancellation_details[comment]"),
+          "Moved to per-account pricing on Peal: its unused time is credited"
+        );
+        assert.strictEqual(ended?.query.get("prorate"), "false");
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
     "set a trial to end with its trial, and read the next invoice's total",
     () =>
       Effect.gen(function* trial() {
