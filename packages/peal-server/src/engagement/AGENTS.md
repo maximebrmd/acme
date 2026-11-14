@@ -354,4 +354,3 @@
   the setting is turned on anywhere, Google grants the project access (its
   quota is zero before), and one review is read, answered and its reply
   deleted on a test location.
-
