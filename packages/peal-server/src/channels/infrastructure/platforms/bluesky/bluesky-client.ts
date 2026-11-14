@@ -12,7 +12,10 @@ import type {
 } from "@atproto/oauth-client-node";
 import { Option } from "effect";
 
-import { blueskyGateScopes } from "#shared/domain/bluesky-scopes.ts";
+import {
+  blueskyChatScopes,
+  blueskyGateScopes,
+} from "#shared/domain/bluesky-scopes.ts";
 import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 
 /**
@@ -30,6 +33,16 @@ export const blueskyScope = [
   "rpc:com.atproto.repo.uploadBlob?aud=*",
   "rpc:app.bsky.video.getUploadLimits?aud=*",
 ].join(" ");
+
+/**
+ * What Peal asks Bluesky accounts for where the inbox reads Bluesky's
+ * direct messages (`PEAL_INBOX_MESSAGES`): the chat methods' scopes too
+ * (`blueskyChatScopes`). Off, exactly `blueskyScope`. The AT Protocol's
+ * consent takes every scope asked or none, so a channel connected before
+ * gets them by connecting again.
+ */
+export const blueskyScopeWith = (chat: boolean): string =>
+  chat ? [blueskyScope, ...blueskyChatScopes].join(" ") : blueskyScope;
 
 /** Where the web app's callback page is, and the client documents. */
 export const blueskyPaths = {
@@ -62,6 +75,8 @@ export interface BlueskyClientOptions {
   readonly plcDirectoryUrl: string;
   /** The web app's origin (PUBLIC_URL). */
   readonly publicUrl: string;
+  /** The scopes the client asks for: `blueskyScope` when not said. */
+  readonly scope?: string;
   readonly fetch: PublicFetch;
 }
 
@@ -98,9 +113,10 @@ export const memoryStore = <V>(
 
 /** The client's metadata for the mode, as the client and servers see it. */
 export const clientMetadataOf = (
-  options: Pick<BlueskyClientOptions, "mode" | "publicUrl">
+  options: Pick<BlueskyClientOptions, "mode" | "publicUrl" | "scope">
 ): OAuthClientMetadataInput => {
   const { mode, publicUrl } = options;
+  const scope = options.scope ?? blueskyScope;
 
   if (mode._tag === "loopback") {
     const redirect = new URL(blueskyPaths.callback, publicUrl);
@@ -109,7 +125,7 @@ export const clientMetadataOf = (
 
     return buildAtprotoLoopbackClientMetadata({
       redirect_uris: [redirect.href],
-      scope: blueskyScope,
+      scope,
     });
   }
 
@@ -123,7 +139,7 @@ export const clientMetadataOf = (
     jwks_uri: new URL(blueskyPaths.jwks, publicUrl).href,
     redirect_uris: [new URL(blueskyPaths.callback, publicUrl).href],
     response_types: ["code"],
-    scope: blueskyScope,
+    scope,
     token_endpoint_auth_method: "private_key_jwt",
     token_endpoint_auth_signing_alg: "ES256",
   };
