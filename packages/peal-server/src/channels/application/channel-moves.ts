@@ -132,18 +132,6 @@ export class ChannelMoves extends Context.Service<
             return yield* notFound;
           }
 
-          const there = yield* channels.findByAccount(
-            asked.to,
-            channel.value.platform,
-            channel.value.accountId
-          );
-
-          if (Option.isSome(there)) {
-            return yield* new ChannelAccountTaken({
-              channelId: there.value.id,
-            });
-          }
-
           const moved = movedChannel(
             channel.value,
             { id, workspaceId: asked.to },
@@ -160,28 +148,27 @@ export class ChannelMoves extends Context.Service<
             asked.from,
             asked.to,
             Effect.gen(function* changing() {
+              // Asked under the additions' hold: no channel of the account
+              // is added there before this ends.
+              const there = yield* channels.findByAccount(
+                asked.to,
+                moved.platform,
+                moved.accountId
+              );
+
+              if (Option.isSome(there)) {
+                return yield* new ChannelAccountTaken({
+                  channelId: there.value.id,
+                });
+              }
+
               yield* channels.remove(asked.from, channel.value.id);
               yield* events.disconnected(channel.value, "moved");
-              yield* channels.insert(moved, rebound).pipe(
-                Effect.catchTag("ChannelAlreadyConnected", () =>
-                  // Connected there meanwhile, by a sign-in that did not
-                  // wait for the additions this holds now.
-                  channels
-                    .findByAccount(asked.to, moved.platform, moved.accountId)
-                    .pipe(
-                      Effect.flatMap((other) =>
-                        Effect.fail(
-                          new ChannelAccountTaken({
-                            channelId: Option.match(other, {
-                              onNone: () => moved.id,
-                              onSome: ({ id: otherId }) => otherId,
-                            }),
-                          })
-                        )
-                      )
-                    )
-                )
-              );
+              // Every insert takes the additions this holds: a channel of
+              // the account there meanwhile would be a bug.
+              yield* channels
+                .insert(moved, rebound)
+                .pipe(Effect.catchTag("ChannelAlreadyConnected", Effect.die));
               yield* allowance.counted(asked.to, pooled(asked.to));
               yield* events.connected(moved, false);
 
