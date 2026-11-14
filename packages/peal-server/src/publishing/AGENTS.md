@@ -234,8 +234,20 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   of one that may have is looked for, never made again. An attempt the
   journal says ended answers what it recorded, outside any turn; one
   whose call may have reached the site is looked for before the plan is
-  checked. WordPress drops a featured image its library lost and answers
-  `featured_media` 0: the files are then sent once more, over that post.
+  checked. A call that may have reached the site ends only published or
+  unconfirmed (to check): a search that fails, or cannot start, and the
+  day's deadline both settle it to check, never failed. Each try of an
+  article opens a new round, a failed article scheduled again included,
+  and a new round's attempt first looks once more for the post of an
+  earlier round's call left to check (`ArticleJournal.toCheckBefore`,
+  `SitePublisher.find`), adopting it when found. A turn that cannot be
+  asked, the database failing, counts as taken: the attempt keeps
+  waiting. `drop` forgets only a call that never left, and `committing`
+  fails, so the post's call is not made, when its row is gone. WordPress
+  drops a featured image its library lost and answers `featured_media`
+  0: the cover alone is then sent once more, over that post, and one the
+  site drops again is not offered any more
+  (`article_files.featured_refused`).
 - WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
   sends each file the article shows to `/wp/v2/media` (the bytes as the
   body, `Content-Disposition` naming the file, streamed), finds tags and
