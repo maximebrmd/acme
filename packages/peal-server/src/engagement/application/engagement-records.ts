@@ -2,7 +2,10 @@ import { Context } from "effect";
 import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { SentReplyRecord } from "#shared/application/personal-data.ts";
+import type {
+  SentReplyRecord,
+  SentReviewReplyRecord,
+} from "#shared/application/personal-data.ts";
 import type {
   ChannelId,
   PostTargetId,
@@ -18,7 +21,9 @@ import type { Platform } from "#shared/domain/platform.ts";
  * in the caller's transaction, and records the workspace as erased, so a
  * collection run that listed its posts before follows none of them after.
  * A user's export holds the replies they wrote, never the comments they
- * answered, which are other people's.
+ * answered, which are other people's; and the same for the reviews of
+ * locations, which go with their workspace and, at once, with their
+ * channel.
  */
 export class EngagementRecords extends Context.Service<
   EngagementRecords,
@@ -32,7 +37,9 @@ export class EngagementRecords extends Context.Service<
      * forgotten, those of threads not read yet included, so a read on its
      * way keeps nothing; on the others, nothing changes until the next
      * read ends them, and the comments stay for their retention. The
-     * replies sent stay, the workspace's own.
+     * replies sent stay, the workspace's own. A Google Business Profile
+     * channel's reviews go at once, with the replies sent to them: Google
+     * lets Peal keep them no longer than it uses them.
      */
     readonly channelGone: (
       channelId: ChannelId,
@@ -43,7 +50,11 @@ export class EngagementRecords extends Context.Service<
     readonly exportUser: (
       userId: UserId
     ) => Effect.Effect<readonly SentReplyRecord[], DatabaseError>;
-    /** Deletes the workspace's threads, comments and replies. */
+    /** The replies to reviews the user wrote, oldest first. */
+    readonly exportUserReviewReplies: (
+      userId: UserId
+    ) => Effect.Effect<readonly SentReviewReplyRecord[], DatabaseError>;
+    /** Deletes the workspace's threads, comments, reviews and replies. */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;

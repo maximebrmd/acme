@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
     from .credential.client import AsyncCredentialClient, CredentialClient
     from .feeds.client import AsyncFeedsClient, FeedsClient
     from .inbox.client import AsyncInboxClient, InboxClient
+    from .inbox_reviews.client import AsyncInboxReviewsClient, InboxReviewsClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
@@ -153,6 +154,7 @@ class Peal:
         self._lookups: typing.Optional[LookupsClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
         self._inbox: typing.Optional[InboxClient] = None
+        self._inbox_reviews: typing.Optional[InboxReviewsClient] = None
         self._ads: typing.Optional[AdsClient] = None
         self._activity: typing.Optional[ActivityClient] = None
         self._partner: typing.Optional[PartnerClient] = None
@@ -336,6 +338,14 @@ class Peal:
 
             self._inbox = InboxClient(client_wrapper=self._client_wrapper)
         return self._inbox
+
+    @property
+    def inbox_reviews(self):
+        if self._inbox_reviews is None:
+            from .inbox_reviews.client import InboxReviewsClient  # noqa: E402
+
+            self._inbox_reviews = InboxReviewsClient(client_wrapper=self._client_wrapper)
+        return self._inbox_reviews
 
     @property
     def ads(self):
@@ -584,6 +594,7 @@ class AsyncPeal:
         self._lookups: typing.Optional[AsyncLookupsClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
         self._inbox: typing.Optional[AsyncInboxClient] = None
+        self._inbox_reviews: typing.Optional[AsyncInboxReviewsClient] = None
         self._ads: typing.Optional[AsyncAdsClient] = None
         self._activity: typing.Optional[AsyncActivityClient] = None
         self._partner: typing.Optional[AsyncPartnerClient] = None
@@ -767,6 +778,14 @@ class AsyncPeal:
 
             self._inbox = AsyncInboxClient(client_wrapper=self._client_wrapper)
         return self._inbox
+
+    @property
+    def inbox_reviews(self):
+        if self._inbox_reviews is None:
+            from .inbox_reviews.client import AsyncInboxReviewsClient  # noqa: E402
+
+            self._inbox_reviews = AsyncInboxReviewsClient(client_wrapper=self._client_wrapper)
+        return self._inbox_reviews
 
     @property
     def ads(self):

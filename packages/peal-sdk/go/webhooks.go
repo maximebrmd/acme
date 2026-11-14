@@ -585,6 +585,8 @@ const (
 	SubscribableWebhookEventTypeMediaFailed            SubscribableWebhookEventType = "media.failed"
 	SubscribableWebhookEventTypeCommentReceived        SubscribableWebhookEventType = "comment.received"
 	SubscribableWebhookEventTypeCommentReplied         SubscribableWebhookEventType = "comment.replied"
+	SubscribableWebhookEventTypeReviewReceived         SubscribableWebhookEventType = "review.received"
+	SubscribableWebhookEventTypeReviewReplied          SubscribableWebhookEventType = "review.replied"
 	SubscribableWebhookEventTypeBoostStarted           SubscribableWebhookEventType = "boost.started"
 	SubscribableWebhookEventTypeBoostPaused            SubscribableWebhookEventType = "boost.paused"
 	SubscribableWebhookEventTypeBoostResumed           SubscribableWebhookEventType = "boost.resumed"
@@ -645,6 +647,10 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypeCommentReceived, nil
 	case "comment.replied":
 		return SubscribableWebhookEventTypeCommentReplied, nil
+	case "review.received":
+		return SubscribableWebhookEventTypeReviewReceived, nil
+	case "review.replied":
+		return SubscribableWebhookEventTypeReviewReplied, nil
 	case "boost.started":
 		return SubscribableWebhookEventTypeBoostStarted, nil
 	case "boost.paused":
@@ -1861,6 +1867,8 @@ const (
 	WebhookEventTypeMediaFailed            WebhookEventType = "media.failed"
 	WebhookEventTypeCommentReceived        WebhookEventType = "comment.received"
 	WebhookEventTypeCommentReplied         WebhookEventType = "comment.replied"
+	WebhookEventTypeReviewReceived         WebhookEventType = "review.received"
+	WebhookEventTypeReviewReplied          WebhookEventType = "review.replied"
 	WebhookEventTypeBoostStarted           WebhookEventType = "boost.started"
 	WebhookEventTypeBoostPaused            WebhookEventType = "boost.paused"
 	WebhookEventTypeBoostResumed           WebhookEventType = "boost.resumed"
@@ -1922,6 +1930,10 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypeCommentReceived, nil
 	case "comment.replied":
 		return WebhookEventTypeCommentReplied, nil
+	case "review.received":
+		return WebhookEventTypeReviewReceived, nil
+	case "review.replied":
+		return WebhookEventTypeReviewReplied, nil
 	case "boost.started":
 		return WebhookEventTypeBoostStarted, nil
 	case "boost.paused":

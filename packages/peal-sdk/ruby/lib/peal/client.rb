@@ -125,6 +125,11 @@ module Peal
       @inbox ||= Peal::Inbox::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::InboxReviews::Client]
+    def inbox_reviews
+      @inbox_reviews ||= Peal::InboxReviews::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Ads::Client]
     def ads
       @ads ||= Peal::Ads::Client.new(client: @raw_client)

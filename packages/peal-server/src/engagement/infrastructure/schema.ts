@@ -2,9 +2,11 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   pgSchema,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -218,3 +220,153 @@ export const erasedWorkspaces = engagement.table("erased_workspaces", {
   erasedAt: instant("erased_at").notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });
+
+/**
+ * The reviews of one location, the account a Google Business Profile
+ * channel posts as: one thread a channel, read when `next_read_at` comes,
+ * and what the platform says of the location (`average_rating`,
+ * `total_review_count`), with what its list shows: how many reviews Peal
+ * keeps, how many wait for an answer, and when the latest was written or
+ * changed. It goes with its channel, its workspace, or once it was not
+ * read for as long as Google lets Peal keep what it gives.
+ */
+export const reviewThreads = engagement.table(
+  "review_threads",
+  {
+    averageRating: doublePrecision("average_rating"),
+    channelId: uuid("channel_id").notNull(),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    lastReadAt: instant("last_read_at"),
+    lastReviewAt: instant("last_review_at"),
+    nextReadAt: instant("next_read_at").notNull(),
+    reviewCount: integer("review_count").notNull().default(0),
+    totalReviewCount: integer("total_review_count"),
+    unansweredCount: integer("unanswered_count").notNull().default(0),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_threads_channel").on(table.channelId),
+    index("review_threads_due").on(table.nextReadAt, table.id),
+    // A workspace's list: locations with reviews, latest first.
+    index("review_threads_workspace_listed")
+      .on(table.workspaceId, table.lastReviewAt, table.id)
+      .where(sql`${table.reviewCount} > 0`),
+    // The retention's read: threads no read reached in time.
+    index("review_threads_read").on(table.lastReadAt),
+  ]
+);
+
+/**
+ * A review someone left on a location, as Google gave it: its name there
+ * (`platform_review_id`), its stars, its text, the name its author shows
+ * (null when they stay anonymous), how many photos it holds (never the
+ * photos), when it was written and last changed, and the location's reply
+ * as Google shows it. `answered_at` is when a member said it needs no
+ * answer. Kept 29 days from `updated_at` at most (Google's policies let
+ * what its API gives be stored 30 days).
+ */
+export const reviews = engagement.table(
+  "reviews",
+  {
+    answeredAt: instant("answered_at"),
+    channelId: uuid("channel_id").notNull(),
+    id: uuid("id").primaryKey(),
+    photoCount: integer("photo_count").notNull().default(0),
+    platformReviewId: text("platform_review_id").notNull(),
+    rating: smallint("rating").notNull(),
+    receivedAt: instant("received_at").notNull(),
+    replyModeration: text("reply_moderation"),
+    replyText: text("reply_text"),
+    replyUpdatedAt: instant("reply_updated_at"),
+    reviewerName: text("reviewer_name"),
+    text: text("text").notNull(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => reviewThreads.id, { onDelete: "cascade" }),
+    updatedAt: instant("updated_at").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+    writtenAt: instant("written_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("reviews_platform_id").on(
+      table.threadId,
+      table.platformReviewId
+    ),
+    index("reviews_thread_updated").on(table.threadId, table.updatedAt),
+    // The retention's read.
+    index("reviews_updated").on(table.updatedAt),
+    check("reviews_rating", sql`${table.rating} BETWEEN 1 AND 5`),
+    check("reviews_photos", sql`${table.photoCount} >= 0`),
+    check(
+      "reviews_reply",
+      sql`(${table.replyText} IS NULL) = (${table.replyUpdatedAt} IS NULL)`
+    ),
+    check(
+      "reviews_reply_moderation",
+      sql`${table.replyModeration} IS NULL OR (${table.replyText} IS NOT NULL AND ${table.replyModeration} IN ('pending', 'approved', 'rejected'))`
+    ),
+  ]
+);
+
+/**
+ * A reply sent from Peal to a review, as the location, and the journal of
+ * its sending, as `replies` is for comments: written `sending` before any
+ * call, `attempted_at` set and committed before the request that can put
+ * it out, then how it ended. A review holds one reply on Google, which a
+ * new one replaces; an `unconfirmed` reply is settled by the next read of
+ * its location. `author_id` is the member who wrote it, null for an API
+ * key or once their account is closed. It goes with its review.
+ */
+export const reviewReplies = engagement.table(
+  "review_replies",
+  {
+    attemptedAt: instant("attempted_at"),
+    authorId: uuid("author_id"),
+    callClaimedAt: instant("call_claimed_at"),
+    channelId: uuid("channel_id").notNull(),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    // The SHA-256 of the idempotency key the request came with, never the
+    // key; null without one, and once the key is forgotten.
+    keyDigest: text("key_digest"),
+    reason: text("reason"),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    settledAt: instant("settled_at"),
+    status: text("status").notNull(),
+    text: text("text").notNull(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => reviewThreads.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    index("review_replies_thread").on(table.threadId, table.id),
+    index("review_replies_review").on(table.reviewId, table.id),
+    // One reply to a review is on its way or unconfirmed at a time.
+    uniqueIndex("review_replies_pending")
+      .on(table.reviewId)
+      .where(sql`${table.status} IN ('sending', 'unconfirmed')`),
+    // One reply an idempotency key, in its workspace.
+    uniqueIndex("review_replies_key")
+      .on(table.workspaceId, table.keyDigest)
+      .where(sql`${table.keyDigest} IS NOT NULL`),
+    // The replies no job settled, which the collection settles.
+    index("review_replies_sending")
+      .on(table.createdAt, table.id)
+      .where(sql`${table.status} = 'sending'`),
+    index("review_replies_author")
+      .on(table.authorId)
+      .where(sql`${table.authorId} IS NOT NULL`),
+    check(
+      "review_replies_status",
+      sql`${table.status} IN ('sending', 'sent', 'failed', 'unconfirmed', 'withdrawn')`
+    ),
+    check(
+      "review_replies_settled",
+      sql`(${table.status} = 'sending') = (${table.settledAt} IS NULL)`
+    ),
+  ]
+);

@@ -8,6 +8,10 @@ import {
   SendReplyV1,
   SendResultSchema,
 } from "#engagement/infrastructure/workflows/send-reply.ts";
+import {
+  ReviewSendResultSchema,
+  SendReviewReplyV1,
+} from "#engagement/infrastructure/workflows/send-review-reply.ts";
 
 // Every SendReplyV1 history ever stored must still decode with the current
 // code, and its execution id must come out the same from its payload:
@@ -51,6 +55,33 @@ describe("the persisted contract of SendReplyV1", () => {
 
       assert.strictEqual(
         yield* SendReplyV1.executionId(payload),
+        keys.executionId
+      );
+    })
+  );
+});
+
+describe("the persisted contract of SendReviewReplyV1", () => {
+  it("keeps its tag, and how a run leaves its reply", () => {
+    assert.strictEqual(SendReviewReplyV1._tag, "SendReviewReplyV1");
+    assert.deepStrictEqual(ReviewSendResultSchema.literals, [
+      "settled",
+      "superseded",
+      "unrecorded",
+    ]);
+  });
+
+  it.effect("decodes its payloads, and derives the same execution ids", () =>
+    Effect.gen(function* derivesTheSameIds() {
+      const payload = yield* fixture(
+        "SendReviewReplyV1/payload.json",
+        SendReviewReplyV1.payloadSchema
+      );
+
+      const keys = yield* fixture("SendReviewReplyV1/keys.json", KeysSchema);
+
+      assert.strictEqual(
+        yield* SendReviewReplyV1.executionId(payload),
         keys.executionId
       );
     })

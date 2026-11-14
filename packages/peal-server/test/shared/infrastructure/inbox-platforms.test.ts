@@ -27,6 +27,11 @@ const linkedinPagesApp = {
   LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
 };
 
+const businessApp = {
+  GOOGLE_BUSINESS_CLIENT_ID: "synthetic-business.apps.example",
+  GOOGLE_BUSINESS_CLIENT_SECRET: "synthetic-business-secret",
+};
+
 const read = (env: Record<string, string>) =>
   inboxPlatformsConfig.pipe(
     Effect.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
@@ -61,6 +66,11 @@ describe("the inbox's optional platforms", () => {
       assert.deepStrictEqual(
         yield* read({ ...linkedinPagesApp, PEAL_INBOX_PLATFORMS: "linkedin" }),
         Result.succeed(["linkedin"])
+      );
+      // A location's reviews, on Google Business Profile's own client.
+      assert.deepStrictEqual(
+        yield* read({ ...businessApp, PEAL_INBOX_PLATFORMS: "googleBusiness" }),
+        Result.succeed(["googleBusiness"])
       );
       // Instagram's own app is a way in of its own.
       assert.deepStrictEqual(
@@ -106,6 +116,20 @@ describe("the inbox's optional platforms", () => {
           })
         )
       );
+      // Reviews need Google Business Profile's client, its secret included.
+      assert.isTrue(
+        Result.isFailure(
+          yield* read({ ...youtubeApp, PEAL_INBOX_PLATFORMS: "googleBusiness" })
+        )
+      );
+      assert.isTrue(
+        Result.isFailure(
+          yield* read({
+            GOOGLE_BUSINESS_CLIENT_ID: businessApp.GOOGLE_BUSINESS_CLIENT_ID,
+            PEAL_INBOX_PLATFORMS: "googleBusiness",
+          })
+        )
+      );
       // YouTube's comments need YouTube's own client, its secret included.
       assert.isTrue(
         Result.isFailure(
@@ -129,7 +153,10 @@ describe("the inbox's optional platforms", () => {
         Effect.map(Result.match({ onFailure: String, onSuccess: String }))
       );
 
-      assert.include(refused, "facebook, instagram, youtube and linkedin");
+      assert.include(
+        refused,
+        "facebook, instagram, youtube, linkedin and googleBusiness"
+      );
     })
   );
 });

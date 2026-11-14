@@ -3,8 +3,9 @@
 - The context is `engagement`; the product, the API group and the pages
   say "inbox" (`/api/workspaces/:workspaceId/inbox`, `peal inbox`,
   `…/inbox`), as "notices" already names a user's notifications. This
-  slice is comments on posts Peal published; direct messages, mentions and
-  reviews will build on it. Nothing here answers by itself: no automation,
+  slice is comments on posts Peal published, and the reviews of Google
+  Business Profile locations (below); direct messages and mentions will
+  build on it. Nothing here answers by itself: no automation,
   and no assistant prompt ever reads a comment.
 - A `Thread` is the comments under one published target; a `Comment` is
   what its platform gave (its id there, the comment it answers, its
@@ -304,3 +305,59 @@
   `peal.engagement.collection.thread_failures`, alert
   `peal-comments-thread-failing`) and logs its id, never the failure
   itself, which may quote what people wrote.
+- Reviews are a model of their own beside comments: a `ReviewThread` per
+  Google Business Profile channel (its location; `engagement.review_threads`,
+  unique on the channel), a `Review` per review (stars, text, times, the
+  reviewer's display name or none when anonymous, a photo count, never the
+  photos nor a picture; the location's reply as Google shows it), and a
+  `ReviewReply` journal (`review_replies`). They are read only where
+  `PEAL_INBOX_PLATFORMS` names `googleBusiness` (with
+  `GOOGLE_BUSINESS_CLIENT_ID` and its secret; `readsReviewsOn`); off,
+  `CollectReviews` follows and calls nothing, and the sign-in is as before
+  (it asks `business.manage` already, `googleBusinessReviewScope`). The
+  API is its own group (`inboxReviews`, `/inbox/reviews`, in the
+  ConnectionJournal's content groups), the MCP tools `*_location_review*`,
+  the command line `peal inbox reviews` (read and mark only); never `EngagementReplies` or
+  `SendReplyV1`, and a reply to a review claims no outbound message (the
+  owner's decision 5).
+- Google lets what its API gives be stored 30 days at most: a review is
+  kept `reviewsKeptFor` (29 days) from its own `updateTime`, never from a
+  read, so no version is held 30 days; a read lists `updateTime desc` back
+  to `keptSince` (50 a page, 10 pages; past them, or a review it cannot
+  read, the read is not `complete`), `reconcileReviews` decides, and only a
+  complete read deletes a review it did not see. `PurgeReviews`
+  (`engagement.reviews-retention`, hourly at 47) deletes reviews past the
+  bound and threads no read reached in that time (a failed run is counted, `peal.engagement.reviews.retention_failures`, alert `peal-reviews-retention-failing`); a channel gone
+  (`EngagementRecords.channelGone`, googleBusiness) or a workspace erased
+  deletes them at once. The registry's `inboxReviews` and the privacy
+  policy follow.
+- `CollectReviews` runs on `engagement.collect-reviews` (hourly at 27,
+  through the gates: `ReadReviews`): it follows the channels the
+  directory lists (`ReviewLocations`), reads the threads due, hourly while
+  a review changed in the last week, six-hourly otherwise (Google's 429 stops the run, `RateLimited`, and puts the location off as long as `Retry-After` says, an hour at least: the project's quota is shared with publishing), and records a
+  read under the thread's lock in one transaction, telling
+  `review.received` (ids only: never stars nor text, as an event outlives the 29 days) through `ReviewOutcomes`.
+- Only a member in person answers a review or deletes its reply
+  (`ReviewReplyNeedsPerson`, answered 403 `personRequired`): an API key or
+  an OAuth client (MCP, the command line) reads and marks, never replies,
+  as Google's policies forbid automated or triggered replies without the
+  user's prior specific and express consent. A later part may let a
+  workspace record that consent (who gave it, when, for which
+  applications); until then keep the refusal.
+- A reply to a review is a state on Google (one reply, `PUT …/reply`
+  replaces it), so `SendReviewReplyV1` (payload `replyId`, activity
+  `send`, persisted contract) sends, and a run that finds the call set out
+  reads the review back (`resume`) and sends again only when the reply is
+  not there. An outcome left unknown is `unconfirmed`, brings its
+  location's read forward, and the read settles it (`settleByReading`:
+  sent when the location's reply is its text, trimmed; `notSent`
+  otherwise), from a read that began after the reply's call ended; one its location's reads do not reach is read back alone an hour on (`settleUnconfirmed`, gate `CheckReviewReply`, sending nothing): no person confirms it. One reply a review is on its way or
+  unconfirmed at a time (`review_replies_pending`). Withdrawing deletes
+  the location's reply, whoever wrote it, and marks Peal's sent replies
+  `withdrawn`. Google takes 4,096 UTF-8 bytes (`maxReviewReplyBytes`) and
+  a reply only for a verified location (a refusal is `refused`).
+- The adapter (`infrastructure/platforms/google-business/`) cites the v4
+  reference and the date read, and was never run against Google: before
+  the setting is turned on anywhere, Google grants the project access (its
+  quota is zero before), and one review is read, answered and its reply
+  deleted on a test location.

@@ -21,6 +21,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = InboxActionUnavailableEncoded.Builder.class)
 public final class InboxActionUnavailableEncoded {
+    private final InboxActionUnavailableEncodedTag tag;
+
     private final Optional<String> code;
 
     private final Optional<String> message;
@@ -34,18 +36,25 @@ public final class InboxActionUnavailableEncoded {
     private final Map<String, Object> additionalProperties;
 
     private InboxActionUnavailableEncoded(
+            InboxActionUnavailableEncodedTag tag,
             Optional<String> code,
             Optional<String> message,
             Optional<String> requestId,
             String ability,
             InboxActionUnavailableEncodedStanding standing,
             Map<String, Object> additionalProperties) {
+        this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.ability = ability;
         this.standing = standing;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("_tag")
+    public InboxActionUnavailableEncodedTag getTag() {
+        return tag;
     }
 
     @JsonProperty("code")
@@ -85,7 +94,8 @@ public final class InboxActionUnavailableEncoded {
     }
 
     private boolean equalTo(InboxActionUnavailableEncoded other) {
-        return code.equals(other.code)
+        return tag.equals(other.tag)
+                && code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && ability.equals(other.ability)
@@ -94,7 +104,7 @@ public final class InboxActionUnavailableEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.code, this.message, this.requestId, this.ability, this.standing);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.ability, this.standing);
     }
 
     @java.lang.Override
@@ -102,14 +112,18 @@ public final class InboxActionUnavailableEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static AbilityStage builder() {
+    public static TagStage builder() {
         return new Builder();
+    }
+
+    public interface TagStage {
+        AbilityStage tag(@NotNull InboxActionUnavailableEncodedTag tag);
+
+        Builder from(InboxActionUnavailableEncoded other);
     }
 
     public interface AbilityStage {
         StandingStage ability(@NotNull String ability);
-
-        Builder from(InboxActionUnavailableEncoded other);
     }
 
     public interface StandingStage {
@@ -137,7 +151,9 @@ public final class InboxActionUnavailableEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements AbilityStage, StandingStage, _FinalStage {
+    public static final class Builder implements TagStage, AbilityStage, StandingStage, _FinalStage {
+        private InboxActionUnavailableEncodedTag tag;
+
         private String ability;
 
         private InboxActionUnavailableEncodedStanding standing;
@@ -154,11 +170,19 @@ public final class InboxActionUnavailableEncoded {
 
         @java.lang.Override
         public Builder from(InboxActionUnavailableEncoded other) {
+            tag(other.getTag());
             code(other.getCode());
             message(other.getMessage());
             requestId(other.getRequestId());
             ability(other.getAbility());
             standing(other.getStanding());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("_tag")
+        public AbilityStage tag(@NotNull InboxActionUnavailableEncodedTag tag) {
+            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
@@ -217,12 +241,14 @@ public final class InboxActionUnavailableEncoded {
 
         @java.lang.Override
         public InboxActionUnavailableEncoded build() {
-            return new InboxActionUnavailableEncoded(code, message, requestId, ability, standing, additionalProperties);
+            return new InboxActionUnavailableEncoded(
+                    tag, code, message, requestId, ability, standing, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("code")
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("ability")

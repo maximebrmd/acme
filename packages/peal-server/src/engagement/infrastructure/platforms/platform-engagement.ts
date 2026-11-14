@@ -38,6 +38,7 @@ import type { LinkedInReadCalls } from "#engagement/infrastructure/platforms/lin
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
+import { platformReviewsWith } from "#engagement/infrastructure/platforms/platform-reviews.ts";
 import { keptWithoutRefresh } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import {
@@ -79,6 +80,8 @@ export interface EngagementSettings {
   readonly linkedinReadCalls: LinkedInReadCalls;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
+  /** The My Business API's origin, where a location's reviews are. */
+  readonly businessApi: URL;
   /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
   readonly youtubeCommentUnits: number;
 }
@@ -102,7 +105,8 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * The platforms Peal reads comments on (`engagedPlatforms`), as the
  * channel's gate runs them: `CommentSource` reads threads, `ReplySender`
  * sends what the engagement tables hold, found by id, so no text travels
- * with a call. Each channel is found through the channels context
+ * with a call; and a location's reviews (`ReviewSource`,
+ * `ReviewReplySender`, `platformReviewsWith`), which need the ReviewStore. Each channel is found through the channels context
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
@@ -382,6 +386,8 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         );
 
       return Layer.mergeAll(
+        // A location's reviews, on Google Business Profile.
+        platformReviewsWith({ businessApi: settings.businessApi, http }),
         Layer.succeed(CommentSource, CommentSource.of({ read })),
         Layer.succeed(
           ReplySender,
@@ -414,6 +420,7 @@ export const PlatformEngagementLive = Layer.unwrap(
       ({ app, linkedinReadCalls, linkedinVersion, youtubeCommentUnits }) =>
         platformEngagementWith({
           blueskyAppView: new URL("https://public.api.bsky.app"),
+          businessApi: new URL("https://mybusiness.googleapis.com"),
           linkedinApi: new URL("https://api.linkedin.com"),
           linkedinReadCalls,
           linkedinVersion,

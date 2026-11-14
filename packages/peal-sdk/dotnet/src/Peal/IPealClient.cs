@@ -23,6 +23,7 @@ public partial interface IPealClient
     public ILookupsClient Lookups { get; }
     public IWebhooksClient Webhooks { get; }
     public IInboxClient Inbox { get; }
+    public IInboxReviewsClient InboxReviews { get; }
     public IAdsClient Ads { get; }
     public IActivityClient Activity { get; }
     public IPartnerClient Partner { get; }

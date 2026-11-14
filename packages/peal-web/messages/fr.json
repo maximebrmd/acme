@@ -2935,6 +2935,10 @@
         "received": "Un commentaire est lu sous une publication en ligne",
         "replied": "Une réponse à un commentaire part de Peal"
       },
+      "review": {
+        "received": "Un avis sur un établissement est lu",
+        "replied": "Une réponse à un avis part de Peal"
+      },
       "webhook": {
         "test": "Événement de test"
       }
@@ -4059,7 +4063,52 @@
       "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain."
+      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain.",
+      "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve."
+    }
+  },
+  "InboxReviews": {
+    "title": "Avis",
+    "description": "Ce que les gens écrivent sur les établissements Google Business Profile au nom desquels publient vos canaux. Peal conserve un avis {days, number} jours après qu’il a été écrit ou modifié pour la dernière fois, car Google ne permet de stocker ce qu’il fournit que 30 jours au plus.",
+    "loading": "Chargement des avis…",
+    "loadFailed": "Les avis n’ont pas pu être chargés.",
+    "retry": "Réessayer",
+    "row": {
+      "location": "Établissement de {channel}",
+      "counts": "{unanswered, number} en attente sur {reviews, number}",
+      "figures": "{average, select, none {} other {{average} étoiles en moyenne}}{total, select, none {} other { · {total} sur Google}}",
+      "lastReview": "Dernier avis {at}"
+    },
+    "thread": {
+      "back": "Retour à la boîte de réception",
+      "title": "Avis d’un établissement",
+      "empty": "Aucun avis écrit ou modifié ces {days, number} derniers jours.",
+      "readOnly": "Votre rôle permet de lire les avis, pas d’y répondre."
+    },
+    "review": {
+      "stars": "{rating, plural, one {# étoile} other {# étoiles}}",
+      "anonymous": "Une personne qui reste anonyme",
+      "photos": "{count, plural, one {# photo, non affichée} other {# photos, non affichées}}",
+      "written": "Écrit le {at}",
+      "changed": "Modifié le {at}",
+      "state": "{state, select, new {Attend une réponse} other {Répondu}}",
+      "noText": "Une note sans commentaire.",
+      "ownerReply": "La réponse de l’établissement",
+      "moderation": "{moderation, select, pending {Google la vérifie} approved {Affichée par Google} rejected {Refusée par Google} other {}}",
+      "markAnswered": "N’appelle pas de réponse",
+      "markWaiting": "Attend une réponse",
+      "withdraw": "Supprimer la réponse",
+      "withdrawn": "La réponse de l’établissement a été supprimée.",
+      "reply": "{status, select, sending {Réponse en cours d’envoi} sent {Réponse envoyée} failed {Réponse non envoyée} unconfirmed {Réponse pas encore confirmée : la prochaine lecture de l’établissement le dira} withdrawn {Réponse supprimée} other {}}"
+    },
+    "box": {
+      "label": "Répondre au nom de l’établissement",
+      "public": "Toute personne qui voit l’avis sur Google voit la réponse, qui remplace celle de l’établissement. Google peut la vérifier avant de l’afficher.",
+      "count": "{length, number} sur {maximum, number} octets",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "sent": "La réponse est en cours d’envoi.",
+      "pending": "Une réponse à cet avis est en cours d’envoi. Attendez qu’elle soit partie pour en écrire une autre."
     }
   },
   "TwoStep": {

@@ -4880,42 +4880,6 @@ func TestStringInboxThreadPage(t *testing.T) {
 	})
 }
 
-func TestEnumInboxAbilityStanding(t *testing.T) {
-	t.Run("NewFromString_available", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxAbilityStandingFromString("available")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxAbilityStanding("available"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_reconnect", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxAbilityStandingFromString("reconnect")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxAbilityStanding("reconnect"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_unsupported", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxAbilityStandingFromString("unsupported")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxAbilityStanding("unsupported"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewInboxAbilityStandingFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewInboxAbilityStandingFromString("available")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestEnumInboxCollectionEnd(t *testing.T) {
 	t.Run("NewFromString_window", func(t *testing.T) {
 		t.Parallel()
@@ -5166,56 +5130,6 @@ func TestEnumInboxReplyReason(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewInboxReplyReasonFromString("channelUnavailable")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
-func TestEnumInboxReplyStatus(t *testing.T) {
-	t.Run("NewFromString_sending", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxReplyStatusFromString("sending")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxReplyStatus("sending"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_sent", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxReplyStatusFromString("sent")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxReplyStatus("sent"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_failed", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxReplyStatusFromString("failed")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxReplyStatus("failed"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_unconfirmed", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxReplyStatusFromString("unconfirmed")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxReplyStatus("unconfirmed"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_withdrawn", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInboxReplyStatusFromString("withdrawn")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InboxReplyStatus("withdrawn"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewInboxReplyStatusFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewInboxReplyStatusFromString("sending")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

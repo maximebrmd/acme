@@ -7,9 +7,13 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .inbox_action_unavailable_encoded_standing import InboxActionUnavailableEncodedStanding
+from .inbox_action_unavailable_encoded_tag import InboxActionUnavailableEncodedTag
 
 
 class InboxActionUnavailableEncoded(UniversalBaseModel):
+    tag: typing_extensions.Annotated[
+        InboxActionUnavailableEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ]
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[

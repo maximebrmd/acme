@@ -29,6 +29,8 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "media.failed",
   "comment.received",
   "comment.replied",
+  "review.received",
+  "review.replied",
   "boost.started",
   "boost.paused",
   "boost.resumed",

@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class InboxActionUnavailableEncoded extends JsonSerializableType
 {
     /**
+     * @var value-of<InboxActionUnavailableEncodedTag> $tag
+     */
+    #[JsonProperty('_tag')]
+    public string $tag;
+
+    /**
      * @var ?string $code
      */
     #[JsonProperty('code')]
@@ -39,6 +45,7 @@ class InboxActionUnavailableEncoded extends JsonSerializableType
 
     /**
      * @param array{
+     *   tag: value-of<InboxActionUnavailableEncodedTag>,
      *   ability: string,
      *   standing: value-of<InboxActionUnavailableEncodedStanding>,
      *   code?: ?string,
@@ -49,6 +56,7 @@ class InboxActionUnavailableEncoded extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->tag = $values['tag'];
         $this->code = $values['code'] ?? null;
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;

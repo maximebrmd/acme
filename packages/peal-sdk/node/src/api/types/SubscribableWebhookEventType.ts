@@ -26,6 +26,8 @@ export const SubscribableWebhookEventType = {
         MediaFailed: "media.failed",
         CommentReceived: "comment.received",
         CommentReplied: "comment.replied",
+        ReviewReceived: "review.received",
+        ReviewReplied: "review.replied",
         BoostStarted: "boost.started",
         BoostPaused: "boost.paused",
         BoostResumed: "boost.resumed",

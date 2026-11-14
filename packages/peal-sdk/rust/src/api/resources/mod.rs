@@ -23,6 +23,7 @@
 //! - **lookups**
 //! - **webhooks**
 //! - **inbox**
+//! - **inboxReviews**
 //! - **ads**
 //! - **activity**
 //! - **partner**
@@ -55,6 +56,7 @@ pub mod connect_links;
 pub mod credential;
 pub mod feeds;
 pub mod inbox;
+pub mod inbox_reviews;
 pub mod invitations;
 pub mod lookups;
 pub mod media;
@@ -100,6 +102,7 @@ pub struct PealClient {
     pub lookups: LookupsClient,
     pub webhooks: WebhooksClient,
     pub inbox: InboxClient,
+    pub inbox_reviews: InboxReviewsClient,
     pub ads: AdsClient,
     pub activity: ActivityClient,
     pub partner: PartnerClient,
@@ -142,6 +145,7 @@ impl PealClient {
             lookups: LookupsClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
             inbox: InboxClient::new(config.clone())?,
+            inbox_reviews: InboxReviewsClient::new(config.clone())?,
             ads: AdsClient::new(config.clone())?,
             activity: ActivityClient::new(config.clone())?,
             partner: PartnerClient::new(config.clone())?,
@@ -175,6 +179,7 @@ pub use connect_links::ConnectLinksClient;
 pub use credential::CredentialClient;
 pub use feeds::FeedsClient;
 pub use inbox::InboxClient;
+pub use inbox_reviews::InboxReviewsClient;
 pub use invitations::InvitationsClient;
 pub use lookups::LookupsClient;
 pub use media::MediaClient;

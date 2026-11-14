@@ -1,4 +1,4 @@
-import { Duration, Effect, Layer, Schedule } from "effect";
+import { Context, Duration, Effect, Layer, Schedule } from "effect";
 import { Entity } from "effect/cluster";
 import { Rpc } from "effect/rpc";
 
@@ -35,6 +35,30 @@ import type {
   ActionOutcome,
   SendOutcome,
 } from "#engagement/application/ports/reply-sender.ts";
+import {
+  ReviewActionOutcomeSchema,
+  ReviewReplyCheckSchema,
+  ReviewReplyRequestSchema,
+  ReviewReplySender,
+  ReviewSendOutcomeSchema,
+  ReviewWithdrawalSchema,
+} from "#engagement/application/ports/review-reply-sender.ts";
+import type {
+  ReviewActionOutcome,
+  ReviewReplyCheck,
+  ReviewReplyRequest,
+  ReviewSendOutcome,
+} from "#engagement/application/ports/review-reply-sender.ts";
+import {
+  ReviewsBatchSchema,
+  ReviewSource,
+  ReviewsReadFailureSchema,
+  ReviewsRequestSchema,
+} from "#engagement/application/ports/review-source.ts";
+import type {
+  ReviewsBatch,
+  ReviewsReadFailure,
+} from "#engagement/application/ports/review-source.ts";
 import {
   EditOutcomeSchema,
   EditRequestSchema,
@@ -78,7 +102,9 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * `ReadComments` reads the comments under some of its posts the same way,
  * and `SendReply`, `ResumeReply`, `WithdrawReply` and `ModerateComment` act
  * on them as the account, for engagement: their payloads are ids, and the
- * text of a reply stays in engagement's tables. `RemoveLivePost` deletes a
+ * text of a reply stays in engagement's tables. `ReadReviews` reads a
+ * location's reviews, and `SendReviewReply`, `ResumeReviewReply` and
+ * `WithdrawReviewReply` answer them, the same way. `RemoveLivePost` deletes a
  * post, or a part of one, that a member asked to unpublish, by the
  * platform's id for it: a removal never overlaps a publish on the channel.
  * `EditLivePost` replaces the text of a part a member asked to edit, by
@@ -86,7 +112,7 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * gate, whose side reads it from the change.
  *
  * Calls run in the order they came, whichever context sent them. Each
- * collection (post counts, the account, comments) has one call a channel
+ * collection (post counts, the account, comments, reviews) has one call a channel
  * outstanding at most, so a publish waits for the reads that came before
  * it: one of each at most, each bounded, never for those after. Their
  * crons start on minutes of their own (`test/app/cron-schedules.test.ts`).
@@ -133,6 +159,27 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: ModerationRequestSchema },
     success: ActionOutcomeSchema,
   }),
+  Rpc.make("ReadReviews", {
+    error: ReviewsReadFailureSchema,
+    payload: { request: ReviewsRequestSchema },
+    success: ReviewsBatchSchema,
+  }),
+  Rpc.make("SendReviewReply", {
+    payload: { request: ReviewReplyRequestSchema },
+    success: ReviewSendOutcomeSchema,
+  }),
+  Rpc.make("ResumeReviewReply", {
+    payload: { request: ReviewReplyRequestSchema },
+    success: ReviewSendOutcomeSchema,
+  }),
+  Rpc.make("CheckReviewReply", {
+    payload: { request: ReviewReplyRequestSchema },
+    success: ReviewReplyCheckSchema,
+  }),
+  Rpc.make("WithdrawReviewReply", {
+    payload: { request: ReviewWithdrawalSchema },
+    success: ReviewActionOutcomeSchema,
+  }),
   Rpc.make("RemoveLivePost", {
     error: RemovalFailureSchema,
     payload: { request: RemovalRequestSchema },
@@ -156,6 +203,8 @@ export const ChannelGateLive = ChannelGate.toLayer(
     const metrics = yield* MetricsReader;
     const comments = yield* CommentSource;
     const replies = yield* ReplySender;
+    const reviews = yield* ReviewSource;
+    const reviewReplies = yield* ReviewReplySender;
     const live = yield* LivePostClients;
 
     return ChannelGate.of({
@@ -165,11 +214,17 @@ export const ChannelGateLive = ChannelGate.toLayer(
       ReadAccount: ({ payload }) => metrics.account(payload.request),
       ReadComments: ({ payload }) => comments.read(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
+      CheckReviewReply: ({ payload }) => reviewReplies.check(payload.request),
+      ReadReviews: ({ payload }) => reviews.read(payload.request),
       RemoveLivePost: ({ payload }) => live.remove(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
       ResumeReply: ({ payload }) => replies.resume(payload.request),
+      ResumeReviewReply: ({ payload }) => reviewReplies.resume(payload.request),
       SendReply: ({ payload }) => replies.send(payload.request),
+      SendReviewReply: ({ payload }) => reviewReplies.send(payload.request),
       WithdrawReply: ({ payload }) => replies.withdraw(payload.request),
+      WithdrawReviewReply: ({ payload }) =>
+        reviewReplies.withdraw(payload.request),
     });
   }),
   { disableFatalDefects: true, maxIdleTime: Duration.minutes(10) }
@@ -187,12 +242,33 @@ export const UnreadMetrics = Layer.succeed(
   })
 );
 
+/** For gates that read no review and answer none: as UnreadComments. */
+export const UnreadReviews = Layer.mergeAll(
+  Layer.succeed(
+    ReviewSource,
+    ReviewSource.of({ read: () => Effect.fail(new PlatformUnavailable()) })
+  ),
+  Layer.succeed(
+    ReviewReplySender,
+    ReviewReplySender.of({
+      check: () => Effect.succeed({ _tag: "unknown" }),
+      resume: () =>
+        Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" }),
+      send: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+      withdraw: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+    })
+  )
+);
+
 /**
- * For gates that neither read comments nor answer them, as in tests of
- * publishing: every read answers that the platform is unavailable, and
- * nothing is sent.
+ * For gates that neither read comments and reviews nor answer them, as in
+ * tests of publishing: every read answers that the platform is
+ * unavailable, and nothing is sent.
  */
 export const UnreadComments = Layer.mergeAll(
+  UnreadReviews,
   Layer.succeed(
     CommentSource,
     CommentSource.of({ read: () => Effect.fail(new PlatformUnavailable()) })
@@ -538,5 +614,142 @@ export const GatedLivePostClients = Layer.effect(
             )
           ),
     });
+  })
+);
+
+// The gate did not take the read, or a bug broke it: it read nothing, and
+// the next collection tries again.
+const noReviews = (): Effect.Effect<never, ReviewsReadFailure> =>
+  Effect.fail(new PlatformUnavailable());
+
+// A read back the gate did not take, or lost: nothing is settled from it.
+const unknownCheck: ReviewReplyCheck = { _tag: "unknown" };
+
+const notSentReply = () =>
+  Effect.succeed<ReviewSendOutcome>({
+    _tag: "failed",
+    reason: "platformUnavailable",
+  });
+
+const unchecked = () =>
+  Effect.succeed<ReviewSendOutcome>({
+    _tag: "unconfirmed",
+    reason: "interrupted",
+  });
+
+const notWithdrawn = () =>
+  Effect.succeed<ReviewActionOutcome>({
+    _tag: "failed",
+    reason: "platformUnavailable",
+  });
+
+/**
+ * The ReviewSource and ReviewReplySender engagement reads and answers
+ * reviews with: each call goes through its channel's gate, in turn with
+ * the channel's publishing. A reply the gate did not take was not sent;
+ * one it lost during the call, or whose adapter broke, may have gone out,
+ * and the next read of its location says. Provide ChannelGateLive, with
+ * the real adapters, beside it.
+ */
+export const GatedReviews = Layer.effectContext(
+  Effect.gen(function* GatedReviews() {
+    const gateFor = yield* ChannelGate.client;
+
+    const taken = {
+      schedule: notTakenRetry,
+      times: 4,
+      while: (error: { readonly _tag: string }) =>
+        error._tag === "MailboxFull" ||
+        error._tag === "EntityNotAssignedToRunner",
+    };
+
+    const read = (request: typeof ReviewsRequestSchema.Type) =>
+      gateFor(request.channelId)
+        .ReadReviews({ request })
+        .pipe(
+          Effect.retry(taken),
+          Effect.catchTags({
+            AlreadyProcessingMessage: noReviews,
+            EntityNotAssignedToRunner: noReviews,
+            MailboxFull: noReviews,
+            PersistenceError: noReviews,
+          }),
+          Effect.catchDefect((cause) =>
+            Effect.logError("A reviews read failed in its adapter", cause).pipe(
+              Effect.andThen(noReviews())
+            )
+          )
+        ) satisfies Effect.Effect<ReviewsBatch, ReviewsReadFailure>;
+
+    const sending = (
+      call: Effect.Effect<
+        ReviewSendOutcome,
+        Effect.Error<ReturnType<ReturnType<typeof gateFor>["SendReviewReply"]>>
+      >,
+      notTaken: () => Effect.Effect<ReviewSendOutcome>
+    ): Effect.Effect<ReviewSendOutcome> =>
+      call.pipe(
+        Effect.retry(taken),
+        Effect.catchTags({
+          AlreadyProcessingMessage: () =>
+            Effect.succeed<ReviewSendOutcome>({
+              _tag: "unconfirmed",
+              reason: "noResponse",
+            }),
+          EntityNotAssignedToRunner: notTaken,
+          MailboxFull: notTaken,
+          PersistenceError: notTaken,
+        }),
+        Effect.catchDefect((cause) =>
+          Effect.logError(
+            "A reply to a review failed in its adapter",
+            cause
+          ).pipe(
+            Effect.as<ReviewSendOutcome>({
+              _tag: "unconfirmed",
+              reason: "adapterFailure",
+            })
+          )
+        )
+      );
+
+    return Context.make(ReviewSource, ReviewSource.of({ read })).pipe(
+      Context.add(
+        ReviewReplySender,
+        ReviewReplySender.of({
+          check: (request: ReviewReplyRequest) =>
+            gateFor(request.channelId)
+              .CheckReviewReply({ request })
+              .pipe(
+                Effect.retry(taken),
+                Effect.orElseSucceed(() => unknownCheck),
+                Effect.catchDefect(() => Effect.succeed(unknownCheck))
+              ),
+          resume: (request: ReviewReplyRequest) =>
+            sending(
+              gateFor(request.channelId).ResumeReviewReply({ request }),
+              unchecked
+            ),
+          send: (request: ReviewReplyRequest) =>
+            sending(
+              gateFor(request.channelId).SendReviewReply({ request }),
+              notSentReply
+            ),
+          withdraw: (request) =>
+            gateFor(request.channelId)
+              .WithdrawReviewReply({ request })
+              .pipe(
+                Effect.retry(taken),
+                Effect.catchTags({
+                  AlreadyProcessingMessage: notWithdrawn,
+                  EntityNotAssignedToRunner: notWithdrawn,
+                  MailboxFull: notWithdrawn,
+                  PersistenceError: notWithdrawn,
+                }),
+                Effect.catchDefect(notWithdrawn)
+              ),
+        })
+      )
+    );
   })
 );

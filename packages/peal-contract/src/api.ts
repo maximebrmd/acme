@@ -24,6 +24,7 @@ import { CredentialApi } from "./credential.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { FeedsApi } from "./feeds.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
+import { InboxReviewsApi } from "./inbox-reviews.ts";
 import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
@@ -1830,6 +1831,42 @@ export type {
   NewInboxReply,
 } from "./inbox.ts";
 
+export {
+  inboxReviewPlatforms,
+  inboxReviewRetentionDays,
+  InboxOwnerReplyModerationSchema,
+  InboxOwnerReplySchema,
+  InboxReviewAbilitiesSchema,
+  InboxReviewReplyReasonSchema,
+  InboxReviewReplySchema,
+  InboxReviewSchema,
+  InboxReviewsApi,
+  InboxReviewStateSchema,
+  InboxReviewThreadDetailSchema,
+  InboxReviewThreadPageSchema,
+  InboxReviewThreadSchema,
+  maxInboxReviewReplyBytes,
+  NewInboxReviewReplySchema,
+} from "./inbox-reviews.ts";
+
+export type {
+  InboxOwnerReply,
+  InboxOwnerReplyModeration,
+  InboxReview,
+  InboxReviewAbilities,
+  InboxReviewReply,
+  InboxReviewReplyReason,
+  InboxReviewState,
+  InboxReviewThread,
+  InboxReviewThreadDetail,
+  InboxReviewThreadPage,
+  NewInboxReviewReply,
+} from "./inbox-reviews.ts";
+
+export { InboxReviewNotFound } from "./inbox-review-not-found.ts";
+
+export { InboxReviewThreadNotFound } from "./inbox-review-thread-not-found.ts";
+
 export { InboxActionFailed } from "./inbox-action-failed.ts";
 
 export { InboxActionUnavailable } from "./inbox-action-unavailable.ts";
@@ -2230,6 +2267,7 @@ export class Api extends HttpApi.make("peal")
   .add(LookupsApi)
   .add(WebhooksApi)
   .add(InboxApi)
+  .add(InboxReviewsApi)
   .add(AdsApi)
   .add(ActivityApi)
   .add(PartnerApi)

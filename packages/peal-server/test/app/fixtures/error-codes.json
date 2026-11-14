@@ -350,6 +350,16 @@
     "tag": "InboxReplyNotFound"
   },
   {
+    "code": "inbox_review_not_found",
+    "status": 404,
+    "tag": "InboxReviewNotFound"
+  },
+  {
+    "code": "inbox_review_thread_not_found",
+    "status": 404,
+    "tag": "InboxReviewThreadNotFound"
+  },
+  {
     "code": "inbox_thread_not_found",
     "status": 404,
     "tag": "InboxThreadNotFound"

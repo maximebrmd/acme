@@ -165,6 +165,12 @@ require_relative "peal/inbox/types/set_answered_inbox_request"
 require_relative "peal/inbox/types/moderate_inbox_request"
 require_relative "peal/inbox/types/confirm_reply_inbox_request"
 require_relative "peal/inbox/types/withdraw_reply_inbox_request"
+require_relative "peal/inbox_reviews/client"
+require_relative "peal/inbox_reviews/types/list_review_threads_inbox_reviews_request"
+require_relative "peal/inbox_reviews/types/get_review_thread_inbox_reviews_request"
+require_relative "peal/inbox_reviews/types/new_inbox_review_reply"
+require_relative "peal/inbox_reviews/types/withdraw_review_reply_inbox_reviews_request"
+require_relative "peal/inbox_reviews/types/set_review_answered_inbox_reviews_request"
 require_relative "peal/ads/client"
 require_relative "peal/ads/types/status_ads_request"
 require_relative "peal/ads/types/list_connections_ads_request"
@@ -292,6 +298,12 @@ module Peal
   module Inbox
     module Types
       autoload :ListThreadsInboxRequestUnanswered, ::File.join(__dir__, "peal/inbox/types/list_threads_inbox_request_unanswered")
+    end
+  end
+
+  module InboxReviews
+    module Types
+      autoload :ListReviewThreadsInboxReviewsRequestUnanswered, ::File.join(__dir__, "peal/inbox_reviews/types/list_review_threads_inbox_reviews_request_unanswered")
     end
   end
 
@@ -816,6 +828,7 @@ module Peal
     autoload :InboxAbilities, ::File.join(__dir__, "peal/types/inbox_abilities")
     autoload :InboxActionFailedEncodedTag, ::File.join(__dir__, "peal/types/inbox_action_failed_encoded_tag")
     autoload :InboxActionFailedEncoded, ::File.join(__dir__, "peal/types/inbox_action_failed_encoded")
+    autoload :InboxActionUnavailableEncodedTag, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded_tag")
     autoload :InboxActionUnavailableEncodedStanding, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded_standing")
     autoload :InboxActionUnavailableEncoded, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded")
     autoload :InboxAuthor, ::File.join(__dir__, "peal/types/inbox_author")
@@ -827,10 +840,24 @@ module Peal
     autoload :InboxCommentGoneEncoded, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded")
     autoload :InboxCommentNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_comment_not_found_encoded")
     autoload :InboxModerationAction, ::File.join(__dir__, "peal/types/inbox_moderation_action")
+    autoload :InboxOwnerReplyModeration, ::File.join(__dir__, "peal/types/inbox_owner_reply_moderation")
+    autoload :InboxOwnerReply, ::File.join(__dir__, "peal/types/inbox_owner_reply")
     autoload :InboxReplyReason, ::File.join(__dir__, "peal/types/inbox_reply_reason")
     autoload :InboxReplyStatus, ::File.join(__dir__, "peal/types/inbox_reply_status")
     autoload :InboxReply, ::File.join(__dir__, "peal/types/inbox_reply")
     autoload :InboxReplyNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_reply_not_found_encoded")
+    autoload :InboxReviewState, ::File.join(__dir__, "peal/types/inbox_review_state")
+    autoload :InboxReview, ::File.join(__dir__, "peal/types/inbox_review")
+    autoload :InboxReviewAbilities, ::File.join(__dir__, "peal/types/inbox_review_abilities")
+    autoload :InboxReviewNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_review_not_found_encoded")
+    autoload :InboxReviewReplyReason, ::File.join(__dir__, "peal/types/inbox_review_reply_reason")
+    autoload :InboxReviewReply, ::File.join(__dir__, "peal/types/inbox_review_reply")
+    autoload :InboxReviewThreadAverageRating, ::File.join(__dir__, "peal/types/inbox_review_thread_average_rating")
+    autoload :InboxReviewThreadKind, ::File.join(__dir__, "peal/types/inbox_review_thread_kind")
+    autoload :InboxReviewThread, ::File.join(__dir__, "peal/types/inbox_review_thread")
+    autoload :InboxReviewThreadDetail, ::File.join(__dir__, "peal/types/inbox_review_thread_detail")
+    autoload :InboxReviewThreadNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_review_thread_not_found_encoded")
+    autoload :InboxReviewThreadPage, ::File.join(__dir__, "peal/types/inbox_review_thread_page")
     autoload :InboxThread, ::File.join(__dir__, "peal/types/inbox_thread")
     autoload :InboxThreadDetail, ::File.join(__dir__, "peal/types/inbox_thread_detail")
     autoload :InboxThreadNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_thread_not_found_encoded")

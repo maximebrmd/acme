@@ -1,0 +1,1625 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ab1aaff6-828f-4f1e-85a4-91aaf59f3d4f",
+  "prevIds": [
+    "68fad7c9-755e-45d3-9a12-f5dae4559337"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "review_replies"
+      ],
+      "writes": [
+        "s|tbl|engagement.review_replies",
+        "n|tbl|engagement.review_replies",
+        "e|tbl|engagement.review_replies",
+        "n|rel|engagement.review_replies",
+        "n|type|engagement.review_replies",
+        "n|rel|engagement.review_replies_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "review_threads"
+      ],
+      "writes": [
+        "s|tbl|engagement.review_threads",
+        "n|tbl|engagement.review_threads",
+        "e|tbl|engagement.review_threads",
+        "n|rel|engagement.review_threads",
+        "n|type|engagement.review_threads",
+        "n|rel|engagement.review_threads_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "reviews"
+      ],
+      "writes": [
+        "s|tbl|engagement.reviews",
+        "n|tbl|engagement.reviews",
+        "e|tbl|engagement.reviews",
+        "n|rel|engagement.reviews",
+        "n|type|engagement.reviews",
+        "n|rel|engagement.reviews_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_thread"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_thread",
+        "n|idx|engagement.review_replies_thread",
+        "e|idx|engagement.review_replies_thread",
+        "n|rel|engagement.review_replies_thread"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.thread_id",
+        "n|col|engagement.review_replies.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_review"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_review",
+        "n|idx|engagement.review_replies_review",
+        "e|idx|engagement.review_replies_review",
+        "n|rel|engagement.review_replies_review"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.review_id",
+        "n|col|engagement.review_replies.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_pending"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_pending",
+        "n|idx|engagement.review_replies_pending",
+        "e|idx|engagement.review_replies_pending",
+        "n|rel|engagement.review_replies_pending"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.review_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_key"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_key",
+        "n|idx|engagement.review_replies_key",
+        "e|idx|engagement.review_replies_key",
+        "n|rel|engagement.review_replies_key"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.workspace_id",
+        "n|col|engagement.review_replies.key_digest"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_sending"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_sending",
+        "n|idx|engagement.review_replies_sending",
+        "e|idx|engagement.review_replies_sending",
+        "n|rel|engagement.review_replies_sending"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.created_at",
+        "n|col|engagement.review_replies.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_replies",
+        "review_replies_author"
+      ],
+      "writes": [
+        "s|idx|engagement.review_replies_author",
+        "n|idx|engagement.review_replies_author",
+        "e|idx|engagement.review_replies_author",
+        "n|rel|engagement.review_replies_author"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.author_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_threads",
+        "review_threads_channel"
+      ],
+      "writes": [
+        "s|idx|engagement.review_threads_channel",
+        "n|idx|engagement.review_threads_channel",
+        "e|idx|engagement.review_threads_channel",
+        "n|rel|engagement.review_threads_channel"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.review_threads.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_threads",
+        "review_threads_due"
+      ],
+      "writes": [
+        "s|idx|engagement.review_threads_due",
+        "n|idx|engagement.review_threads_due",
+        "e|idx|engagement.review_threads_due",
+        "n|rel|engagement.review_threads_due"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.review_threads.next_read_at",
+        "n|col|engagement.review_threads.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_threads",
+        "review_threads_workspace_listed"
+      ],
+      "writes": [
+        "s|idx|engagement.review_threads_workspace_listed",
+        "n|idx|engagement.review_threads_workspace_listed",
+        "e|idx|engagement.review_threads_workspace_listed",
+        "n|rel|engagement.review_threads_workspace_listed"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.review_threads.workspace_id",
+        "n|col|engagement.review_threads.last_review_at",
+        "n|col|engagement.review_threads.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "review_threads",
+        "review_threads_read"
+      ],
+      "writes": [
+        "s|idx|engagement.review_threads_read",
+        "n|idx|engagement.review_threads_read",
+        "e|idx|engagement.review_threads_read",
+        "n|rel|engagement.review_threads_read"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.review_threads.last_read_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "reviews",
+        "reviews_platform_id"
+      ],
+      "writes": [
+        "s|idx|engagement.reviews_platform_id",
+        "n|idx|engagement.reviews_platform_id",
+        "e|idx|engagement.reviews_platform_id",
+        "n|rel|engagement.reviews_platform_id"
+      ],
+      "reads": [
+        "n|tbl|engagement.reviews",
+        "n|sch|engagement",
+        "n|col|engagement.reviews.thread_id",
+        "n|col|engagement.reviews.platform_review_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "reviews",
+        "reviews_thread_updated"
+      ],
+      "writes": [
+        "s|idx|engagement.reviews_thread_updated",
+        "n|idx|engagement.reviews_thread_updated",
+        "e|idx|engagement.reviews_thread_updated",
+        "n|rel|engagement.reviews_thread_updated"
+      ],
+      "reads": [
+        "n|tbl|engagement.reviews",
+        "n|sch|engagement",
+        "n|col|engagement.reviews.thread_id",
+        "n|col|engagement.reviews.updated_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "reviews",
+        "reviews_updated"
+      ],
+      "writes": [
+        "s|idx|engagement.reviews_updated",
+        "n|idx|engagement.reviews_updated",
+        "e|idx|engagement.reviews_updated",
+        "n|rel|engagement.reviews_updated"
+      ],
+      "reads": [
+        "n|tbl|engagement.reviews",
+        "n|sch|engagement",
+        "n|col|engagement.reviews.updated_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "review_replies"
+      ],
+      "writes": [
+        "s|fk|engagement.review_replies.review_replies_review_id_reviews_id_fkey",
+        "n|fk|engagement.review_replies.review_replies_review_id_reviews_id_fkey",
+        "e|fk|engagement.review_replies.review_replies_review_id_reviews_id_fkey",
+        "n|con|engagement.review_replies.review_replies_review_id_reviews_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|tbl|engagement.reviews",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.review_id",
+        "n|col|engagement.reviews.id",
+        "e|uniqueness|engagement.reviews.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "review_replies"
+      ],
+      "writes": [
+        "s|fk|engagement.review_replies.review_replies_thread_id_review_threads_id_fkey",
+        "n|fk|engagement.review_replies.review_replies_thread_id_review_threads_id_fkey",
+        "e|fk|engagement.review_replies.review_replies_thread_id_review_threads_id_fkey",
+        "n|con|engagement.review_replies.review_replies_thread_id_review_threads_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.review_replies",
+        "n|sch|engagement",
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.review_replies.thread_id",
+        "n|col|engagement.review_threads.id",
+        "e|uniqueness|engagement.review_threads.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "reviews"
+      ],
+      "writes": [
+        "s|fk|engagement.reviews.reviews_thread_id_review_threads_id_fkey",
+        "n|fk|engagement.reviews.reviews_thread_id_review_threads_id_fkey",
+        "e|fk|engagement.reviews.reviews_thread_id_review_threads_id_fkey",
+        "n|con|engagement.reviews.reviews_thread_id_review_threads_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.reviews",
+        "n|sch|engagement",
+        "n|tbl|engagement.review_threads",
+        "n|sch|engagement",
+        "n|col|engagement.reviews.thread_id",
+        "n|col|engagement.review_threads.id",
+        "e|uniqueness|engagement.review_threads.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "name": "review_replies",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "name": "review_threads",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "name": "reviews",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "attempted_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "author_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "call_claimed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "channel_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "key_digest",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "settled_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "thread_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "average_rating",
+        "type": "double precision",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "channel_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "last_read_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "last_review_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "next_read_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "total_review_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "unanswered_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "answered_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "channel_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "photo_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "platform_review_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "rating",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "received_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reply_moderation",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reply_text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reply_updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviewer_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "thread_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "written_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_thread",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "thread_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_review",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "review_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_pending",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "review_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"status\" IN ('sending', 'unconfirmed')",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "key_digest",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"key_digest\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_sending",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"status\" = 'sending'",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_author",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "author_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"author_id\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_threads_channel",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "channel_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_threads_due",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "next_read_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_threads_workspace_listed",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "last_review_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"review_count\" > 0",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_threads_read",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "last_read_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_platform_id",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "thread_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "platform_review_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_thread_updated",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "thread_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "updated_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_updated",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "updated_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_review_id_reviews_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "review_id"
+        ],
+        "schemaTo": "engagement",
+        "tableTo": "reviews",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_thread_id_review_threads_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "thread_id"
+        ],
+        "schemaTo": "engagement",
+        "tableTo": "review_threads",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_thread_id_review_threads_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "thread_id"
+        ],
+        "schemaTo": "engagement",
+        "tableTo": "review_threads",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_threads",
+        "name": "review_threads_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_status",
+        "value": "\"status\" IN ('sending', 'sent', 'failed', 'unconfirmed', 'withdrawn')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "review_replies",
+        "name": "review_replies_settled",
+        "value": "(\"status\" = 'sending') = (\"settled_at\" IS NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_rating",
+        "value": "\"rating\" BETWEEN 1 AND 5",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_photos",
+        "value": "\"photo_count\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_reply",
+        "value": "(\"reply_text\" IS NULL) = (\"reply_updated_at\" IS NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "reviews",
+        "name": "reviews_reply_moderation",
+        "value": "\"reply_moderation\" IS NULL OR (\"reply_text\" IS NOT NULL AND \"reply_moderation\" IN ('pending', 'approved', 'rejected'))",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

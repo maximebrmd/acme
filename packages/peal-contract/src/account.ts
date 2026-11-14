@@ -610,6 +610,17 @@ const ExportedReplySchema = Schema.Struct({
   ...inWorkspace,
 });
 
+// A reply the user sent from Peal to a review of a location.
+const ExportedReviewReplySchema = Schema.Struct({
+  channelId: Schema.String,
+  createdAt: instant,
+  id: Schema.String,
+  reviewId: Schema.String,
+  status: Schema.String,
+  text: Schema.String,
+  ...inWorkspace,
+});
+
 // A webhook endpoint: where the workspace is told what happens in it,
 // without the secret that signs what it is sent.
 const ExportedWebhookSchema = Schema.Struct({
@@ -905,6 +916,9 @@ export const AccountExportSchema = Schema.Struct({
   }),
   // The replies the user sent to comments under posts, in any workspace.
   replies: Schema.Array(ExportedReplySchema),
+  // The replies the user sent to reviews of locations, in any workspace;
+  // never the reviews, which other people wrote.
+  reviewReplies: Schema.Array(ExportedReviewReplySchema),
   // The comments the user wrote on posts, the approvals they asked for and
   // those they decided, in any workspace.
   review: ExportedUserReviewSchema,

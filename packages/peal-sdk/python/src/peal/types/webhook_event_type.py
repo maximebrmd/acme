@@ -28,6 +28,8 @@ WebhookEventType = typing.Union[
         "media.failed",
         "comment.received",
         "comment.replied",
+        "review.received",
+        "review.replied",
         "boost.started",
         "boost.paused",
         "boost.resumed",

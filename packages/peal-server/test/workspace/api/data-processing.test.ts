@@ -32,6 +32,7 @@ import {
   longestWindow,
 } from "#engagement/domain/collection-schedule.ts";
 import { keptAfterCollection } from "#engagement/domain/engagement-retention.ts";
+import { reviewsKeptFor } from "#engagement/domain/review.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
@@ -200,6 +201,20 @@ describe("the data processing registry", () => {
     expect(kept("inbox")).toContain("90 days at most");
     // Other people wrote them: used to show and answer, nothing else.
     expect(categoryOf("inbox")?.purposes.en).toContain("used for nothing else");
+  });
+
+  it("keeps a location's reviews as long as their purge does", () => {
+    expect(Duration.days(retentionPeriods.inboxReviews.days)).toStrictEqual(
+      reviewsKeptFor
+    );
+    expect(kept("inboxReviews")).toContain(
+      "29 days after a review was written"
+    );
+    // Other people wrote them: used to show and answer, nothing else.
+    expect(categoryOf("inboxReviews")?.purposes.en).toContain(
+      "used for nothing else"
+    );
+    expect(categoryOf("inboxReviews")?.data.en).toContain("never the photos");
   });
 
   it("keeps the days of ads' numbers and the ads audit trail as long as their purge does", () => {

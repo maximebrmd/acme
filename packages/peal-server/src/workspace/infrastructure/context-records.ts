@@ -128,6 +128,7 @@ export const ContextRecordsLive = Layer.effect(
           contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
           replies: engagement.exportUser(userId),
+          reviewReplies: engagement.exportUserReviewReplies(userId),
           review: reviews.exportUser(userId),
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
@@ -138,6 +139,7 @@ export const ContextRecordsLive = Layer.effect(
             contracts: exported.contracts,
             legalHold: exported.legalHold,
             replies: exported.replies,
+            reviewReplies: exported.reviewReplies,
             review: exported.review,
             staffActions: exported.staffActions,
           }))
