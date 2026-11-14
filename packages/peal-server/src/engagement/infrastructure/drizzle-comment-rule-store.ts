@@ -221,7 +221,7 @@ export const DrizzleCommentRuleStore = Layer.effect(
             }
             AND c.channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
             AND c.state = 'new'
-            AND c.received_at >= ${date(rule.answersFrom)}
+            AND c.written_at >= ${date(rule.answersFrom)}
             AND NOT EXISTS (
               SELECT 1 FROM engagement.comment_rule_matches m
               WHERE m.rule_id = ${rule.id} AND m.comment_id = c.id

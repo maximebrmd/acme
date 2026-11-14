@@ -177,12 +177,15 @@ const threadOn = Effect.fn("threadOn")(function* threadOn(
   return thread;
 });
 
-// Comments received now, as the collection keeps them.
+// Comments received now, as the collection keeps them, written now or at
+// `writtenAt`.
 const received = Effect.fn("received")(function* received(
   thread: Effect.Success<ReturnType<typeof threadOn>>,
-  given: readonly { readonly author: number; readonly text: string }[]
+  given: readonly { readonly author: number; readonly text: string }[],
+  writtenAt?: DateTime.Utc
 ) {
   const now = yield* DateTime.now;
+  const written = writtenAt ?? now;
 
   const comments = yield* Effect.forEach(
     (one: { readonly author: number; readonly text: string }) =>
@@ -194,7 +197,7 @@ const received = Effect.fn("received")(function* received(
             reading(one.author, {
               platformCommentId: `${String(one.author)}-${one.text}`,
               text: one.text,
-              writtenAt: now,
+              writtenAt: written,
             }),
             now
           )
@@ -327,6 +330,9 @@ describe("comment rules", () => {
         yield* Effect.sleep("5 millis");
 
         const rules = yield* CommentRules;
+        const beforeStart = yield* DateTime.now;
+
+        yield* Effect.sleep("5 millis");
 
         const rule = yield* rules.start(actorIn(workspaceId), {
           keywords: ["price"],
@@ -334,6 +340,12 @@ describe("comment rules", () => {
           scope: { _tag: "post", postId: thread.postId },
         });
 
+        assert.strictEqual((yield* rules.runDue).looked, 0);
+
+        // Nor one written before it started that Peal read only after.
+        yield* Effect.sleep("5 millis");
+        yield* received(thread, [{ author: 5, text: "price, late" }], beforeStart);
+        yield* Effect.sleep("5 millis");
         assert.strictEqual((yield* rules.runDue).looked, 0);
 
         yield* rules.change(actorIn(workspaceId), rule.rule.id, {

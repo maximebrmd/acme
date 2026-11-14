@@ -367,7 +367,8 @@
   deleted on a test location.
 - A comment rule (`domain/comment-rule.ts`, `CommentRules`,
   `engagement.comment_rules`) answers by itself, in public, a comment
-  received after it started or was last set going again (`answersFrom`)
+  written after it started or was last set going again (`answersFrom`,
+  against the comment's `written_at`, not when Peal read it)
   under a post it answers on (one post's, on the channels the post is
   for, out or not, `FollowedPosts.channelsOf`; or every post of a
   channel's) that holds one of its keywords as a word
