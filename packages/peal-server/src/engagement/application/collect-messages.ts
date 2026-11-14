@@ -302,8 +302,9 @@ export class CollectMessages extends Context.Service<
         yield* store.saveBox(recordBoxRead(current.value, latest, now, at));
       });
 
-      // A channel that left goes now, with what it held; one that cannot
-      // be read waits.
+      // A channel that left goes now, with what it held, as do the messages
+      // of one whose account no longer grants them; one that cannot be read
+      // waits.
       const putOff = (
         box: MessageBox,
         failure: MessagesReadFailure,
@@ -328,6 +329,16 @@ export class CollectMessages extends Context.Service<
         ) {
           return transaction(
             forgetChannelMessages(store, meters, box.channelId)
+          );
+        }
+
+        // Its account was signed in again without what reading takes: its
+        // messages are turned off, never left on unread, and members told.
+        if (failure._tag === "MessagesUngranted") {
+          return transaction(
+            forgetChannelMessages(store, meters, box.channelId).pipe(
+              Effect.andThen(outcomes.turnedOff(box))
+            )
           );
         }
 

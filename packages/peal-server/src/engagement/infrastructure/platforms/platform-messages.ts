@@ -3,6 +3,7 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { MessageSender } from "#engagement/application/ports/message-sender.ts";
 import type { MessageSendRequest } from "#engagement/application/ports/message-sender.ts";
 import { MessageSource } from "#engagement/application/ports/message-source.ts";
@@ -102,13 +103,14 @@ export const platformMessagesWith = (settings: {
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
-        // A channel connected before Peal asked what reading takes is
-        // never called: it is read once connected again.
+        // A channel whose account does not grant what reading takes is
+        // never called: its messages were turned on with it, so it was
+        // signed in again without it, and they are turned off.
         if (
           messageAbilitiesOf(account.platform, account.scopes, messages)
             .read !== "available"
         ) {
-          return yield* new ChannelUnreadable({ reason: "paused" });
+          return yield* new MessagesUngranted();
         }
 
         const known = yield* store

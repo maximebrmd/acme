@@ -2069,6 +2069,7 @@
       "PostCommented": "{by, select, visitor {A reviewer} application {An application} other {A member}} commented on a post of {workspace}.",
       "CommentsReceived": "{count, plural, one {# new comment} other {# new comments}} under a post of {workspace}.",
       "MessagesReceived": "{count, plural, one {A new message} other {# new messages}} on {channel}, in {workspace}.",
+      "MessagesTurnedOff": "The direct messages of {channel}, in {workspace}, were turned off and their conversations deleted: the account was connected again without allowing them. Reconnect it allowing its messages, then turn them on again.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "PaymentMethodNeeded": "{workspace} holds {accounts, number} connected accounts, more than the {allowed, number} the free tier includes. It still schedules and publishes on the accounts it had before billing began until {graceUntil} UTC; after that, nothing goes out until a payment method is added or {allowed, number} accounts are kept.",

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Layer, Option, Result } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { MessageOutcomes } from "#engagement/application/ports/message-outcomes.ts";
@@ -13,9 +13,11 @@ import type { NoticeRequest } from "#notifications/application/notify.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { freshChannel } from "#test/channels/support.ts";
 import {
+  channelId,
   conversation,
   directMessage,
   memberId,
+  messageBox,
   messagedAt,
   outgoingMessageId,
   workspaceId,
@@ -156,4 +158,29 @@ describe("the direct messages' outcomes", () => {
       assert.notInclude(JSON.stringify(events), secret);
     }).pipe(Effect.provide(layer));
   });
+
+  it.effect(
+    "tell who may connect channels that a channel's messages were turned off, once a day",
+    () => {
+      const { events, layer, notices } = told();
+
+      return Effect.gen(function* turnedOff() {
+        yield* MessageOutcomes.use((outcomes) =>
+          outcomes.turnedOff(messageBox())
+        );
+
+        const [notice] = notices;
+
+        assert.deepStrictEqual(notice?.event, {
+          _tag: "MessagesTurnedOff",
+          channel: { handle: "@peal_example", platform: "mastodon" },
+        });
+        assert.strictEqual(
+          notice?.key,
+          `messages-off:${channelId(1)}:${DateTime.formatIso(yield* DateTime.now).slice(0, 10)}`
+        );
+        assert.lengthOf(events, 0);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 });

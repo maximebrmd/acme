@@ -13,6 +13,7 @@ import { FetchHttpClient } from "effect/http";
 
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import { MessageSource } from "#engagement/application/ports/message-source.ts";
 import { MessageStore } from "#engagement/application/ports/message-store.ts";
@@ -515,6 +516,52 @@ describe("the gate's reply sender", () => {
   );
 });
 
+// The gate's reader of direct messages over `store`, for `account`, on
+// a server at `url`, where the server reads both platforms' messages.
+const messageSourceOn = (
+  url: URL,
+  store: typeof MessageStore.Service,
+  account: ChannelAccount
+) =>
+  MessageSource.pipe(
+    Effect.provide(
+      platformEngagementWith({
+        blueskyAppView: url,
+        businessApi: url,
+        linkedinApi: url,
+        linkedinReadCalls: linkedinCommentsDailyCalls,
+        linkedinVersion: "202610",
+        mastodonScheme: "http:",
+        metaAppSecret: Option.none(),
+        metaHosts,
+        youtubeApi: url,
+        youtubeCommentUnits: youtubeCommentsDailyUnits,
+      }).pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            makeWorld().ports,
+            makeReviewWorld().ports,
+            Layer.succeed(MessageStore, store),
+            Layer.succeed(
+              CurrentInboxMessages,
+              new Set(["mastodon", "bluesky"] as const)
+            ),
+            Layer.succeed(CurrentInboxPlatforms, new Set()),
+            memoryQuota().layer,
+            channelAccessOf(account, ["token-1"]),
+            FetchHttpClient.layer,
+            OpenOutboundGuard,
+            KeyedPseudonymsLive,
+            Digest.layerWebCrypto,
+            Mac.layerWebCrypto.pipe(
+              Layer.provideMerge(SecureRandom.layerWebCrypto)
+            )
+          )
+        )
+      )
+    )
+  );
+
 describe("the gate's message source", () => {
   it.effect(
     "reads a conversation as not whole when the database does not give what Peal keeps of it",
@@ -553,55 +600,20 @@ describe("the gate's message source", () => {
         world.state.conversations.set(kept.id, kept);
 
         // The database answers the conversations, not their messages.
-        const store: typeof MessageStore.Service = {
-          ...world.store,
-          messagesOf: () =>
-            Effect.fail(new DatabaseError({ cause: "synthetic outage" })),
-        };
-
-        const source = yield* MessageSource.pipe(
-          Effect.provide(
-            platformEngagementWith({
-              blueskyAppView: url,
-              businessApi: url,
-              linkedinApi: url,
-              linkedinReadCalls: linkedinCommentsDailyCalls,
-              linkedinVersion: "202610",
-              mastodonScheme: "http:",
-              metaAppSecret: Option.none(),
-              metaHosts,
-              youtubeApi: url,
-              youtubeCommentUnits: youtubeCommentsDailyUnits,
-            }).pipe(
-              Layer.provide(
-                Layer.mergeAll(
-                  makeWorld().ports,
-                  makeReviewWorld().ports,
-                  Layer.succeed(MessageStore, store),
-                  Layer.succeed(CurrentInboxMessages, new Set(["mastodon"])),
-                  Layer.succeed(CurrentInboxPlatforms, new Set()),
-                  memoryQuota().layer,
-                  channelAccessOf(
-                    {
-                      accountId: `109372@${url.host}`,
-                      channelId: channelId(1),
-                      connection: Option.none(),
-                      platform: "mastodon",
-                      scopes: ["read:statuses", "write:statuses"],
-                    },
-                    ["token-1"]
-                  ),
-                  FetchHttpClient.layer,
-                  OpenOutboundGuard,
-                  KeyedPseudonymsLive,
-                  Digest.layerWebCrypto,
-                  Mac.layerWebCrypto.pipe(
-                    Layer.provideMerge(SecureRandom.layerWebCrypto)
-                  )
-                )
-              )
-            )
-          )
+        const source = yield* messageSourceOn(
+          url,
+          {
+            ...world.store,
+            messagesOf: () =>
+              Effect.fail(new DatabaseError({ cause: "synthetic outage" })),
+          },
+          {
+            accountId: `109372@${url.host}`,
+            channelId: channelId(1),
+            connection: Option.none(),
+            platform: "mastodon",
+            scopes: ["read:statuses", "write:statuses"],
+          }
         );
 
         const batch = yield* source.read({
@@ -614,6 +626,40 @@ describe("the gate's message source", () => {
         assert.strictEqual(reading?.platformConversationId, "c1");
         assert.isFalse(reading?.complete ?? true);
         assert.deepStrictEqual(reading?.deleted, []);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "answers that a Bluesky channel signed in again without the chat's permissions no longer grants its messages, and calls nothing",
+    () =>
+      Effect.gen(function* ungranted() {
+        const server = yield* platformServer(() => json({ convos: [] }));
+        const url = new URL(server.url);
+
+        const source = yield* messageSourceOn(url, makeMessageWorld().store, {
+          accountId: "did:plc:syntheticstudio",
+          channelId: channelId(1),
+          connection: Option.none(),
+          platform: "bluesky",
+          // What publishing asks, and none of the chat's.
+          scopes: [
+            "atproto",
+            "repo:app.bsky.feed.post?action=create&action=delete",
+          ],
+        });
+
+        const read = yield* source
+          .read({
+            channelId: channelId(1),
+            keptSince: DateTime.subtractDuration(
+              yield* DateTime.now,
+              "30 days"
+            ),
+          })
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(read, new MessagesUngranted());
+        assert.lengthOf(server.requests(), 0);
       }).pipe(Effect.scoped)
   );
 });

@@ -149,6 +149,12 @@ export const NoticeEventSchema = Schema.Union([
     conversationId: Schema.String,
     count: Schema.Int,
   }),
+  // The channel's direct messages were turned off, and what Peal kept of
+  // them deleted: its account was signed in again without allowing them.
+  // Reconnect it allowing them, then turn them on again.
+  Schema.TaggedStruct("MessagesTurnedOff", {
+    channel: NoticeChannelSchema,
+  }),
   // The channel's authorization stopped working: reconnect it to post again.
   Schema.TaggedStruct("ChannelReconnectRequired", {
     channel: NoticeChannelSchema,

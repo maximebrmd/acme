@@ -195,6 +195,11 @@ export const NoticeEventSchema = Schema.Union([
     conversationId: Uuid7Schema,
     count: Schema.Int,
   }),
+  // The channel's direct messages were turned off, as its account no
+  // longer grants what reading them takes: what Peal kept of them is gone.
+  Schema.TaggedStruct("MessagesTurnedOff", {
+    channel: NoticeChannelSchema,
+  }),
   // The channel's authorization stopped working: nothing is posted until it
   // is reconnected.
   Schema.TaggedStruct("ChannelReconnectRequired", {
@@ -372,6 +377,8 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     CommentsReceived: () => Option.some<EmailKind>("comments"),
     // The inbox's other activity, under the same preference.
     MessagesReceived: () => Option.some<EmailKind>("comments"),
+    // The channel's account must be reconnected for them.
+    MessagesTurnedOff: () => Option.some<EmailKind>("channelReconnect"),
     FeedStopped: () => Option.some<EmailKind>("feedStopped"),
     PostApprovalRequested: () => Option.some<EmailKind>("postReview"),
     PostApproved: () => Option.some<EmailKind>("postReview"),
@@ -412,6 +419,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     ChannelReconnectSoon: (): Permission => "channel:connect",
     CommentsReceived: (): Permission => "engagement:reply",
     MessagesReceived: (): Permission => "engagement:message",
+    MessagesTurnedOff: (): Permission => "channel:connect",
     FeedStopped: (): Permission => "post:schedule",
     PostApprovalRequested: (): Permission => "post:approve",
     PostApproved: (): Permission => "post:schedule",
@@ -443,6 +451,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     ChannelReconnectSoon: () => false,
     CommentsReceived: () => true,
     MessagesReceived: () => false,
+    MessagesTurnedOff: () => false,
     FeedStopped: () => true,
     PostApprovalRequested: () => true,
     PostApproved: () => true,
@@ -570,6 +579,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     CommentsReceived: ({ threadId }) => `/app/${workspaceId}/inbox/${threadId}`,
     MessagesReceived: ({ conversationId }) =>
       `/app/${workspaceId}/inbox/messages/${conversationId}`,
+    MessagesTurnedOff: () => `/app/${workspaceId}/inbox`,
     FeedStopped: ({ feedId }) =>
       `/app/${workspaceId}/settings/feeds?feed=${feedId}`,
     PostApprovalRequested: ({ postId }) =>

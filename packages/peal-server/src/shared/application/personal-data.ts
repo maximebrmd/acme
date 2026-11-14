@@ -722,6 +722,10 @@ export type NoticeEventRecord =
       readonly count: number;
     }
   | {
+      readonly _tag: "MessagesTurnedOff";
+      readonly channel: NoticeChannelRecord;
+    }
+  | {
       readonly _tag: "PostCommented";
       readonly by: string;
       readonly postId: string;

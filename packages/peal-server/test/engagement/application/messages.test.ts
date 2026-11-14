@@ -9,6 +9,7 @@ import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts
 import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
 import { MessageSettings } from "#engagement/application/message-settings.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { PurgeMessages } from "#engagement/application/purge-messages.ts";
 import { SendMessage } from "#engagement/application/send-message.ts";
 import { refreshConversation } from "#engagement/domain/conversation.ts";
@@ -554,6 +555,42 @@ describe("the messages' collection", () => {
             world.state.boxes.get(channelId(2))?.nextReadAt,
             DateTime.addDuration(messagedAt, "30 minutes")
           );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "turns a channel's messages off, and says so, once its account no longer grants what reading them takes",
+    () => {
+      const world = worldWith("bluesky");
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+      );
+      world.state.switchedOn.set(channelId(1), {
+        channelId: channelId(1),
+        enabledAt: messagedAt,
+        enabledBy: Option.none(),
+        workspaceId,
+      });
+      // Signed in again without the chat's permissions.
+      world.state.read = () => Effect.fail(new MessagesUngranted());
+
+      return at(
+        Effect.gen(function* ungranted() {
+          const report = yield* CollectMessages.use((collect) =>
+            collect.run(messagedAt)
+          );
+
+          assert.strictEqual(report.deferred, 1);
+          assert.strictEqual(world.state.conversations.size, 0);
+          assert.isFalse(world.state.boxes.has(channelId(1)));
+          assert.isFalse(world.state.switchedOn.has(channelId(1)));
+          assert.deepStrictEqual(world.state.turnedOff, [
+            { channelId: channelId(1), workspaceId },
+          ]);
         })
       ).pipe(Effect.provide(world.layer));
     }

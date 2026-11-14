@@ -402,7 +402,12 @@
   channel's messages on: `switchChannel` refuses a channel whose read is
   not `available` (`MessageAbilityUnavailable`, `reconnect`), and the web
   app reconnects it with `messages=true`, the switch off meanwhile. A
-  channel without them is never called (`platform-messages.ts`).
+  channel without them is never called (`platform-messages.ts`): one whose
+  messages are on answers `MessagesUngranted` (its account was connected
+  again through `start`, which asks publishing's scopes only), and the
+  collection turns them off (`forgetChannelMessages`) and tells
+  `MessagesTurnedOff` (the channel, to `channel:connect`, emailed under
+  `channelReconnect`): the switch never stays on unread.
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):

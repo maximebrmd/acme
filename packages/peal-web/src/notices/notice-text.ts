@@ -153,6 +153,11 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
           `messages/${conversationId}`,
           t("event.MessagesReceived", { channel, count, workspace })
         ),
+      MessagesTurnedOff: () => ({
+        href: `/app/${workspaceId}/inbox`,
+        open: t("open", { page: "inbox" }),
+        text: t("event.MessagesTurnedOff", { channel, workspace }),
+      }),
       PostApprovalRequested: ({ postId, scheduledAt }) =>
         post(
           postId,
