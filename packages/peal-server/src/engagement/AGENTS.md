@@ -470,8 +470,11 @@
   or 403 without a token error pauses the read, never marks the channel
   to reconnect. Neither adapter was run against the platform: before the
   setting is turned on anywhere, read and answer one conversation on a
-  test account of each, and Bluesky's granular chat scopes checked to be
-  granted as asked.
+  test account of each, Bluesky's granular chat scopes checked to be
+  granted as asked, and `listConvos` checked to list by latest message,
+  which its lexicon does not say and the early end rests on: listed by
+  any other activity (a reaction), a conversation below a page of older
+  ones would be missed by two whole listings, and deleted.
 - Sending (`EngagementMessages.send`, `engagement:message`, in
   `publishingPermissions`): the conversation, the channel able, the
   platform's `replyWindowOf` open (always, on these two), the text within
