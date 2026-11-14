@@ -1179,4 +1179,28 @@ layer(StoreTest)("the message store", (it) => {
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );
+
+  it.effect(
+    "keeps a conversation past its time that a message is being sent to while the retention runs",
+    () =>
+      Effect.gen(function* racing() {
+        const store = yield* MessageStore;
+        const workspaceId = yield* freshWorkspace;
+        const at = "1935-05-01T09:00:00.000Z";
+        const box = yield* boxOf(workspaceId, at);
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const { message, talk } = yield* sendDuring(
+            box,
+            at,
+            store.purge(utc("1935-06-15T09:00:00.000Z"), 100)
+          );
+
+          assert.isTrue(Option.isSome(yield* store.conversation(talk.id)));
+          assert.isTrue(Option.isSome(yield* store.outgoing(message.id)));
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
 });

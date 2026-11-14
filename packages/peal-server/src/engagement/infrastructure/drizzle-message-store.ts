@@ -847,7 +847,26 @@ export const DrizzleMessageStore = Layer.effect(
         )
       `.pipe(Effect.mapError(failed));
 
-      const gone = yield* sql`
+      // The boxes of the conversations past their time first, by channel,
+      // as every deletion of conversations takes them: a message being
+      // journalled to one is then seen on its way by the delete, which a
+      // later statement makes, and keeps it.
+      const gone = yield* sql
+        .withTransaction(
+          sql`
+          SELECT 1 FROM engagement.message_boxes
+          WHERE channel_id IN (
+            SELECT conversation.channel_id
+            FROM engagement.conversations AS conversation
+            WHERE conversation.last_message_at < ${since}::timestamptz
+            ORDER BY conversation.last_message_at
+            LIMIT ${limit}
+          )
+          ORDER BY channel_id
+          FOR UPDATE
+        `.pipe(
+            Effect.andThen(
+              sql`
         DELETE FROM engagement.conversations
         WHERE id IN (
           SELECT conversation.id FROM engagement.conversations AS conversation
@@ -861,7 +880,11 @@ export const DrizzleMessageStore = Layer.effect(
           LIMIT ${limit}
         )
         RETURNING id
-      `.pipe(Effect.mapError(failed));
+      `
+            )
+          )
+        )
+        .pipe(Effect.mapError(failed));
 
       return { conversations: gone.length, messages: messages.length };
     });
