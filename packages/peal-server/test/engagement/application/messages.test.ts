@@ -289,6 +289,44 @@ describe("the messages' collection", () => {
   );
 
   it.effect(
+    "clears the miss of a conversation a halted listing shows, so a whole listing after does not delete it",
+    () => {
+      const world = worldWith();
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+      );
+
+      let run = messagedAt;
+
+      const collected = Effect.suspend(() => {
+        run = DateTime.addDuration(run, "2 hours");
+
+        return at(
+          CollectMessages.use((collect) => collect.run(run)),
+          run
+        );
+      });
+
+      return Effect.gen(function* sighted() {
+        // Missed by a whole listing: marked.
+        world.state.read = listing(["c9"]);
+        yield* collected;
+
+        // Shown by a listing that halted: seen, so no longer missed.
+        world.state.read = listing(["c1"], false);
+        yield* collected;
+
+        // Missed by the next whole listing: marked again, and kept.
+        world.state.read = listing(["c9"]);
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
     "keeps no message sent before what Peal keeps, and never tells one again",
     () => {
       const world = makeMessageWorld();

@@ -778,6 +778,38 @@ layer(StoreTest)("the message store", (it) => {
   );
 
   it.effect(
+    "keeps a conversation missed, then shown by a listing that stopped short, through the next whole listing",
+    () =>
+      Effect.gen(function* sighted() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* MessageStore;
+        const box = yield* boxOf(workspaceId, "2049-03-03T10:00:00.000Z");
+        const at = utc("2049-03-03T10:00:00.000Z");
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          const talk = yield* conversationOn(
+            box,
+            1,
+            "2049-03-03T09:00:00.000Z"
+          );
+
+          yield* store.saveConversations([talk]);
+
+          yield* store.dropUnlisted(box.channelId, ["c9"], at);
+          yield* store.clearUnlisted(box.channelId, ["c1"]);
+
+          assert.strictEqual(
+            yield* store.dropUnlisted(box.channelId, ["c9"], at),
+            0
+          );
+          assert.isTrue(Option.isSome(yield* store.conversation(talk.id)));
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
     "erases a workspace's conversations, and forgets a user's name",
     () =>
       Effect.gen(function* erases() {

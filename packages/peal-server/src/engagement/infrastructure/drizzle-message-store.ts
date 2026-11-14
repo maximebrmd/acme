@@ -1005,6 +1005,21 @@ export const DrizzleMessageStore = Layer.effect(
       return row !== undefined;
     });
 
+    const clearUnlisted = (channelId: string, listed: readonly string[]) =>
+      listed.length === 0
+        ? Effect.void
+        : db
+            .update(conversations)
+            .set({ unlistedAt: null })
+            .where(
+              and(
+                eq(conversations.channelId, channelId),
+                inArray(conversations.platformConversationId, [...listed]),
+                isNotNull(conversations.unlistedAt)
+              )
+            )
+            .pipe(Effect.asVoid, Effect.mapError(failed));
+
     const dropUnlisted = Effect.fn("MessageStore.dropUnlisted")(
       function* dropUnlisted(
         channelId: string,
@@ -1019,17 +1034,7 @@ export const DrizzleMessageStore = Layer.effect(
         }
 
         // Shown again: no longer missed.
-        yield* db
-          .update(conversations)
-          .set({ unlistedAt: null })
-          .where(
-            and(
-              eq(conversations.channelId, channelId),
-              inArray(conversations.platformConversationId, shown),
-              isNotNull(conversations.unlistedAt)
-            )
-          )
-          .pipe(Effect.mapError(failed));
+        yield* clearUnlisted(channelId, shown);
 
         // Missed by the whole listing before too: gone on the platform,
         // unless a message to it is on its way.
@@ -1068,6 +1073,7 @@ export const DrizzleMessageStore = Layer.effect(
       allowApplication,
       allows,
       applications,
+      clearUnlisted,
       dropUnlisted,
       pageOfMessages,
       revokeApplication,

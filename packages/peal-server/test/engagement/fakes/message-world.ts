@@ -194,6 +194,17 @@ export const makeMessageWorld = (
       Effect.sync(() =>
         state.applications.filter((kept) => kept.workspaceId === workspaceId)
       ),
+    clearUnlisted: (channelId, listed) =>
+      Effect.sync(() => {
+        for (const conversation of state.conversations.values()) {
+          if (
+            conversation.channelId === channelId &&
+            listed.includes(conversation.platformConversationId)
+          ) {
+            unlisted.delete(conversation.id);
+          }
+        }
+      }),
     dropUnlisted: (channelId, listed) =>
       Effect.sync(() => {
         const ofBox = [...state.conversations.values()].filter(

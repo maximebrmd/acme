@@ -414,7 +414,8 @@
   day. A listing that reached its end (`listedWhole`, non-empty) marks
   the kept conversations it did not list (`unlisted_at`), clears those it
   lists, and deletes those the whole listing before missed too, unless a
-  message to one is on its way (`dropUnlisted`): one listing alone never
+  message to one is on its way (`dropUnlisted`); a listing that stopped
+  short clears those it lists too (`clearUnlisted`): one listing alone never
   deletes, as a conversation moving up while it pages is on no page, and
   an empty one says nothing. Bluesky's listing ends at a page wholly older
   than what Peal keeps, as Mastodon's. One cut at its page cap
