@@ -40,7 +40,7 @@ describe("the channels contract", () => {
   });
 
   it("copies the server's websites, and what a channel connects to", () => {
-    expect(ContractSitePlatformSchema.literals).toStrictEqual(
+    expect([ContractSitePlatformSchema.literal]).toStrictEqual(
       SitePlatformSchema.literals
     );
     expect(ContractChannelPlatformSchema.literals).toStrictEqual(

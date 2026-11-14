@@ -29,7 +29,10 @@ export type Platform = typeof PlatformSchema.Type;
  * list (src/shared/domain/platform.ts) is the source; a test keeps the two
  * equal.
  */
-export const SitePlatformSchema = Schema.Literals(["wordpress"]).annotate({
+// One kind so far: a single literal, which the document writes as a plain
+// enum (a list of one would be an anyOf of one). Hosted WordPress, Dev.to
+// and Hashnode join it as `Schema.Literals`.
+export const SitePlatformSchema = Schema.Literal("wordpress").annotate({
   description: "A kind of website a channel publishes articles to.",
   identifier: "SitePlatform",
 });
@@ -42,7 +45,7 @@ export type SitePlatform = typeof SitePlatformSchema.Type;
  */
 export const ChannelPlatformSchema = Schema.Literals([
   ...PlatformSchema.literals,
-  ...SitePlatformSchema.literals,
+  SitePlatformSchema.literal,
 ]).annotate({
   description:
     "What a channel connects to: a social network (posts) or a website (articles).",

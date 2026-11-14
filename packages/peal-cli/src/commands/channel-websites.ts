@@ -17,7 +17,7 @@ export const connectWebsite = Command.make(
       )
     ),
     json: jsonFlag,
-    platform: Flag.Literals("platform", SitePlatformSchema.literals).pipe(
+    platform: Flag.Literals("platform", [SitePlatformSchema.literal]).pipe(
       Flag.withDescription("What the site runs: wordpress."),
       Flag.withDefault("wordpress" as const)
     ),
