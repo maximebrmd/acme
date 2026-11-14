@@ -78,6 +78,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new PaymentMethodNeededValue(value));
     }
 
+    public static NoticeEvent plansRetiring(NoticeEventPlansRetiring value) {
+        return new NoticeEvent(new PlansRetiringValue(value));
+    }
+
     public static NoticeEvent allowanceReached(NoticeEventAllowanceReached value) {
         return new NoticeEvent(new AllowanceReachedValue(value));
     }
@@ -172,6 +176,10 @@ public final class NoticeEvent {
 
     public boolean isPaymentMethodNeeded() {
         return value instanceof PaymentMethodNeededValue;
+    }
+
+    public boolean isPlansRetiring() {
+        return value instanceof PlansRetiringValue;
     }
 
     public boolean isAllowanceReached() {
@@ -313,6 +321,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventPlansRetiring> getPlansRetiring() {
+        if (isPlansRetiring()) {
+            return Optional.of(((PlansRetiringValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<NoticeEventAllowanceReached> getAllowanceReached() {
         if (isAllowanceReached()) {
             return Optional.of(((AllowanceReachedValue) value).value);
@@ -445,6 +460,8 @@ public final class NoticeEvent {
 
         T visitPaymentMethodNeeded(NoticeEventPaymentMethodNeeded paymentMethodNeeded);
 
+        T visitPlansRetiring(NoticeEventPlansRetiring plansRetiring);
+
         T visitAllowanceReached(NoticeEventAllowanceReached allowanceReached);
 
         T visitXSpendCeiling(NoticeEventXSpendCeiling xSpendCeiling);
@@ -485,6 +502,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(SubscriptionStartedValue.class),
         @JsonSubTypes.Type(TrialEndingValue.class),
         @JsonSubTypes.Type(PaymentMethodNeededValue.class),
+        @JsonSubTypes.Type(PlansRetiringValue.class),
         @JsonSubTypes.Type(AllowanceReachedValue.class),
         @JsonSubTypes.Type(XSpendCeilingValue.class),
         @JsonSubTypes.Type(SubscriptionRenewingValue.class),
@@ -1008,6 +1026,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(PaymentMethodNeededValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PlansRetiring")
+    @JsonIgnoreProperties("_tag")
+    private static final class PlansRetiringValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPlansRetiring value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PlansRetiringValue() {}
+
+        private PlansRetiringValue(NoticeEventPlansRetiring value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPlansRetiring(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PlansRetiringValue && equalTo((PlansRetiringValue) other);
+        }
+
+        private boolean equalTo(PlansRetiringValue other) {
             return value.equals(other.value);
         }
 

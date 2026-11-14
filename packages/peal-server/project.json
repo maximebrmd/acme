@@ -58,6 +58,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "billing:retire-plans": {
+      "command": "bun src/retire-plans.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "erasures:replay": {
       "command": "bun src/replay-erasures.ts",
       "options": { "cwd": "{projectRoot}" },

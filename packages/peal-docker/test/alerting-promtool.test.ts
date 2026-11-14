@@ -234,6 +234,16 @@ const cases: readonly Case[] = [
     uid: "peal-threshold-unset",
   },
   {
+    expected: [
+      ["32m", true],
+      ["95m", false],
+    ],
+    interval: "1m",
+    name: "a credit refused, the counter born at 1",
+    series: { peal_billing_credit_problems_total: "_x30 1x90" },
+    uid: "peal-credit-problems",
+  },
+  {
     expected: [["35m", true]],
     interval: "1m",
     name: "a threshold refused, the counter set at 0 at the start",

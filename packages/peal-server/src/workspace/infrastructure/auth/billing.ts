@@ -11,6 +11,7 @@ import { captcha } from "better-auth/plugins";
 import { DateTime, Option, Redacted, Result, Schema } from "effect";
 import type { Stripe } from "stripe";
 
+import type { FailedRefund } from "#billing/application/credit-problem-desk.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
@@ -90,6 +91,11 @@ export interface BillingHooks {
    */
   readonly subscriptionChanged: (event: SubscriptionEvent) => Promise<void>;
   /**
+   * Keeps a refund Stripe reported failed, for staff. A failure makes the
+   * webhook answer an error, so Stripe sends the event again.
+   */
+  readonly refundFailed: (failure: FailedRefund) => Promise<void>;
+  /**
    * Gives a workspace just made its billing account: its creator's, made
    * then if they have none. Never throws: the account is given the next
    * time the workspace is read otherwise.
@@ -158,6 +164,17 @@ const StripeSubscriptionSchema = Schema.Struct({
 const decodeStripeSubscription = Schema.decodeUnknownOption(
   StripeSubscriptionSchema
 );
+
+// A refund Stripe reports failed (`refund.failed`): the card or the bank
+// sent it back.
+const FailedRefundSchema = Schema.Struct({
+  amount: Schema.Int,
+  currency: Schema.NonEmptyString,
+  failure_reason: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  id: Schema.NonEmptyString,
+});
+
+const decodeFailedRefund = Schema.decodeUnknownOption(FailedRefundSchema);
 
 const OrganizationRowSchema = Schema.Struct({ id: Schema.String });
 
@@ -1014,6 +1031,26 @@ export const stripeBilling = (
 
   const plugin = stripe({
     onEvent: async (event) => {
+      if (event.type === "refund.failed") {
+        const refund = decodeFailedRefund(event.data.object);
+
+        if (Option.isNone(refund)) {
+          log(`Stripe event ${event.id} has no refund billing can read`);
+
+          return;
+        }
+
+        await hooks.refundFailed({
+          amount: refund.value.amount,
+          currency: refund.value.currency,
+          failureReason: Option.fromNullishOr(refund.value.failure_reason),
+          occurredAt: fromStripeTime(event.created),
+          refundId: refund.value.id,
+        });
+
+        return;
+      }
+
       const found = await subscriptionEventOf(settings, event, log);
 
       if (Option.isSome(found)) {

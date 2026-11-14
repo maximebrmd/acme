@@ -4,7 +4,9 @@ import { ActivityLog } from "#activity/application/activity-log.ts";
 import type { ActivityEntry } from "#activity/application/activity-log.ts";
 import { ActivityRecords } from "#activity/application/activity-records.ts";
 import { ApplicationNames } from "#activity/application/application-names.ts";
+import { RequestLimitOverrides } from "#activity/application/request-limit-overrides.ts";
 import { DrizzleActivityEvents } from "#activity/infrastructure/drizzle-activity-events.ts";
+import { DrizzleRequestLimitOverrides } from "#activity/infrastructure/drizzle-request-limit-overrides.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { MemoryActivityEvents } from "#test/activity/fakes/memory-activity-events.ts";
@@ -36,15 +38,31 @@ const NamesTest = Layer.succeed(
 
 const UseCases = Layer.mergeAll(ActivityLog.layer, ActivityRecords.layer);
 
+// No workspace has a rate limit of its own in memory.
+const NoOverrides = Layer.succeed(
+  RequestLimitOverrides,
+  RequestLimitOverrides.of({
+    of: () => Effect.succeed(new Map()),
+    remove: () => Effect.void,
+    set: () => Effect.void,
+  })
+);
+
 /** The activity log on a store in memory. */
 export const ActivityMemoryTest = UseCases.pipe(
-  Layer.provide(Layer.mergeAll(MemoryActivityEvents, NamesTest)),
+  Layer.provide(Layer.mergeAll(MemoryActivityEvents, NamesTest, NoOverrides)),
   Layer.provideMerge(IdsLive)
 );
 
 /** The activity log on Postgres. */
 export const ActivityTest = UseCases.pipe(
-  Layer.provide(Layer.mergeAll(DrizzleActivityEvents, NamesTest)),
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleActivityEvents,
+      NamesTest,
+      DrizzleRequestLimitOverrides
+    )
+  ),
   Layer.provideMerge(DatabaseTest)
 );
 

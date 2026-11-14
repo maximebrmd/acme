@@ -345,6 +345,13 @@ const contentOf = (
         ["graceUntil", instantIn(graceUntil, locale)],
       ],
     }),
+    PlansRetiring: ({ endsAt, plan }): Content => ({
+      messages: catalog.plansRetiring,
+      values: [
+        ["endsAt", instantIn(endsAt, locale)],
+        ["plan", catalog.plans[plan]],
+      ],
+    }),
     AllowanceReached: ({ allowed, meter, resetsAt }): Content => ({
       messages: catalog.allowanceReached,
       values: [

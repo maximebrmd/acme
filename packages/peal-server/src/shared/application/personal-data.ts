@@ -754,6 +754,11 @@ export type NoticeEventRecord =
       readonly graceUntil: DateTime.Utc;
     }
   | {
+      readonly _tag: "PlansRetiring";
+      readonly endsAt: DateTime.Utc;
+      readonly plan: string;
+    }
+  | {
       readonly _tag: "AllowanceReached";
       readonly allowed: number;
       readonly meter: string;

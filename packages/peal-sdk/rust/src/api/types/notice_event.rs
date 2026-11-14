@@ -132,6 +132,14 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    PlansRetiring {
+        #[serde(rename = "endsAt")]
+        #[serde(default)]
+        ends_at: String,
+        plan: PaidPlan,
+    },
+
+    #[non_exhaustive]
     AllowanceReached {
         #[serde(default)]
         allowed: i64,
@@ -345,6 +353,10 @@ impl NoticeEvent {
             allowed,
             grace_until,
         }
+    }
+
+    pub fn plans_retiring(ends_at: String, plan: PaidPlan) -> Self {
+        Self::PlansRetiring { ends_at, plan }
     }
 
     pub fn allowance_reached(allowed: i64, meter: Meter, resets_at: String) -> Self {

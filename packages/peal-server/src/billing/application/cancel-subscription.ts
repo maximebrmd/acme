@@ -30,6 +30,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { refusedAsFailure } from "./credited.ts";
 import { contractAt } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
@@ -210,10 +211,12 @@ export class CancelSubscription extends Context.Service<
           const invoices = yield* stripe.paidInvoices(workspaceId, id);
           const credits = renewalsSince(invoices, effect.refundSince.value);
 
-          yield* stripe.credit(workspaceId, id, credits, {
-            _tag: "lateCancellation",
-            requestKey,
-          });
+          yield* stripe
+            .credit(workspaceId, id, credits, {
+              _tag: "lateCancellation",
+              requestKey,
+            })
+            .pipe(Effect.flatMap(refusedAsFailure(workspaceId)));
           yield* stripe.endNow(workspaceId, id, "cancelledLate");
 
           return Option.some<Money>({

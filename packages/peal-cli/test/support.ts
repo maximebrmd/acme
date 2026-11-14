@@ -310,12 +310,14 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
     resetTwoStep: () => notStaff,
     revokeSessions: () => notStaff,
     session: () => notStaff,
+    setWorkspaceRequestLimit: () => notStaff,
     shortLink: () => notStaff,
     system: () => notStaff,
     unban: () => notStaff,
     user: () => notStaff,
     users: () => notStaff,
     workspace: () => notStaff,
+    workspaceRequestLimit: () => notStaff,
     workspaceShortLinks: () => notStaff,
     workspaces: () => notStaff,
   })
@@ -388,9 +390,11 @@ const ContractRequestsLive = Layer.mergeAll(
   HttpApiBuilder.group(Api, "billingAccountsDesk", (handlers) =>
     handlers.handleAll({
       account: () => notStaff,
+      creditProblems: () => notStaff,
       detach: () => notStaff,
       merge: () => notStaff,
       requirePaymentMethod: () => notStaff,
+      settleCreditProblem: () => notStaff,
       sharedChannels: () => notStaff,
     })
   )

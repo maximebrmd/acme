@@ -59,6 +59,34 @@ export type SharedPlatformAccountPage =
   typeof SharedPlatformAccountPageSchema.Type;
 
 /**
+ * Money owed back that Stripe did not give, for staff to settle by hand: a
+ * credit Stripe refused for good (`creditRefused`: a legacy plan moved to
+ * per-account pricing or retired, its unused time not refunded), or a
+ * refund Stripe reported failed after it was made (`refundFailed`). Ids
+ * and amounts only.
+ */
+export const StaffCreditProblemSchema = Schema.Struct({
+  // In the currency's smallest unit: what was owed.
+  amount: Schema.Int,
+  // Stripe's error code, or the refund's failure reason.
+  code: Schema.NullOr(Schema.String),
+  currency: Schema.String,
+  kind: Schema.Literals(["creditRefused", "refundFailed"]),
+  occurredAt: Schema.DateTimeUtc,
+  // Why it was owed: movedToRateCard, retirement…
+  reason: Schema.NullOr(Schema.String),
+  refundId: Schema.NullOr(Schema.String),
+  // When staff marked it settled by hand; null while it is owed.
+  settledAt: Schema.NullOr(Schema.DateTimeUtc),
+  stripeSubscriptionId: Schema.NullOr(Schema.String),
+  workspaceId: Schema.NullOr(Schema.String),
+  // What names it, for marking it settled.
+  key: Schema.String,
+}).annotate({ identifier: "StaffCreditProblem" });
+
+export type StaffCreditProblem = typeof StaffCreditProblemSchema.Type;
+
+/**
  * What staff do about one free tier per person: the platform accounts
  * connected under several free billing accounts, the one cheap signal of
  * free tiers multiplied; merging one account into another, which
@@ -156,6 +184,37 @@ export class BillingAccountsDeskApi extends HttpApiGroup.make(
         description:
           "Requires a payment method of the account, which then has no free tier, or gives its free tier back (`required: false`). Recorded in the audit log first.",
         summary: "Require a payment method of a billing account",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.get("creditProblems", "/billing/credit-problems", {
+      success: Schema.Struct({ items: Schema.Array(StaffCreditProblemSchema) }),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "The latest 100 sums Peal owes back that Stripe did not give, newest first: credits Stripe refused for good, and refunds it reported failed. Each is settled by hand, in Stripe's dashboard or another way.",
+        summary: "List credits and refunds that did not go through",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post(
+      "settleCreditProblem",
+      "/billing/credit-problems/settle",
+      {
+        error: HttpApiError.NotFound,
+        payload: Schema.Struct({
+          key: Schema.String,
+          reason: StaffReasonSchema,
+        }),
+        success: StaffCreditProblemSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Marks a credit Stripe refused, or a refund it reported failed, as settled by hand: it stays listed, with when. Recorded in the audit log first, with its Stripe ids and the reason. One settled already stays as it was.",
+        summary: "Mark a credit or a refund settled",
       })
     )
   )

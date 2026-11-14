@@ -4,6 +4,7 @@ import { Cause, Exit, Option, Schema } from "effect";
 export const StaffErrorKeySchema = Schema.Literals([
   "accountGone",
   "banned",
+  "billingOff",
   "mergePartner",
   "mergeSame",
   "mergeStandalone",
@@ -53,6 +54,7 @@ const mergeKeys = {
 // The API's other answers, by tag.
 const reasons = new Map<string, StaffErrorKey>([
   ["BillingAccountNotFound", "accountGone"],
+  ["BillingNotEnabled", "billingOff"],
   ["NotFound", "notStaff"],
   ["ShortLinkNotFound", "linkGone"],
   ["UserNotFound", "gone"],

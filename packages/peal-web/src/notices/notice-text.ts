@@ -247,6 +247,14 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
+      PlansRetiring: ({ endsAt, plan: name }) =>
+        billing(
+          t("event.PlansRetiring", {
+            endsAt: DateTime.toDate(endsAt),
+            plan: plan(name),
+            workspace,
+          })
+        ),
       AllowanceReached: ({ allowed, meter, resetsAt }) =>
         billing(
           t("event.AllowanceReached", {

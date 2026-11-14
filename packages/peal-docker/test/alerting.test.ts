@@ -42,6 +42,9 @@ const watched = [
   "peal_billing_usage_report_paused",
   "peal_billing_account_days_started_day",
   "peal_billing_threshold_unset_total",
+  "peal_billing_credit_problems_total",
+  "peal_billing_retirements_untold_age",
+  "peal_billing_retirements_unconfirmed",
   "peal_billing_meter_errors_total",
 ];
 
@@ -133,6 +136,18 @@ describe("the production alert rules", () => {
       21_600,
     ],
     [
+      "peal-retirement-notices-behind",
+      "max(peal_billing_retirements_untold_age) or vector(0)",
+      "warning",
+      7200,
+    ],
+    [
+      "peal-retirements-unconfirmed",
+      "max(peal_billing_retirements_unconfirmed) or vector(0)",
+      "warning",
+      0,
+    ],
+    [
       "peal-usage-report-stopped",
       "time() - max(peal_billing_usage_report_ran_at)",
       "warning",
@@ -159,6 +174,12 @@ describe("the production alert rules", () => {
     [
       "peal-threshold-unset",
       "(sum(increase(peal_billing_threshold_unset_total[1h])) or vector(0)) + (sum(peal_billing_threshold_unset_total unless peal_billing_threshold_unset_total offset 1h unless peal_billing_threshold_unset_total offset 5m) or vector(0))",
+      "critical",
+      0,
+    ],
+    [
+      "peal-credit-problems",
+      "(sum(increase(peal_billing_credit_problems_total[1h])) or vector(0)) + (sum(peal_billing_credit_problems_total unless peal_billing_credit_problems_total offset 1h unless peal_billing_credit_problems_total offset 5m) or vector(0))",
       "critical",
       0,
     ],

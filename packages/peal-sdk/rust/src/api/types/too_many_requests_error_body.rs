@@ -29,12 +29,17 @@ pub enum TooManyRequestsErrorBody {
         request_id: Option<String>,
         #[serde(default)]
         limit: i64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        policy: Option<TooManyRequestsEncodedPolicy>,
         #[serde(rename = "retryAfterSeconds")]
         #[serde(default)]
         retry_after_seconds: i64,
         #[serde(rename = "windowSeconds")]
         #[serde(default)]
         window_seconds: i64,
+        #[serde(rename = "withPaymentMethod")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        with_payment_method: Option<i64>,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -60,8 +65,10 @@ impl TooManyRequestsErrorBody {
             message: None,
             request_id: None,
             limit,
+            policy: None,
             retry_after_seconds,
             window_seconds,
+            with_payment_method: None,
         }
     }
 
@@ -112,16 +119,20 @@ impl TooManyRequestsErrorBody {
         message: Option<String>,
         request_id: Option<String>,
         limit: i64,
+        policy: Option<TooManyRequestsEncodedPolicy>,
         retry_after_seconds: i64,
         window_seconds: i64,
+        with_payment_method: Option<i64>,
     ) -> Self {
         Self::TooManyRequests {
             code: Some(code),
             message,
             request_id,
             limit,
+            policy,
             retry_after_seconds,
             window_seconds,
+            with_payment_method,
         }
     }
 
@@ -130,16 +141,20 @@ impl TooManyRequestsErrorBody {
         message: String,
         request_id: Option<String>,
         limit: i64,
+        policy: Option<TooManyRequestsEncodedPolicy>,
         retry_after_seconds: i64,
         window_seconds: i64,
+        with_payment_method: Option<i64>,
     ) -> Self {
         Self::TooManyRequests {
             code,
             message: Some(message),
             request_id,
             limit,
+            policy,
             retry_after_seconds,
             window_seconds,
+            with_payment_method,
         }
     }
 
@@ -148,16 +163,64 @@ impl TooManyRequestsErrorBody {
         message: Option<String>,
         request_id: String,
         limit: i64,
+        policy: Option<TooManyRequestsEncodedPolicy>,
         retry_after_seconds: i64,
         window_seconds: i64,
+        with_payment_method: Option<i64>,
     ) -> Self {
         Self::TooManyRequests {
             code,
             message,
             request_id: Some(request_id),
             limit,
+            policy,
             retry_after_seconds,
             window_seconds,
+            with_payment_method,
+        }
+    }
+
+    pub fn too_many_requests_with_policy(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: Option<String>,
+        limit: i64,
+        policy: TooManyRequestsEncodedPolicy,
+        retry_after_seconds: i64,
+        window_seconds: i64,
+        with_payment_method: Option<i64>,
+    ) -> Self {
+        Self::TooManyRequests {
+            code,
+            message,
+            request_id,
+            limit,
+            policy: Some(policy),
+            retry_after_seconds,
+            window_seconds,
+            with_payment_method,
+        }
+    }
+
+    pub fn too_many_requests_with_with_payment_method(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: Option<String>,
+        limit: i64,
+        policy: Option<TooManyRequestsEncodedPolicy>,
+        retry_after_seconds: i64,
+        window_seconds: i64,
+        with_payment_method: i64,
+    ) -> Self {
+        Self::TooManyRequests {
+            code,
+            message,
+            request_id,
+            limit,
+            policy,
+            retry_after_seconds,
+            window_seconds,
+            with_payment_method: Some(with_payment_method),
         }
     }
 

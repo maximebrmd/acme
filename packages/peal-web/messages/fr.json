@@ -2085,7 +2085,8 @@
       "RecyclingEnded": "Une publication de {workspace} ne se répète plus : {reason, select, sourceGone {la publication qu’elle répète a été supprimée.} sourceWithdrawn {la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’a plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}",
       "FeedStopped": "Un flux de {workspace} ne crée plus de publications : {reason, select, gone {son site indique qu’il n’existe plus.} notAFeed {depuis sept jours, son adresse donne autre chose qu’un flux.} queueGone {la file d’attente où il programme ses publications a été supprimée.} starterGone {la personne qui l’a ajouté ne peut plus y créer de publications. La personne qui le reprend en devient responsable.} other {il n’a pas pu être lu pendant sept jours.}}",
       "AllowanceReached": "Le compte de facturation de {workspace} a utilisé les {allowed, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant} assistantImages {images de l’assistant} other {unités}} que son mois inclut sans moyen de paiement. Plus aucun ne part jusqu’au {resetsAt}, sauf si un moyen de paiement est ajouté ; la lecture et la publication continuent.",
-      "XSpendCeiling": "{percent, select, 100 {Le compte de facturation de {workspace} a atteint son plafond mensuel pour X, {ceiling} hors taxes : les publications sur X échouent sans être envoyées, et les chiffres de X ne sont pas lus, jusqu’au {resetsAt}, sauf si le plafond est relevé.} other {Le compte de facturation de {workspace} a dépensé {percent} % de son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Au-delà, les publications sur X et la lecture des chiffres de X s’arrêtent jusqu’au {resetsAt}.}}"
+      "XSpendCeiling": "{percent, select, 100 {Le compte de facturation de {workspace} a atteint son plafond mensuel pour X, {ceiling} hors taxes : les publications sur X échouent sans être envoyées, et les chiffres de X ne sont pas lus, jusqu’au {resetsAt}, sauf si le plafond est relevé.} other {Le compte de facturation de {workspace} a dépensé {percent} % de son plafond mensuel pour X, {ceiling} hors taxes, aux tarifs de X. Au-delà, les publications sur X et la lecture des chiffres de X s’arrêtent jusqu’au {resetsAt}.}}",
+      "PlansRetiring": "Les formules tarifées par canaux sont retirées : la formule {plan} de {workspace} prend fin le {endsAt, date, long}, et rien n’est facturé au-delà de ce jour ; la part non utilisée de ce qui a été payé au-delà est remboursée. Passez au tarif par compte sur la page de facturation d’ici là pour qu’elle prenne fin aussitôt, remboursée de la même façon ; sinon, l’espace de travail passe à l’offre gratuite ce jour-là."
     },
     "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez le canal, sur la page Canaux, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de la plateforme est restée épuisée (ses mises en ligne, ou sur YouTube le quota que dépense aussi un premier commentaire), pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} paymentMethodRequired {X facture chaque publication, que Peal refacture aux tarifs de X, et le compte de facturation de l’espace de travail n’a pas de moyen de paiement. Rien n’a été envoyé. Ajoutez-en un sur la page de facturation, puis publiez-la à nouveau.} xCeilingReached {elle aurait dépassé le plafond mensuel du compte de facturation pour X, ou ce qui peut lui être facturé avant le paiement de sa première facture. Rien n’a été envoyé. Relevez le plafond sur la page de facturation, ou publiez-la à nouveau le mois prochain.} paymentFailed {X facture chaque publication, que Peal refacture aux tarifs de X, et le dernier paiement du compte de facturation a échoué. Rien n’a été envoyé. Mettez à jour le moyen de paiement depuis la page de facturation, puis publiez-la à nouveau.} perAccountPricingRequired {X facture chaque publication, que Peal refacture aux tarifs de X, et l’abonnement de l’espace de travail est antérieur au tarif par compte, qui seul facture l’usage de X. Rien n’a été envoyé. Passez au tarif par compte sur la page de facturation, puis publiez-la à nouveau.} xThreadCut {le fil a été coupé : ses premières parties sont en ligne, et le compteur de X a refusé la suivante, car le compte de facturation ne peut pas être facturé pour elle maintenant (la page de facturation dit pourquoi). Dès qu’il le peut, envoyez la suite à nouveau, ou gardez les parties en ligne comme publication.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} recycling {Ouvrir les répétitions} feeds {Ouvrir les flux} other {Ouvrir les canaux}}",
@@ -2359,6 +2360,11 @@
         "failed": "Le changement n’a pas été enregistré. Réessayez."
       },
       "usedOfMoney": "{used} sur {most}"
+    },
+    "move": {
+      "title": "Passer au tarif par compte",
+      "description": "{plan} est tarifé par paliers de canaux et n’est plus vendu. Commander le tarif par compte ouvre un paiement qui lui est propre : dès que le tarif par compte commence, la formule {plan} prend fin aussitôt, et sa part non utilisée est remboursée sur le moyen de paiement qui l’a réglée. Les comptes sont ensuite facturés au jour, aux tarifs ci-dessous.",
+      "trial": "{plan} est tarifé par paliers de canaux et n’est plus vendu. Commander le tarif par compte ouvre un paiement qui lui est propre, et met fin à l’essai dès que le tarif par compte commence : rien n’est facturé pour l’essai."
     }
   },
   "BillingAccount": {
@@ -2477,7 +2483,7 @@
     "reached": "{limit, select, channels {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# canal} other {# canaux}}, et il en a {used, number}.} members {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# membre} other {# membres}}, invitations en attente comprises, et il en a {used, number}.} scheduledPosts {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# publication} other {# publications}} par mois, et ce mois-là en a {used, number}.} assistantRequests {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# demande} other {# demandes}} à l’assistant d’écriture par jour, et celles d’aujourd’hui sont épuisées. Elles reprennent à minuit UTC.} other {L’abonnement {plan} de {workspace} ne permet pas d’en ajouter.}}",
     "reachedStorage": "L’abonnement {plan} de {workspace} permet {allowed} de médias, et il en stocke {used}, envois en cours compris.",
     "trial": "{workspace} est en période d’essai : commander démarre le tarif par compte, et met fin à l’essai dès que Stripe le confirme. Rien n’est facturé pour l’essai.",
-    "legacyMove": "{workspace} est sur {plan}, tarifé par paliers de canaux. Passer au tarif par compte ne donne pas encore d’avoir pour sa part non utilisée : il reste payé jusqu’à la fin de sa période, pendant que les comptes sont facturés au compte dès le passage.",
+    "legacyMove": "{workspace} est sur {plan}, tarifé par paliers de canaux. Dès que le tarif par compte commence, la formule prend fin aussitôt et sa part non utilisée est remboursée sur le moyen de paiement qui l’a réglée ; les comptes sont ensuite facturés au compte.",
     "contact": "Nous écrire",
     "orRemove": "{limit, select, channels {Ou déconnectez un canal pour faire de la place.} members {Ou retirez un membre, ou révoquez une invitation en attente, pour faire de la place.} scheduledPosts {Ou choisissez un autre mois, ou annulez une publication de ce mois-là.} assistantRequests {Ou redemandez demain.} mediaStorage {Ou supprimez des médias pour faire de la place.} other {}}",
     "askManagers": "Les propriétaires et les administrateurs de {workspace} ajoutent son moyen de paiement : {names}.",
@@ -3350,7 +3356,8 @@
       "twoStepOff": "La validation en deux étapes est désactivée sur ce compte : il n’y a rien à réinitialiser.",
       "unknown": "Cela n’a pas marché. Réessayez.",
       "verified": "Cette adresse est déjà confirmée.",
-      "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède."
+      "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède.",
+      "billingOff": "Ce serveur ne facture pas : chaque clé envoie selon son réglage."
     },
     "workspaces": {
       "title": "Espaces de travail",
@@ -3428,7 +3435,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} setRequestLimit {A fixé la limite de débit d’un espace de travail} settleCreditProblem {A marqué un remboursement réglé} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -3509,7 +3516,23 @@
       "detachHint": "L’espace de travail quitte ce compte pour celui de son plus ancien propriétaire, ce qui annule une fusion.",
       "detach": "Détacher",
       "detached": "L’espace de travail a été détaché.",
-      "mergedMark": "(fusionné par l’équipe)"
+      "mergedMark": "(fusionné par l’équipe)",
+      "creditProblems": {
+        "title": "Remboursements qui n’ont pas abouti",
+        "description": "Des sommes dues que Stripe n’a pas rendues : un avoir qu’il a refusé définitivement, ou un remboursement qu’il a signalé échoué. Réglez chacune à la main, dans le tableau de bord de Stripe ou autrement : le client a été informé que la somme lui revient.",
+        "empty": "Rien n’est dû.",
+        "at": "Quand",
+        "kind": "Quoi",
+        "amount": "Montant",
+        "stripe": "Chez Stripe",
+        "workspace": "Espace de travail",
+        "noWorkspace": "Effacé",
+        "kindName": "{kind, select, creditRefused {Avoir refusé} refundFailed {Remboursement échoué} other {{kind}}}",
+        "settled": "Réglé",
+        "settle": "Marquer réglé",
+        "reason": "Comment il a été réglé",
+        "settledToast": "Marqué réglé."
+      }
     },
     "legal": {
       "title": "Réquisitions",
@@ -3632,6 +3655,21 @@
       "allHint": "Désactive tous les liens courts encore actifs de cet espace de travail, comme lorsqu’il est signalé pour abus : chacun répond alors 410. Consigné une seule fois dans le journal d’audit, avec le motif.",
       "disableAll": "Les désactiver tous",
       "allDisabled": "{count, plural, =0 {Aucun lien court n’était encore actif.} one {# lien court désactivé.} other {# liens courts désactivés.}}"
+    },
+    "requestLimit": {
+      "title": "Limite de débit de l’API",
+      "description": "Combien de requêtes par minute chaque clé de l’espace de travail, et chaque application qui y agit, peut envoyer.",
+      "current": "{requestsPerMinute, number} requêtes par minute : {policy, select, default {le réglage du serveur} free {un compte de facturation sans moyen de paiement} override {fixée par l’équipe pour cet espace de travail} other {{policy}}}.",
+      "setOn": "Fixée le",
+      "unbilled": "Ce serveur ne facture pas : chaque clé envoie selon son réglage, et aucun espace de travail n’a de limite propre.",
+      "hint": "Une limite propre à l’espace de travail remplace celle de sa situation dans la minute, quoi que paie son compte de facturation. La retirer rend celle de sa situation.",
+      "limit": "Requêtes par minute",
+      "limitHint": "De 1 à {most, number}. {offered, number} est ce qui est proposé sur demande.",
+      "save": "Fixer la limite",
+      "saving": "Enregistrement…",
+      "saved": "La limite de l’espace de travail est fixée.",
+      "remove": "Retirer sa limite propre",
+      "removed": "L’espace de travail envoie de nouveau selon la limite de sa situation."
     }
   },
   "Impersonation": {

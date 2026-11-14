@@ -168,6 +168,6 @@ Un client qui n’a aucune des trois permissions ci-dessus sur l’espace de tra
 
 - Une instance Peal ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
 - Le point d’accès refuse les requêtes envoyées depuis des pages web (avec un en-tête `Origin`) : connectez un client qui tourne sur votre ordinateur ou sur un serveur.
-- Une connexion peut envoyer 600 requêtes par minute, comptées avec celles que la même clé ou la même application envoie à l’API. Au-delà, le point d’accès répond 429 avec un en-tête `Retry-After` ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
+- Une connexion peut envoyer {{api-with-fr}} requêtes par minute ({{api-without-fr}} pour un compte de facturation sans moyen de paiement), comptées avec celles que la même clé ou la même application envoie à l’API. Au-delà, le point d’accès répond 429 avec un en-tête `Retry-After` ([Limites de débit](/developers/conventions/rate-limits#rate-limits)).
 - Chaque réponse porte un en-tête `X-Request-Id` : citez-le quand vous demandez de l’aide ([Requêtes et réponses](/developers/conventions#requests)).
 - Les **Paramètres du compte**, dans l’application web, listent les clients que vous avez autorisés et les déconnectent ; `peal account apps` les liste depuis la [ligne de commande](/developers/cli/workspace#account). Quitter l’espace de travail arrête tous les clients qui y agissent.

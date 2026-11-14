@@ -249,7 +249,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   is set, and its images until `PEAL_AI_IMAGE_PROVIDER` names an
   OpenAI-compatible endpoint that serves `/images/generations`;
 - rate limit: `PEAL_API_REQUESTS_PER_MINUTE` per key and per application
-  (600), on Postgres;
+  (600), on Postgres; where billing is on, the free tier gets the rate
+  card's 60 per billing account, and staff may set a workspace's own;
 - documentation links: `PEAL_DOCS_URL`, unset by default, for the links the
   discovery documents give;
 - telemetry: OTLP export of logs, metrics and traces only when

@@ -164,6 +164,6 @@ A client that has none of the three workspace permissions above can do nothing. 
 
 - A Peal instance serves MCP clients only when its address is HTTPS, or `localhost` for development. Elsewhere, the endpoint refuses every request.
 - The endpoint refuses requests sent from web pages (with an `Origin` header): connect a client that runs on your computer or on a server.
-- A connection may send 600 requests a minute, counted with the requests the same key or application sends to the API. Past it, the endpoint answers 429 with a `Retry-After` header ([Rate limits](/developers/conventions/rate-limits#rate-limits)).
+- A connection may send {{api-with-en}} requests a minute ({{api-without-en}} on a billing account without a payment method), counted with the requests the same key or application sends to the API. Past it, the endpoint answers 429 with a `Retry-After` header ([Rate limits](/developers/conventions/rate-limits#rate-limits)).
 - Every answer carries an `X-Request-Id` header: quote it when you ask for help ([Requests and answers](/developers/conventions#requests)).
 - **Account settings**, in the web app, list the clients you allowed and disconnect them; `peal account apps` lists them from the [command line](/developers/cli/workspace#account). Leaving the workspace stops every client that acts in it.

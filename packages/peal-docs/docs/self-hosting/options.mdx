@@ -85,7 +85,8 @@ A limit applies when something is added, so a workspace on a smaller plan than i
   <Step title="Add the webhook endpoint">
     Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the
     `customer.subscription.created`, `customer.subscription.updated`,
-    `customer.subscription.deleted` and `checkout.session.completed` events, and
+    `customer.subscription.deleted`, `checkout.session.completed` and
+    `refund.failed` events (the last lists a refund that failed for staff), and
     set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to
     Stripe if something guards the rest of `/api/auth`.
   </Step>

@@ -8,6 +8,7 @@ import { BillingAccountStore } from "#billing/application/ports/billing-account-
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -73,6 +74,7 @@ const remindersOn = (
           })
         ),
         Layer.mock(ContractReferences, {}),
+        Layer.mock(PlanRetirements, { untold: Effect.succeed([]) }),
         Layer.mock(StripeContracts, {}),
         Layer.mock(WorkspaceUsage, {
           heldIn: (ids, before) =>

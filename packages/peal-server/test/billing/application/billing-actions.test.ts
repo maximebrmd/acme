@@ -23,6 +23,7 @@ import { ContractRequests } from "#billing/application/ports/contract-requests.t
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { Orders } from "#billing/application/ports/orders.ts";
 import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
@@ -287,8 +288,10 @@ const PortsInMemory = Layer.mergeAll(
           credit: (_workspace, id, credits) =>
             asked(
               `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
-            ),
+            ).pipe(Effect.as([])),
           endAtTrialEnd: (_workspace, id) => asked(`endAtTrialEnd ${id}`),
+          retireAt: (_workspace, id, endsOn) =>
+            asked(`retireAt ${id} ${DateTime.formatIso(endsOn)}`),
           endAndInvoice: (_workspace, id, reason) =>
             asked(`endAndInvoice ${id} ${reason}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
@@ -370,7 +373,11 @@ const ActionsTest = Layer.mergeAll(
   CheckoutOrders.layer,
   CancelSubscription.layer,
   Withdraw.layer,
-  SendBillingReminders.layer.pipe(Layer.provide(WorkspaceEntitlements.layer))
+  SendBillingReminders.layer.pipe(
+    Layer.provide(WorkspaceEntitlements.layer),
+    // No legacy plan is retired here.
+    Layer.provide(Layer.mock(PlanRetirements, { untold: Effect.succeed([]) }))
+  )
 ).pipe(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),

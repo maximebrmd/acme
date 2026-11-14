@@ -26,11 +26,17 @@ public record TooManyRequestsEncoded : IJsonOnDeserialized
     [JsonPropertyName("limit")]
     public required int Limit { get; set; }
 
+    [JsonPropertyName("policy")]
+    public TooManyRequestsEncodedPolicy? Policy { get; set; }
+
     [JsonPropertyName("retryAfterSeconds")]
     public required int RetryAfterSeconds { get; set; }
 
     [JsonPropertyName("windowSeconds")]
     public required int WindowSeconds { get; set; }
+
+    [JsonPropertyName("withPaymentMethod")]
+    public int? WithPaymentMethod { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

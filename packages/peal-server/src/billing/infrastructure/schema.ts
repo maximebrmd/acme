@@ -46,6 +46,17 @@ export const subscriptions = billing.table(
     // something: per-account pricing's ceiling before then lifts.
     paidInvoiceAt: instant("paid_invoice_at"),
     plan: text("plan").notNull(),
+    // A legacy plan retired (`billing:retire-plans --apply`): the day
+    // Stripe accepted to end it on, when the retirement was first applied,
+    // and when its billing managers were told, once. The release before
+    // ignores them.
+    retiresAt: instant("retires_at"),
+    retiredAt: instant("retired_at"),
+    retirementToldAt: instant("retirement_told_at"),
+    // The day asked of Stripe, kept before asking, and the end of the
+    // period it had paid for then.
+    retirementRequestedFor: instant("retirement_requested_for"),
+    retirementPaidUntil: instant("retirement_paid_until"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     stripeCustomerId: text("stripe_customer_id").notNull(),
@@ -532,3 +543,36 @@ export const xUsageSettings = billing.table("x_usage_settings", {
   setAt: instant("set_at").notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });
+
+/**
+ * Money Peal owes back and Stripe did not give: a credit Stripe refused
+ * for good (`creditRefused`, as a legacy plan moved or retired), or a
+ * refund Stripe reported failed later (`refundFailed`, from its
+ * `refund.failed` event). Staff read them in the console and settle each
+ * by hand (`settled_at`). Ids and amounts only; `key` makes each once. A
+ * workspace erased leaves its rows without it (`erased_at`), purged with
+ * the contract records.
+ */
+export const creditProblems = billing.table(
+  "credit_problems",
+  {
+    amount: integer("amount").notNull(),
+    // Stripe's error code for a refusal, or the refund's failure reason.
+    code: text("code"),
+    currency: text("currency").notNull(),
+    erasedAt: instant("erased_at"),
+    key: text("key").primaryKey(),
+    kind: text("kind").notNull(),
+    occurredAt: instant("occurred_at").notNull(),
+    // Why the money went back: movedToRateCard, retirement, withdrawal…
+    reason: text("reason"),
+    refundId: text("refund_id"),
+    settledAt: instant("settled_at"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    workspaceId: uuid("workspace_id"),
+  },
+  (table) => [
+    index("credit_problems_occurred_at").on(table.occurredAt),
+    index("credit_problems_workspace").on(table.workspaceId),
+  ]
+);

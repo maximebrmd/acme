@@ -1,10 +1,35 @@
 # Activity
 
-- The activity context keeps two things about requests, in its own schema:
-  `activity.request_counts`, the rate limit's windows (a subject's SHA-256,
-  a window, a count: they name nobody, and the hourly
-  `activity.request-counts` cron deletes those an hour past), and
+- The activity context keeps three things about requests, in its own
+  schema: `activity.request_counts`, the rate limit's windows (a subject's
+  SHA-256, a window, a count: they name nobody, and the hourly
+  `activity.request-counts` cron deletes those an hour past);
+  `activity.request_limits`, a workspace's own limit staff set
+  (`RequestLimitSettings`, from the staff context's `setRequestLimit`,
+  1 to `maxOverridePerMinute`; it names nobody, the audit log keeps who,
+  and it goes with the workspace in `ActivityRecords`); and
   `activity.events`, each workspace's activity log.
+- The rate limit's policy (`RequestLimiter`, `policyOfWorkspaces`): on a
+  server that does not bill, the setting for everyone, counted per
+  credential, and nothing else is read (`RequestStandings.unbilled`, the
+  standing is none). On one that bills, the holder's (`LimitHolder`,
+  chosen by `CountedRequestLimits`): `free` (the rate card's 60, never above
+  the setting, `freePolicy`), `default` (the setting, for an account that
+  pays: per-account pricing or a legacy plan, as billing's `ApiStandings`
+  says) or `override`. A key, a partner key and a bound token take their
+  workspace's billing account; a token bound to none takes its user's own
+  account (`ofPayer`: the accounts they pay for), kept once per person
+  (`user:<id>`) with the overrides of the workspaces they are a member of,
+  so the override of the workspace a request names applies only there.
+  `free` is counted once per billing account (`free:<billing workspace>`,
+  or `free:user:<id>` for a person who pays for none), every credential on
+  it together; the others per credential. Each holder's policy is kept a
+  minute (`policyLifetimeSeconds`, 10,000 at most, in a map the layer
+  holds); a read that fails is tried once more, then the last policy
+  known, or else the setting (never `free`, which would hold a payer to
+  60), holds five seconds (`failedReadSeconds`). The policies' names (`PolicyNameSchema`: in the
+  `RateLimit` headers and `TooManyRequests.policy`) are persisted for
+  clients: add, never rename.
 - An event (`ActivityEvent`) is metadata only: when, the operation
   (`<group>.<endpoint>` from the contract, or `mcp.<tool>`), the status and
   the error's code, the actor (a user or a key), how they authenticated

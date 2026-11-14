@@ -82,12 +82,13 @@ Ces tarifs sont ceux qu’indiquait la page de tarifs pour développeurs de X le
 
 Commander le tarif par compte ([Commander](#ordering)) ajoute un moyen de paiement au compte de facturation, et le fait sortir de l’offre gratuite :
 
-| Quoi                                                  | Sans moyen de paiement                                | Avec un moyen de paiement                                                       |
-| ----------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Comptes connectés                                     | Les {{free-accounts}} premiers, et pas davantage      | Autant qu’il en faut, facturés selon le barème                                  |
-| Compteurs                                             | Chacun s’arrête à sa franchise                        | L’usage au-delà de la franchise est facturé                                     |
-| Assistant de rédaction, sur les modèles de l’instance | Aucun                                                 | Une franchise mensuelle                                                         |
-| Stockage des médias (usage raisonnable)               | {{free-storage-fr}} sur tout le compte de facturation | {{storage-per-account-fr}} par compte connecté, {{storage-minimum-fr}} au moins |
+| Quoi                                                                                                       | Sans moyen de paiement                                | Avec un moyen de paiement                                                       |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Comptes connectés                                                                                          | Les {{free-accounts}} premiers, et pas davantage      | Autant qu’il en faut, facturés selon le barème                                  |
+| Compteurs                                                                                                  | Chacun s’arrête à sa franchise                        | L’usage au-delà de la franchise est facturé                                     |
+| Assistant de rédaction, sur les modèles de l’instance                                                      | Aucun                                                 | Une franchise mensuelle                                                         |
+| Stockage des médias (usage raisonnable)                                                                    | {{free-storage-fr}} sur tout le compte de facturation | {{storage-per-account-fr}} par compte connecté, {{storage-minimum-fr}} au moins |
+| [Requêtes à l’API](/developers/conventions/rate-limits#rate-limits) par minute, par clé et par application | {{api-without-fr}}                                    | {{api-with-fr}}, ou {{api-on-request-fr}} sur demande                           |
 
 Un compte de facturation peut créer autant d’espaces de travail qu’il veut : ils partagent un barème, un lot de comptes gratuits et une franchise de chaque compteur, si bien qu’un espace de plus n’apporte rien de gratuit. L’offre gratuite est unique par personne : une personne paie un seul compte de facturation au plus, et l’équipe de Peal peut fusionner des comptes de facturation ouverts pour la multiplier, ou exiger un moyen de paiement de l’un d’eux.
 
@@ -284,6 +285,9 @@ La rétractation met fin à l’abonnement immédiatement et rembourse, pour cha
 ## Les abonnements par paliers de canaux [#legacy-plans]
 
 Ces abonnements ne sont plus vendus : un abonnement à l’un d’eux le garde, avec son prix et les limites ci-dessous, jusqu’à sa fin. Un tel abonnement est payé d’avance et porte son espace de travail seul, à part de son compte de facturation, jusqu’à sa fin ; l’espace rejoint ensuite l’abonnement de son compte de facturation.
+
+- **Passer au tarif par compte**, sur la page Facturation, commande le tarif par compte comme l’ajout d’un moyen de paiement ([Commander](#ordering)), par un paiement qui lui est propre. Dès qu’il commence, l’abonnement prend fin aussitôt, et la part de la période payée pas encore utilisée revient sur le moyen de paiement qui l’a réglée, à la seconde, par un avoir sur chaque facture. Un essai prend fin de la même façon, sans rien à rembourser.
+- **Retrait.** Ces abonnements sont retirés : chacun est averti, par une notification et un e-mail aux membres qui gèrent la facturation, du jour où il prend fin, le premier minuit UTC 30 jours au moins après l’avis. Rien n’est facturé au-delà de ce jour, quelle que soit la période de l’abonnement : ce qui a été payé au-delà est remboursé sur le moyen de paiement qui l’a réglé, par un avoir sur chaque facture, et une période renouvelée avant ce jour n’est facturée que jusqu’à lui. L’espace de travail passe alors à l’offre gratuite, sauf s’il est passé au tarif par compte avant.
 
 | Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                            | Annuel                                           |
 | ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |

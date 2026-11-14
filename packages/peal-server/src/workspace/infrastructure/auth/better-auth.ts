@@ -12,6 +12,7 @@ import type { LogLevel } from "effect";
 
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
+import { CreditProblemDesk } from "#billing/application/credit-problem-desk.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
@@ -280,6 +281,7 @@ export const BetterAuthLive = Layer.effect(
     const accounts = yield* BillingAccounts;
     const upgrades = yield* UpgradePaths;
     const subscriptions = yield* RecordSubscription;
+    const creditProblems = yield* CreditProblemDesk;
     const checkouts = yield* CheckoutOrders;
     const guard = yield* ImpersonationGuard;
     const activity = yield* ActivityJournal;
@@ -403,6 +405,10 @@ export const BetterAuthLive = Layer.effect(
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {
         await runPromise(subscriptions.record(event).pipe(Effect.asVoid));
+      },
+      // Awaited, as a subscription's event is.
+      refundFailed: async (failure) => {
+        await runPromise(creditProblems.refundFailed(failure));
       },
       // Read on each request, from the database: a failure refuses it.
       twoStep: {

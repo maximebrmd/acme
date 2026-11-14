@@ -8,6 +8,7 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .too_many_requests_encoded_policy import TooManyRequestsEncodedPolicy
 
 
 class TooManyRequestsErrorBody_FeedReadsLimited(UniversalBaseModel):
@@ -43,12 +44,16 @@ class TooManyRequestsErrorBody_TooManyRequests(UniversalBaseModel):
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
     limit: int
+    policy: typing.Optional[TooManyRequestsEncodedPolicy] = None
     retry_after_seconds: typing_extensions.Annotated[
         int, FieldMetadata(alias="retryAfterSeconds"), pydantic.Field(alias="retryAfterSeconds")
     ]
     window_seconds: typing_extensions.Annotated[
         int, FieldMetadata(alias="windowSeconds"), pydantic.Field(alias="windowSeconds")
     ]
+    with_payment_method: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="withPaymentMethod"), pydantic.Field(alias="withPaymentMethod")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

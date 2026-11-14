@@ -15,6 +15,7 @@ import {
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { PlanRetirements } from "#billing/application/ports/plan-retirements.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import type { RecordOutcome } from "#billing/application/ports/subscriptions.ts";
 import {
@@ -30,6 +31,7 @@ import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import {
+  creditProblems,
   orders,
   stripeEvents,
   subscriptions,
@@ -204,6 +206,12 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           .update(withdrawals)
           .set({ erasedAt, workspaceId: null })
           .where(eq(withdrawals.workspaceId, workspaceId));
+
+        // What Peal still owes stays for staff, by its Stripe ids.
+        yield* db
+          .update(creditProblems)
+          .set({ erasedAt, workspaceId: null })
+          .where(eq(creditProblems.workspaceId, workspaceId));
 
         yield* db
           .delete(subscriptions)
@@ -398,6 +406,102 @@ export const DrizzleSubscriptionsLive = Layer.effect(
       perAccount,
       record,
       remindable,
+    });
+  })
+);
+
+// The plans retired, as `billing:retire-plans` reads them: every legacy
+// plan but the free one, on a subscription that may still give it.
+const retiring = and(
+  notInArray(subscriptions.plan, ["payAsYouGo", "free"]),
+  inArray(subscriptions.status, ["active", "past_due", "trialing"])
+);
+
+const retiringOf = (row: Row) =>
+  toSubscription(row).pipe(
+    Effect.map((subscription) => ({
+      paidUntil: instantOf(row.retirementPaidUntil),
+      requestedFor: instantOf(row.retirementRequestedFor),
+      retiredAt: instantOf(row.retiredAt),
+      retiresAt: instantOf(row.retiresAt),
+      subscription,
+      toldAt: instantOf(row.retirementToldAt),
+    }))
+  );
+
+/** The retirement of the legacy plans, on their subscriptions' rows. */
+export const DrizzlePlanRetirementsLive = Layer.effect(
+  PlanRetirements,
+  Effect.gen(function* DrizzlePlanRetirementsLive() {
+    const db = yield* Drizzle;
+
+    const read = (where: ReturnType<typeof and>) =>
+      db
+        .select()
+        .from(subscriptions)
+        .where(where)
+        .orderBy(asc(subscriptions.stripeSubscriptionId))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.flatMap((rows) => Effect.all(rows.map(retiringOf)))
+        );
+
+    return PlanRetirements.of({
+      legacy: read(retiring).pipe(Effect.withSpan("PlanRetirements.legacy")),
+      request: (subscriptionId, requestedFor, paidUntil, at) =>
+        db
+          .update(subscriptions)
+          .set({
+            retiredAt: sql`coalesce(${subscriptions.retiredAt}, ${date(at)})`,
+            retirementPaidUntil: sql`coalesce(${subscriptions.retirementPaidUntil}, ${dateOf(paidUntil)})`,
+            retirementRequestedFor: date(requestedFor),
+          })
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      retire: (subscriptionId, retiresAt, at) =>
+        db
+          .update(subscriptions)
+          .set({
+            retiredAt: sql`coalesce(${subscriptions.retiredAt}, ${date(at)})`,
+            retirementRequestedFor: date(retiresAt),
+            retiresAt: date(retiresAt),
+          })
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      retiresAt: (subscriptionId) =>
+        db
+          .select({ retiresAt: subscriptions.retiresAt })
+          .from(subscriptions)
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) => instantOf(row?.retiresAt ?? null))
+          ),
+      told: (subscriptionId, at) =>
+        db
+          .update(subscriptions)
+          .set({ retirementToldAt: date(at) })
+          .where(
+            and(
+              eq(subscriptions.stripeSubscriptionId, subscriptionId),
+              isNull(subscriptions.retirementToldAt)
+            )
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      unconfirmed: read(
+        and(
+          retiring,
+          isNotNull(subscriptions.retirementRequestedFor),
+          isNull(subscriptions.retiresAt)
+        )
+      ).pipe(Effect.withSpan("PlanRetirements.unconfirmed")),
+      untold: read(
+        and(
+          retiring,
+          isNotNull(subscriptions.retiresAt),
+          isNull(subscriptions.retirementToldAt)
+        )
+      ).pipe(Effect.withSpan("PlanRetirements.untold")),
     });
   })
 );

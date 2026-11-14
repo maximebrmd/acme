@@ -82,12 +82,13 @@ The rates are those X's developer pricing page gave on {{x-rates-read-en}}; X ma
 
 Ordering per-account pricing ([Ordering](#ordering)) adds a payment method to the billing account, and moves it off the free tier:
 
-| What                                        | Without a payment method                       | With a payment method                                                             |
-| ------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
-| Connected accounts                          | The first {{free-accounts}}, and no more       | Any number, billed by the ladder                                                  |
-| Meters                                      | Each stops at its allowance                    | Use past the allowance is billed                                                  |
-| Writing assistant, on the instance's models | None                                           | A monthly allowance                                                               |
-| Media storage (fair use)                    | {{free-storage-en}} across the billing account | {{storage-per-account-en}} per connected account, {{storage-minimum-en}} at least |
+| What                                                                                                  | Without a payment method                       | With a payment method                                                             |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| Connected accounts                                                                                    | The first {{free-accounts}}, and no more       | Any number, billed by the ladder                                                  |
+| Meters                                                                                                | Each stops at its allowance                    | Use past the allowance is billed                                                  |
+| Writing assistant, on the instance's models                                                           | None                                           | A monthly allowance                                                               |
+| Media storage (fair use)                                                                              | {{free-storage-en}} across the billing account | {{storage-per-account-en}} per connected account, {{storage-minimum-en}} at least |
+| [API requests](/developers/conventions/rate-limits#rate-limits) a minute, per key and per application | {{api-without-en}}                             | {{api-with-en}}, or {{api-on-request-en}} on request                              |
 
 A billing account may make as many workspaces as it likes: they share one ladder, one set of free accounts and one allowance of each meter, so another workspace adds nothing free. The free tier is one per person: a person pays for one billing account at most, and staff may merge billing accounts opened to multiply it, or require a payment method of one.
 
@@ -275,6 +276,9 @@ Withdrawing ends the subscription at once and refunds, for each payment since yo
 ## Plans priced by channels [#legacy-plans]
 
 These plans are no longer sold: a subscription to one keeps it, with its price and the limits below, until it ends. Such a plan is paid in advance and holds its workspace alone, apart from its billing account, until it ends; the workspace then joins its billing account's plan.
+
+- **Move to per-account pricing**, on the Billing page, orders per-account pricing as adding a payment method does ([Ordering](#ordering)), with its own checkout. Once it starts, the plan ends at once, and the part of the period it paid for not yet used goes back to the payment method it was paid with, to the second, by a credit note on each invoice. A trial ends the same way, with nothing to refund.
+- **Retirement.** These plans are being retired: each subscription is told, by notice and email to the members who manage billing, the day it ends, the first midnight UTC 30 days at least after the notice. Nothing after that day is charged, whatever the plan's period: what was paid for beyond it is refunded to the payment method it was paid with, by a credit note on each invoice, and a period that renews before it is charged only up to it. The workspace is then on the free tier, unless it moved before.
 
 | Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
 | -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |

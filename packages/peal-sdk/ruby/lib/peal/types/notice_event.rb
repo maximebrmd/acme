@@ -35,6 +35,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventPaymentMethodNeeded }, key: "PAYMENT_METHOD_NEEDED"
 
+      member -> { Peal::Types::NoticeEventPlansRetiring }, key: "PLANS_RETIRING"
+
       member -> { Peal::Types::NoticeEventAllowanceReached }, key: "ALLOWANCE_REACHED"
 
       member -> { Peal::Types::NoticeEventXSpendCeiling }, key: "X_SPEND_CEILING"
