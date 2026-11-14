@@ -9,6 +9,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Option, Ref } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ArticleJournal } from "#publishing/application/article-journal.ts";
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
@@ -544,5 +545,48 @@ describe("an article", () => {
         );
       })
     )
+  );
+  it.effect(
+    "is made again by a run that stopped before the post's call, and looked for after it",
+    () =>
+      onArticles(
+        Effect.gen(function* journal() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const calls = yield* ArticleJournal;
+
+          const article = yield* (yield* Articles).create(
+            writer(workspaceId),
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          const startedAt = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
+
+          const call = {
+            articleId: article.id,
+            attempt: 1,
+            idempotencyKey: `${article.id}:synthetic:1`,
+            round: 0,
+            startedAt,
+          };
+
+          assert.strictEqual((yield* calls.begin(call))._tag, "started");
+          assert.strictEqual((yield* calls.begin(call))._tag, "prepared");
+
+          const committedAt = DateTime.makeUnsafe("2026-06-15T07:00:05Z");
+
+          yield* calls.committing(call.idempotencyKey, committedAt);
+
+          const again = yield* calls.begin(call);
+
+          assert.strictEqual(again._tag, "inFlight");
+          assert.isTrue(
+            again._tag === "inFlight" &&
+              DateTime.Equivalence(again.committedAt, committedAt)
+          );
+        })
+      )
   );
 });
