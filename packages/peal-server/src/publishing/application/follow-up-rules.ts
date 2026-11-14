@@ -432,12 +432,14 @@ export class FollowUpRules extends Context.Service<
 
             const arming = yield* followUps.armPublished(rule);
 
-            // Another rule already follows up all the post asks: this one
-            // would do nothing, and hold the post.
-            if (arming.armed.length === 0 && arming.taken > 0) {
+            // A post with nothing left to publish, on which the rule armed
+            // nothing: another rule already follows up all it asks, or its
+            // seven days passed everywhere. It would do nothing, and hold
+            // the post.
+            if (arming.armed.length === 0 && arming.settled) {
               return yield* new FollowUpNotPossible({
                 channels: [],
-                reason: "alreadyFollowedUp",
+                reason: arming.taken > 0 ? "alreadyFollowedUp" : "windowPassed",
               });
             }
 
@@ -510,6 +512,8 @@ export class FollowUpRules extends Context.Service<
         ruleId: FollowUpRuleId
       ) {
         yield* Effect.fromResult(authorize(actor, "post:approve"));
+        // Staff acting as a member never approves in their name.
+        yield* notImpersonating(actor);
 
         const { subject } = actor;
 

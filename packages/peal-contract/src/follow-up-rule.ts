@@ -121,6 +121,7 @@ export const FollowUpRefusalSchema = Schema.Literals([
   "postCancelled",
   "noChannel",
   "alreadyFollowedUp",
+  "windowPassed",
   "channels",
 ]).annotate({ identifier: "FollowUpRefusal" });
 

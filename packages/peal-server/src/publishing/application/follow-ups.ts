@@ -87,6 +87,8 @@ export interface ArmedPublished {
   readonly armed: readonly FollowUp[];
   /** The kinds it asks that other follow-ups already hold there. */
   readonly taken: number;
+  /** Whether the post has nothing left to publish anywhere. */
+  readonly settled: boolean;
 }
 
 export interface FollowUpRun {
@@ -337,7 +339,11 @@ export class FollowUps extends Context.Service<
       const armPublished = Effect.fn("FollowUps.armPublished")(
         function* armPublished(rule: FollowUpRule) {
           if (rule.scope._tag !== "post") {
-            return { armed: [], taken: 0 } satisfies ArmedPublished;
+            return {
+              armed: [],
+              settled: false,
+              taken: 0,
+            } satisfies ArmedPublished;
           }
 
           const targets = yield* posts.targets(rule.scope.postId);
@@ -351,6 +357,7 @@ export class FollowUps extends Context.Service<
 
           return {
             armed,
+            settled: targets.every(isSettled),
             taken: wanted.length - armed.length,
           } satisfies ArmedPublished;
         }

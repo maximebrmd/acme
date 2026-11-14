@@ -67,15 +67,17 @@ export class SendFollowUp extends Context.Service<
       const gate = yield* ApprovalGate;
       const { transaction } = yield* TransactionRunner;
 
-      // Saves how the call ended, unless the follow-up moved meanwhile.
+      // Saves how the call ended, unless the follow-up moved meanwhile, to
+      // a later attempt included: that attempt's job settles it.
       const settle = Effect.fn("SendFollowUp.settle")(function* settle(
         followUpId: FollowUpId,
+        attempt: number,
         outcome: FollowUpCallOutcome
       ) {
         const now = yield* DateTime.now;
         const found = yield* store.followUp(followUpId);
 
-        if (Option.isNone(found)) {
+        if (Option.isNone(found) || found.value.attempt !== attempt) {
           return "superseded" as const;
         }
 
@@ -151,14 +153,14 @@ export class SendFollowUp extends Context.Service<
         if (wasAttempted(followUp)) {
           const outcome = yield* outcomeOf(publisher.resume(request));
 
-          return yield* transaction(settle(followUpId, outcome));
+          return yield* transaction(settle(followUpId, attempt, outcome));
         }
 
         // Put off, as nothing went out: armed again until its window ends,
         // for the run to judge again.
         if (!(yield* stillMayAct(followUp))) {
           return yield* transaction(
-            settle(followUpId, {
+            settle(followUpId, attempt, {
               _tag: "refused",
               failure: new PlatformUnavailable(),
             })
@@ -177,7 +179,7 @@ export class SendFollowUp extends Context.Service<
         }
 
         const outcome = yield* outcomeOf(publisher.send(request));
-        const result = yield* transaction(settle(followUpId, outcome));
+        const result = yield* transaction(settle(followUpId, attempt, outcome));
 
         if (result === "settled") {
           yield* Metric.update(

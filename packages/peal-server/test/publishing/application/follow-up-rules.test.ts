@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Deferred, Effect, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
@@ -18,6 +18,7 @@ import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
 import { RoutedFollowUpPublisher } from "#publishing/application/routed-follow-up-publisher.ts";
+import { SendFollowUp } from "#publishing/application/send-follow-up.ts";
 import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { FeedsUnused } from "#publishing/container.ts";
 import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
@@ -129,6 +130,9 @@ const FollowUpServer = serverBehind(ApprovalGate.open);
 const sentPosts = Ref.makeUnsafe<readonly OutgoingPost[]>([]);
 const sentReposts = Ref.makeUnsafe<readonly OutgoingRepost[]>([]);
 
+// How many posts the platforms put off before they answer.
+const refusingPosts = Ref.makeUnsafe(0);
+
 const answered = (platformPostId: string): PublishResult => ({
   _tag: "published",
   platformPostId: PlatformPostIdSchema.make(platformPostId),
@@ -143,7 +147,14 @@ const RecordingClients = Layer.mergeAll(
           platform,
           publish: (post) =>
             Ref.update(sentPosts, (sent) => [...sent, post]).pipe(
-              Effect.as(answered(`reply-${post.idempotencyKey}`))
+              Effect.andThen(
+                Ref.getAndUpdate(refusingPosts, (left) => Math.max(left - 1, 0))
+              ),
+              Effect.flatMap((left) =>
+                left > 0
+                  ? Effect.fail(new PlatformUnavailable())
+                  : Effect.succeed(answered(`reply-${post.idempotencyKey}`))
+              )
             ),
           resume: (post) =>
             Effect.succeed(answered(`reply-${post.idempotencyKey}`)),
@@ -374,6 +385,91 @@ describe("follow-up rules", () => {
           assert.strictEqual((yield* runDue).triggered, 0);
         }),
         HoldingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "leave a follow-up to its own attempt's job: a stale job neither sends nor settles it",
+    () =>
+      onServer(
+        Effect.gen(function* stale() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          // The platform holds the first attempt's call until told.
+          const release = yield* Deferred.make<void>();
+
+          yield* followUpsAnswer((request) =>
+            Deferred.await(release).pipe(
+              Effect.as<PublishResult>({
+                _tag: "published",
+                platformPostId: PlatformPostIdSchema.make(
+                  `reply-${request.followUpId}`
+                ),
+              })
+            )
+          );
+
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+          yield* eventually(
+            "the first attempt's call is on its way",
+            followUpCalls.pipe(Effect.map((calls) => calls.length === 1))
+          );
+
+          const [followUp] = (yield* ruleNow(workspaceId, started.rule.id))
+            .followUps;
+
+          assert.isDefined(followUp);
+
+          // A job of an attempt before it finds nothing of its own.
+          const before = yield* SendFollowUp.use((send) =>
+            send.run(followUp.id, followUp.attempt - 1)
+          ).pipe(
+            Effect.provide(
+              SendFollowUp.layer.pipe(Layer.provide(FakeFollowUpPublisher))
+            )
+          );
+
+          assert.strictEqual(before, "superseded");
+          assert.strictEqual((yield* followUpCalls).length, 1);
+
+          // The follow-up moves to a later attempt while the call runs, as
+          // a hand-over and a new trigger would: the first job's answer
+          // settles nothing of it.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE publishing.follow_ups SET attempt = attempt + 1 WHERE id = ${followUp.id}`
+          ).pipe(Effect.orDie);
+
+          yield* Deferred.succeed(release, undefined);
+          yield* TestClock.withLive(Effect.sleep("200 millis"));
+
+          const after = yield* ruleNow(workspaceId, started.rule.id);
+
+          assert.deepStrictEqual(
+            after.followUps.map(({ attempt, status }) => [
+              attempt,
+              status._tag,
+            ]),
+            [[followUp.attempt + 1, "sending"]]
+          );
+
+          // Left as no job will settle it: a later attempt of its own.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`DELETE FROM publishing.follow_ups WHERE id = ${followUp.id}`
+          ).pipe(Effect.orDie);
+        })
       ),
     timeout
   );
@@ -689,6 +785,17 @@ describe("follow-up rules", () => {
 
           assert.strictEqual(refused._tag, "MissingPermission");
 
+          // Nor does staff approve it as the member.
+          const notApproved = yield* FollowUpRules.use((rules) =>
+            rules.approve(impersonating, started.rule.id)
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(notApproved._tag, "MissingPermission");
+          assert.strictEqual(
+            (yield* ruleNow(workspaceId, started.rule.id)).rule.approval._tag,
+            "pending"
+          );
+
           const changed = yield* FollowUpRules.use((rules) =>
             rules.change(editor, started.rule.id, {
               comment: Option.some("Thank you, all of you!"),
@@ -841,6 +948,41 @@ describe("follow-up rules", () => {
   );
 
   it.effect(
+    "refuse a rule on a post past its seven days, which would hold its slot for nothing",
+    () =>
+      onServer(
+        Effect.gen(function* tooLate() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+
+          yield* TestClock.adjust("8 days");
+
+          const refused = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId))
+          ).pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            refused._tag === "FollowUpNotPossible" ? refused.reason : refused,
+            "windowPassed"
+          );
+
+          const listed = yield* FollowUpRules.use((rules) =>
+            rules.list(actorIn(workspaceId), {
+              after: Option.none(),
+              limit: 10,
+              postId: Option.some(postId),
+              status: Option.none(),
+            })
+          );
+
+          assert.strictEqual(listed.length, 0);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "give up what a stopped rule armed, and fail a follow-up the platform refuses",
     () =>
       onServer(
@@ -894,6 +1036,66 @@ describe("follow-up rules", () => {
             )
           );
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "give a platform a new key for an attempt after one it put off",
+    () =>
+      setTime(start).pipe(
+        Effect.andThen(resetRecycling),
+        Effect.andThen(resetFollowUps),
+        Effect.andThen(Ref.set(sentPosts, [])),
+        Effect.andThen(Ref.set(refusingPosts, 1)),
+        Effect.andThen(
+          Effect.gen(function* newKey() {
+            const workspaceId = yield* freshWorkspace;
+            const mastodon = yield* connected(workspaceId, "mastodon");
+            const postId = yield* published(workspaceId, [mastodon]);
+            const [target] = yield* targetsOf(postId);
+
+            assert.isDefined(target);
+
+            const started = yield* FollowUpRules.use((rules) =>
+              rules.start(
+                actorIn(workspaceId),
+                onPost(postId, { repost: false })
+              )
+            );
+
+            const [followUp] = started.followUps;
+
+            assert.isDefined(followUp);
+
+            yield* likesOf(target.id, 10);
+            assert.strictEqual((yield* runDue).triggered, 1);
+            yield* eventually(
+              "the follow-up is armed again",
+              ruleNow(workspaceId, started.rule.id).pipe(
+                Effect.map(({ followUps }) =>
+                  followUps.every(({ status }) => status._tag === "armed")
+                )
+              )
+            );
+            assert.strictEqual((yield* runDue).triggered, 1);
+            yield* eventually(
+              "the follow-up went out",
+              ruleNow(workspaceId, started.rule.id).pipe(
+                Effect.map(({ followUps }) =>
+                  followUps.every(({ status }) => status._tag === "sent")
+                )
+              )
+            );
+
+            assert.deepStrictEqual(
+              (yield* Ref.get(sentPosts)).map(
+                ({ idempotencyKey }) => idempotencyKey
+              ),
+              [followUp.id, `${followUp.id}:2`]
+            );
+          }).pipe(Effect.ensuring(forgetRules), Effect.provide(RoutedServer))
+        )
       ),
     timeout
   );
