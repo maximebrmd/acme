@@ -1,0 +1,44 @@
+# Sends every alert to a Telegram chat and to a Slack channel, the same
+# alerts to both. Mount this file as the contact points
+# (PEAL_GRAFANA_CONTACT_POINTS) only where TELEGRAM_BOT_TOKEN,
+# TELEGRAM_CHAT_ID and SLACK_ALERTS_WEBHOOK_URL are set: Grafana reads them
+# from its environment when it starts, and refuses to start without them.
+# Where the Slack webhook is not set, mount telegram.yaml instead.
+#
+# Slack's message names the rule, its state, the environment
+# (PEAL_GRAFANA_ENVIRONMENT) and the alert's labels: never an annotation,
+# a value or a log line, as Slack keeps what it is sent outside the EU.
+# Grafana fills in $NAME from its environment in these settings, so the
+# message templates use no $ of their own.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Telegram and Slack
+    receivers:
+      - uid: telegram
+        type: telegram
+        settings:
+          bottoken: $TELEGRAM_BOT_TOKEN
+          chatid: $TELEGRAM_CHAT_ID
+          disable_web_page_preview: true
+      - uid: slack
+        type: slack
+        settings:
+          url: $SLACK_ALERTS_WEBHOOK_URL
+          title: >-
+            {{ if eq .Status "firing" }}Firing{{ else }}Resolved{{ end }}:
+            {{ .CommonLabels.alertname }} ($PEAL_GRAFANA_ENVIRONMENT)
+          text: |-
+            {{ range .Alerts }}*{{ .Labels.alertname }}* is {{ .Status }} in $PEAL_GRAFANA_ENVIRONMENT
+            {{ range .Labels.SortedPairs }}{{ if ne .Name "alertname" }}• {{ .Name }}: {{ .Value }}
+            {{ end }}{{ end }}{{ end }}
+
+policies:
+  - orgId: 1
+    receiver: Telegram and Slack
+    group_by: [grafana_folder, alertname]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h

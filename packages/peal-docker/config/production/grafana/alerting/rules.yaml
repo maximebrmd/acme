@@ -1,6 +1,7 @@
 # Alert rules, provisioned read-only. Notifications go where the contact point
 # file mounted beside this one says: Telegram in Peal's production
-# (telegram.yaml), Grafana's default otherwise (none.yaml).
+# (telegram.yaml), Telegram and Slack once its Slack webhook is set
+# (telegram-slack.yaml), Grafana's default otherwise (none.yaml).
 #
 # Requests are counted by the server itself (peal.http.requests, by status
 # class), every one of them: its traces are sampled, so the span metrics

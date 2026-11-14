@@ -207,6 +207,40 @@ def test_the_site_file_without_the_status_page_serves_the_heartbeats_alone(share
     assert set(_blocks((shared_private / "caddy" / "peal-uptime.caddy").read_text())) == {UPTIME["uptime_hostname"]}
 
 
+# Synthetic webhooks, as the shared host's vault would hold them.
+SLACK = {
+    "SLACK_ALERTS_WEBHOOK_URL": "http://127.0.0.1:9/services/synthetic-production",
+    "SLACK_SANDBOX_ALERTS_WEBHOOK_URL": "http://127.0.0.1:9/services/synthetic-sandbox",
+}
+
+
+def _shared_files(folder: Path) -> dict[str, bytes]:
+    return {str(path.relative_to(folder)): path.read_bytes() for path in sorted(folder.rglob("*")) if path.is_file()}
+
+
+def test_a_shared_host_without_slack_webhooks_gets_the_same_files(shared: Path, tmp_path: Path) -> None:
+    """Empty webhooks in the vault change nothing a shared host gets."""
+    credentials = {**dict.fromkeys(SLACK, ""), "SLACK_CHANGELOG_WEBHOOK_URL": "", "TELEGRAM_BOT_TOKEN": "synthetic"}
+    unset = render_inventory(tmp_path, **SHARED, uptime_credentials=credentials) / "peal-uptime"
+
+    assert _shared_files(unset) == _shared_files(shared)
+    assert b"slack" not in (unset / "gatus" / "config.yaml").read_bytes().lower()
+
+
+def test_a_shared_host_with_slack_webhooks_alerts_slack_too(shared: Path, tmp_path: Path) -> None:
+    """Its Gatus alerts Slack beside Telegram, and nothing else it gets
+    changes: the stack and the site file stay as they were."""
+    with_slack = render_inventory(tmp_path, **SHARED, uptime_credentials=SLACK) / "peal-uptime"
+    config = yaml.safe_load((with_slack / "gatus" / "config.yaml").read_text())
+
+    assert config["alerting"]["slack"]["webhook-url"] == "${SLACK_ALERTS_WEBHOOK_URL}"
+    assert config["alerting"]["slack"]["overrides"] == [{"group": "sandbox", "webhook-url": "${SLACK_SANDBOX_ALERTS_WEBHOOK_URL}"}]
+    assert all([alert["type"] for alert in endpoint["alerts"]] == ["telegram", "slack"] for endpoint in config["endpoints"])
+    changed = {name for name, content in _shared_files(with_slack).items() if _shared_files(shared)[name] != content}
+    # Compose's label of Gatus's configuration recreates Gatus alone.
+    assert changed == {"gatus/config.yaml", "compose.yaml"}
+
+
 def test_a_server_of_its_own_keeps_caddy_in_its_stack(rendered: Path) -> None:
     services = _compose(rendered / "peal-uptime")["services"]
     routes = (rendered / "peal-uptime" / "caddy" / "routes.caddy").read_text()

@@ -1,0 +1,48 @@
+# Managed by Ansible (peal-infra). Reads the platforms' changelog pages and
+# feeds once, and posts what changed to Slack (README.md, "The platform
+# watch"). It runs as gatus, which cannot reach {{ uptime_root }}: systemd,
+# as root, reads the webhook's file and mounts the watch's folder where the
+# script finds it. The webhook stays in the environment, off the command
+# line.
+[Unit]
+Description=Post the platforms' changelog changes to Slack
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=gatus
+Group=gatus
+EnvironmentFile={{ uptime_root }}/platform-watch.env
+BindPaths={{ uptime_platform_watch_root }}:{{ uptime_platform_watch_mount }}
+ExecStart={{ uptime_platform_watch_python }} -I {{ uptime_platform_watch_bin }} --sources {{ uptime_platform_watch_mount }}/sources.json --state {{ uptime_platform_watch_mount }}/state
+TimeoutStartSec=30min
+Nice=10
+# A page or a feed that misbehaves takes the watch down, not the server.
+MemoryMax=512M
+TasksMax=32
+# The internet alone: nothing on this machine, its link or a multicast
+# group, but the local resolver /etc/resolv.conf names, if any.
+IPAddressDeny=localhost link-local multicast
+{% if uptime_platform_watch_resolvers %}
+IPAddressAllow={{ uptime_platform_watch_resolvers | join(' ') }}
+{% endif %}
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
