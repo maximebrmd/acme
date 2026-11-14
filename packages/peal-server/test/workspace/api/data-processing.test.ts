@@ -223,7 +223,11 @@ describe("the data processing registry", () => {
       conversationsKeptFor
     );
     expect(kept("inboxMessages")).toContain(
-      "30 days after a conversation’s last message"
+      "Each message 30 days after it was sent"
+    );
+    expect(kept("inboxMessages")).toContain("turned off");
+    expect(categoryOf("inboxMessages")?.data.en).toContain(
+      "only for the channels a member turned them on for"
     );
     // Private correspondence: shown and answered, nothing else, by
     // nobody at Peal.

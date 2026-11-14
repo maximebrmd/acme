@@ -45,8 +45,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
  *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
  *   `trial-memory.ts`);
- * - `inboxMessages`: a conversation's direct messages, from its last
- *   message (`engagement/domain/conversation.ts`, `conversationsKeptFor`);
+ * - `inboxMessages`: each direct message from when it was sent, and a
+ *   conversation from its last message (`engagement/domain/conversation.ts`,
+ *   `conversationsKeptFor`);
  * - `inboxReviews`: a review of a location, from when it was written or
  *   last changed (`engagement/domain/review.ts`, `reviewsKeptFor`: Google
  *   lets what its API gives be stored 30 days at most);
@@ -384,8 +385,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The direct messages people exchange with the Mastodon and Bluesky accounts a workspace connected, on a server whose inbox reads them: for each conversation, the other accounts in it (their identifier, handle and the name they show on the platform), and for each message, its text, who sent it (by their identifier on the platform), when, and how many files it carries, never the files; whether a member read the conversation; and the messages members send from Peal, with who wrote each and how sending ended",
-      fr: "Les messages privés que des personnes échangent avec les comptes Mastodon et Bluesky qu’un espace de travail a connectés, sur un serveur dont la boîte de réception les lit : pour chaque conversation, les autres comptes qui y participent (leur identifiant, leur identifiant public et le nom qu’ils affichent sur la plateforme), et pour chaque message, son texte, qui l’a envoyé (par son identifiant sur la plateforme), quand, et le nombre de fichiers qu’il contient, jamais les fichiers ; si un membre a lu la conversation ; et les messages que les membres envoient depuis Peal, avec leur auteur et l’issue de l’envoi",
+      en: "The direct messages people exchange with the Mastodon and Bluesky accounts a workspace connected, on a server whose inbox reads them, and only for the channels a member turned them on for: for each conversation, the other accounts in it (their identifier, handle and the name they show on the platform), and for each message, its text, who sent it (by their identifier on the platform), when, and how many files it carries, never the files; whether a member read the conversation; and the messages members send from Peal, with who wrote each and how sending ended. Which member turned a channel’s messages on, and which applications an owner let read them, by whom and when",
+      fr: "Les messages privés que des personnes échangent avec les comptes Mastodon et Bluesky qu’un espace de travail a connectés, sur un serveur dont la boîte de réception les lit, et seulement pour les canaux pour lesquels un membre les a activés : pour chaque conversation, les autres comptes qui y participent (leur identifiant, leur identifiant public et le nom qu’ils affichent sur la plateforme), et pour chaque message, son texte, qui l’a envoyé (par son identifiant sur la plateforme), quand, et le nombre de fichiers qu’il contient, jamais les fichiers ; si un membre a lu la conversation ; et les messages que les membres envoient depuis Peal, avec leur auteur et l’issue de l’envoi. Quel membre a activé les messages d’un canal, et quelles applications un propriétaire a autorisées à les lire, par qui et quand",
     },
     id: "inboxMessages",
     legalBasis: {
@@ -398,12 +399,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Show a workspace’s members the direct messages sent to its accounts and let them answer privately, as the account. Messages are used for nothing else: no profile of their authors, no advertising, no automated decision, no training of models, no writing assistant; Peal’s staff do not read them",
-      fr: "Montrer aux membres d’un espace de travail les messages privés envoyés à ses comptes et leur permettre d’y répondre en privé, au nom du compte. Les messages ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles, ni assistant de rédaction ; l’équipe de Peal ne les lit pas",
+      en: "Show a workspace’s members the direct messages sent to its accounts and let them answer privately, as the account. Messages are used for nothing else: no profile of their authors, no advertising, no automated decision, no training of models, no writing assistant; Peal’s staff do not read them. Only owners, admins and editors read them; an API key only when it was given that permission, and an application connected through OAuth only once an owner of the workspace allowed it",
+      fr: "Montrer aux membres d’un espace de travail les messages privés envoyés à ses comptes et leur permettre d’y répondre en privé, au nom du compte. Les messages ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles, ni assistant de rédaction ; l’équipe de Peal ne les lit pas. Seuls les propriétaires, administrateurs et éditeurs les lisent ; une clé d’API seulement si cette autorisation lui a été donnée, et une application connectée par OAuth seulement après qu’un propriétaire de l’espace de travail l’a autorisée",
     },
     retention: {
-      en: `${p.inboxMessages.days} days after a conversation’s last message, then deleted within an hour, with every message it holds and those sent from Peal; at once when its channel is disconnected or its workspace deleted. A message the platform says was deleted is deleted at the next read. Closing an account removes it as the author of the messages it sent, which stay with their conversation`,
-      fr: `${p.inboxMessages.days} jours après le dernier message d’une conversation, puis supprimée dans l’heure, avec tous ses messages et ceux envoyés depuis Peal ; aussitôt quand son canal est déconnecté ou son espace de travail supprimé. Un message dont la plateforme indique la suppression est supprimé à la lecture suivante. La fermeture d’un compte le retire comme auteur des messages qu’il a envoyés, qui restent à leur conversation`,
+      en: `Each message ${p.inboxMessages.days} days after it was sent, and each message sent from Peal ${p.inboxMessages.days} days after sending ended, then deleted within an hour; a conversation once its last message is that old. Everything of a channel’s conversations at once when its messages are turned off, the channel is disconnected or its workspace deleted. A message or a conversation the platform no longer shows is deleted within a day. Closing an account removes it as the author of the messages it sent, which stay with their conversation`,
+      fr: `Chaque message ${p.inboxMessages.days} jours après son envoi, et chaque message envoyé depuis Peal ${p.inboxMessages.days} jours après la fin de l’envoi, puis supprimé dans l’heure ; une conversation une fois son dernier message aussi ancien. Tout ce qui concerne les conversations d’un canal aussitôt quand ses messages sont désactivés, le canal déconnecté ou son espace de travail supprimé. Un message ou une conversation que la plateforme ne montre plus est supprimé dans la journée. La fermeture d’un compte le retire comme auteur des messages qu’il a envoyés, qui restent à leur conversation`,
     },
     source: {
       en: "The platforms, for the messages, which their authors sent to the connected account, through the permissions it granted; the members of your workspaces, for the answers",
