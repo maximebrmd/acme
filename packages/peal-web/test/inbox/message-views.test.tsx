@@ -92,8 +92,7 @@ describe("the direct messages' views", () => {
       `href="/app/${workspaceId}/inbox/messages/${conversation.id}"`
     );
     expect(english).toContain("With A synthetic reader");
-    expect(english).toContain("Unread");
-    expect(english).toContain("2 messages");
+    expect(english).toMatch(/Unread[\s\S]*2 messages/u);
     expect(french).toContain("Avec A synthetic reader");
     expect(french).toContain("Non lue");
   });
