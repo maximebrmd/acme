@@ -106,14 +106,12 @@ describe(renderNoticeEmail, () => {
 
   it("words every reason of the rules that act by themselves in every language", () => {
     const events: readonly NoticeEvent[] = [
-      ...FollowUpNotSentReasonSchema.literals.map(
-        (reason): NoticeEvent => ({
-          _tag: "FollowUpsNotSent",
-          count: 1,
-          reasons: [reason],
-          ruleId,
-        })
-      ),
+      ...FollowUpNotSentReasonSchema.literals.map((reason): NoticeEvent => ({
+        _tag: "FollowUpsNotSent",
+        count: 1,
+        reasons: [reason],
+        ruleId,
+      })),
       ...AutomationStopReasonSchema.literals.flatMap(
         (reason): readonly NoticeEvent[] => [
           { _tag: "FollowUpRuleStopped", reason, ruleId },

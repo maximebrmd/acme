@@ -203,22 +203,38 @@ describe(useNoticeText, () => {
     const ruleId = "00000000-0000-7000-8000-00000000f001";
 
     await expect(
-      render("en", { _tag: "FollowUpRuleStopped", reason: "channelGone", ruleId })
+      render("en", {
+        _tag: "FollowUpRuleStopped",
+        reason: "channelGone",
+        ruleId,
+      })
     ).resolves.toContain(
       `A follow-up rule of Studio Nord stopped by itself: its channel was disconnected. | Open the follow-ups | /app/${workspaceId}/settings/follow-ups?rule=${ruleId}`
     );
     await expect(
-      render("en", { _tag: "CommentRuleStopped", reason: "starterGone", ruleId })
+      render("en", {
+        _tag: "CommentRuleStopped",
+        reason: "starterGone",
+        ruleId,
+      })
     ).resolves.toContain(
       `A comment reply rule of Studio Nord stopped by itself: whoever started it can no longer answer comments there. | Open the comment replies | /app/${workspaceId}/settings/comment-rules`
     );
     await expect(
-      render("fr", { _tag: "FollowUpRuleStopped", reason: "starterGone", ruleId })
+      render("fr", {
+        _tag: "FollowUpRuleStopped",
+        reason: "starterGone",
+        ruleId,
+      })
     ).resolves.toContain(
       "Une règle de relance de Studio Nord s’est arrêtée d’elle-même : la personne qui l’a lancée ne peut plus y publier. | Ouvrir les relances"
     );
     await expect(
-      render("fr", { _tag: "CommentRuleStopped", reason: "channelGone", ruleId })
+      render("fr", {
+        _tag: "CommentRuleStopped",
+        reason: "channelGone",
+        ruleId,
+      })
     ).resolves.toContain(
       "Une règle de réponse aux commentaires de Studio Nord s’est arrêtée d’elle-même : son canal a été déconnecté. | Ouvrir les réponses aux commentaires"
     );
