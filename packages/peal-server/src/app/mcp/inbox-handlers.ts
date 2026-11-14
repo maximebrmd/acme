@@ -4,6 +4,13 @@ import { CurrentMember, defaultInboxPageSize } from "peal-contract";
 import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
 import {
+  reviewCursorOf,
+  toReviewReplyView,
+  toReviewThreadDetailView,
+  toReviewThreadPageView,
+  toReviewView,
+} from "#engagement/api/inbox-review-view.ts";
+import {
   cursorOf,
   toCommentView,
   toReplyView,
@@ -13,11 +20,15 @@ import {
 import type { AbilityUnavailable } from "#engagement/application/ability-unavailable.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
+import { EngagementReviews } from "#engagement/application/engagement-reviews.ts";
 import type { ModerationFailed } from "#engagement/application/moderation-failed.ts";
 import type { ReplyTooLong } from "#engagement/application/reply-too-long.ts";
+import type { ReviewActionFailed } from "#engagement/application/review-action-failed.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-transition.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
+import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
+import { ReviewThreadIdSchema } from "#engagement/domain/review-thread-id.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -27,6 +38,23 @@ const decodeCommentId = Schema.decodeUnknownOption(CommentIdSchema);
 const decodeReplyId = Schema.decodeUnknownOption(ReplyIdSchema);
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
+const decodeReviewThreadId = Schema.decodeUnknownOption(ReviewThreadIdSchema);
+const decodeReviewId = Schema.decodeUnknownOption(ReviewIdSchema);
+
+const noLocation = () =>
+  refuse(
+    "The workspace has no such location's reviews: list_location_reviews lists them."
+  );
+
+const noReview = () =>
+  refuse(
+    "The workspace has no such review: it may have gone from Google, or be older than Peal keeps one. get_location_reviews shows a location's."
+  );
+
+const notDoneOnGoogle = ({ reason }: ReviewActionFailed) =>
+  refuse(
+    `Google did not do it (${reason}), and nothing changed in Peal: asking again is safe.`
+  );
 
 const noThread = () =>
   refuse("The workspace has no such thread: list_comment_threads lists them.");
@@ -95,11 +123,101 @@ export const InboxToolsLive = InboxTools.toLayer(
   Effect.gen(function* inboxTools() {
     const inbox = yield* EngagementInbox;
     const replies = yield* EngagementReplies;
+    const reviews = yield* EngagementReviews;
     const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return InboxTools.of({
+      delete_location_review_reply: ({ reviewId }) =>
+        Effect.gen(function* deleteReply() {
+          const id = yield* idOr(decodeReviewId(reviewId), noReview);
+
+          return yield* reviews.withdraw(yield* actor, id).pipe(
+            Effect.map(toReviewView),
+            Effect.catchTags({
+              AbilityUnavailable: unavailable,
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("answer reviews"),
+              ReviewActionFailed: notDoneOnGoogle,
+              ReviewNotFound: noReview,
+            })
+          );
+        }),
+      get_location_reviews: ({ threadId }) =>
+        Effect.gen(function* getReviews() {
+          const id = yield* idOr(decodeReviewThreadId(threadId), noLocation);
+
+          return yield* reviews.thread(yield* actor, id).pipe(
+            Effect.map(toReviewThreadDetailView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read reviews"),
+              ReviewThreadNotFound: noLocation,
+            })
+          );
+        }),
+      list_location_reviews: (asked) =>
+        Effect.gen(function* listLocations() {
+          const channelId = yield* filterOf(
+            asked.channelId,
+            decodeChannelId,
+            "channelId"
+          );
+
+          const after = yield* filterOf(asked.cursor, reviewCursorOf, "cursor");
+
+          return yield* reviews
+            .threads(
+              yield* actor,
+              { channelId, unanswered: asked.unanswered ?? false },
+              { after, limit: asked.limit ?? defaultInboxPageSize }
+            )
+            .pipe(
+              Effect.map(toReviewThreadPageView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read reviews"),
+              })
+            );
+        }),
+      mark_location_review_answered: ({ answered, reviewId }) =>
+        Effect.gen(function* markReview() {
+          const id = yield* idOr(decodeReviewId(reviewId), noReview);
+
+          return yield* reviews.setAnswered(yield* actor, id, answered).pipe(
+            Effect.map(toReviewView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("answer reviews"),
+              ReviewNotFound: noReview,
+            })
+          );
+        }),
+      reply_to_location_review: ({ reviewId, text }) =>
+        Effect.gen(function* replyToReview() {
+          const id = yield* idOr(decodeReviewId(reviewId), noReview);
+
+          return yield* reviews.reply(yield* actor, id, text).pipe(
+            Effect.map(toReviewReplyView),
+            Effect.catchTags({
+              AbilityUnavailable: unavailable,
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("answer reviews"),
+              ReplyEmpty: () =>
+                refuse("The reply says nothing: nothing was sent."),
+              ReplyTooLong: ({ length, maximum }) =>
+                refuse(
+                  `The reply is too long for Google: ${String(length)} bytes, where it takes ${String(maximum)}. Nothing was sent.`
+                ),
+              ReviewNotFound: noReview,
+              ReviewReplyPending: ({ replyId }) =>
+                refuse(
+                  `A reply to this review is on its way, or its outcome is not known yet (${replyId}): nothing more was sent. The next read of the location settles it.`
+                ),
+            })
+          );
+        }),
       confirm_comment_reply: ({ replyId, sent }) =>
         Effect.gen(function* confirm() {
           const id = yield* idOr(decodeReplyId(replyId), noReply);

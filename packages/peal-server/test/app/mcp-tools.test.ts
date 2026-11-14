@@ -409,6 +409,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_webhook: [false, false, false, true],
           delete_channel_set: [false, true, true, false],
           delete_feed: [false, true, true, false],
+          delete_location_review_reply: [false, true, true, true],
           // The file is gone for good; drafts lose it.
           delete_media: [false, true, true, false],
           delete_queue: [false, true, true, false],
@@ -436,6 +437,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_channel_capabilities: [true, false, true, true],
           get_channel_defaults: [true, false, true, false],
           get_comment_thread: [true, false, true, false],
+          get_location_reviews: [true, false, true, false],
           get_connect_link: [true, false, true, false],
           get_feed: [true, false, true, true],
           get_media: [true, false, true, false],
@@ -459,6 +461,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_channel_sets: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_comment_threads: [true, false, true, false],
+          list_location_reviews: [true, false, true, false],
           list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_feeds: [true, false, true, true],
@@ -479,6 +482,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
           mark_comment_answered: [false, false, true, false],
+          mark_location_review_answered: [false, false, true, false],
           moderate_comment: [false, true, true, true],
           pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
@@ -496,6 +500,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           remove_post_target: [false, true, true, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
+          reply_to_location_review: [false, false, false, true],
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
@@ -738,6 +743,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["withdraw_comment_reply", "workspace:publish"],
               ["mark_comment_answered", "workspace:publish"],
               ["moderate_comment", "workspace:publish"],
+              ["list_location_reviews", "workspace:read"],
+              ["get_location_reviews", "workspace:read"],
+              ["reply_to_location_review", "workspace:publish"],
+              ["delete_location_review_reply", "workspace:publish"],
+              ["mark_location_review_answered", "workspace:publish"],
             ]
           );
 
@@ -813,18 +823,21 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ],
             },
             create_review_link: { access: "comment", postId },
+            delete_location_review_reply: { reviewId: postId },
             edit_published_post: {
               postId,
               targetId: postId,
               text: "Never sent.",
             },
             mark_comment_answered: { answered: true, commentId: postId },
+            mark_location_review_answered: { answered: true, reviewId: postId },
             moderate_comment: { action: "like", commentId: postId },
             publish_post: { postId },
             queue_post: { postId },
             recycle_post: { every: { count: 1, unit: "weeks" }, postId },
             remove_post_target: { postId, targetId: postId },
             reply_to_comment: { commentId: postId, text: "Never sent." },
+            reply_to_location_review: { reviewId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
             request_changes: { ...decision, comment: "Never read." },
             reschedule_post: {
