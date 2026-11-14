@@ -1327,6 +1327,7 @@ type FollowUpStatus string
 
 const (
 	FollowUpStatusArmed       FollowUpStatus = "armed"
+	FollowUpStatusWaiting     FollowUpStatus = "waiting"
 	FollowUpStatusSending     FollowUpStatus = "sending"
 	FollowUpStatusSent        FollowUpStatus = "sent"
 	FollowUpStatusFailed      FollowUpStatus = "failed"
@@ -1339,6 +1340,8 @@ func NewFollowUpStatusFromString(s string) (FollowUpStatus, error) {
 	switch s {
 	case "armed":
 		return FollowUpStatusArmed, nil
+	case "waiting":
+		return FollowUpStatusWaiting, nil
 	case "sending":
 		return FollowUpStatusSending, nil
 	case "sent":

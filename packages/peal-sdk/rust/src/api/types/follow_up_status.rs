@@ -4,6 +4,7 @@ pub use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FollowUpStatus {
     Armed,
+    Waiting,
     Sending,
     Sent,
     Failed,
@@ -19,6 +20,7 @@ impl Serialize for FollowUpStatus {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::Armed => serializer.serialize_str("armed"),
+            Self::Waiting => serializer.serialize_str("waiting"),
             Self::Sending => serializer.serialize_str("sending"),
             Self::Sent => serializer.serialize_str("sent"),
             Self::Failed => serializer.serialize_str("failed"),
@@ -35,6 +37,7 @@ impl<'de> Deserialize<'de> for FollowUpStatus {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
             "armed" => Ok(Self::Armed),
+            "waiting" => Ok(Self::Waiting),
             "sending" => Ok(Self::Sending),
             "sent" => Ok(Self::Sent),
             "failed" => Ok(Self::Failed),
@@ -50,6 +53,7 @@ impl fmt::Display for FollowUpStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Armed => write!(f, "armed"),
+            Self::Waiting => write!(f, "waiting"),
             Self::Sending => write!(f, "sending"),
             Self::Sent => write!(f, "sent"),
             Self::Failed => write!(f, "failed"),

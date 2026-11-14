@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class FollowUpStatus {
     public static final FollowUpStatus FAILED = new FollowUpStatus(Value.FAILED, "failed");
 
+    public static final FollowUpStatus WAITING = new FollowUpStatus(Value.WAITING, "waiting");
+
     public static final FollowUpStatus SENDING = new FollowUpStatus(Value.SENDING, "sending");
 
     public static final FollowUpStatus UNCONFIRMED = new FollowUpStatus(Value.UNCONFIRMED, "unconfirmed");
@@ -55,6 +57,8 @@ public final class FollowUpStatus {
         switch (value) {
             case FAILED:
                 return visitor.visitFailed();
+            case WAITING:
+                return visitor.visitWaiting();
             case SENDING:
                 return visitor.visitSending();
             case UNCONFIRMED:
@@ -78,6 +82,8 @@ public final class FollowUpStatus {
         switch (value) {
             case "failed":
                 return FAILED;
+            case "waiting":
+                return WAITING;
             case "sending":
                 return SENDING;
             case "unconfirmed":
@@ -98,6 +104,8 @@ public final class FollowUpStatus {
     public enum Value {
         ARMED,
 
+        WAITING,
+
         SENDING,
 
         SENT,
@@ -115,6 +123,8 @@ public final class FollowUpStatus {
 
     public interface Visitor<T> {
         T visitArmed();
+
+        T visitWaiting();
 
         T visitSending();
 

@@ -2,6 +2,7 @@
 
 export const FollowUpStatus = {
         Armed: "armed",
+        Waiting: "waiting",
         Sending: "sending",
         Sent: "sent",
         Failed: "failed",

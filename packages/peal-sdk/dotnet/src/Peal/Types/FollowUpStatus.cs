@@ -10,6 +10,8 @@ public readonly record struct FollowUpStatus : IStringEnum
 {
     public static readonly FollowUpStatus Armed = new(Values.Armed);
 
+    public static readonly FollowUpStatus Waiting = new(Values.Waiting);
+
     public static readonly FollowUpStatus Sending = new(Values.Sending);
 
     public static readonly FollowUpStatus Sent = new(Values.Sent);
@@ -119,6 +121,8 @@ public readonly record struct FollowUpStatus : IStringEnum
     public static class Values
     {
         public const string Armed = "armed";
+
+        public const string Waiting = "waiting";
 
         public const string Sending = "sending";
 

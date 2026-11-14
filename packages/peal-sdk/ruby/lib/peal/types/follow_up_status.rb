@@ -8,6 +8,7 @@ module Peal
       extend Peal::Internal::Types::Enum
 
       ARMED = "armed"
+      WAITING = "waiting"
       SENDING = "sending"
       SENT = "sent"
       FAILED = "failed"

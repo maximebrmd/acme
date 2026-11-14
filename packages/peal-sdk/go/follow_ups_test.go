@@ -3974,6 +3974,13 @@ func TestEnumFollowUpStatus(t *testing.T) {
 		assert.Equal(t, FollowUpStatus("armed"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_waiting", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFollowUpStatusFromString("waiting")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FollowUpStatus("waiting"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_sending", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewFollowUpStatusFromString("sending")

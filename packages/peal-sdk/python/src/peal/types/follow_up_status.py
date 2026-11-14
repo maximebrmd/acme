@@ -3,5 +3,5 @@
 import typing
 
 FollowUpStatus = typing.Union[
-    typing.Literal["armed", "sending", "sent", "failed", "unconfirmed", "expired", "cancelled"], typing.Any
+    typing.Literal["armed", "waiting", "sending", "sent", "failed", "unconfirmed", "expired", "cancelled"], typing.Any
 ]
