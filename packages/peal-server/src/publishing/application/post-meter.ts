@@ -31,6 +31,15 @@ export class PostMeter extends Context.Service<
       Option.Option<MeterClaim>,
       AllowanceReached | DatabaseError
     >;
+    /**
+     * Whether the billing account has room for all these parts now (a
+     * thread's parts still to go out), without claiming any: the refusal
+     * the first claim past the room would meet, or none. A check, not a
+     * hold: each part is still claimed as it goes out.
+     */
+    readonly fits: (
+      parts: readonly MeteredPart[]
+    ) => Effect.Effect<Option.Option<AllowanceReached>, DatabaseError>;
     readonly giveBack: (
       claim: MeterClaim
     ) => Effect.Effect<void, DatabaseError>;
@@ -41,6 +50,7 @@ export class PostMeter extends Context.Service<
     PostMeter,
     PostMeter.of({
       claim: () => Effect.succeedNone,
+      fits: () => Effect.succeedNone,
       giveBack: () => Effect.void,
     })
   );

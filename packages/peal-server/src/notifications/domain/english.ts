@@ -187,6 +187,12 @@ export const english: EmailCatalog = {
     unavailable: "the platform could not be reached.",
     xCeilingReached:
       "it would have passed the billing account's monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.",
+    paymentFailed:
+      "X bills each post, which Peal passes on at X's rates, and the billing account's last payment failed: nothing past what is included goes out until it is paid. Nothing was sent. Update the payment method from the billing page, then post it again.",
+    perAccountPricingRequired:
+      "X bills each post, which Peal passes on at X's rates, and the workspace's plan is one from before per-account pricing, which bills no use of X. Nothing was sent. Move to per-account pricing on the billing page, then post it again.",
+    xThreadCut:
+      "the thread was cut: its first parts are live, and X's meter refused the next one, as the billing account cannot be billed for it now (no payment method, a payment failing, a plan from before per-account pricing, or its monthly ceiling for X: the billing page says which). Once it can, send the rest again, or keep the live parts as the post.",
   },
   feedStopReasons: {
     gone: "its site says the feed is gone for good.",

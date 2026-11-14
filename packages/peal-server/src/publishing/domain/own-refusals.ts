@@ -18,6 +18,12 @@ export const ownRefusalCodes = {
   // A BadRequest: the platform bills each post, passed through to the
   // billing account (X), which has no payment method: nothing was sent.
   paymentMethodRequired: "paymentMethodRequired",
+  // A BadRequest: the same, but the billing account's last payment failed:
+  // nothing past what is included until it goes through. Nothing was sent.
+  paymentFailed: "paymentFailed",
+  // A BadRequest: the same, but the account is on a plan from before
+  // per-account pricing, which bills no use: nothing was sent.
+  perAccountPricingRequired: "perAccountPricingRequired",
   // A BadRequest: the workspace's plan has no room for the post when it is
   // due, as after a trial or on a smaller plan.
   planLimit: "planLimit",
@@ -28,6 +34,9 @@ export const ownRefusalCodes = {
   // ceiling for X, or the cap before its first invoice is paid: nothing
   // was sent.
   xCeilingReached: "xCeilingReached",
+  // A BadRequest: a later part of a thread on X the meter refused, its
+  // first parts live: the thread was cut there.
+  xThreadCut: "xThreadCut",
 } as const;
 
 /**

@@ -20,7 +20,10 @@ import {
 } from "#publishing/domain/storable-outcome.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { MeterClaim } from "#shared/application/metered-usage.ts";
-import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
+import type {
+  AllowanceReached,
+  AllowanceReason,
+} from "#shared/domain/allowance-reached.ts";
 import { withinAllowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -50,15 +53,24 @@ const databaseDown = (failure: DatabaseError) =>
 
 const overPlan = new BadRequest({ code: ownRefusalCodes.planLimit });
 
-// The meter refused the part: no payment method on per-account pricing
-// (none, a legacy plan, a payment failing), or X's ceiling or the cap
-// before a first paid invoice.
-const meterRefusal = ({ reason }: AllowanceReached) =>
+// Why the meter refused a part, as the target fails: each standing in
+// words of its own (no payment method, a payment failing, a plan from
+// before per-account pricing, the ceiling or the cap before a first paid
+// invoice).
+const meterCodes = {
+  ceilingReached: ownRefusalCodes.xCeilingReached,
+  notEnabled: ownRefusalCodes.paymentMethodRequired,
+  paymentFailed: ownRefusalCodes.paymentFailed,
+  paymentMethodRequired: ownRefusalCodes.paymentMethodRequired,
+  planAllowance: ownRefusalCodes.perAccountPricingRequired,
+  spendCapReached: ownRefusalCodes.xCeilingReached,
+} as const satisfies { readonly [R in AllowanceReason]: string };
+
+// The meter refused a part: in its standing's words, or, when parts of
+// the thread are live already, as the thread cut there.
+const meterRefusal = ({ reason }: AllowanceReached, live: number) =>
   new BadRequest({
-    code:
-      reason === "ceilingReached" || reason === "spendCapReached"
-        ? ownRefusalCodes.xCeilingReached
-        : ownRefusalCodes.paymentMethodRequired,
+    code: live > 0 ? ownRefusalCodes.xThreadCut : meterCodes[reason],
   });
 
 // When the post was due: the time it was scheduled for.
@@ -141,17 +153,42 @@ export const RoutedPlatformPublisher = Layer.effect(
     const meter = yield* PostMeter;
 
     // Sends the part, claimed first where the platform bills per post.
+    // The first part a round sends checks first that the meter has room
+    // for every part still to go out, so a thread is never cut for room
+    // it lacked from the start; a later part refused anyway (the standing
+    // changed meanwhile) cuts it there.
     const sendMetered = Effect.fn("Publishing.sendMetered")(
       function* sendMetered(
         client: PlatformClient,
         post: OutgoingPost,
-        platform: Platform
+        platform: Platform,
+        thread: { readonly live: number; readonly texts: readonly string[] }
       ) {
+        const refused = (reached: AllowanceReached) =>
+          Effect.fail(meterRefusal(reached, thread.live));
+
+        if (post.part === thread.live) {
+          const room = yield* meter
+            .fits(
+              thread.texts.slice(post.part).map((text, index) => ({
+                platform,
+                // The part sent now as the channel receives it.
+                text: index === 0 ? post.text : text,
+                workspaceId: post.workspaceId,
+              }))
+            )
+            .pipe(Effect.catchTag("DatabaseError", databaseDown));
+
+          if (Option.isSome(room)) {
+            return yield* refused(room.value);
+          }
+        }
+
         const claim = yield* meter
           .claim({ platform, text: post.text, workspaceId: post.workspaceId })
           .pipe(
             Effect.catchTags({
-              AllowanceReached: (reached) => Effect.fail(meterRefusal(reached)),
+              AllowanceReached: refused,
               DatabaseError: databaseDown,
             })
           );
@@ -367,6 +404,12 @@ export const RoutedPlatformPublisher = Layer.effect(
         platform: account.platform,
         post: sent,
         stored: post,
+        thread: {
+          live: target.value.liveParts.length,
+          texts: partsOn(post.content, request.channelId).map(
+            ({ text }) => text
+          ),
+        },
       };
     });
 
@@ -380,8 +423,8 @@ export const RoutedPlatformPublisher = Layer.effect(
                 )
               : Effect.void
           ),
-          Effect.flatMap(({ client, platform, post }) =>
-            sendMetered(client, post, platform)
+          Effect.flatMap(({ client, platform, post, thread }) =>
+            sendMetered(client, post, platform, thread)
           ),
           storable
         ),

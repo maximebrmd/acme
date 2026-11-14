@@ -128,6 +128,14 @@ const meterAnswer = Ref.makeUnsafe<Option.Option<AllowanceReason>>(
 
 const metered = Ref.makeUnsafe<readonly MeteredPart[]>([]);
 
+// What the meter answers a whole thread's room before its first part, and
+// the threads it was asked about.
+const roomAnswer = Ref.makeUnsafe<Option.Option<AllowanceReason>>(
+  Option.none()
+);
+
+const roomAsked = Ref.makeUnsafe<readonly (readonly MeteredPart[])[]>([]);
+
 const givenBack = Ref.makeUnsafe<readonly MeterClaim[]>([]);
 
 const MeterTest = Layer.succeed(
@@ -155,6 +163,23 @@ const MeterTest = Layer.succeed(
           units: 15,
           workspaceId: asked.workspaceId,
         });
+      }),
+    fits: (parts) =>
+      Effect.gen(function* fits() {
+        yield* Ref.update(roomAsked, (all) => [...all, parts]);
+
+        return (yield* Ref.get(roomAnswer)).pipe(
+          Option.map(
+            (reason) =>
+              new AllowanceReached({
+                allowed: 0,
+                meter: "xApi",
+                reason,
+                resetsAt: DateTime.makeUnsafe("2026-07-01T00:00:00Z"),
+                used: 0,
+              })
+          )
+        );
       }),
     giveBack: (claim) => Ref.update(givenBack, (all) => [...all, claim]),
   })
@@ -757,26 +782,34 @@ layer(
 layer(XPublisherTest)(
   "the adapters of a platform that bills per post",
   (it) => {
-    // A two-part post on X, and a way to send each part.
-    const thread = Effect.gen(function* thread() {
+    // A post on X with `followUps` after its first part, `live` of them
+    // out already, and a way to send each part.
+    const onX = Effect.fn("onX")(function* onX(
+      followUps: readonly string[],
+      thread: {
+        readonly live?: number;
+        readonly poll?: Option.Option<Poll>;
+      } = {}
+    ) {
+      const live = thread.live ?? 0;
+      const poll = thread.poll ?? Option.none<Poll>();
       const posts = yield* PostRepository;
       const postId = yield* newId(PostIdSchema);
       const channelId = yield* newId(ChannelIdSchema);
       const publishedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
 
-      // Its first part went out before, so the second has one to answer.
       const target = new PostTarget({
         channelId,
         id: yield* newId(PostTargetIdSchema),
-        liveParts: [
-          {
-            index: 0,
-            permalink: Option.none(),
-            platformPostId: Option.some(PlatformPostIdSchema.make("x-root-1")),
-            publishedAt,
-            round: 1,
-          },
-        ],
+        liveParts: Array.from({ length: live }, (_, index) => ({
+          index,
+          permalink: Option.none(),
+          platformPostId: Option.some(
+            PlatformPostIdSchema.make(`x-part-${String(index)}`)
+          ),
+          publishedAt,
+          round: 1,
+        })),
         options: Option.none(),
         postId,
         round: 1,
@@ -792,9 +825,10 @@ layer(XPublisherTest)(
           postId,
           yield* freshWorkspace,
           new PostContent({
-            followUps: [part("See https://example.com/launch")],
+            followUps: followUps.map(part),
             media: [],
             overrides: [],
+            poll,
             text: "We shipped it",
           }),
           Option.none()
@@ -809,7 +843,7 @@ layer(XPublisherTest)(
             idempotencyKey: `a-synthetic-x-part-${String(sent)}`,
             part: sent,
             postId,
-            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            startedAt: publishedAt,
             targetId: target.id,
           })
         ).pipe(
@@ -825,20 +859,38 @@ layer(XPublisherTest)(
       Ref.set(metered, []),
       Ref.set(givenBack, []),
       Ref.set(meterAnswer, Option.none()),
+      Ref.set(roomAnswer, Option.none()),
+      Ref.set(roomAsked, []),
       Ref.set(refusing, false),
     ]);
 
     it.effect(
-      "claim each part on the billing account's meter before it is sent, with its text",
+      "check the whole thread's room before its first part, then claim each part with its text",
       () =>
         Effect.gen(function* claims() {
           yield* reset;
 
-          const { remove, send } = yield* thread;
+          const first = yield* onX(["See https://example.com/launch"]);
 
-          assert.strictEqual(yield* send(0), "sent");
-          assert.strictEqual(yield* send(1), "sent");
+          assert.strictEqual(yield* first.send(0), "sent");
 
+          // Its second part, once the first is live: a repost's round
+          // checks the parts still to go out.
+          const rest = yield* onX(["See https://example.com/launch"], {
+            live: 1,
+          });
+
+          assert.strictEqual(yield* rest.send(1), "sent");
+
+          assert.deepStrictEqual(
+            (yield* Ref.get(roomAsked)).map((parts) =>
+              parts.map(({ text }) => text)
+            ),
+            [
+              ["We shipped it", "See https://example.com/launch"],
+              ["See https://example.com/launch"],
+            ]
+          );
           assert.deepStrictEqual(
             (yield* Ref.get(metered)).map(({ platform, text }) => [
               platform,
@@ -852,30 +904,79 @@ layer(XPublisherTest)(
           assert.lengthOf(yield* Ref.get(handed), 2);
           assert.lengthOf(yield* Ref.get(givenBack), 0);
 
+          yield* Effect.all([first.remove, rest.remove]);
+        })
+    );
+
+    it.effect(
+      "send none of a thread the meter has no room for, in its standing's words",
+      () =>
+        Effect.gen(function* noRoom() {
+          yield* reset;
+
+          const { remove, send } = yield* onX(["Second", "Third"]);
+
+          for (const [reason, code] of [
+            ["ceilingReached", "xCeilingReached"],
+            ["spendCapReached", "xCeilingReached"],
+            ["paymentMethodRequired", "paymentMethodRequired"],
+            ["paymentFailed", "paymentFailed"],
+            ["planAllowance", "perAccountPricingRequired"],
+          ] as const) {
+            yield* Ref.set(roomAnswer, Option.some(reason));
+
+            assert.strictEqual(yield* send(0), code);
+          }
+
+          assert.lengthOf(yield* Ref.get(metered), 0);
+          assert.lengthOf(yield* Ref.get(handed), 0);
+
           yield* remove;
         })
     );
 
     it.effect(
-      "send nothing past the meter: without a payment method, or at the ceiling",
+      "say a thread refused at a later part was cut there, its first parts live",
       () =>
-        Effect.gen(function* refused() {
+        Effect.gen(function* cut() {
           yield* reset;
 
-          const { remove, send } = yield* thread;
+          const { remove, send } = yield* onX(["Second", "Third"], { live: 1 });
 
-          yield* Ref.set(meterAnswer, Option.some("paymentMethodRequired"));
+          // The standing changed since the first part went out.
+          yield* Ref.set(meterAnswer, Option.some("paymentFailed"));
 
-          assert.strictEqual(yield* send(0), "paymentMethodRequired");
+          assert.strictEqual(yield* send(1), "xThreadCut");
+          assert.lengthOf(yield* Ref.get(handed), 0);
 
-          yield* Ref.set(meterAnswer, Option.some("ceilingReached"));
+          yield* remove;
+        })
+    );
+
+    it.effect(
+      "claim a post with a poll once, and send it with nothing at the ceiling",
+      () =>
+        Effect.gen(function* withPoll() {
+          yield* reset;
+
+          const poll = Option.some(
+            new Poll({ choices: ["Yes", "No"], durationMinutes: 60 })
+          );
+
+          const { remove, send } = yield* onX([], { poll });
+
+          assert.strictEqual(yield* send(0), "sent");
+          assert.lengthOf(yield* Ref.get(metered), 1);
+          assert.isTrue(
+            Option.isSome(
+              (yield* Ref.get(handed)).at(-1)?.poll ?? Option.none()
+            )
+          );
+
+          yield* Ref.set(roomAnswer, Option.some("ceilingReached"));
 
           assert.strictEqual(yield* send(0), "xCeilingReached");
-
-          yield* Ref.set(meterAnswer, Option.some("spendCapReached"));
-
-          assert.strictEqual(yield* send(1), "xCeilingReached");
-          assert.lengthOf(yield* Ref.get(handed), 0);
+          assert.lengthOf(yield* Ref.get(handed), 1);
 
           yield* remove;
         })
@@ -885,7 +986,7 @@ layer(XPublisherTest)(
       Effect.gen(function* refusedByX() {
         yield* reset;
 
-        const { remove, send } = yield* thread;
+        const { remove, send } = yield* onX([]);
 
         yield* Ref.set(refusing, true);
 

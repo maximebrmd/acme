@@ -64,3 +64,29 @@ layer(
       })
   );
 });
+
+layer(
+  MeteredXPostsLive.pipe(
+    Layer.provideMerge(
+      Layer.merge(fakeMeters({ allowed: Option.some(30) }), XRatesTest)
+    )
+  )
+)("the room of a thread X bills", (it) => {
+  it.effect("fits the parts the meter has room for, and refuses one more", () =>
+    Effect.gen(function* room() {
+      const meter = yield* PostMeter;
+      const part = { platform: "x" as const, text: "A part", workspaceId };
+
+      assert.isTrue(Option.isNone(yield* meter.fits([part, part])));
+
+      const refused = yield* meter.fits([part, part, part]);
+
+      assert.deepInclude(Option.getOrUndefined(refused), {
+        allowed: 30,
+        meter: "xApi",
+        reason: "ceilingReached",
+      });
+      assert.deepStrictEqual(yield* claimed, []);
+    })
+  );
+});

@@ -71,6 +71,9 @@ export const PostFailureReasonSchema = Schema.Literals([
   "repliesNotAllowed",
   "paymentMethodRequired",
   "xCeilingReached",
+  "paymentFailed",
+  "perAccountPricingRequired",
+  "xThreadCut",
 ]);
 
 export type PostFailureReason = typeof PostFailureReasonSchema.Type;

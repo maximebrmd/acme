@@ -194,6 +194,12 @@ export const french: EmailCatalog = {
     unavailable: "la plateforme était injoignable.",
     xCeilingReached:
       "elle aurait dépassé le plafond mensuel du compte de facturation pour X, ou ce qui peut lui être facturé avant le paiement de sa première facture. Rien n’a été envoyé. Relevez le plafond sur la page de facturation, ou publiez-la à nouveau le mois prochain.",
+    paymentFailed:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et le dernier paiement du compte de facturation a échoué : rien ne part au-delà de l’inclus tant qu’il n’est pas réglé. Rien n’a été envoyé. Mettez à jour le moyen de paiement depuis la page de facturation, puis publiez-la à nouveau.",
+    perAccountPricingRequired:
+      "X facture chaque publication, que Peal refacture aux tarifs de X, et l’abonnement de l’espace de travail est antérieur au tarif par compte, qui seul facture l’usage de X. Rien n’a été envoyé. Passez au tarif par compte sur la page de facturation, puis publiez-la à nouveau.",
+    xThreadCut:
+      "le fil a été coupé : ses premières parties sont en ligne, et le compteur de X a refusé la suivante, car le compte de facturation ne peut pas être facturé pour elle maintenant (pas de moyen de paiement, un paiement en échec, un abonnement antérieur au tarif par compte, ou son plafond mensuel pour X : la page de facturation dit lequel). Dès qu’il le peut, envoyez la suite à nouveau, ou gardez les parties en ligne comme publication.",
   },
   feedStopReasons: {
     gone: "son site indique que le flux n’existe plus.",

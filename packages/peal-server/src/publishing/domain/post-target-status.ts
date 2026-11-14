@@ -67,6 +67,17 @@ export const FailureReasonSchema = Schema.Literals([
   // the cap before its first invoice is paid): nothing was sent. Raise the
   // ceiling on the billing page, or post it again next month.
   "xCeilingReached",
+  // The same as `paymentMethodRequired`, but the billing account's last
+  // payment failed: nothing was sent until it goes through.
+  "paymentFailed",
+  // The same, but the account is on a plan from before per-account
+  // pricing, which bills no use of X: nothing was sent.
+  "perAccountPricingRequired",
+  // A thread on X was cut: its first parts are live, and X's meter
+  // refused the next one (the payment method, a payment failing, the
+  // plan, or the ceiling, as the billing page says). Repost it once the
+  // billing account can pay, or keep the live parts as the post.
+  "xThreadCut",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

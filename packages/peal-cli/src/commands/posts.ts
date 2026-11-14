@@ -87,6 +87,12 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   unavailable: "the platform could not be reached",
   xCeilingReached:
     "it would have passed the billing account's monthly ceiling for X: raise it on the billing page, or post it again next month",
+  paymentFailed:
+    "X bills each post, passed on at X's rates, and the billing account's last payment failed: update the payment method from the billing page, then post it again",
+  perAccountPricingRequired:
+    "X bills each post, passed on at X's rates, and the workspace's plan is one from before per-account pricing: move to per-account pricing on the billing page, then post it again",
+  xThreadCut:
+    "the thread was cut: X's meter refused the next part, as the billing account cannot be billed for it now (the billing page says why); once it can, repost to send the rest",
 };
 
 // How many of a post's parts are live on the channel, for a post of
@@ -105,7 +111,13 @@ const publishedNotes = (target: PostTarget): string =>
 /** How a target went, as `peal posts show` prints it after its channel. */
 export const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
-    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
+    // A thread cut on X says where: at the part after those live.
+    const cut =
+      target.failureReason === "xThreadCut"
+        ? `, at part ${String(target.parts.live.length + 1)}`
+        : "";
+
+    return `failed: ${target.failureReason}${cut} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
   }
 
   if (target.status === "cancelled" && target.dropped === true) {

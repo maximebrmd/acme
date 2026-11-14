@@ -235,6 +235,16 @@ describe(decide, () => {
     expect(
       decide(new BadRequest({ code: "xCeilingReached" }), after())
     ).toStrictEqual(giveUp("xCeilingReached", "xCeilingReached"));
+
+    for (const code of [
+      "paymentFailed",
+      "perAccountPricingRequired",
+      "xThreadCut",
+    ] as const) {
+      expect(decide(new BadRequest({ code }), after())).toStrictEqual(
+        giveUp(code, code)
+      );
+    }
   });
 
   describe.each(Object.values(operatorRefusalCodes))(

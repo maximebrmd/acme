@@ -268,6 +268,18 @@ const badRequestReason = (code: string): RefusalReason => {
     return "xCeilingReached";
   }
 
+  if (code === ownRefusalCodes.paymentFailed) {
+    return "paymentFailed";
+  }
+
+  if (code === ownRefusalCodes.perAccountPricingRequired) {
+    return "perAccountPricingRequired";
+  }
+
+  if (code === ownRefusalCodes.xThreadCut) {
+    return "xThreadCut";
+  }
+
   if (code === platformRefusalCodes.repliesNotAllowed) {
     return "repliesNotAllowed";
   }

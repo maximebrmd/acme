@@ -116,7 +116,14 @@ const statusText = (
   }
 
   if (status === "failed") {
-    return t("failed", { reason: reasonOf(target.failureReason ?? "") });
+    const failed = t("failed", {
+      reason: reasonOf(target.failureReason ?? ""),
+    });
+
+    // A thread X's meter cut says where.
+    return target.failureReason === "xThreadCut"
+      ? `${t("threadCutAt", { part: target.parts.live.length + 1 })} ${failed}`
+      : failed;
   }
 
   if (status === "unconfirmed") {
