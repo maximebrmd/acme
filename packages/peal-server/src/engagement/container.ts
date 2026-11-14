@@ -144,6 +144,9 @@ export { InboxHandlers as InboxApiLive } from "#engagement/api/inbox.ts";
 // The inbox's reviews endpoints, alike.
 export { InboxReviewsHandlers as InboxReviewsApiLive } from "#engagement/api/inbox-reviews.ts";
 
+// The inbox's direct messages endpoints, alike.
+export { InboxMessagesHandlers as InboxMessagesApiLive } from "#engagement/api/inbox-messages.ts";
+
 /** EngagementRecords alone, for the workspace context's exports and erasures. */
 export { DrizzleEngagementRecords as EngagementRecordsLive } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 

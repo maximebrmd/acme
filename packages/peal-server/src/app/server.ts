@@ -69,6 +69,7 @@ import {
 import {
   engagementLive,
   InboxApiLive,
+  InboxMessagesApiLive,
   InboxReviewsApiLive,
   EngagementRecordsLive,
   EngagementWorkersLive,
@@ -185,6 +186,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   WebhooksApiLive,
   ActivityApiLive,
   InboxApiLive,
+  InboxMessagesApiLive,
   InboxReviewsApiLive,
   ContractRequestsDeskApiLive,
   BillingAccountsDeskApiLive,

@@ -621,6 +621,18 @@ const ExportedReviewReplySchema = Schema.Struct({
   ...inWorkspace,
 });
 
+// A direct message the user sent from Peal to a conversation, while Peal
+// keeps it.
+const ExportedDirectMessageSchema = Schema.Struct({
+  channelId: Schema.String,
+  conversationId: Schema.String,
+  createdAt: instant,
+  id: Schema.String,
+  status: Schema.String,
+  text: Schema.String,
+  ...inWorkspace,
+});
+
 // A webhook endpoint: where the workspace is told what happens in it,
 // without the secret that signs what it is sent.
 const ExportedWebhookSchema = Schema.Struct({
@@ -907,6 +919,10 @@ export const AccountExportSchema = Schema.Struct({
   // leaves; null on a server that keeps nothing for the law.
   legalHold: nullable(ExportedLegalHoldSchema),
   memberships: Schema.Array(ExportedMembershipSchema),
+  // The direct messages the user sent from Peal, in any workspace, while
+  // their conversations are kept; never the messages they answered,
+  // which other people wrote.
+  messages: Schema.Array(ExportedDirectMessageSchema),
   notices: Schema.Array(ExportedNoticeSchema),
   // With the first day (UTC) of the week of the last weekly digest sent,
   // null before the first.

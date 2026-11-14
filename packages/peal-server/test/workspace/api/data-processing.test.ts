@@ -31,6 +31,7 @@ import {
   defaultWindow,
   longestWindow,
 } from "#engagement/domain/collection-schedule.ts";
+import { conversationsKeptFor } from "#engagement/domain/conversation.ts";
 import { keptAfterCollection } from "#engagement/domain/engagement-retention.ts";
 import { reviewsKeptFor } from "#engagement/domain/review.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
@@ -215,6 +216,21 @@ describe("the data processing registry", () => {
       "used for nothing else"
     );
     expect(categoryOf("inboxReviews")?.data.en).toContain("never the photos");
+  });
+
+  it("keeps a conversation as long as its purge does", () => {
+    expect(Duration.days(retentionPeriods.inboxMessages.days)).toStrictEqual(
+      conversationsKeptFor
+    );
+    expect(kept("inboxMessages")).toContain(
+      "30 days after a conversation’s last message"
+    );
+    // Private correspondence: shown and answered, nothing else, by
+    // nobody at Peal.
+    expect(categoryOf("inboxMessages")?.purposes.en).toContain(
+      "Peal’s staff do not read them"
+    );
+    expect(categoryOf("inboxMessages")?.data.en).toContain("never the files");
   });
 
   it("keeps the days of ads' numbers and the ads audit trail as long as their purge does", () => {
