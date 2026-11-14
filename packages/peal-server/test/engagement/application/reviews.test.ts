@@ -36,6 +36,27 @@ const actorWith = (permissions: readonly Permission[]) =>
   });
 
 const editor = actorWith(["engagement:read", "engagement:reply"]);
+
+// An API key, and an application acting for the member, with the same
+// permissions: neither answers a review, as Google's policies ask that
+// replies follow the user's own consent.
+const apiKey = new Actor({
+  permissions: ["engagement:read", "engagement:reply"],
+  subject: { _tag: "apiKey", apiKeyId: "key_synthetic_1" },
+  workspaceId,
+});
+
+const application = new Actor({
+  permissions: ["engagement:read", "engagement:reply"],
+  subject: {
+    _tag: "user",
+    clientId: "synthetic-mcp-client",
+    impersonatedBy: Option.none(),
+    userId: memberId,
+  },
+  workspaceId,
+});
+
 const viewer = actorWith(["engagement:read"]);
 
 const at = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
@@ -416,6 +437,52 @@ const journalled = (world: ReviewWorld) =>
       reviews.reply(editor, onlyReview(world).id, "Thank you!")
     );
   });
+
+describe("replying to reviews in person", () => {
+  it.effect(
+    "refuses an API key and an application a reply or a deleted reply, and lets them read and mark",
+    () => {
+      const world = withReview({
+        reply: Option.some({
+          moderation: Option.some("approved"),
+          text: "Thanks!",
+          updatedAt: reviewedAt,
+        }),
+      });
+
+      return at(
+        Effect.gen(function* refusals() {
+          yield* collect;
+
+          const review = onlyReview(world);
+
+          for (const actor of [apiKey, application]) {
+            const replied = yield* EngagementReviews.use((reviews) =>
+              reviews.reply(actor, review.id, "Thanks")
+            ).pipe(Effect.flip);
+
+            const withdrawn = yield* EngagementReviews.use((reviews) =>
+              reviews.withdraw(actor, review.id)
+            ).pipe(Effect.flip);
+
+            assert.strictEqual(replied._tag, "ReviewReplyNeedsPerson");
+            assert.strictEqual(withdrawn._tag, "ReviewReplyNeedsPerson");
+
+            yield* EngagementReviews.use((reviews) =>
+              reviews.thread(actor, review.threadId)
+            );
+            yield* EngagementReviews.use((reviews) =>
+              reviews.setAnswered(actor, review.id, true)
+            );
+          }
+
+          assert.lengthOf(world.state.jobs, 0);
+          assert.lengthOf(world.state.withdrawn, 0);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+});
 
 describe("a reply's job", () => {
   it.effect(

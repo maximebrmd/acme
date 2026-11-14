@@ -2,12 +2,10 @@ import { Console, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   inboxReviewRetentionDays,
-  InboxReviewReplySchema,
   InboxReviewSchema,
   InboxReviewThreadDetailSchema,
   InboxReviewThreadPageSchema,
   maxInboxPageSize,
-  maxInboxReviewReplyBytes,
 } from "peal-contract";
 import type {
   InboxReview,
@@ -249,45 +247,6 @@ const show = Command.make(
   )
 );
 
-const reply = Command.make(
-  "reply",
-  {
-    json: jsonFlag,
-    reviewId: reviewArgument,
-    text: Flag.String("text").pipe(
-      Flag.withMetavar("<text>"),
-      Flag.withDescription(
-        `What the reply says, ${String(maxInboxReviewReplyBytes)} bytes at most.`
-      )
-    ),
-    workspace: workspaceFlag,
-  },
-  Effect.fn("inbox.reviews.reply")(function* replying(flags) {
-    const { client, url, workspace } = yield* inWorkspace(flags.workspace);
-
-    const sent = yield* client.inboxReviews
-      .replyToReview({
-        params: { reviewId: flags.reviewId, workspaceId: workspace.id },
-        payload: { text: flags.text },
-      })
-      .pipe(Effect.mapError(explain(url)));
-
-    if (flags.json) {
-      yield* printJson(InboxReviewReplySchema, sent);
-
-      return;
-    }
-
-    yield* Console.log(
-      `Reply ${sent.id} is on its way, in public, as the location: it replaces the review's reply, and peal inbox reviews show ${sent.threadId} shows how it ended.`
-    );
-  })
-).pipe(
-  Command.withDescription(
-    "Answer a review in public, as the location: the reply replaces the one it holds. Needs a sign-in that may publish."
-  )
-);
-
 const answered = Command.make(
   "answered",
   {
@@ -323,37 +282,9 @@ const answered = Command.make(
   )
 );
 
-const withdraw = Command.make(
-  "withdraw",
-  { json: jsonFlag, reviewId: reviewArgument, workspace: workspaceFlag },
-  Effect.fn("inbox.reviews.withdraw")(function* withdrawing(flags) {
-    const { client, url, workspace } = yield* inWorkspace(flags.workspace);
-
-    const review = yield* client.inboxReviews
-      .withdrawReviewReply({
-        params: { reviewId: flags.reviewId, workspaceId: workspace.id },
-      })
-      .pipe(Effect.mapError(explain(url)));
-
-    if (flags.json) {
-      yield* printJson(InboxReviewSchema, review);
-
-      return;
-    }
-
-    yield* Console.log(
-      `The location's reply was deleted from review ${review.id}: it is ${review.state}.`
-    );
-  })
-).pipe(
-  Command.withDescription(
-    "Delete the location's reply to a review from the platform, whoever wrote it."
-  )
-);
-
 export const reviews = Command.make("reviews").pipe(
   Command.withDescription(
-    "The reviews people leave on the Google Business Profile locations a workspace's channels post as: read them, and answer in public as the location."
+    "The reviews people leave on the Google Business Profile locations a workspace's channels post as: read them, and mark one as needing no answer. Answering one, or deleting its reply, is done in the web app, by the member in person: Google's policies ask that a reply follow the user's own decision."
   ),
-  Command.withSubcommands([list, show, reply, answered, withdraw])
+  Command.withSubcommands([list, show, answered])
 );

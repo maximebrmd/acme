@@ -179,7 +179,7 @@ export const GetLocationReviews = Tool.make("get_location_reviews", {
 
 export const ReplyToLocationReview = Tool.make("reply_to_location_review", {
   dependencies: [CurrentMember],
-  description: `Answers a review in public, as the location: everyone who sees the review on Google sees the reply, which replaces the one the review held, whoever wrote it. Google may check it before showing it. Write only what the user asked to say: Google's policies ask that a reply be the user's own decision, never automated. The reply is journalled and sent by a job, so the answer is the reply \`sending\`: get_location_reviews shows how it ended. A reply whose outcome is not known is \`unconfirmed\` until the next read of the location, which settles it: do not call this tool again for that review meanwhile. ${String(maxInboxReviewReplyBytes)} bytes (UTF-8) at most. Replies to reviews count no inbox message. ${needsReplying}`,
+  description: `Refused to every MCP client: only the user, signed in to Peal in the web app, answers a review, as Google's policies ask that a reply to a review follow the user's own decision, never an application's. Calling it sends nothing and says so; tell the user to answer in the web app. ${needsReplying}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     reviewId: Schema.String,
@@ -198,7 +198,7 @@ export const DeleteLocationReviewReply = Tool.make(
   "delete_location_review_reply",
   {
     dependencies: [CurrentMember],
-    description: `Deletes the location's reply to a review from Google, whoever wrote it: people who saw it may have kept it. A review without a reply is answered as it is. ${needsReplying}`,
+    description: `Refused to every MCP client: only the user, signed in to Peal in the web app, deletes a review's reply, as for answering one. Calling it deletes nothing and says so. ${needsReplying}`,
     failure: ToolRefused,
     parameters: Schema.Struct({ reviewId: Schema.String }),
     success: InboxReviewSchema,

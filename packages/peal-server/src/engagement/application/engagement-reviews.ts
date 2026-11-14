@@ -45,6 +45,7 @@ import { ReplyEmpty } from "./reply-empty.ts";
 import { ReplyTooLong } from "./reply-too-long.ts";
 import { ReviewActionFailed } from "./review-action-failed.ts";
 import { ReviewNotFound } from "./review-not-found.ts";
+import { ReviewReplyNeedsPerson } from "./review-reply-needs-person.ts";
 import { ReviewReplyPending } from "./review-reply-pending.ts";
 import { ReviewThreadNotFound } from "./review-thread-not-found.ts";
 
@@ -69,6 +70,11 @@ export interface ReviewThreadDetail {
 
 const nothing = reviewAbilitiesOf("x", [], new Set());
 
+// Whether the actor reaches Peal in person: not an API key, nor an OAuth
+// client (an MCP client, the command line) acting for the member.
+const inPerson = ({ subject }: Actor): boolean =>
+  subject._tag === "user" && subject.clientId === undefined;
+
 // The member who writes, none for an API key.
 const writerOf = (actor: Actor): Option.Option<UserId> =>
   actor.subject._tag === "user"
@@ -92,7 +98,8 @@ export const reviewCursorAfter = (
  * that have reviews, those with one waiting for an answer first, each
  * whole, and what members do about them. Reading needs `engagement:read`;
  * answering, withdrawing the location's reply and marking a review
- * answered need `engagement:reply`. A reply is journalled and sent by a
+ * answered need `engagement:reply`, and answering and withdrawing a
+ * member in person (`ReviewReplyNeedsPerson`). A reply is journalled and sent by a
  * job; replies to reviews count no outbound message.
  */
 export class EngagementReviews extends Context.Service<
@@ -125,6 +132,7 @@ export class EngagementReviews extends Context.Service<
       | ReplyEmpty
       | ReplyTooLong
       | ReviewNotFound
+      | ReviewReplyNeedsPerson
       | ReviewReplyPending
     >;
     /** Deletes the location's reply to the review, whoever wrote it. */
@@ -138,6 +146,7 @@ export class EngagementReviews extends Context.Service<
       | MissingPermission
       | ReviewActionFailed
       | ReviewNotFound
+      | ReviewReplyNeedsPerson
     >;
     readonly setAnswered: (
       actor: Actor,
@@ -284,6 +293,11 @@ export class EngagementReviews extends Context.Service<
         yield* Effect.fromResult(authorize(actor, "engagement:reply"));
 
         const review = yield* reviewOf(actor, reviewId);
+
+        if (!inPerson(actor)) {
+          return yield* new ReviewReplyNeedsPerson({ reviewId });
+        }
+
         const said = text.trim();
 
         if (said === "") {
@@ -344,6 +358,10 @@ export class EngagementReviews extends Context.Service<
           yield* Effect.fromResult(authorize(actor, "engagement:reply"));
 
           const review = yield* reviewOf(actor, reviewId);
+
+          if (!inPerson(actor)) {
+            return yield* new ReviewReplyNeedsPerson({ reviewId });
+          }
 
           yield* able(review.channelId, "withdraw");
 

@@ -230,6 +230,9 @@ const reading = "Needs engagement:read.";
 const acting =
   "Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.";
 
+const inPerson =
+  "Only a member signed in in person (a session of the web app) may: an API key or an OAuth application, the command line and MCP clients included, is refused (403 `Forbidden`, `personRequired`), as Google's Business Profile API policies ask that review replies never be automated or triggered without the user's prior specific and express consent.";
+
 const where = `Peal reads reviews on Google Business Profile locations where the server's operator turned it on, and keeps a review ${inboxReviewRetentionDays} days after it was written or last changed, as Google lets what its API gives be stored 30 days at most.`;
 
 /**
@@ -283,7 +286,7 @@ export class InboxReviewsApi extends HttpApiGroup.make("inboxReviews")
       success: InboxReviewReplySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's \`reply.moderation\`). The reply is checked against Google's ${maxInboxReviewReplyBytes} bytes (UTF-8), journalled, and sent by a job: the answer is the reply \`sending\`, and the location's reviews show how it ended. A reply whose outcome is not known is \`unconfirmed\` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 \`ReplyPending\`). Replies to reviews count no inbox message. ${acting}`,
+        description: `Answers a review in public, as the location: the reply replaces the one the review holds, whoever wrote it, and Google may check it before showing it (the review's \`reply.moderation\`). The reply is checked against Google's ${maxInboxReviewReplyBytes} bytes (UTF-8), journalled, and sent by a job: the answer is the reply \`sending\`, and the location's reviews show how it ended. A reply whose outcome is not known is \`unconfirmed\` until the next read of the location, which settles it. While a reply to a review is on its way or unconfirmed, another is refused (409 \`ReplyPending\`). Replies to reviews count no inbox message. ${inPerson} ${acting}`,
         summary: "Reply to a review",
       })
     ),
@@ -298,7 +301,7 @@ export class InboxReviewsApi extends HttpApiGroup.make("inboxReviews")
       success: InboxReviewSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. ${acting}`,
+        description: `Deletes the location's reply to a review from the platform, whoever wrote it, and answers with the review. A review without a reply is answered as it is. ${inPerson} ${acting}`,
         summary: "Delete a review's reply",
       })
     ),

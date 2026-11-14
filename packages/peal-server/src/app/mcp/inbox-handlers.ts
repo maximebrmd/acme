@@ -51,6 +51,12 @@ const noReview = () =>
     "The workspace has no such review: it may have gone from Google, or be older than Peal keeps one. get_location_reviews shows a location's."
   );
 
+// Only a member in the web app answers a review, or deletes its reply.
+const reviewNeedsPerson = () =>
+  refuse(
+    "Only the user, signed in to Peal in the web app, answers a review or deletes its reply: Google's policies ask that a reply to a review follow the user's own decision, never an application's. Nothing was sent. Reading the reviews and marking one answered stay open to this connection."
+  );
+
 const notDoneOnGoogle = ({ reason }: ReviewActionFailed) =>
   refuse(
     `Google did not do it (${reason}), and nothing changed in Peal: asking again is safe.`
@@ -141,6 +147,7 @@ export const InboxToolsLive = InboxTools.toLayer(
               MissingPermission: notAllowed("answer reviews"),
               ReviewActionFailed: notDoneOnGoogle,
               ReviewNotFound: noReview,
+              ReviewReplyNeedsPerson: reviewNeedsPerson,
             })
           );
         }),
@@ -211,6 +218,7 @@ export const InboxToolsLive = InboxTools.toLayer(
                   `The reply is too long for Google: ${String(length)} bytes, where it takes ${String(maximum)}. Nothing was sent.`
                 ),
               ReviewNotFound: noReview,
+              ReviewReplyNeedsPerson: reviewNeedsPerson,
               ReviewReplyPending: ({ replyId }) =>
                 refuse(
                   `A reply to this review is on its way, or its outcome is not known yet (${replyId}): nothing more was sent. The next read of the location settles it.`

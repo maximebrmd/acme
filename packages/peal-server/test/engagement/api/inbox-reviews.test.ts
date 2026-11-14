@@ -12,6 +12,7 @@ import {
   ReplyInvalid,
   ReplyPending,
 } from "peal-contract";
+import type { Member } from "peal-contract";
 
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
 import { InboxReviewsApiLive } from "#engagement/container.ts";
@@ -34,12 +35,16 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 // The reviews endpoints on their real use cases, over the in-memory
 // world. Each request acts as a member, as WorkspaceAccess would.
 
-const clientAs = (world: ReviewWorld, permissions: readonly Permission[]) =>
+const clientAs = (
+  world: ReviewWorld,
+  permissions: readonly Permission[],
+  member: Member = memberOf(workspaceId, permissions)
+) =>
   HttpApiTest.groups(Api, ["inboxReviews"]).pipe(
     Effect.provide(
       Layer.mergeAll(
         InboxReviewsApiLive.pipe(
-          Layer.provideMerge(securityTest(memberOf(workspaceId, permissions))),
+          Layer.provideMerge(securityTest(member)),
           Layer.provide(world.layer)
         ),
         HttpServer.layerServices
@@ -256,6 +261,58 @@ describe("the reviews endpoints", () => {
           .pipe(Effect.flip);
 
         assert.instanceOf(unable, InboxActionUnavailable);
+      });
+    }
+  );
+
+  it.effect(
+    "refuse an API key a reply and a deleted reply, as only a person answers a review",
+    () => {
+      const world = makeReviewWorld();
+      const permissions = permissionsFor("editor");
+
+      return Effect.gen(function* keys() {
+        const { reviews } = yield* collected(world);
+        const reviewId = reviews[0]?.id ?? "";
+
+        const key = yield* clientAs(world, permissions, {
+          permissions,
+          principal: {
+            _tag: "apiKey",
+            apiKeyId: "synthetic-key",
+            permissions,
+            workspaceId,
+          },
+          workspaceId,
+        });
+
+        const replied = yield* key.inboxReviews
+          .replyToReview({
+            params: { ...params, reviewId },
+            payload: { text: "Thanks" },
+          })
+          .pipe(Effect.flip);
+
+        const withdrawn = yield* key.inboxReviews
+          .withdrawReviewReply({ params: { ...params, reviewId } })
+          .pipe(Effect.flip);
+
+        for (const refused of [replied, withdrawn]) {
+          assert.instanceOf(refused, Forbidden);
+          assert.strictEqual(
+            refused instanceof Forbidden ? refused.reason : undefined,
+            "personRequired"
+          );
+        }
+
+        // Reading stays open to it.
+        const page = yield* key.inboxReviews.listReviewThreads({
+          params,
+          query: {},
+        });
+
+        assert.lengthOf(page.items, 1);
+        assert.lengthOf(world.state.jobs, 0);
       });
     }
   );

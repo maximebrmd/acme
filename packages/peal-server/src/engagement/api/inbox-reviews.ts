@@ -150,6 +150,7 @@ export const InboxReviewsHandlers = HttpApiBuilder.group(
               ReplyEmpty: empty,
               ReplyTooLong: tooLong,
               ReviewNotFound: reviewNotFound,
+              ReviewReplyNeedsPerson: forbidden,
               ReviewReplyPending: pending,
             })
           );
@@ -191,6 +192,7 @@ export const InboxReviewsHandlers = HttpApiBuilder.group(
               MissingPermission: forbidden,
               ReviewActionFailed: actionFailed,
               ReviewNotFound: reviewNotFound,
+              ReviewReplyNeedsPerson: forbidden,
             })
           );
         }),

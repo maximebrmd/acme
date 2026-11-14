@@ -143,9 +143,13 @@ const coverage = {
   "inbox.withdrawReply": by("inbox withdraw"),
   "inboxReviews.getReviewThread": by("inbox reviews show"),
   "inboxReviews.listReviewThreads": by("inbox reviews list"),
-  "inboxReviews.replyToReview": by("inbox reviews reply"),
+  "inboxReviews.replyToReview": exempt(
+    "Only a member in the web app answers a review: Google's policies ask that a reply follow the user's own decision, and the command line is an application acting for them."
+  ),
   "inboxReviews.setReviewAnswered": by("inbox reviews answered"),
-  "inboxReviews.withdrawReviewReply": by("inbox reviews withdraw"),
+  "inboxReviews.withdrawReviewReply": exempt(
+    "Only a member in the web app deletes a review's reply, as for answering one."
+  ),
   "invitations.create": by("invitations send"),
   "invitations.list": by("invitations list"),
   "invitations.revoke": by("invitations revoke"),

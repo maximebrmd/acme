@@ -317,7 +317,7 @@
   (it asks `business.manage` already, `googleBusinessReviewScope`). The
   API is its own group (`inboxReviews`, `/inbox/reviews`, in the
   ConnectionJournal's content groups), the MCP tools `*_location_review*`,
-  the command line `peal inbox reviews`; never `EngagementReplies` or
+  the command line `peal inbox reviews` (read and mark only); never `EngagementReplies` or
   `SendReplyV1`, and a reply to a review claims no outbound message (the
   owner's decision 5).
 - Google lets what its API gives be stored 30 days at most: a review is
@@ -337,6 +337,13 @@
   a review changed in the last week, six-hourly otherwise, and records a
   read under the thread's lock in one transaction, telling
   `review.received` (ids only: never stars nor text, as an event outlives the 29 days) through `ReviewOutcomes`.
+- Only a member in person answers a review or deletes its reply
+  (`ReviewReplyNeedsPerson`, answered 403 `personRequired`): an API key or
+  an OAuth client (MCP, the command line) reads and marks, never replies,
+  as Google's policies forbid automated or triggered replies without the
+  user's prior specific and express consent. A later part may let a
+  workspace record that consent (who gave it, when, for which
+  applications); until then keep the refusal.
 - A reply to a review is a state on Google (one reply, `PUT …/reply`
   replaces it), so `SendReviewReplyV1` (payload `replyId`, activity
   `send`, persisted contract) sends, and a run that finds the call set out

@@ -70,50 +70,28 @@ describe("peal inbox reviews", () => {
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
-  it.effect(
-    "answers a review, marks one answered, and deletes the location's reply",
-    () =>
-      Effect.gen(function* acts() {
-        const session = yield* signedIn();
+  it.effect("marks a review answered, and answers none itself", () =>
+    Effect.gen(function* marks() {
+      const session = yield* signedIn();
 
-        const replied = yield* session.printed([
-          "inbox",
-          "reviews",
-          "reply",
-          waitingReviewId,
-          "--text",
-          "Sorry about the wait.",
-          ...inStudio,
-        ]);
+      const marked = yield* session.printed([
+        "inbox",
+        "reviews",
+        "answered",
+        waitingReviewId,
+        ...inStudio,
+      ]);
 
-        assert.include(replied, "is on its way, in public, as the location");
+      assert.include(marked, `Review ${waitingReviewId} is answered.`);
 
-        const marked = yield* session.printed([
-          "inbox",
-          "reviews",
-          "answered",
-          waitingReviewId,
-          ...inStudio,
-        ]);
+      const help = yield* session.printed(["inbox", "reviews", "--help"]);
 
-        assert.include(marked, `Review ${waitingReviewId} is answered.`);
+      assert.include(help, "in the web app");
+      assert.notInclude(help, "withdraw");
 
-        const withdrawn = yield* session.printed([
-          "inbox",
-          "reviews",
-          "withdraw",
-          repliedReviewId,
-          ...inStudio,
-        ]);
+      const state = yield* Ref.get(session.studio.reviews);
 
-        assert.include(withdrawn, "The location's reply was deleted");
-
-        const state = yield* Ref.get(session.studio.reviews);
-
-        assert.deepStrictEqual(
-          state.replies.map(({ text }) => text),
-          ["Sorry about the wait."]
-        );
-      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+      assert.deepStrictEqual(state.replies, []);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });
