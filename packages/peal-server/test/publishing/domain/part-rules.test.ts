@@ -331,8 +331,8 @@ describe("a first comment on a video made for kids", () => {
       { onNone: () => [], onSome: (rejected) => rejected.violations }
     );
 
-    expect(violations.some(({ _tag }) => _tag === "commentsTurnedOff")).toBe(
-      false
-    );
+    expect(
+      violations.some(({ _tag }) => _tag === "commentsTurnedOff")
+    ).toBeFalsy();
   });
 });
