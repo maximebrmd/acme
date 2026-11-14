@@ -1,7 +1,7 @@
 ---
 import { getRelativeLocaleUrl } from "astro:i18n";
 
-import { appLink, repositoryUrl } from "../config.ts";
+import { appLink, repositoryUrl, socialAccounts } from "../config.ts";
 import type { Locale } from "../i18n/locales.ts";
 import { messages } from "../i18n/messages.ts";
 import { legalDocuments } from "../legal.ts";
@@ -62,6 +62,19 @@ const contract = [
         </nav>
       )
     }
+    <nav aria-label={t.footer.follow}>
+      <ul class="flex flex-col gap-2">
+        {
+          socialAccounts.map(({ href, name, rel }) => (
+            <li>
+              <a href={href} rel={rel} class="hover:text-neutral-900 hover:underline">
+                {name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
     <div class="flex flex-col gap-4 sm:items-end">
       <LanguageLinks label={t.footer.language} locale={locale} path={path} />
       <p class="max-w-sm sm:text-right">{t.footer.license}</p>

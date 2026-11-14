@@ -54,6 +54,22 @@ export const appLink = (locale: Locale, path: string): string | undefined => {
 /** The public repository, which the footer links to on every page. */
 export const repositoryUrl = "https://github.com/peal-social/peal";
 
+export interface SocialAccount {
+  readonly href: string;
+  readonly name: string;
+  /** Mastodon checks a `rel="me"` link back to the profile to verify it. */
+  readonly rel?: "me";
+}
+
+/** Peal's own accounts, which the footer links to on every page. */
+export const socialAccounts: readonly SocialAccount[] = [
+  { href: "https://www.linkedin.com/company/peal-social", name: "LinkedIn" },
+  { href: "https://x.com/peal_social", name: "X" },
+  { href: "https://bsky.app/profile/peal.social", name: "Bluesky" },
+  { href: "https://mastodon.social/@pealsocial", name: "Mastodon", rel: "me" },
+  { href: "https://www.youtube.com/@pealsocial", name: "YouTube" },
+];
+
 export interface PlausibleScript {
   readonly domain: string;
   readonly src: string;
