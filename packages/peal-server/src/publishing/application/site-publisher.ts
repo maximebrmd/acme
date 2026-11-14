@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { ArticleId } from "#publishing/domain/article-id.ts";
 import type { Article } from "#publishing/domain/article.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
 
@@ -13,6 +14,13 @@ export interface SitePublishRequest {
   readonly idempotencyKey: string;
   /** When the attempt's call started, as the journal recorded it. */
   readonly startedAt: DateTime.Utc;
+  /**
+   * Records that the call that makes the post leaves now, and when: the
+   * adapter runs it just before that call, and looks for a post changed
+   * since then when its answer is lost. A run that stopped before it is
+   * made again.
+   */
+  readonly committing: Effect.Effect<DateTime.Utc, DatabaseError>;
 }
 
 /**

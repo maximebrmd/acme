@@ -15,6 +15,7 @@ import { Authentication } from "./authentication.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformUnreachable } from "./platform-unreachable.ts";
 import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { UnknownMedia } from "./unknown-media.ts";
@@ -203,6 +204,7 @@ const article = { ...workspace, articleId: Schema.String };
 
 const writeErrors = [
   Forbidden,
+  PlanLimitReached,
   InvalidTimeZone,
   ArticleNotFound,
   ArticleRejected,
@@ -213,6 +215,7 @@ const writeErrors = [
 
 const siteErrors = [
   Forbidden,
+  PlanLimitReached,
   ArticleNotFound,
   ArticleRejected,
   ArticleStateConflict,

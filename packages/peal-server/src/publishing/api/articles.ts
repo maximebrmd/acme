@@ -30,6 +30,8 @@ import { ArticleContent } from "#publishing/domain/article-content.ts";
 import { ArticleIdSchema } from "#publishing/domain/article-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
+import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
@@ -96,48 +98,57 @@ const failureOf = (failure: ArticleFailure) =>
     MissingPermission: forbidden,
   });
 
-const writeFailureOf = (failure: ArticleWriteFailure) =>
-  Match.valueTags(failure, {
-    ArticleNotFound: () => Effect.fail(new ArticleNotFound()),
-    ArticleRejected: ({ violations }) =>
-      Effect.fail(new ArticleRejected({ violations })),
-    DatabaseError: Effect.die,
-    InvalidArticleTransition: ({ from }) =>
-      Effect.fail(new ArticleStateConflict({ state: from })),
-    MissingPermission: forbidden,
-    SiteNotFound: () => Effect.fail(new ChannelNotFound()),
-    UnknownMedia: ({ mediaIds }) => Effect.fail(new UnknownMedia({ mediaIds })),
-  });
+const writeFailureOf =
+  (limitReached: LimitRefusal) => (failure: ArticleWriteFailure) =>
+    Match.valueTags(failure, {
+      ArticleNotFound: () => Effect.fail(new ArticleNotFound()),
+      ArticleRejected: ({ violations }) =>
+        Effect.fail(new ArticleRejected({ violations })),
+      DatabaseError: Effect.die,
+      InvalidArticleTransition: ({ from }) =>
+        Effect.fail(new ArticleStateConflict({ state: from })),
+      MissingPermission: forbidden,
+      PlanLimitReached: limitReached,
+      SiteNotFound: () => Effect.fail(new ChannelNotFound()),
+      UnknownMedia: ({ mediaIds }) =>
+        Effect.fail(new UnknownMedia({ mediaIds })),
+    });
 
 // How the site's refusal of a change reads: its own code, or Peal's.
-const siteFailureOf = (failure: SiteChangeFailure) =>
-  Match.valueTags(failure, {
-    ArticleNotFound: () => Effect.fail(new ArticleNotFound()),
-    ArticleRejected: ({ violations }) =>
-      Effect.fail(new ArticleRejected({ violations })),
-    BadRequest: ({ code }) => Effect.fail(new ArticleChangeRefused({ code })),
-    DatabaseError: Effect.die,
-    InvalidArticleTransition: ({ from }) =>
-      Effect.fail(new ArticleStateConflict({ state: from })),
-    MediaRejected: ({ code }) =>
-      Effect.fail(new ArticleChangeRefused({ code })),
-    MissingPermission: forbidden,
-    PlatformUnavailable: (unavailable) =>
-      Effect.logWarning(
-        "A website did not take a change of an article",
-        unavailable
-      ).pipe(Effect.andThen(Effect.fail(new PlatformUnreachable()))),
-    RateLimited: () => Effect.fail(new PlatformUnreachable()),
-    TokenExpired: () =>
-      Effect.fail(new ArticleChangeRefused({ code: "tokenExpired" })),
-    UnknownMedia: ({ mediaIds }) => Effect.fail(new UnknownMedia({ mediaIds })),
-  });
+const siteFailureOf =
+  (limitReached: LimitRefusal) => (failure: SiteChangeFailure) =>
+    Match.valueTags(failure, {
+      ArticleNotFound: () => Effect.fail(new ArticleNotFound()),
+      ArticleRejected: ({ violations }) =>
+        Effect.fail(new ArticleRejected({ violations })),
+      BadRequest: ({ code }) => Effect.fail(new ArticleChangeRefused({ code })),
+      DatabaseError: Effect.die,
+      InvalidArticleTransition: ({ from }) =>
+        Effect.fail(new ArticleStateConflict({ state: from })),
+      MediaRejected: ({ code }) =>
+        Effect.fail(new ArticleChangeRefused({ code })),
+      MissingPermission: forbidden,
+      PlanLimitReached: limitReached,
+      PlatformUnavailable: (unavailable) =>
+        Effect.logWarning(
+          "A website did not take a change of an article",
+          unavailable
+        ).pipe(Effect.andThen(Effect.fail(new PlatformUnreachable()))),
+      RateLimited: () => Effect.fail(new PlatformUnreachable()),
+      TokenExpired: () =>
+        Effect.fail(new ArticleChangeRefused({ code: "tokenExpired" })),
+      UnknownMedia: ({ mediaIds }) =>
+        Effect.fail(new UnknownMedia({ mediaIds })),
+    });
 
 export const ArticlesHandlers = HttpApiBuilder.group(
   Api,
   "articles",
   Effect.fn(function* articlesHandlers(handlers) {
     const articles = yield* Articles;
+    const limitReached = yield* limitRefusal;
+    const onWrite = writeFailureOf(limitReached);
+    const onSite = siteFailureOf(limitReached);
 
     return handlers.handleAll({
       create: ({ payload }) =>
@@ -161,7 +172,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
               { channelId: channelId.value, content },
               time
             )
-            .pipe(Effect.catch(writeFailureOf));
+            .pipe(Effect.catch(onWrite));
 
           return articleView(article);
         }),
@@ -219,7 +230,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
         Effect.gen(function* retry() {
           const article = yield* articles
             .retry(actorOf(yield* CurrentMember), params.articleId)
-            .pipe(Effect.catch(writeFailureOf));
+            .pipe(Effect.catch(onWrite));
 
           return articleView(article);
         }),
@@ -229,7 +240,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
 
           const article = yield* articles
             .schedule(actorOf(yield* CurrentMember), params.articleId, time)
-            .pipe(Effect.catch(writeFailureOf));
+            .pipe(Effect.catch(onWrite));
 
           return articleView(article);
         }),
@@ -237,7 +248,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
         Effect.gen(function* unpublish() {
           const article = yield* articles
             .unpublish(actorOf(yield* CurrentMember), params.articleId)
-            .pipe(Effect.catch(siteFailureOf));
+            .pipe(Effect.catch(onSite));
 
           return articleView(article);
         }),
@@ -255,7 +266,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
 
           const article = yield* articles
             .update(actorOf(yield* CurrentMember), params.articleId, content)
-            .pipe(Effect.catch(writeFailureOf));
+            .pipe(Effect.catch(onWrite));
 
           return articleView(article);
         }),
@@ -269,7 +280,7 @@ export const ArticlesHandlers = HttpApiBuilder.group(
               params.articleId,
               content
             )
-            .pipe(Effect.catch(siteFailureOf));
+            .pipe(Effect.catch(onSite));
 
           return articleView(article);
         }),

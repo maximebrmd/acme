@@ -7,6 +7,7 @@ import type {
   EarlierRefusals,
 } from "#publishing/domain/publication-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { MediaAssetId } from "#shared/domain/ids.ts";
 
 /** One attempt at sending an article, in one round. */
 export interface ArticleCall {
@@ -17,12 +18,26 @@ export interface ArticleCall {
   readonly startedAt: DateTime.Utc;
 }
 
+/** A file as the site keeps it: its id there, and its address. */
+export interface SiteFile {
+  readonly id: number;
+  readonly sourceUrl: string;
+}
+
 /** What the journal knew of a call when it was about to be made. */
 export type ArticleCallStart =
   // No run made it yet: make it.
   | { readonly _tag: "started" }
-  // A run began it and never wrote how it ended: it may have gone out.
-  | { readonly _tag: "inFlight"; readonly startedAt: DateTime.Utc }
+  // A run began it and stopped before the call that makes the post: it
+  // never reached the site, and is made again.
+  | { readonly _tag: "prepared"; readonly startedAt: DateTime.Utc }
+  // A run made the call that makes the post, and never wrote how it
+  // ended: it may have gone out, from `committedAt` on.
+  | {
+      readonly _tag: "inFlight";
+      readonly committedAt: DateTime.Utc;
+      readonly startedAt: DateTime.Utc;
+    }
   // A run made it and wrote how it ended.
   | {
       readonly _tag: "completed";
@@ -42,6 +57,25 @@ export class ArticleJournal extends Context.Service<
     readonly begin: (
       call: ArticleCall
     ) => Effect.Effect<ArticleCallStart, DatabaseError>;
+    /**
+     * The call that makes the post is about to leave: from now on, a run
+     * that finds the call unfinished looks for the post rather than make
+     * it again.
+     */
+    readonly committing: (
+      idempotencyKey: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
+    /** The files the article sent its site already, by the library's id. */
+    readonly filesSent: (
+      articleId: ArticleId
+    ) => Effect.Effect<ReadonlyMap<MediaAssetId, SiteFile>, DatabaseError>;
+    /** Records a file the site took for the article. */
+    readonly fileSent: (
+      articleId: ArticleId,
+      mediaId: MediaAssetId,
+      file: SiteFile
+    ) => Effect.Effect<void, DatabaseError>;
     readonly finish: (
       idempotencyKey: string,
       outcome: AttemptOutcome,

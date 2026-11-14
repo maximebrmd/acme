@@ -29,19 +29,23 @@ import type { Actor, Permission } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
+import { ApprovalGate } from "./approval-gate.ts";
 import { ArticleJobs } from "./article-jobs.ts";
 import type { ArticleJob } from "./article-jobs.ts";
 import { ArticleNotFound } from "./article-not-found.ts";
 import { ArticleStore } from "./article-store.ts";
 import type { ArticlePage, ArticlePageRequest } from "./article-store.ts";
 import { AttachableMedia } from "./attachable-media.ts";
+import { PostAllowance } from "./post-allowance.ts";
 import { SiteChannels } from "./site-channels.ts";
 import { SiteNotFound } from "./site-not-found.ts";
 import { SitePublisher } from "./site-publisher.ts";
 import { UnknownMedia } from "./unknown-media.ts";
+import { withinPlan } from "./within-plan.ts";
 
 /** When an article goes out: at a time in a zone, or now. */
 export interface ArticleTime {
@@ -58,6 +62,7 @@ export type ArticleFailure =
 export type ArticleWriteFailure =
   | ArticleFailure
   | ArticleRejected
+  | PlanLimitReached
   | SiteNotFound
   | UnknownMedia;
 
@@ -155,6 +160,8 @@ export class Articles extends Context.Service<
       const media = yield* AttachableMedia;
       const publisher = yield* SitePublisher;
       const ids = yield* Ids;
+      const gate = yield* ApprovalGate;
+      const allowance = yield* PostAllowance;
       const { transaction } = yield* TransactionRunner;
 
       const found = Effect.fn("Articles.found")(function* found(
@@ -213,53 +220,106 @@ export class Articles extends Context.Service<
           : new UnknownMedia({ mediaIds: [notImage, ...others] });
       });
 
-      // Saves the article, stops the job of what it was, and starts the
-      // one of what it is when it waits to go out, in one transaction.
-      const saved = Effect.fn("Articles.saved")(function* saved(
+      // Whatever would send the article: refused while the workspace's
+      // posts wait for an approval, which articles have none of yet, and
+      // while it holds more than its plan allows.
+      const mayGoOut = Effect.fn("Articles.mayGoOut")(function* mayGoOut(
+        actor: Actor
+      ) {
+        const held = yield* gate.holds(actor);
+
+        yield* held
+          ? Effect.fail(
+              new ArticleRejected({
+                violations: [{ _tag: "approvalRequired" }],
+              })
+            )
+          : Effect.void;
+
+        return yield* withinPlan(actor.workspaceId).pipe(
+          Effect.provideService(PostAllowance, allowance)
+        );
+      });
+
+      // Saves the article over what it was, stops the job of what it was,
+      // and starts the one of what it is when it waits to go out, in the
+      // transaction around this.
+      const persisted = Effect.fn("Articles.persisted")(function* persisted(
         before: Option.Option<Article>,
         after: Article
       ) {
         const now = yield* DateTime.now;
 
-        return yield* transaction(
-          Effect.gen(function* savedInTransaction() {
-            yield* Option.match(before, {
-              onNone: () => store.insert(after),
-              onSome: () => store.update(after),
-            });
+        yield* Option.match(before, {
+          onNone: () => store.insert(after),
+          onSome: (earlier) =>
+            store
+              .update(after, earlier)
+              .pipe(
+                Effect.flatMap((saved) =>
+                  saved
+                    ? Effect.void
+                    : Effect.die("An article changed under its row lock")
+                )
+              ),
+        });
+
+        if (
+          Option.exists(
+            before,
+            (earlier) =>
+              earlier.state._tag === "scheduled" &&
+              (earlier.revision !== after.revision ||
+                earlier.round !== after.round)
+          )
+        ) {
+          yield* Option.match(before, {
+            onNone: () => Effect.void,
+            onSome: (earlier) => jobs.stop(jobOf(earlier)),
+          });
+        }
+
+        if (
+          after.state._tag === "scheduled" &&
+          !Option.exists(
+            before,
+            (earlier) =>
+              earlier.state._tag === "scheduled" &&
+              earlier.revision === after.revision &&
+              earlier.round === after.round
+          )
+        ) {
+          yield* jobs.start(jobOf(after), sendAt(after, now));
+        }
+
+        return after;
+      });
+
+      /**
+       * Changes the article as it is once its row is locked, not as it was
+       * read: a job that claimed it meanwhile, or another member's change,
+       * is seen, and the change is decided again on it.
+       */
+      const changing = <E, R>(
+        read: Article,
+        change: (current: Article) => Effect.Effect<Article, E, R>
+      ) =>
+        transaction(
+          Effect.gen(function* changingInTransaction() {
+            const locked = yield* store.lock(read.id);
 
             if (
-              Option.exists(
-                before,
-                (earlier) =>
-                  earlier.state._tag === "scheduled" &&
-                  (earlier.revision !== after.revision ||
-                    earlier.round !== after.round)
-              )
+              Option.isNone(locked) ||
+              locked.value.workspaceId !== read.workspaceId
             ) {
-              yield* Option.match(before, {
-                onNone: () => Effect.void,
-                onSome: (earlier) => jobs.stop(jobOf(earlier)),
-              });
+              return yield* new ArticleNotFound({ articleId: read.id });
             }
 
-            if (
-              after.state._tag === "scheduled" &&
-              !Option.exists(
-                before,
-                (earlier) =>
-                  earlier.state._tag === "scheduled" &&
-                  earlier.revision === after.revision &&
-                  earlier.round === after.round
-              )
-            ) {
-              yield* jobs.start(jobOf(after), sendAt(after, now));
-            }
+            const next = yield* change(locked.value);
 
-            return after;
+            return yield* persisted(locked, next);
           })
         );
-      });
 
       // The article goes out at `time`: what it says is checked as the
       // site would take it, and the time must not have passed.
@@ -293,6 +353,7 @@ export class Articles extends Context.Service<
 
         if (Option.isSome(time)) {
           yield* allowed(actor, "post:schedule");
+          yield* mayGoOut(actor);
         }
 
         const site = yield* sites.lookUp(actor, draft.channelId);
@@ -323,7 +384,7 @@ export class Articles extends Context.Service<
           onSome: (when) => scheduling(article, when),
         });
 
-        return yield* saved(Option.none(), placed);
+        return yield* transaction(persisted(Option.none(), placed));
       });
 
       const update = Effect.fn("Articles.update")(function* update(
@@ -337,18 +398,26 @@ export class Articles extends Context.Service<
 
         yield* checkMedia(actor, content);
 
-        const next = yield* Effect.fromResult(
-          edited(article, content, yield* DateTime.now)
+        return yield* changing(article, (current) =>
+          Effect.gen(function* edit() {
+            const now = yield* DateTime.now;
+
+            const next = yield* Effect.fromResult(
+              edited(current, content, now)
+            );
+
+            // A scheduled article goes out as it now says: checked again,
+            // as when it was scheduled, by someone who may send it.
+            if (next.state._tag === "scheduled") {
+              yield* mayGoOut(actor);
+              yield* rejected(
+                articleViolations(content, next.state.schedule, now)
+              );
+            }
+
+            return next;
+          })
         );
-
-        // A scheduled article is checked again, as when it was scheduled.
-        if (next.state._tag === "scheduled") {
-          yield* rejected(
-            articleViolations(content, next.state.schedule, yield* DateTime.now)
-          );
-        }
-
-        return yield* saved(Option.some(article), next);
       });
 
       const remove = Effect.fn("Articles.remove")(function* remove(
@@ -359,15 +428,21 @@ export class Articles extends Context.Service<
 
         const article = yield* found(actor, articleId);
 
-        yield* Effect.fromResult(deletable(article));
-
         yield* transaction(
           Effect.gen(function* removing() {
-            if (article.state._tag === "scheduled") {
-              yield* jobs.stop(jobOf(article));
+            const locked = yield* store.lock(article.id);
+
+            if (Option.isNone(locked)) {
+              return yield* new ArticleNotFound({ articleId });
             }
 
-            yield* store.remove(actor.workspaceId, article.id);
+            yield* Effect.fromResult(deletable(locked.value));
+
+            if (locked.value.state._tag === "scheduled") {
+              yield* jobs.stop(jobOf(locked.value));
+            }
+
+            return yield* store.remove(actor.workspaceId, article.id);
           })
         );
       });
@@ -378,12 +453,15 @@ export class Articles extends Context.Service<
         time: ArticleTime
       ) {
         yield* allowed(actor, "post:schedule");
+        yield* mayGoOut(actor);
 
         const article = yield* found(actor, articleId);
 
-        return yield* saved(
-          Option.some(article),
-          yield* scheduling(article, time)
+        return yield* changing(article, (current) =>
+          // The library may have lost a file since it was written.
+          checkMedia(actor, current.content).pipe(
+            Effect.andThen(scheduling(current, time))
+          )
         );
       });
 
@@ -395,11 +473,13 @@ export class Articles extends Context.Service<
 
         const article = yield* found(actor, articleId);
 
-        const next = yield* Effect.fromResult(
-          unscheduled(article, yield* DateTime.now)
+        return yield* changing(article, (current) =>
+          DateTime.now.pipe(
+            Effect.flatMap((now) =>
+              Effect.fromResult(unscheduled(current, now))
+            )
+          )
         );
-
-        return yield* saved(Option.some(article), next);
       });
 
       const retry = Effect.fn("Articles.retry")(function* retry(
@@ -407,18 +487,26 @@ export class Articles extends Context.Service<
         articleId: string
       ) {
         yield* allowed(actor, "post:schedule");
+        yield* mayGoOut(actor);
 
         const article = yield* found(actor, articleId);
-        const now = yield* DateTime.now;
-        const next = yield* Effect.fromResult(retried(article, now));
 
-        if (next.state._tag === "scheduled") {
-          yield* rejected(
-            articleViolations(next.content, next.state.schedule, now)
-          );
-        }
+        return yield* changing(article, (current) =>
+          Effect.gen(function* retrying() {
+            const now = yield* DateTime.now;
+            const next = yield* Effect.fromResult(retried(current, now));
 
-        return yield* saved(Option.some(article), next);
+            yield* checkMedia(actor, current.content);
+
+            if (next.state._tag === "scheduled") {
+              yield* rejected(
+                articleViolations(next.content, next.state.schedule, now)
+              );
+            }
+
+            return next;
+          })
+        );
       });
 
       // Saves what the site now has, on the article as it is by then.
@@ -437,7 +525,7 @@ export class Articles extends Context.Service<
 
             const next = change(current.value, now);
 
-            yield* store.update(next);
+            yield* persisted(current, next);
 
             return next;
           })
@@ -464,6 +552,9 @@ export class Articles extends Context.Service<
           content: ArticleContent
         ) {
           yield* allowed(actor, "post:publish");
+
+          // What it now says is public at once: refused as a send would be.
+          yield* mayGoOut(actor);
 
           const article = yield* found(actor, articleId);
 

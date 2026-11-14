@@ -4674,6 +4674,7 @@
         "termInvalid": "Une étiquette ou une catégorie est vide, ou trop longue.",
         "siteTimeInPast": "Pour que le site le publie à une heure, l’heure doit être à venir.",
         "timeInPast": "Cette heure est passée.",
+        "approvalRequired": "Vos publications doivent être approuvées ici, et les articles ne peuvent pas encore l’être : un membre dont les publications partent sans approbation l’envoie.",
         "coverNotImage": "L’image mise en avant doit être une image."
       },
       "errors": {
@@ -4683,6 +4684,7 @@
         "ChannelNotFound": "Ce site web n’est plus connecté.",
         "Forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
         "InvalidTimeZone": "Le fuseau horaire de votre navigateur n’est pas connu de Peal.",
+        "PlanLimitReached": "L’espace de travail a plus de canaux ou de membres que son offre n’en permet : rien ne part avant qu’il y revienne.",
         "PlatformUnreachable": "Le site n’a pas répondu. Réessayez dans un instant.",
         "UnknownMedia": "Une image n’est plus dans la bibliothèque, ou n’est pas prête.",
         "unknown": "Un problème est survenu. Réessayez."

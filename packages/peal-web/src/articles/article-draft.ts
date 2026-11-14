@@ -133,6 +133,7 @@ export const ArticleErrorTagSchema = Schema.Literals([
   "ChannelNotFound",
   "Forbidden",
   "InvalidTimeZone",
+  "PlanLimitReached",
   "PlatformUnreachable",
   "UnknownMedia",
 ]);

@@ -182,6 +182,15 @@ const bodyOf =
 
 const postFieldsOf = bodyOf(PostFieldsSchema, {});
 
+// A term's name as WordPress stores and answers it: `&`, `<` and `>`
+// encoded (`_wp_specialchars` on `pre_term_name`), an entity already
+// written left as it is.
+const storedTermName = (name: string) =>
+  name
+    .replaceAll(/&(?!(?:amp|lt|gt|quot|#\d+);)/gu, "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
 const termFieldsOf = bodyOf(TermFieldsSchema, {});
 
 const send = (response: ServerResponse, answer: FakeWordPressAnswer) => {
@@ -238,6 +247,7 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
         user: FakeWordPressUser | undefined
       ): FakeWordPressAnswer => {
         if (request.method === "GET") {
+          // A `LIKE` on the name as stored, whatever was searched for.
           const search = (request.query.get("search") ?? "").toLowerCase();
 
           return {
@@ -268,10 +278,27 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
           );
         }
 
-        nextId += 1;
-        terms.set(nextId, name);
+        const stored = storedTermName(name);
 
-        return { body: { id: nextId, name }, status: 201 };
+        const existing = [...terms].find(
+          ([, known]) => known.toLowerCase() === stored.toLowerCase()
+        );
+
+        if (existing !== undefined) {
+          return {
+            body: {
+              code: "term_exists",
+              data: { status: 400, term_id: existing[0] },
+              message: "A term with the name provided already exists.",
+            },
+            status: 400,
+          };
+        }
+
+        nextId += 1;
+        terms.set(nextId, stored);
+
+        return { body: { id: nextId, name: stored }, status: 201 };
       };
 
       const createPost = (
@@ -591,7 +618,7 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
       const fake: FakeWordPress = {
         addCategory: (name) => {
           nextId += 1;
-          categories.set(nextId, name);
+          categories.set(nextId, storedTermName(name));
 
           return nextId;
         },

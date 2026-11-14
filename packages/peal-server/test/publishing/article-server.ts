@@ -10,9 +10,13 @@ import { PlatformAuthorizers } from "#channels/application/platform-authorizer.t
 import { connectChannel } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
+import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { ArticleEvents } from "#publishing/application/article-events.ts";
 import { ArticleRecords } from "#publishing/application/article-records.ts";
+import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
+import { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import { ChannelAccessSiteCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import {
@@ -23,7 +27,9 @@ import { ListedSiteChannels } from "#publishing/infrastructure/listed-site-chann
 import { WordPressSitePublisherLive } from "#publishing/infrastructure/platforms/wordpress/wordpress-articles.ts";
 import { WorkflowArticleJobs } from "#publishing/infrastructure/workflow-article-jobs.ts";
 import { PublishArticleV1Live } from "#publishing/infrastructure/workflows/publish-article.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
+import { can } from "#shared/domain/access.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -62,6 +68,97 @@ const RecordedArticleEvents = Layer.succeed(
   })
 );
 
+/** The files of the library deleted since the test began. */
+export const deletedMedia = Ref.makeUnsafe<ReadonlySet<string>>(new Set());
+
+// The library articles show files from: both images, but those deleted.
+const LibraryTest = Layer.effect(
+  AttachableMedia,
+  Effect.gen(function* LibraryTest() {
+    const library = yield* AttachableMedia;
+
+    return AttachableMedia.of({
+      lookUp: (actor, requested) =>
+        Effect.all([
+          library.lookUp(actor, requested),
+          Ref.get(deletedMedia),
+        ]).pipe(
+          Effect.map(([files, deleted]) =>
+            files.filter(({ mediaId }) => !deleted.has(mediaId))
+          )
+        ),
+    });
+  })
+).pipe(
+  Layer.provide(
+    attachableMedia([
+      mediaFile(coverImage.media.mediaId),
+      mediaFile(bodyImage.media.mediaId),
+    ])
+  )
+);
+
+/** Whether the workspace's posts wait for an approval, whoever asks. */
+export const approvalsHeld = Ref.makeUnsafe(false);
+
+// The workspace's approval setting, as the test sets it.
+const ApprovalGateTest = Layer.succeed(
+  ApprovalGate,
+  ApprovalGate.of({
+    admit: () => Effect.succeed("admitted"),
+    approved: () => Effect.succeed(false),
+    follow: () => Effect.void,
+    forgotten: () => Effect.void,
+    holds: () => Ref.get(approvalsHeld),
+    maySubmit: (actor) => Effect.succeed(can(actor, "post:schedule")),
+    withdrawn: () => Effect.void,
+  })
+);
+
+/** The channels the plan allows, none for no limit, and those connected. */
+export const planChannels = Ref.makeUnsafe<{
+  readonly allowed: Option.Option<number>;
+  readonly connected: number;
+}>({ allowed: Option.none(), connected: 1 });
+
+const PostAllowanceTest = Layer.succeed(
+  PostAllowance,
+  PostAllowance.of({
+    channels: () => Ref.get(planChannels),
+    members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+    scheduledPerMonth: () => Effect.succeed(Option.none()),
+  })
+);
+
+/**
+ * What runs once a use case read an article, before it saves it: a job
+ * that claims it meanwhile, as a test needs.
+ */
+export const afterArticleRead = Ref.makeUnsafe<
+  Effect.Effect<void, DatabaseError>
+>(Effect.void);
+
+// The store, running `afterArticleRead` after each read of a workspace's
+// article, once.
+const HookedArticleStore = Layer.effect(
+  ArticleStore,
+  Effect.gen(function* HookedArticleStore() {
+    const store = yield* ArticleStore;
+
+    return ArticleStore.of({
+      ...store,
+      ofWorkspace: (workspaceId, articleId) =>
+        store
+          .ofWorkspace(workspaceId, articleId)
+          .pipe(
+            Effect.tap(() =>
+              Ref.getAndSet(afterArticleRead, Effect.void).pipe(Effect.flatten)
+            )
+          ),
+    });
+  })
+).pipe(Layer.provide(DrizzleArticleStore));
+
 // The site's credential, as the channels context hands it out, with no
 // authorizer: a refused one marks the channel to reconnect.
 const SiteAccessTest = ChannelAccessSiteCredentials.pipe(
@@ -92,14 +189,13 @@ export const ArticleServerTest = Layer.mergeAll(
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(
-      DrizzleArticleStore,
+      HookedArticleStore,
+      ApprovalGateTest,
+      PostAllowanceTest,
       DrizzleArticleJournal,
       WorkflowArticleJobs,
       ListedSiteChannels,
-      attachableMedia([
-        mediaFile(coverImage.media.mediaId),
-        mediaFile(bodyImage.media.mediaId),
-      ]),
+      LibraryTest,
       RecordedArticleEvents,
       SitePublisherTest
     )

@@ -4674,6 +4674,7 @@
         "termInvalid": "A tag or a category is empty, or too long.",
         "siteTimeInPast": "For the site to publish it at a time, the time must be ahead.",
         "timeInPast": "That time has passed.",
+        "approvalRequired": "Your posts need an approval here, and articles cannot be approved yet: someone whose posts go out without one sends it.",
         "coverNotImage": "The featured image must be an image."
       },
       "errors": {
@@ -4683,6 +4684,7 @@
         "ChannelNotFound": "This website is no longer connected.",
         "Forbidden": "You may not do this in this workspace.",
         "InvalidTimeZone": "Your browser’s time zone is not one Peal knows.",
+        "PlanLimitReached": "The workspace holds more channels or members than its plan allows: nothing goes out until it is back within it.",
         "PlatformUnreachable": "The site did not answer. Try again in a moment.",
         "UnknownMedia": "An image is no longer in the library, or not ready.",
         "unknown": "Something went wrong. Try again."

@@ -2,6 +2,7 @@ import { DateTime, Effect, Option, Schedule, Schema } from "effect";
 
 import type { ArticleId } from "#publishing/domain/article-id.ts";
 import { claimed, settled } from "#publishing/domain/article.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { decide } from "#publishing/domain/publication-policy.ts";
 import type {
   AttemptOutcome,
@@ -9,12 +10,15 @@ import type {
 } from "#publishing/domain/publication-policy.ts";
 import type { TargetSettlement } from "#publishing/domain/target-settlement.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 
 import { ArticleEvents } from "./article-events.ts";
 import type { ArticleJob } from "./article-jobs.ts";
 import { ArticleJournal } from "./article-journal.ts";
 import { ArticleStore } from "./article-store.ts";
 import { SitePublisher } from "./site-publisher.ts";
+import type { SitePublishRequest } from "./site-publisher.ts";
+import { withinPlan } from "./within-plan.ts";
 
 // The steps of the job that sends an article (`PublishArticleV1`): claim
 // it, make attempts until one settles it, record how it ended. Their
@@ -42,6 +46,14 @@ export const ArticleOutcomeSchema = Schema.Literals([
 
 export type ArticleOutcome = typeof ArticleOutcomeSchema.Type;
 
+// A write under the article's row lock: it cannot miss.
+const written = <E, R>(update: Effect.Effect<boolean, E, R>) =>
+  update.pipe(
+    Effect.flatMap((saved) =>
+      saved ? Effect.void : Effect.die("An article changed under its row lock")
+    )
+  );
+
 /** Takes the article to send it, in a transaction, or says why not. */
 export const claimArticleRun = Effect.fn("Articles.claimRun")(
   function* claimArticleRun(job: ArticleJob, dueAt: DateTime.Utc) {
@@ -65,7 +77,7 @@ export const claimArticleRun = Effect.fn("Articles.claimRun")(
           return claim._tag;
         }
 
-        yield* store.update(claim.article);
+        yield* written(store.update(claim.article, locked.value));
 
         if (claim._tag === "missed") {
           yield* events.failed(claim.article);
@@ -90,6 +102,11 @@ const adapterFailed: AttemptOutcome = {
   reason: "adapterFailure",
 };
 
+// The workspace holds more channels or members than its plan allows.
+const planRefusal: AttemptOutcome = new BadRequest({
+  code: ownRefusalCodes.planLimit,
+});
+
 /** One attempt at sending the article in its round. */
 export interface ArticleAttempt {
   readonly articleId: ArticleId;
@@ -113,8 +130,10 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
     const publisher = yield* SitePublisher;
     const store = yield* ArticleStore;
 
+    const article = yield* store.get(attempt.articleId);
+
     // Deleted while the job waited: nothing is sent.
-    if (Option.isNone(yield* store.get(attempt.articleId))) {
+    if (Option.isNone(article)) {
       const gone: PublicationDecision = {
         _tag: "settle",
         settlement: { _tag: "cancelled" },
@@ -125,6 +144,20 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
 
     const now = yield* DateTime.now;
 
+    // A workspace over its plan sends nothing, as its posts do not.
+    const overPlan = yield* withinPlan(article.value.workspaceId).pipe(
+      Effect.as(false),
+      Effect.catchTag("PlanLimitReached", () => Effect.succeed(true))
+    );
+
+    if (overPlan) {
+      return decide(planRefusal, {
+        earlier: { rateLimited: 0, unavailable: 0 },
+        sinceScheduled: DateTime.distance(attempt.dueAt, now),
+        startedAt: now,
+      });
+    }
+
     const start = yield* journal.begin({
       articleId: attempt.articleId,
       attempt: attempt.attempt,
@@ -133,12 +166,20 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       startedAt: now,
     });
 
-    const startedAt = start._tag === "started" ? now : start.startedAt;
+    // A run that stopped before the call that makes the post makes the
+    // attempt again, from now: nothing of it reached the site.
+    const startedAt =
+      start._tag === "started" || start._tag === "prepared"
+        ? now
+        : start.startedAt;
 
-    const request = {
+    const request: SitePublishRequest = {
       articleId: attempt.articleId,
+      committing: DateTime.now.pipe(
+        Effect.tap((at) => journal.committing(attempt.idempotencyKey, at))
+      ),
       idempotencyKey: attempt.idempotencyKey,
-      startedAt,
+      startedAt: start._tag === "inFlight" ? start.committedAt : startedAt,
     };
 
     const { finishedAt, outcome } =
@@ -203,7 +244,7 @@ export const settleArticleRun = Effect.fn("Articles.settleRun")(
 
         const next = settled(article, settlement, yield* DateTime.now);
 
-        yield* store.update(next);
+        yield* written(store.update(next, article));
 
         const { state } = next;
 

@@ -8,7 +8,7 @@ import { SiteCredentials } from "#publishing/application/site-credentials.ts";
 import type { SiteToken } from "#publishing/application/site-credentials.ts";
 import { SitePublisher } from "#publishing/application/site-publisher.ts";
 import type { SitePublishRequest } from "#publishing/application/site-publisher.ts";
-import { articleHtml } from "#publishing/domain/article-html.ts";
+import { articleHtml, escapeHtml } from "#publishing/domain/article-html.ts";
 import { articleMediaOf } from "#publishing/domain/article.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
@@ -82,6 +82,27 @@ const MediaSchema = Schema.Struct({
 });
 
 const TermSchema = Schema.Struct({ id: Schema.Number, name: Schema.String });
+
+// The answer to a term made twice: the one the site has, by its id.
+const TermExistsSchema = Schema.Struct({
+  code: Schema.Literal("term_exists"),
+  data: Schema.Struct({ term_id: Schema.Number }),
+});
+
+// A term's name as WordPress answers it, read back: it encodes `&`, `<`
+// and `>` (`_wp_specialchars` on `pre_term_name`), and quotes where a
+// plugin escapes more; `&amp;` last, so `&amp;lt;` stays `&lt;`.
+const decodedName = (name: string) =>
+  name
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#039;", "'")
+    .replaceAll("&amp;", "&");
+
+/** Whether the site's term is the one named, whatever its case. */
+const sameTerm = (stored: string, wanted: string) =>
+  decodedName(stored).trim().toLowerCase() === wanted.toLowerCase();
 
 const MeSchema = Schema.Struct({ id: Schema.Number });
 
@@ -176,6 +197,14 @@ interface PostFields {
   readonly tags: readonly number[];
   readonly title: string;
 }
+
+/**
+ * The title as the site keeps it: plain text, escaped, for WordPress
+ * takes a title as HTML and keeps it unfiltered for a user who may post
+ * any HTML.
+ */
+const siteTitle = (article: Article) =>
+  escapeHtml(article.content.title.trim());
 
 const signed = (
   token: SiteToken,
@@ -287,9 +316,8 @@ export const WordPressSitePublisherLive = Layer.effect(
           )
         ).pipe(Effect.flatMap(sentJson(Schema.Array(TermSchema), [200])));
 
-        const same = found.find(
-          (term) => term.name.toLowerCase() === wanted.toLowerCase()
-        );
+        // WordPress answers the name as it stores it, `&` as `&amp;`.
+        const same = found.find((term) => sameTerm(term.name, wanted));
 
         if (same !== undefined) {
           ids.push(same.id);
@@ -304,7 +332,20 @@ export const WordPressSitePublisherLive = Layer.effect(
               routeUrl(token.root, `/wp/v2/${taxonomy}`)
             ).pipe(HttpClientRequest.bodyJsonUnsafe({ name: wanted }))
           )
-        ).pipe(Effect.flatMap(sentJson(TermSchema, [200, 201])));
+        ).pipe(
+          // A 400 may be the site having it under a name its search did
+          // not match: `term_exists` says which.
+          Effect.flatMap((response) =>
+            response.status === 400
+              ? HttpClientResponse.schemaBodyJson(TermExistsSchema)(
+                  response
+                ).pipe(
+                  Effect.map(({ data }) => ({ id: data.term_id })),
+                  Effect.catch(() => refusalOf(response))
+                )
+              : sentJson(TermSchema, [200, 201])(response)
+          )
+        );
 
         ids.push(made.id);
       }
@@ -336,9 +377,11 @@ export const WordPressSitePublisherLive = Layer.effect(
         categories: yield* termIds(token, "categories", content.categories),
         content: articleHtml(content.body, images),
         tags: yield* termIds(token, "tags", content.tags),
-        excerpt: Option.getOrUndefined(content.excerpt),
+        excerpt: Option.getOrUndefined(
+          content.excerpt.pipe(Option.map(escapeHtml))
+        ),
         featured_media: featured,
-        title: content.title.trim(),
+        title: siteTitle(article),
       };
 
       if (!withStatus) {
@@ -376,7 +419,7 @@ export const WordPressSitePublisherLive = Layer.effect(
         )
       ).pipe(Effect.flatMap(sentJson(MeSchema, [200])));
 
-      const title = article.content.title.trim();
+      const title = siteTitle(article);
 
       const posts = yield* execute(
         api,

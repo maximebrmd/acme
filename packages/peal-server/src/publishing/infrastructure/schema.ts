@@ -734,7 +734,9 @@ export const channelDefaults = publishing.table(
  * schedule, for the queries. `revision` changes with every schedule and
  * `round` with every new try, which the job's key holds. `author_id` is
  * the member who made it (a Better Auth user id), null for an API key.
- * Rows go with their workspace.
+ * `media_ids` lists the library's files it shows, its cover and the
+ * body's images, for the library's check before it deletes one. Rows go
+ * with their workspace.
  */
 export const articles = publishing.table(
   "articles",
@@ -747,6 +749,10 @@ export const articles = publishing.table(
     createdAt: instant("created_at").notNull(),
     excerpt: text("excerpt"),
     id: uuid("id").primaryKey(),
+    mediaIds: uuid("media_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
     revision: integer("revision").notNull().default(0),
     round: integer("round").notNull().default(0),
     scheduleZone: text("schedule_zone"),
@@ -766,6 +772,10 @@ export const articles = publishing.table(
     index("articles_scheduled")
       .on(table.scheduledAt)
       .where(sql`${table.status} = 'scheduled'`),
+    // A channel's articles: the posts they made on its site.
+    index("articles_channel").on(table.channelId),
+    // The articles that show a file of the library.
+    index("articles_media").using("gin", table.mediaIds),
   ]
 );
 
@@ -775,8 +785,10 @@ export const articles = publishing.table(
  * before the call; `finished_at` and `outcome` (the domain's
  * `AttemptOutcome` JSON) once the site answered. A row with no
  * `finished_at` is a call whose fate is unknown, which a later run looks
- * for on the site rather than send again. One row per attempt in a round.
- * Ids and codes only, never content. Rows go with their article.
+ * for on the site rather than send again. `committed_at` is written just
+ * before the call that makes the post: a row without it never reached
+ * the site, and its attempt is made again. One row per attempt in a
+ * round. Ids and codes only, never content. Rows go with their article.
  */
 export const articleCalls = publishing.table(
   "article_calls",
@@ -785,6 +797,7 @@ export const articleCalls = publishing.table(
       .notNull()
       .references(() => articles.id, { onDelete: "cascade" }),
     attempt: integer("attempt").notNull(),
+    committedAt: instant("committed_at"),
     finishedAt: instant("finished_at"),
     idempotencyKey: text("idempotency_key").primaryKey(),
     outcome: jsonb("outcome"),
@@ -798,4 +811,22 @@ export const articleCalls = publishing.table(
       table.attempt
     ),
   ]
+);
+
+/**
+ * The files an article sent to its site: the site's id and address for
+ * each of the library's files, so a later attempt, or an update, sends
+ * none twice. Rows go with their article.
+ */
+export const articleFiles = publishing.table(
+  "article_files",
+  {
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id, { onDelete: "cascade" }),
+    mediaId: uuid("media_id").notNull(),
+    siteMediaId: bigint("site_media_id", { mode: "number" }).notNull(),
+    sourceUrl: text("source_url").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.articleId, table.mediaId] })]
 );

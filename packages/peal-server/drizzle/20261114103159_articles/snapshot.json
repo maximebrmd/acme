@@ -2,9 +2,9 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "8a87ad23-c429-4050-893c-a825ff8e620f",
+  "id": "26694211-7354-4714-b162-06efd38a33f8",
   "prevIds": [
-    "7b424f22-c558-4926-a75d-e06eaaabb3b5"
+    "0f406c84-447d-45d0-ac3f-0a9933564aba"
   ],
   "footprints": [
     {
@@ -22,6 +22,25 @@
         "n|type|publishing.article_calls",
         "n|rel|publishing.article_calls_pkey",
         "n|rel|publishing.article_calls_article_round_attempt"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "article_files"
+      ],
+      "writes": [
+        "s|tbl|publishing.article_files",
+        "n|tbl|publishing.article_files",
+        "e|tbl|publishing.article_files",
+        "n|rel|publishing.article_files",
+        "n|type|publishing.article_files",
+        "n|rel|publishing.article_files_pkey"
       ],
       "reads": [
         "n|sch|publishing"
@@ -88,6 +107,46 @@
       ]
     },
     {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "articles",
+        "articles_channel"
+      ],
+      "writes": [
+        "s|idx|publishing.articles_channel",
+        "n|idx|publishing.articles_channel",
+        "e|idx|publishing.articles_channel",
+        "n|rel|publishing.articles_channel"
+      ],
+      "reads": [
+        "n|tbl|publishing.articles",
+        "n|sch|publishing",
+        "n|col|publishing.articles.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "articles",
+        "articles_media"
+      ],
+      "writes": [
+        "s|idx|publishing.articles_media",
+        "n|idx|publishing.articles_media",
+        "e|idx|publishing.articles_media",
+        "n|rel|publishing.articles_media"
+      ],
+      "reads": [
+        "n|tbl|publishing.articles",
+        "n|sch|publishing",
+        "n|col|publishing.articles.media_ids"
+      ]
+    },
+    {
       "statementType": "create_fk",
       "statementTarget": [
         "table",
@@ -109,6 +168,29 @@
         "n|col|publishing.articles.id",
         "e|uniqueness|publishing.articles.id"
       ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "article_files"
+      ],
+      "writes": [
+        "s|fk|publishing.article_files.article_files_article_id_articles_id_fkey",
+        "n|fk|publishing.article_files.article_files_article_id_articles_id_fkey",
+        "e|fk|publishing.article_files.article_files_article_id_articles_id_fkey",
+        "n|con|publishing.article_files.article_files_article_id_articles_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.article_files",
+        "n|sch|publishing",
+        "n|tbl|publishing.articles",
+        "n|sch|publishing",
+        "n|col|publishing.article_files.article_id",
+        "n|col|publishing.articles.id",
+        "e|uniqueness|publishing.articles.id"
+      ]
     }
   ],
   "deltas": [
@@ -117,6 +199,15 @@
       "row": {
         "schema": "publishing",
         "name": "article_calls",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "name": "article_files",
         "isRlsEnabled": false,
         "entityType": "tables"
       }
@@ -155,6 +246,22 @@
         "type": "integer",
         "typeSchema": null,
         "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_calls",
+        "name": "committed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
         "dimensions": 0,
         "default": null,
         "generated": null,
@@ -233,6 +340,70 @@
         "table": "article_calls",
         "name": "started_at",
         "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "article_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "media_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "site_media_id",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "source_url",
+        "type": "text",
         "typeSchema": null,
         "notNull": true,
         "dimensions": 0,
@@ -365,6 +536,22 @@
         "notNull": true,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "articles",
+        "name": "media_ids",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 1,
+        "default": "'{}'",
         "generated": null,
         "identity": null,
         "entityType": "columns"
@@ -605,6 +792,54 @@
       "op": "create",
       "row": {
         "schema": "publishing",
+        "table": "articles",
+        "name": "articles_channel",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "channel_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "articles",
+        "name": "articles_media",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "media_ids",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gin",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
         "table": "article_calls",
         "name": "article_calls_article_id_articles_id_fkey",
         "nameExplicit": false,
@@ -619,6 +854,40 @@
         "onUpdate": "NO ACTION",
         "onDelete": "CASCADE",
         "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "article_files_article_id_articles_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "article_id"
+        ],
+        "schemaTo": "publishing",
+        "tableTo": "articles",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "article_files",
+        "name": "article_files_pkey",
+        "columns": [
+          "article_id",
+          "media_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
       }
     },
     {

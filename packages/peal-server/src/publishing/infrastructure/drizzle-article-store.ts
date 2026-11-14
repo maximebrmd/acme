@@ -10,7 +10,11 @@ import {
   SiteStatusSchema,
 } from "#publishing/domain/article-content.ts";
 import { ArticleIdSchema } from "#publishing/domain/article-id.ts";
-import { Article, ArticleStateSchema } from "#publishing/domain/article.ts";
+import {
+  Article,
+  ArticleStateSchema,
+  articleMediaOf,
+} from "#publishing/domain/article.ts";
 import {
   AttemptOutcomeSchema,
   earlierRefusalsOf,
@@ -22,9 +26,10 @@ import {
   UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
+import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { articleCalls, articles } from "./schema.ts";
+import { articleCalls, articleFiles, articles } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -64,6 +69,8 @@ const encodeBody = Schema.encodeEffect(BodyJson);
 const encodeOutcome = Schema.encodeEffect(OutcomeJson);
 
 const decodeOutcome = Schema.decodeUnknownEffect(OutcomeJson);
+
+const decodeMediaId = Schema.decodeUnknownEffect(MediaAssetIdSchema);
 
 type Row = typeof articles.$inferSelect;
 
@@ -109,6 +116,7 @@ const rowOf = Effect.fnUntraced(function* rowOf(article: Article) {
     createdAt: date(article.createdAt),
     excerpt: Option.getOrNull(content.excerpt),
     id: article.id,
+    mediaIds: [...new Set(articleMediaOf(content))],
     revision: article.revision,
     round: article.round,
     scheduleZone: schedule?.timeZone ?? null,
@@ -128,6 +136,13 @@ const one = (rows: readonly Row[]) =>
   rows[0] === undefined
     ? Effect.succeed(Option.none<Article>())
     : articleOf(rows[0]).pipe(Effect.map(Option.some));
+
+// The workspace's articles that show the file.
+const showingMedia = (workspaceId: WorkspaceId, mediaId: MediaAssetId) =>
+  and(
+    eq(articles.workspaceId, workspaceId),
+    sql`${articles.mediaIds} @> ARRAY[${mediaId}]::uuid[]`
+  );
 
 /** ArticleStore on `publishing.articles`. */
 export const DrizzleArticleStore = Layer.effect(
@@ -253,7 +268,26 @@ export const DrizzleArticleStore = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length > 0)
           ),
-      update: Effect.fn("ArticleStore.update")(function* update(article) {
+      lockShowing: (workspaceId, mediaId) =>
+        db
+          .select()
+          .from(articles)
+          .where(showingMedia(workspaceId, mediaId))
+          .for("update")
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(Effect.forEach((row: Row) => articleOf(row)))
+          ),
+      showing: (workspaceId, mediaId) =>
+        db
+          .select()
+          .from(articles)
+          .where(showingMedia(workspaceId, mediaId))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(Effect.forEach((row: Row) => articleOf(row)))
+          ),
+      update: Effect.fn("ArticleStore.update")(function* update(article, from) {
         const {
           createdAt: _created,
           id,
@@ -261,11 +295,19 @@ export const DrizzleArticleStore = Layer.effect(
           ...changed
         } = yield* rowOf(article);
 
+        // Only over the article as it was read: its state, revision and
+        // round.
         const rows = yield* db
           .update(articles)
           .set(changed)
           .where(
-            and(eq(articles.id, id), eq(articles.workspaceId, workspaceId))
+            and(
+              eq(articles.id, id),
+              eq(articles.workspaceId, workspaceId),
+              eq(articles.status, from.state._tag),
+              eq(articles.revision, from.revision),
+              eq(articles.round, from.round)
+            )
           )
           .returning({ id: articles.id })
           .pipe(Effect.mapError(failed));
@@ -282,8 +324,21 @@ const callStartOf = (row: CallRow) =>
   Effect.gen(function* decodingCall() {
     const startedAt = utc(row.startedAt);
 
+    if (
+      (row.finishedAt === null || row.outcome === null) &&
+      row.committedAt === null
+    ) {
+      const prepared: ArticleCallStart = { _tag: "prepared", startedAt };
+
+      return prepared;
+    }
+
     if (row.finishedAt === null || row.outcome === null) {
-      const inFlight: ArticleCallStart = { _tag: "inFlight", startedAt };
+      const inFlight: ArticleCallStart = {
+        _tag: "inFlight",
+        committedAt: utc(row.committedAt ?? row.startedAt),
+        startedAt,
+      };
 
       return inFlight;
     }
@@ -342,6 +397,49 @@ export const DrizzleArticleJournal = Layer.effect(
           ? yield* Effect.die("A journal row vanished after a conflict")
           : yield* callStartOf(row);
       }),
+      committing: (idempotencyKey, at) =>
+        db
+          .update(articleCalls)
+          .set({ committedAt: date(at) })
+          .where(eq(articleCalls.idempotencyKey, idempotencyKey))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      fileSent: (articleId, mediaId, file) =>
+        db
+          .insert(articleFiles)
+          .values({
+            articleId,
+            mediaId,
+            siteMediaId: file.id,
+            sourceUrl: file.sourceUrl,
+          })
+          .onConflictDoUpdate({
+            set: { siteMediaId: file.id, sourceUrl: file.sourceUrl },
+            target: [articleFiles.articleId, articleFiles.mediaId],
+          })
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      filesSent: (articleId) =>
+        db
+          .select()
+          .from(articleFiles)
+          .where(eq(articleFiles.articleId, articleId))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(
+              Effect.forEach((row) =>
+                decodeMediaId(row.mediaId).pipe(
+                  Effect.orDie,
+                  Effect.map(
+                    (mediaId) =>
+                      [
+                        mediaId,
+                        { id: row.siteMediaId, sourceUrl: row.sourceUrl },
+                      ] as const
+                  )
+                )
+              )
+            ),
+            Effect.map((entries) => new Map(entries))
+          ),
       earlierRefusals: (call) =>
         db
           .select({ outcome: articleCalls.outcome })

@@ -655,9 +655,10 @@ const SitePublisherLive = WordPressSitePublisherLive.pipe(
 /**
  * The articles' use cases (`Articles`), for the handlers: on the channels
  * of websites the channels context lists, with the media its library
- * holds, sent by `PublishArticleV1` jobs. Needs the database, the
- * workflow engine, a TransactionRunner, Ids, Dns, ListChannels,
- * ChannelAccess, MediaLibrary and MediaForPlatforms.
+ * holds, sent by `PublishArticleV1` jobs, within the workspace's plan.
+ * Needs the database, the workflow engine, a TransactionRunner, Ids, Dns,
+ * ListChannels, ChannelAccess, MediaLibrary, MediaForPlatforms, the
+ * billing context's entitlements and the ApprovalGate.
  */
 export const ArticlesLive = Layer.merge(
   Articles.layer,
@@ -670,6 +671,7 @@ export const ArticlesLive = Layer.merge(
       WorkflowArticleJobs,
       ListedSiteChannels,
       LibraryAttachableMedia,
+      PlanPostAllowanceLive,
       SitePublisherLive
     )
   )
@@ -686,6 +688,7 @@ export const ArticleWorkersLive = PublishArticleV1Live.pipe(
       DrizzleArticleStore,
       DrizzleArticleJournal,
       WebhookArticleEvents,
+      PlanPostAllowanceLive,
       SitePublisherLive
     )
   )

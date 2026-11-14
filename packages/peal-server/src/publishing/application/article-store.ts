@@ -5,7 +5,12 @@ import type { ArticleId } from "#publishing/domain/article-id.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import type { ArticleStateName } from "#publishing/domain/invalid-article-transition.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  MediaAssetId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
 /** Which of a workspace's articles to list, and which page of them. */
 export interface ArticlePageRequest {
@@ -31,10 +36,29 @@ export class ArticleStore extends Context.Service<
   ArticleStore,
   {
     readonly insert: (article: Article) => Effect.Effect<void, DatabaseError>;
-    /** Saves a changed article: whether it was still there. */
+    /**
+     * Saves a changed article over the one it was changed from: whether
+     * the article was still that one (its state, revision and round), so
+     * nothing written meanwhile is overwritten.
+     */
     readonly update: (
-      article: Article
+      article: Article,
+      from: Article
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * The workspace's articles that show the library's file, held until
+     * the transaction around this ends: for the library's check before it
+     * deletes it.
+     */
+    readonly lockShowing: (
+      workspaceId: WorkspaceId,
+      mediaId: MediaAssetId
+    ) => Effect.Effect<readonly Article[], DatabaseError>;
+    /** The workspace's articles that show the library's file. */
+    readonly showing: (
+      workspaceId: WorkspaceId,
+      mediaId: MediaAssetId
+    ) => Effect.Effect<readonly Article[], DatabaseError>;
     readonly ofWorkspace: (
       workspaceId: WorkspaceId,
       articleId: ArticleId

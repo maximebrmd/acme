@@ -7,123 +7,26 @@ import { Buffer } from "node:buffer";
 // reconnect; once there, it is updated in place, or moved to the trash.
 import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Option, Ref } from "effect";
-import type { Layer, Scope } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
-import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
-import { ArticleContent } from "#publishing/domain/article-content.ts";
-import type { Article } from "#publishing/domain/article.ts";
-import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
-import type { FakeWordPressOptions } from "#test/channels/fakes/fake-wordpress.ts";
-import { actorIn, freshWorkspace } from "#test/channels/support.ts";
+import { freshWorkspace } from "#test/channels/support.ts";
 import {
-  ArticleServerTest,
   bodyImage,
   coverImage,
   siteChannel,
   toldArticles,
 } from "#test/publishing/article-server.ts";
 import {
-  eventually,
-  setTime,
-} from "#test/publishing/infrastructure/harness.ts";
-
-const zone = TimeZoneIdSchema.make("Europe/Paris");
-
-const content = (fields: Partial<ArticleContent> = {}) =>
-  new ArticleContent({
-    body: {
-      content: [
-        {
-          attrs: { level: 2 },
-          content: [{ text: "Sow early", type: "text" }],
-          type: "heading",
-        },
-        {
-          content: [{ text: "Peas & beans <first>.", type: "text" }],
-          type: "paragraph",
-        },
-        {
-          attrs: { alt: "A row of peas", mediaId: bodyImage.media.mediaId },
-          type: "image",
-        },
-      ],
-      type: "doc",
-    },
-    categories: ["Uncategorized", "Vegetables"],
-    coverMediaId: Option.some(coverImage.media.mediaId),
-    excerpt: Option.some("What to sow first."),
-    siteStatus: "publish",
-    tags: ["peas", "spring"],
-    title: "Spring sowing",
-    ...fields,
-  });
-
-const writer = (workspaceId: Parameters<typeof actorIn>[0]) =>
-  actorIn(workspaceId, [
-    "channel:read",
-    "post:read",
-    "post:create",
-    "post:update",
-    "post:delete",
-    "post:schedule",
-    "post:publish",
-  ]);
-
-// The article, scheduled now on a fresh site's channel, once its job ended.
-const sentTo = Effect.fn("test.sentTo")(function* sentTo(
-  options: FakeWordPressOptions = {},
-  fields: Partial<ArticleContent> = {},
-  password?: string
-) {
-  const site = yield* fakeWordPress(options);
-  const workspaceId = yield* freshWorkspace;
-  const channel = yield* siteChannel(workspaceId, site, password);
-  const articles = yield* Articles;
-  const actor = writer(workspaceId);
-
-  const article = yield* articles.create(
-    actor,
-    { channelId: channel.id, content: content(fields) },
-    Option.some({ at: Option.none(), timeZone: zone })
-  );
-
-  yield* eventually(
-    "the article is sent",
-    ArticleStore.use((store) => store.get(article.id)).pipe(
-      Effect.map((found) =>
-        Option.exists(
-          found,
-          ({ state }) =>
-            state._tag !== "scheduled" && state._tag !== "publishing"
-        )
-      )
-    )
-  );
-
-  const sent = yield* ArticleStore.use((store) => store.get(article.id)).pipe(
-    Effect.map(Option.getOrThrow)
-  );
-
-  return { actor, channelId: channel.id, sent, site, workspaceId };
-});
-
-const stateOf = (article: Article) => article.state._tag;
-
-// Runs the test on a fresh server, built once the clock is set: built at
-// the epoch, the cluster's timers would replay every second up to it.
-const onArticles = <A, E>(
-  test: Effect.Effect<
-    A,
-    E,
-    Layer.Success<typeof ArticleServerTest> | Scope.Scope
-  >
-) =>
-  setTime("2026-06-15T07:00:00Z").pipe(
-    Effect.andThen(test.pipe(Effect.scoped, Effect.provide(ArticleServerTest)))
-  );
+  content,
+  onArticles,
+  sentTo,
+  stateOf,
+  writer,
+  zone,
+} from "#test/publishing/article-support.ts";
+import { eventually } from "#test/publishing/infrastructure/harness.ts";
 
 describe("an article", () => {
   it.effect("goes to its site once: files, terms, then the post", () =>
@@ -375,5 +278,86 @@ describe("an article", () => {
         assert.strictEqual(refused._tag, "SiteNotFound");
       })
     )
+  );
+  it.effect(
+    "reaches its site with its title and excerpt as plain text, adopted by that title when the answer is lost",
+    () =>
+      onArticles(
+        Effect.gen(function* plainText() {
+          const { sent: article, site } = yield* sentTo(
+            {
+              drop: (request) =>
+                request.route === "/wp/v2/posts" && request.method === "POST",
+            },
+            {
+              excerpt: Option.some("<script>synthetic()</script> & more"),
+              title: "Peas & <b>beans</b>",
+            }
+          );
+
+          const [post] = site.posts();
+
+          assert.lengthOf(site.posts(), 1);
+          assert.strictEqual(
+            post?.title,
+            "Peas &amp; &lt;b&gt;beans&lt;/b&gt;"
+          );
+          assert.strictEqual(
+            post?.excerpt,
+            "&lt;script&gt;synthetic()&lt;/script&gt; &amp; more"
+          );
+          assert.strictEqual(stateOf(article), "published");
+        })
+      )
+  );
+
+  it.effect(
+    "takes the site's term whose name holds an ampersand, and the one it made before",
+    () =>
+      onArticles(
+        Effect.gen(function* encodedTerms() {
+          const site = yield* fakeWordPress();
+          const food = site.addCategory("Food & Drink");
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const articles = yield* Articles;
+          const actor = writer(workspaceId);
+
+          const send = (title: string) =>
+            articles.create(
+              actor,
+              {
+                channelId: channel.id,
+                content: content({
+                  categories: ["Food & Drink"],
+                  tags: ["R&D"],
+                  title,
+                }),
+              },
+              Option.some({ at: Option.none(), timeZone: zone })
+            );
+
+          yield* send("First");
+
+          yield* eventually(
+            "the first article is on the site",
+            Effect.sync(() => site.posts().length === 1)
+          );
+
+          yield* send("Second");
+
+          yield* eventually(
+            "the second article is on the site",
+            Effect.sync(() => site.posts().length === 2)
+          );
+
+          const [first, second] = site.posts();
+
+          assert.deepStrictEqual(first?.categories, [food]);
+          assert.deepStrictEqual(second?.categories, [food]);
+          assert.lengthOf([...site.tags().keys()], 1);
+          assert.deepStrictEqual(second?.tags, first?.tags);
+        })
+      )
   );
 });

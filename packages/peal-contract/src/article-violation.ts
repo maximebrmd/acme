@@ -17,6 +17,9 @@ export const ArticleViolationSchema = Schema.Union([
   Schema.TaggedStruct("siteTimeInPast", {}),
   Schema.TaggedStruct("timeInPast", {}),
   Schema.TaggedStruct("coverNotImage", {}),
+  // The workspace's posts wait for an approval, and articles have none
+  // yet: someone whose posts go out without one sends it.
+  Schema.TaggedStruct("approvalRequired", {}),
 ]).annotate({ identifier: "ArticleViolation" });
 
 export type ArticleViolation = typeof ArticleViolationSchema.Type;
