@@ -353,6 +353,7 @@ export const ChannelsHandlers = HttpApiBuilder.group(
           const authorizationUrl = yield* connectChannel
             .reconnect(actor, params.channelId, {
               messages: query.messages === "true",
+              reposts: query.reposts === "true",
             })
             .pipe(Effect.catch(reconnectFailure));
 

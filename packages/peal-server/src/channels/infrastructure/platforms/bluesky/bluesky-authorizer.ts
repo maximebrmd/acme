@@ -20,7 +20,6 @@ import type {
 } from "#channels/application/platform-authorizer.ts";
 import { AvatarUrlSchema } from "#channels/domain/avatar-url.ts";
 import { tokenPolicies } from "#channels/domain/token-policy.ts";
-import { grantsBlueskyChat } from "#shared/domain/bluesky-scopes.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
@@ -28,6 +27,7 @@ import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.t
 
 import {
   blueskyScope,
+  blueskySignInScope,
   makeBlueskyClient,
   memoryStore,
 } from "./bluesky-client.ts";
@@ -251,20 +251,18 @@ export const blueskyAuthorizer = Effect.fn("BlueskyAuthorizer.make")(
         Option.getOrElse(() => options.defaultService)
       );
 
-    // What a sign-in asks: publishing's scopes, and the most the client
-    // may ask (its metadata's, the chat scopes too where the server reads
-    // Bluesky's messages) only for a member who asks for the channel's
-    // messages, or a reconnect of a channel that granted them, so a
-    // reconnect never takes its messages away.
+    // What a sign-in asks (`blueskySignInScope`): publishing's scopes,
+    // and within the client's metadata the repost's and the chat's only
+    // for a member who asks for them, or a reconnect of a channel that
+    // granted them.
     const scopeFor = (
       request: Parameters<PlatformAuthorizer["begin"]>[0]
     ): string =>
-      request.messages === true ||
-      request.reconnecting.pipe(
-        Option.exists((channel) => grantsBlueskyChat(channel.scopes))
-      )
-        ? (options.scope ?? blueskyScope)
-        : blueskyScope;
+      blueskySignInScope(
+        options.scope ?? blueskyScope,
+        { messages: request.messages ?? false, reposts: request.reposts ?? false },
+        request.reconnecting.pipe(Option.map((channel) => channel.scopes))
+      );
 
     const begin: PlatformAuthorizer["begin"] = (request) =>
       Effect.gen(function* beginning() {

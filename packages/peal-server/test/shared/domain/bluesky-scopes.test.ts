@@ -22,10 +22,10 @@ describe("a Bluesky account's scopes", () => {
     expect(createsRecords([...blueskyGateScopes], gates)).toBeTruthy();
   });
 
-  it("let Peal repost the account's own posts once granted, as Peal now asks", () => {
+  it("let Peal repost the account's own posts once granted, which a first sign-in does not ask", () => {
     expect(
       createsRecords(blueskyScope.split(" "), [repostCollection])
-    ).toBeTruthy();
+    ).toBeFalsy();
     expect(
       createsRecords([blueskyRepostScope], [repostCollection])
     ).toBeTruthy();

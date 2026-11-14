@@ -3,15 +3,19 @@ import { ConfigProvider, Effect, Option } from "effect";
 
 import {
   blueskyScope,
+  blueskySignInScope,
   clientMetadataOf,
 } from "#channels/infrastructure/platforms/bluesky/bluesky-client.ts";
 import { channelPlatformsConfig } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { messageAbilitiesOf } from "#engagement/domain/message-abilities.ts";
-import { blueskyChatScopes } from "#shared/domain/bluesky-scopes.ts";
+import {
+  blueskyChatScopes,
+  blueskyRepostScope,
+} from "#shared/domain/bluesky-scopes.ts";
 
-// What Bluesky's sign-in asks for: the chat methods' scopes only where
-// the inbox reads Bluesky's messages, and otherwise exactly what it asked
-// before.
+// What Bluesky's client may ask for (its metadata): the repost's scope,
+// and the chat methods' only where the inbox reads Bluesky's messages. What
+// a sign-in asks: publishing's scopes alone, unless asked for more.
 
 const scopeWith = (env: Record<string, string>) =>
   channelPlatformsConfig.pipe(
@@ -34,10 +38,12 @@ const scopeWith = (env: Record<string, string>) =>
 describe("Bluesky's sign-in", () => {
   it.effect("asks what it asked before where Bluesky's messages are off", () =>
     Effect.gen(function* off() {
-      assert.strictEqual(yield* scopeWith({}), blueskyScope);
+      const most = [blueskyScope, blueskyRepostScope].join(" ");
+
+      assert.strictEqual(yield* scopeWith({}), most);
       assert.strictEqual(
         yield* scopeWith({ PEAL_INBOX_MESSAGES: "mastodon" }),
-        blueskyScope
+        most
       );
     })
   );
@@ -50,7 +56,7 @@ describe("Bluesky's sign-in", () => {
 
         assert.strictEqual(
           scope,
-          [blueskyScope, ...blueskyChatScopes].join(" ")
+          [blueskyScope, blueskyRepostScope, ...blueskyChatScopes].join(" ")
         );
         assert.deepStrictEqual(
           messageAbilitiesOf(
@@ -62,4 +68,34 @@ describe("Bluesky's sign-in", () => {
         );
       })
   );
+
+  it("asks publishing's scopes alone, and the repost's or the chat's only when asked or granted before", () => {
+    const most = [blueskyScope, blueskyRepostScope, ...blueskyChatScopes].join(
+      " "
+    );
+
+    const asked = (
+      ask: { readonly messages?: boolean; readonly reposts?: boolean },
+      granted: readonly string[] = []
+    ) => blueskySignInScope(most, ask, Option.some(granted));
+
+    assert.strictEqual(asked({}), blueskyScope);
+    assert.strictEqual(
+      asked({ reposts: true }),
+      [blueskyScope, blueskyRepostScope].join(" ")
+    );
+    assert.strictEqual(
+      asked({}, [blueskyRepostScope]),
+      [blueskyScope, blueskyRepostScope].join(" ")
+    );
+    assert.strictEqual(
+      asked({ messages: true }),
+      [blueskyScope, ...blueskyChatScopes].join(" ")
+    );
+    // Never more than the client may ask.
+    assert.strictEqual(
+      blueskySignInScope(blueskyScope, { messages: true, reposts: true }, Option.none()),
+      blueskyScope
+    );
+  });
 });

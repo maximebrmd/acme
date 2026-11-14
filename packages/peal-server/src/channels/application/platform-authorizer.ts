@@ -34,6 +34,12 @@ export interface AuthorizationRequest {
    * messages, where the platform asks for that apart (Bluesky's chat).
    */
   readonly messages?: boolean;
+  /**
+   * The sign-in also asks to repost the account's own posts, where the
+   * platform asks for that apart (Bluesky's repost record), for a
+   * follow-up rule that reposts.
+   */
+  readonly reposts?: boolean;
 }
 
 /** A sign-in the platform now waits on. */
