@@ -737,7 +737,12 @@ layer(
           )
         );
 
-        yield* paid.release({ platform: "x", resources: ["2"], workspaceId });
+        yield* paid.release({
+          at: covered.at,
+          platform: "x",
+          resources: ["2"],
+          workspaceId,
+        });
 
         assert.strictEqual(
           (yield* keptOf(workspaceId)).meters.find(

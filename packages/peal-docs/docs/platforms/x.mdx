@@ -68,7 +68,7 @@ X bills each call to its API, and on Peal Cloud Peal passes it on at X's publish
 - an X account is connected only once the billing account has a payment method on per-account pricing;
 - each post sent to X, each part of a thread, is billed at X's rate for a post ({{x-post-en}}), or for a post with a link ({{x-post-link-en}});
 - X's counts and followers are read only once a member who manages billing turns X's reads on for the workspace, on the billing page, each read billed at X's rate, once a UTC day;
-- the billing account's monthly ceiling for X bounds all of it: a thread that would pass it is not sent at all, and the composer says so before.
+- the billing account's monthly ceiling for X bounds all of it: a thread with no room for all its parts is not sent at all, and the composer says so before; room can still be taken between its parts (another post or X channel of the account, X's reads), and the thread is then cut there.
 
 A post refused for billing fails without being sent (`paymentMethodRequired`, `paymentFailed`, `perAccountPricingRequired`, `xCeilingReached`), and a thread cut part way says where (`xThreadCut`). A server you run yourself bills nothing for X.
 

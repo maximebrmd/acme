@@ -153,10 +153,12 @@ export const RoutedPlatformPublisher = Layer.effect(
     const meter = yield* PostMeter;
 
     // Sends the part, claimed first where the platform bills per post.
-    // The first part a round sends checks first that the meter has room
-    // for every part still to go out, so a thread is never cut for room
-    // it lacked from the start; a later part refused anyway (the standing
-    // changed meanwhile) cuts it there.
+    // Each part sent while the parts before it are live (every part of a
+    // round, as each is saved live as it goes out) checks first that the
+    // meter has room for it and every part after it, so a thread without
+    // room from the start sends nothing; the check holds nothing, so room
+    // taken by another claim since (another post or X channel, X's reads)
+    // or a standing changed cuts it at a later part.
     const sendMetered = Effect.fn("Publishing.sendMetered")(
       function* sendMetered(
         client: PlatformClient,

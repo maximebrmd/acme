@@ -333,10 +333,11 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   failure reasons (`failureReasonOf`). Add a reason to the domain, the
   contract, the notices' events, the email catalogues and the web strings
   together.
-- X bills the server for each post. The first part a round sends to X
-  checks first that the meter has room for every part still to go out
-  (`PostMeter.fits`, a check, not a hold), then every part is claimed as
-  it is sent (`PostMeter.claim`; `MeteredXPostsLive`: `postCreate`, or
+- X bills the server for each post. Each part sent to X while the parts
+  before it are live (so every part of a round) checks first that the
+  meter has room for it and every part after it (`PostMeter.fits`, a
+  check, not a hold: one more meter read a part), then is claimed as it
+  is sent (`PostMeter.claim`; `MeteredXPostsLive`: `postCreate`, or
   `postCreateWithUrl` when the text sent holds a link by `countLinks`, from
   billing's `XPassThrough.rates`, on the `xApi` meter; a poll is one post).
   Refused, nothing is sent, in the standing's own words:
@@ -344,7 +345,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   payment failing), `perAccountPricingRequired` (a legacy plan),
   `xCeilingReached` (the `x` ceiling or the cap before a first paid
   invoice); a part refused once parts of the thread are live (the standing
-  changed between parts) fails as `xThreadCut`, the thread cut there. All
+  changed, or room another claim of the account took since: another post
+  or X channel, X's reads) fails as `xThreadCut`, the thread cut there. All
   are reposted once fixed. A typed failure of the client gives the claim
   back; an unconfirmed outcome keeps it, as X may have billed it, and so
   does a claim whose part never went out because the process stopped or

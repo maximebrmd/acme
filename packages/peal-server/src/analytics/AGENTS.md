@@ -62,7 +62,9 @@
   as above. X bills only what it returns: what a claim counted fresh
   (`PaidReadsCovered.fresh`) and X did not return (a refusal, a failed
   call, a token refused, a post gone) goes back through `PaidReads.release`
-  (its rows of the day deleted, its units given back, in one transaction);
+  (the rows of the claim's day deleted, under the lock claims take, its
+  units given back in the claim's month, in one transaction; what X
+  returned before a call failed or a token was refused stays billed);
   where the server does not bill, release does nothing, as the operator's
   allowance always counted it. `X_ANALYTICS` stays the operator's switch
   on both, and `X_ANALYTICS_DAILY_READS` applies only where the

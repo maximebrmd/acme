@@ -209,12 +209,14 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
     });
   });
 
+  // `returned` keeps every post X returned, across the calls and the
+  // retries a renewed token makes, whatever ends the read after them.
   const readAll = Effect.fn("XMetrics.readAll")(function* readAll(
     posts: readonly PostToRead[],
-    token: Redacted.Redacted
+    token: Redacted.Redacted,
+    returned: Set<string>
   ) {
     const readings: PostReading[] = [];
-    const returned: string[] = [];
 
     for (const some of Arr.chunksOf(posts, idsPerCall)) {
       const call = yield* readSome(some, token);
@@ -224,13 +226,15 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
       }
 
       if (call._tag !== "read") {
-        return { halted: true, readings, returned };
+        return { halted: true, readings };
       }
 
-      returned.push(...call.returned);
+      for (const id of call.returned) {
+        returned.add(id);
+      }
     }
 
-    return { halted: false, readings, returned };
+    return { halted: false, readings };
   });
 
   const read = (
@@ -282,9 +286,13 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
       // X bills only the posts it returns: those counted fresh for the
       // day that it did not return go back.
+      // What X returned of them, which it bills: the rest goes back.
+      const returned = new Set<string>();
+
       const releaseUnless = (returned: ReadonlySet<string>) =>
         paid
           .release({
+            at: claimed.at,
             platform: "x",
             resources: claimed.fresh.filter((id) => !returned.has(id)),
             workspaceId,
@@ -308,10 +316,10 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
       const batch = yield* access
         .withToken(account.channelId, ({ accessToken }) =>
-          readAll(allowed, accessToken)
+          readAll(allowed, accessToken, returned)
         )
         .pipe(
-          Effect.tapError(() => releaseUnless(new Set())),
+          Effect.tapError(() => releaseUnless(returned)),
           Effect.catchTags({
             ChannelUnusable: unusable,
             DatabaseError: databaseDown,
@@ -319,7 +327,7 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
           })
         );
 
-      yield* releaseUnless(new Set(batch.returned));
+      yield* releaseUnless(returned);
 
       return {
         halted: batch.halted,

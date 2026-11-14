@@ -4,6 +4,7 @@ import { SqlClient } from "effect/sql";
 import { PaidReads } from "#analytics/application/paid-reads.ts";
 import type {
   PaidReadClaim,
+  PaidReadRelease,
   PaidReadsCovered,
 } from "#analytics/application/paid-reads.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
@@ -58,13 +59,18 @@ export const billedPaidReads = Layer.effect(
         ? xPassThrough.rates.userRead
         : xPassThrough.rates.postRead;
 
+    // The lock of a workspace's reads on a platform, which claims and
+    // releases take in turn, as the daily allowance's does.
+    const lockOf = (workspaceId: string, platform: string) =>
+      sql`SELECT pg_advisory_xact_lock(hashtext('peal-server/analytics/paid-reads'), hashtext(${`${workspaceId}/${platform}`}))`.pipe(
+        Effect.orDie
+      );
+
     const claimLocked = Effect.fn("PaidReads.claimBilled")(
       function* claimLocked(claim: PaidReadClaim, day: string) {
         const { platform, workspaceId } = claim;
 
-        yield* sql`SELECT pg_advisory_xact_lock(hashtext('peal-server/analytics/paid-reads'), hashtext(${`${workspaceId}/${platform}`}))`.pipe(
-          Effect.orDie
-        );
+        yield* lockOf(workspaceId, platform);
 
         const had = new Set(yield* readToday(sql, claim, day));
 
@@ -139,11 +145,12 @@ export const billedPaidReads = Layer.effect(
       }
     );
 
-    const none: PaidReadsCovered = { fresh: [], resources: [] };
-
     const claim = Effect.fn("PaidReads.claim")(function* claim(
       asked: PaidReadClaim
     ) {
+      const at = yield* DateTime.now;
+      const none: PaidReadsCovered = { at, fresh: [], resources: [] };
+
       if (asked.resources.length === 0) {
         return none;
       }
@@ -153,7 +160,7 @@ export const billedPaidReads = Layer.effect(
         return none;
       }
 
-      const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
+      const day = DateTime.formatIsoDateUtc(at);
 
       const { had, taken } = yield* sql
         .withTransaction(claimLocked(asked, day))
@@ -169,6 +176,7 @@ export const billedPaidReads = Layer.effect(
       const allowed = new Set([...had, ...taken]);
 
       const covered: PaidReadsCovered = {
+        at,
         fresh: taken,
         resources: asked.resources.filter((resource) => allowed.has(resource)),
       };
@@ -177,10 +185,15 @@ export const billedPaidReads = Layer.effect(
     });
 
     // The resources X did not return are neither billed by X nor read:
-    // their rows of the day go, and their units back, in one transaction.
+    // their rows of the claim's day go, and their units back in the
+    // claim's month, in one transaction, under the lock claims take, so a
+    // claim that found the row today (and whose read X answers) is never
+    // left billed by X and by nobody.
     const releaseLocked = Effect.fn("PaidReads.releaseBilled")(
-      function* releaseLocked(released: PaidReadClaim, day: string) {
+      function* releaseLocked(released: PaidReadRelease, day: string) {
         const { platform, workspaceId } = released;
+
+        yield* lockOf(workspaceId, platform);
 
         const rows = yield* sql<{ readonly resource: string }>`
           DELETE FROM analytics.paid_reads
@@ -199,7 +212,7 @@ export const billedPaidReads = Layer.effect(
 
         if (units > 0) {
           yield* meters.giveBack({
-            at: yield* DateTime.now,
+            at: released.at,
             meter: "xApi",
             units,
             workspaceId,
@@ -209,13 +222,13 @@ export const billedPaidReads = Layer.effect(
     );
 
     const release = Effect.fn("PaidReads.release")(function* release(
-      released: PaidReadClaim
+      released: PaidReadRelease
     ) {
       if (released.resources.length === 0) {
         return;
       }
 
-      const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
+      const day = DateTime.formatIsoDateUtc(released.at);
 
       yield* sql
         .withTransaction(releaseLocked(released, day))

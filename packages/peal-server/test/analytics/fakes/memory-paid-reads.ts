@@ -1,4 +1,4 @@
-import { Effect, Layer, Ref } from "effect";
+import { DateTime, Effect, Layer, Ref } from "effect";
 
 import { PaidReads } from "#analytics/application/paid-reads.ts";
 
@@ -46,7 +46,7 @@ export const paidReadsOf = (
             return true;
           });
 
-          return { fresh, resources: covered };
+          return { at: DateTime.makeUnsafe(0), fresh, resources: covered };
         }),
       reads: () => Effect.succeed(reads),
       release: ({ resources }) =>

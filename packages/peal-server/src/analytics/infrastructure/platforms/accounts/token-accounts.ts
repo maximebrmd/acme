@@ -247,7 +247,12 @@ export const xAccounts = Effect.fn("XAccounts.make")(
           // X bills the account only when it returns it: one counted fresh
           // today goes back when the read brings nothing.
           const released = paid
-            .release({ platform: "x", resources: covered.fresh, workspaceId })
+            .release({
+              at: covered.at,
+              platform: "x",
+              resources: covered.fresh,
+              workspaceId,
+            })
             .pipe(Effect.catchTag("DatabaseError", databaseDown));
 
           return yield* withChannelToken(access, account, ({ accessToken }) =>

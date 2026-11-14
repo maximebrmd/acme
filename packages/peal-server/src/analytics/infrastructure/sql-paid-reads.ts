@@ -87,12 +87,17 @@ export const sqlPaidReadsWith = (allowance: number) =>
         asked: PaidReadClaim
       ) {
         if (asked.resources.length === 0) {
-          const none: PaidReadsCovered = { fresh: [], resources: [] };
+          const none: PaidReadsCovered = {
+            at: yield* DateTime.now,
+            fresh: [],
+            resources: [],
+          };
 
           return none;
         }
 
-        const day = DateTime.formatIsoDateUtc(yield* DateTime.now);
+        const at = yield* DateTime.now;
+        const day = DateTime.formatIsoDateUtc(at);
 
         const covered = yield* sql
           .withTransaction(claimLocked(asked, day))
@@ -106,6 +111,7 @@ export const sqlPaidReadsWith = (allowance: number) =>
         const allowed = new Set(covered.map(({ resource }) => resource));
 
         const result: PaidReadsCovered = {
+          at,
           fresh: covered
             .filter(({ fresh }) => fresh)
             .map(({ resource }) => resource),

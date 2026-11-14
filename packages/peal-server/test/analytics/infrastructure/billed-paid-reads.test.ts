@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PaidReads } from "#analytics/application/paid-reads.ts";
@@ -151,7 +151,12 @@ layer(
           assert.deepStrictEqual(covered.fresh, ["7", "8"]);
 
           // X answered nothing for the second.
-          yield* paid.release({ platform: "x", resources: ["8"], workspaceId });
+          yield* paid.release({
+            at: covered.at,
+            platform: "x",
+            resources: ["8"],
+            workspaceId,
+          });
 
           const { givenBack } = yield* FakeMetersLedger.use(Ref.get);
 
@@ -168,6 +173,45 @@ layer(
           });
 
           assert.deepStrictEqual(again.fresh, ["8"]);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "finds a claim's rows by its own day, when it is released after midnight UTC",
+    () =>
+      Effect.gen(function* afterMidnight() {
+        const workspaceId = yield* freshWorkspace;
+        const paid = yield* PaidReads;
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* turnOn(workspaceId);
+
+        yield* Effect.gen(function* checks() {
+          const covered = yield* paid.claim({
+            platform: "x",
+            resources: ["9"],
+            workspaceId,
+          });
+
+          // As if claimed yesterday, just before midnight.
+          yield* sql`UPDATE analytics.paid_reads SET day = day - 1 WHERE workspace_id = ${workspaceId}`.pipe(
+            Effect.orDie
+          );
+
+          const before = (yield* FakeMetersLedger.use(Ref.get)).givenBack
+            .length;
+
+          yield* paid.release({
+            at: DateTime.subtract(covered.at, { days: 1 }),
+            platform: "x",
+            resources: ["9"],
+            workspaceId,
+          });
+
+          const { givenBack } = yield* FakeMetersLedger.use(Ref.get);
+
+          assert.lengthOf(givenBack.slice(before), 1);
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );

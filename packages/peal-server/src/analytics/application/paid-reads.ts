@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -25,6 +25,13 @@ export interface PaidReadsCovered {
    * what `release` takes back when the platform did not return them.
    */
   readonly fresh: readonly string[];
+  /** When it was claimed: the day its rows count in, and their month. */
+  readonly at: DateTime.Utc;
+}
+
+/** Resources a claim counted fresh to take back, with that claim's instant. */
+export interface PaidReadRelease extends PaidReadClaim {
+  readonly at: DateTime.Utc;
 }
 
 /**
@@ -53,7 +60,7 @@ export class PaidReads extends Context.Service<
      * daily allowance keeps them counted, as before.
      */
     readonly release: (
-      claim: PaidReadClaim
+      released: PaidReadRelease
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * Whether the workspace reads the platform at all: on a server that

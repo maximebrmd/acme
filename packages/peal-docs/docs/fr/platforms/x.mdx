@@ -68,7 +68,7 @@ X facture chaque appel à son API, et sur Peal Cloud Peal le refacture aux tarif
 - un compte X ne se connecte qu’une fois que le compte de facturation a un moyen de paiement au tarif par compte ;
 - chaque publication envoyée sur X, chaque partie d’un fil, est facturée au tarif de X pour une publication ({{x-post-fr}}), ou pour une publication avec un lien ({{x-post-link-fr}}) ;
 - les chiffres et les abonnés de X ne sont lus qu’une fois qu’un membre qui gère la facturation active la lecture de X pour l’espace de travail, sur la page de facturation, chaque lecture facturée au tarif de X, une fois par jour UTC ;
-- le plafond mensuel du compte de facturation pour X borne le tout : un fil qui le dépasserait n’est pas envoyé du tout, et l’éditeur le dit avant.
+- le plafond mensuel du compte de facturation pour X borne le tout : un fil sans place pour toutes ses parties n’est pas envoyé du tout, et l’éditeur le dit avant ; la place peut encore être prise entre ses parties (une autre publication ou un autre canal X du compte, les lectures de X), et le fil est alors coupé là.
 
 Une publication refusée pour la facturation échoue sans être envoyée (`paymentMethodRequired`, `paymentFailed`, `perAccountPricingRequired`, `xCeilingReached`), et un fil coupé en route dit où (`xThreadCut`). Un serveur que vous hébergez ne facture rien pour X.
 

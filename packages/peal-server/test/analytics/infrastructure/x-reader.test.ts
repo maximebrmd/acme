@@ -509,4 +509,45 @@ describe("reading counts on X", () => {
       assert.deepStrictEqual(handed, []);
     }).pipe(Effect.scoped)
   );
+
+  it.live(
+    "keeps the posts X returned before a call failed, and gives back only the rest",
+    () =>
+      Effect.gen(function* partly() {
+        const ids = Array.from({ length: 101 }, (_, index) => idOf(index));
+        const server = yield* fakePosts(new Map(ids.map((id) => [id, 1])));
+        const released = yield* Ref.make<readonly string[]>([]);
+
+        // The first hundred come back; then X refuses the token.
+        server.script([
+          json({
+            data: ids.slice(0, 100).map((id) => ({
+              id,
+              public_metrics: {
+                like_count: 1,
+                reply_count: 0,
+                repost_count: 0,
+              },
+            })),
+          }),
+          json(
+            {
+              detail: "Unauthorized",
+              status: 401,
+              title: "Unauthorized",
+              type: "about:blank",
+            },
+            401
+          ),
+        ]);
+
+        yield* reading(
+          server.url,
+          ids.map((id, index) => toRead(id, index)),
+          { released }
+        );
+
+        assert.deepStrictEqual(yield* Ref.get(released), [idOf(100)]);
+      }).pipe(Effect.scoped)
+  );
 });

@@ -207,8 +207,9 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * (`paymentMethodRequired`), its last payment failing (`paymentFailed`), a
  * plan from before per-account pricing (`perAccountPricingRequired`), or
  * the account's monthly ceiling for X reached (`xCeilingReached`); a
- * thread's room is checked before its first part goes out, so a thread
- * refused at a later part (the standing changed meanwhile) was cut there,
+ * thread's room for its parts still to go is checked before each part, so
+ * one refused at a later part (room taken by another claim of the account
+ * since, or the standing changed: the check holds nothing) was cut there,
  * its first parts live (`xThreadCut`).
  */
 export const FailureReasonSchema = Schema.Literals([
