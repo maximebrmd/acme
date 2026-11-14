@@ -577,6 +577,102 @@ groups:
                     type: gt
                     params: [1.5]
 
+      - uid: peal-messages-behind
+        title: The direct messages collection falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Three or more of the last six collections of direct messages stopped at their budget with channels still due (peal.engagement.messages.unfinished). Messages reach the inbox later than their schedule says, and people wait for an answer. Read the server's warnings for the platforms refusing or slowing the reads.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Two runs an hour: six in the window.
+              expr: sum(increase(peal_engagement_messages_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
+
+      - uid: peal-messages-box-failing
+        title: A channel's direct messages keep failing to be kept
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Three or more reads of a channel's direct messages could not be kept in three hours (peal.engagement.messages.box_failures), as one channel that fails at every try, half an hour apart at the next run, would. Its messages do not reach the inbox; the other channels are read. The server's warnings name the channel by id, never what the messages say.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A channel that fails is tried again at the next run past half an hour: about once an hour.
+              expr: sum(increase(peal_engagement_messages_box_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
+
+      - uid: peal-messages-retention-failing
+        title: Conversations past their time are not being deleted
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more hourly purges of conversations failed in three hours (peal.engagement.messages.retention_failures). Conversations whose last message was sent 30 days ago stay, with private messages Peal promised to delete. Read the server's warnings ("Deleting conversations past their time failed").
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run every hour: three in the window.
+              expr: sum(increase(peal_engagement_messages_retention_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-comments-thread-failing
         title: A thread's comments keep failing to be kept
         condition: B
