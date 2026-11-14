@@ -1,8 +1,20 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref, Result } from "effect";
+import {
+  DateTime,
+  Deferred,
+  Effect,
+  Fiber,
+  Layer,
+  Option,
+  Ref,
+  Result,
+} from "effect";
 import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
+import { forgetChannelMessages } from "#engagement/application/forget-channel-messages.ts";
 import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
 import {
@@ -28,6 +40,7 @@ import {
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleMessageStore } from "#engagement/infrastructure/drizzle-message-store.ts";
 import { newId } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
@@ -50,6 +63,22 @@ const StoreTest = Layer.mergeAll(
   Layer.provideMerge(fakeMeters({ allowed: Option.none() })),
   Layer.provideMerge(DatabaseTest)
 );
+
+// Whether a transaction waits for a lock on engagement's tables.
+const waitingOnEngagement = SqlClient.SqlClient.use(
+  (sql) =>
+    sql<{
+      waiting: number;
+    }>`SELECT count(*)::int AS waiting FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%engagement%'`
+).pipe(
+  Effect.map((rows) => (rows[0]?.waiting ?? 0) > 0),
+  Effect.orDie
+);
+
+// A moment of real time: the database works on its own clock.
+const pause = Effect.promise(async () => {
+  await delay(20);
+});
 
 // What the meters were given back for the workspace.
 const givenBackIn = (workspaceId: WorkspaceId) =>
@@ -981,6 +1010,172 @@ layer(StoreTest)("the message store", (it) => {
           yield* records.eraseWorkspace(workspaceId);
 
           assert.lengthOf(yield* givenBackIn(workspaceId), 1);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  // A send that journals its message and claims its outbound message, then
+  // holds its transaction open while `deletion` starts in another: the
+  // send commits while the deletion runs.
+  const sendDuring = Effect.fn("sendDuring")(function* sendDuring<E, R>(
+    box: MessageBox,
+    at: string,
+    deletion: Effect.Effect<unknown, E, R>
+  ) {
+    const store = yield* MessageStore;
+    const sql = yield* SqlClient.SqlClient;
+    const talk = yield* conversationOn(box, 1, at);
+
+    yield* store.saveConversations([talk]);
+
+    const message = writeMessage(
+      yield* newId(OutgoingMessageIdSchema),
+      talk,
+      Option.none(),
+      "Thanks!",
+      utc(at)
+    );
+
+    const journalled = yield* Deferred.make<true>();
+    const release = yield* Deferred.make<true>();
+
+    const sending = yield* sql
+      .withTransaction(
+        store
+          .journalMessage(message, Option.none())
+          .pipe(
+            Effect.andThen(
+              MeteredUsage.use((meters) =>
+                meters.claim(
+                  box.workspaceId,
+                  "outboundMessages",
+                  1,
+                  message.createdAt
+                )
+              )
+            ),
+            Effect.andThen(Deferred.succeed(journalled, true)),
+            Effect.andThen(Deferred.await(release))
+          )
+      )
+      .pipe(Effect.forkChild);
+
+    yield* Deferred.await(journalled);
+
+    const deleting = yield* sql
+      .withTransaction(deletion)
+      .pipe(Effect.forkChild);
+
+    // The deletion waits for the send, which then commits.
+    for (
+      let tries = 0;
+      tries < 250 && !(yield* waitingOnEngagement);
+      tries += 1
+    ) {
+      yield* pause;
+    }
+
+    yield* Deferred.succeed(release, true);
+    yield* Fiber.join(sending);
+    yield* Fiber.join(deleting);
+
+    return { message, talk };
+  });
+
+  it.effect(
+    "gives back the claim of a message sent while its channel leaves, its messages are turned off or its workspace is erased",
+    () =>
+      Effect.gen(function* racing() {
+        const records = yield* EngagementRecords;
+        const store = yield* MessageStore;
+
+        const deletions = [
+          [
+            "leaves",
+            "2049-02-10T09:00:00.000Z",
+            (box: MessageBox) =>
+              records.channelGone(
+                box.channelId,
+                "mastodon",
+                utc("2049-02-10T09:00:00.000Z")
+              ),
+          ],
+          [
+            "turned off",
+            "2049-02-11T09:00:00.000Z",
+            (box: MessageBox) =>
+              MeteredUsage.use((meters) =>
+                forgetChannelMessages(store, meters, box.channelId)
+              ),
+          ],
+          [
+            "erased",
+            "2049-02-12T09:00:00.000Z",
+            (box: MessageBox) => records.eraseWorkspace(box.workspaceId),
+          ],
+        ] as const;
+
+        for (const [how, at, deletion] of deletions) {
+          const workspaceId = yield* freshWorkspace;
+          const box = yield* boxOf(workspaceId, at);
+
+          yield* Effect.gen(function* checks() {
+            yield* store.follow([box]);
+
+            const { message } = yield* sendDuring(box, at, deletion(box));
+
+            assert.deepStrictEqual(
+              (yield* givenBackIn(workspaceId)).map((claim) =>
+                DateTime.formatIso(claim.at)
+              ),
+              [DateTime.formatIso(message.createdAt)],
+              how
+            );
+            assert.deepStrictEqual(
+              yield* store.outgoing(message.id),
+              Option.none(),
+              how
+            );
+          }).pipe(Effect.ensuring(forget(workspaceId)));
+        }
+      })
+  );
+
+  it.effect(
+    "keeps a conversation a whole listing misses again while a message to it is being sent",
+    () =>
+      Effect.gen(function* racing() {
+        const store = yield* MessageStore;
+        const workspaceId = yield* freshWorkspace;
+        const at = "2049-02-13T09:00:00.000Z";
+        const box = yield* boxOf(workspaceId, at);
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([box]);
+
+          // Another conversation, which the two listings delete.
+          const talk = yield* conversationOn(box, 2, at);
+
+          yield* store.saveConversations([talk]);
+
+          const { talk: sentTo, message } = yield* sendDuring(
+            box,
+            at,
+            store
+              .dropUnlisted(box.channelId, ["c9"], utc(at))
+              .pipe(
+                Effect.andThen(
+                  store.dropUnlisted(box.channelId, ["c9"], utc(at))
+                )
+              )
+          );
+
+          assert.deepStrictEqual(
+            yield* store.conversation(talk.id),
+            Option.none()
+          );
+          assert.isTrue(Option.isSome(yield* store.conversation(sentTo.id)));
+          assert.isTrue(Option.isSome(yield* store.outgoing(message.id)));
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );

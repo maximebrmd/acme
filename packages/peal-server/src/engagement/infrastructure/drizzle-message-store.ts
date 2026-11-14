@@ -605,6 +605,19 @@ export const DrizzleMessageStore = Layer.effect(
         saved: OutgoingMessage,
         key: Option.Option<MessageKey>
       ) {
+        // The conversation's box first, as every deletion of its
+        // conversations takes it before it lists what never set out: one
+        // that runs meanwhile waits for this message, and gives back its
+        // claim, or runs first, and the message finds its conversation gone.
+        yield* sql`
+          SELECT 1 FROM engagement.message_boxes
+          WHERE channel_id = (
+            SELECT channel_id FROM engagement.conversations
+            WHERE id = ${saved.conversationId}::uuid
+          )
+          FOR UPDATE
+        `.pipe(Effect.mapError(failed));
+
         const keyDigest = Option.isSome(key)
           ? yield* hashOf(key.value.key)
           : null;
@@ -887,6 +900,10 @@ export const DrizzleMessageStore = Layer.effect(
     const unsentOf = Effect.fn("MessageStore.unsentOf")(function* unsentOf(
       channelId: string
     ) {
+      // After the box, which a message being journalled holds: it is then
+      // listed here, not deleted unseen.
+      yield* lockBox(channelId);
+
       const rows = yield* db
         .select()
         .from(outgoingMessages)
@@ -1032,6 +1049,10 @@ export const DrizzleMessageStore = Layer.effect(
         if (shown.length === 0) {
           return 0;
         }
+
+        // Under the box, which a message being journalled holds: its
+        // conversation is then seen to have it on its way.
+        yield* lockBox(channelId);
 
         // Shown again: no longer missed.
         yield* clearUnlisted(channelId, shown);

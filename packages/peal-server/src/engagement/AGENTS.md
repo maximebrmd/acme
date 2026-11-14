@@ -490,7 +490,10 @@
   the meters: `MetersContextLive` is built below the channels context in
   `src/app/server.ts` for that). Those rows are locked (`FOR UPDATE`)
   until the deletion commits, so a job that would begin one finds it
-  gone. The
+  gone. Each deletion of conversations (those four, and `dropUnlisted`)
+  takes the box first, and a message is journalled under its box
+  (`journalMessage`), so a send that commits meanwhile is listed and
+  given back, or finds its conversation gone: never deleted unseen. The
   gate claims the call first (`claimCall`).
 - Retention: each message is deleted `conversationsKeptFor` (30 days)
   after it was sent, a settled outgoing message (`sent`, `failed` or
