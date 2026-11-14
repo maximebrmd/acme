@@ -17,6 +17,8 @@ pub struct PlatformCapabilities {
     #[serde(default)]
     pub options: PlatformCapabilitiesOptions,
     pub platform: Platform,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub poll: Option<PollCapabilities>,
     #[serde(rename = "postFormats")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub post_formats: Option<Vec<PostFormatCapabilities>>,
@@ -42,6 +44,7 @@ pub struct PlatformCapabilitiesBuilder {
     media: Option<MediaCapabilities>,
     options: Option<PlatformCapabilitiesOptions>,
     platform: Option<Platform>,
+    poll: Option<PollCapabilities>,
     post_formats: Option<Vec<PostFormatCapabilities>>,
     text: Option<TextCapabilities>,
     version: Option<i64>,
@@ -80,6 +83,11 @@ impl PlatformCapabilitiesBuilder {
 
     pub fn platform(mut self, value: Platform) -> Self {
         self.platform = Some(value);
+        self
+    }
+
+    pub fn poll(mut self, value: PollCapabilities) -> Self {
+        self.poll = Some(value);
         self
     }
 
@@ -129,6 +137,7 @@ impl PlatformCapabilitiesBuilder {
             platform: self
                 .platform
                 .ok_or_else(|| BuildError::missing_field("platform"))?,
+            poll: self.poll,
             post_formats: self.post_formats,
             text: self.text.ok_or_else(|| BuildError::missing_field("text"))?,
             version: self

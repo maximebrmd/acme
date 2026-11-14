@@ -498,6 +498,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           redeliver_webhooks: [false, false, false, true],
           rename_channel: [false, true, true, false],
           remove_post_target: [false, true, true, false],
+          leave_out_rest: [false, true, false, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
           reply_to_location_review: [false, false, false, true],
@@ -829,6 +830,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               targetId: postId,
               text: "Never sent.",
             },
+            leave_out_rest: { postId, targetId: postId },
             mark_comment_answered: { answered: true, commentId: postId },
             mark_location_review_answered: { answered: true, reviewId: postId },
             moderate_comment: { action: "like", commentId: postId },

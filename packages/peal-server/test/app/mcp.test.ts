@@ -298,6 +298,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "get_usage",
           "import_media",
           "invite_member",
+          "leave_out_rest",
           "list_activity",
           "list_ad_campaigns",
           "list_approvals",

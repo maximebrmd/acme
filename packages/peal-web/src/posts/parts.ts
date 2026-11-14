@@ -6,8 +6,10 @@ import type {
   TargetOptions,
   TextOverride,
 } from "peal-contract";
-import { maxFollowUps, rulesFor } from "peal-contract/post-text";
+import { maxFollowUps, partRulesFor, rulesFor } from "peal-contract/post-text";
 import type { FollowUpKind } from "peal-contract/post-text";
+
+import { fitOn, fits } from "#posts/character-count.ts";
 
 // The parts that follow a post's first, as the composer edits them: a
 // thread on the platforms that have threads. Each function returns a new
@@ -140,12 +142,17 @@ export type PartsTaken =
 
 /**
  * What `platform` makes of a post with `count` parts after its first, with
- * the channel's `options`: a story or a reel takes none.
+ * the channel's `options`: a story or a reel takes none, and neither does
+ * a platform the server sends no parts to (`offered` false: a first
+ * comment where it does not read the platform's comments, X where its
+ * operator turned threads off, a LinkedIn profile), as its capabilities
+ * say with a null `followUps`.
  */
 export const partsTaken = (
   platform: Platform,
   count: number,
-  options?: TargetOptions
+  options?: TargetOptions,
+  offered = true
 ): PartsTaken => {
   const rules = rulesFor(platform, options).followUps;
 
@@ -153,7 +160,7 @@ export const partsTaken = (
     return { _tag: "taken", kind: "none" };
   }
 
-  if (rules === undefined) {
+  if (rules === undefined || !offered) {
     return { _tag: "alone" };
   }
 
@@ -176,3 +183,38 @@ export const delayChoices = (current: number): readonly number[] =>
   offeredDelays.includes(current)
     ? offeredDelays
     : [...offeredDelays, current].toSorted((left, right) => left - right);
+
+/**
+ * Whether every channel takes the parts that follow: their number, as the
+ * server sends them there (`offered`), and each one's text, by a post's
+ * rules in a thread and a comment's where they are comments. Their images
+ * and videos are checked where they are shown, and again by the server.
+ */
+export const partsFitOn = <
+  C extends { readonly id: string; readonly platform: Platform },
+>(
+  channels: readonly C[],
+  parts: readonly PartDraft[],
+  optionsOn: (channelId: string) => TargetOptions | undefined,
+  offered: (channel: C) => boolean
+): boolean =>
+  channels.every(
+    (channel) =>
+      partsTaken(
+        channel.platform,
+        parts.length,
+        optionsOn(channel.id),
+        offered(channel)
+      )._tag === "taken" &&
+      parts.every((part) =>
+        fits(
+          fitOn(
+            channel.platform,
+            partTextOn(part, channel.id),
+            part.media.length,
+            optionsOn(channel.id),
+            partRulesFor(channel.platform, optionsOn(channel.id))
+          )
+        )
+      )
+  );

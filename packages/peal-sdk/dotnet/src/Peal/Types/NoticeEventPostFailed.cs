@@ -14,6 +14,9 @@ public record NoticeEventPostFailed : IJsonOnDeserialized
     [JsonPropertyName("channel")]
     public NoticeChannel? Channel { get; set; }
 
+    [JsonPropertyName("notSent")]
+    public PostPartsNotSent? NotSent { get; set; }
+
     [JsonPropertyName("postId")]
     public required string PostId { get; set; }
 

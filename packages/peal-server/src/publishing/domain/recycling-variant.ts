@@ -92,6 +92,7 @@ export const sayingVariant = (
     followUps: content.followUps,
     media: content.media,
     overrides: [...withMedia, ...mediaOnly],
+    poll: content.poll,
     text,
   });
 };

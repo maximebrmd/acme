@@ -35,6 +35,11 @@ export interface FakeXPost {
   readonly mediaIds: readonly string[];
   /** The options it was posted with, under X's names. */
   readonly options: Readonly<Record<string, boolean | string>>;
+  /** The poll it asks, as X took it; null without one. */
+  readonly poll: {
+    readonly durationMinutes: number;
+    readonly options: readonly string[];
+  } | null;
   readonly text: string;
 }
 
@@ -82,6 +87,18 @@ const PostBodySchema = Schema.Struct({
     Schema.Struct({ media_ids: Schema.Array(Schema.String) })
   ),
   paid_partnership: Schema.optionalKey(Schema.Boolean),
+  // `CreatePostsPoll`: 2 to 4 options of 1 to 25 characters, 5 to 10,080
+  // minutes, both required.
+  poll: Schema.optionalKey(
+    Schema.Struct({
+      duration_minutes: Schema.Int.check(
+        Schema.isBetween({ maximum: 10_080, minimum: 5 })
+      ),
+      options: Schema.Array(
+        Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(25))
+      ).check(Schema.isMinLength(2), Schema.isMaxLength(4)),
+    })
+  ),
   reply: Schema.optionalKey(
     Schema.Struct({ in_reply_to_tweet_id: Schema.String })
   ),
@@ -384,11 +401,23 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
       );
     }
 
+    // A poll and files are never one post.
+    if (body.poll !== undefined && mediaIds.length > 0) {
+      return problem(400, "invalid-request", "Your request is invalid.");
+    }
+
     const post: FakeXPost = {
       id: `19900000000000${String(posts.length + 1).padStart(5, "0")}`,
       inReplyTo,
       mediaIds,
       options: chosen,
+      poll:
+        body.poll === undefined
+          ? null
+          : {
+              durationMinutes: body.poll.duration_minutes,
+              options: body.poll.options,
+            },
       text,
     };
 

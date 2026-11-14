@@ -127,6 +127,7 @@ const postStarted = (startedAt: DateTime.Utc): OutgoingPost => ({
   media: [],
   options: Option.none(),
   part: 0,
+  poll: Option.none(),
   replyTo: Option.none(),
   startedAt,
   text: "A synthetic post for tests.",

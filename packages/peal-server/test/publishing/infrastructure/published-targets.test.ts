@@ -11,6 +11,7 @@ import {
   recordLivePart,
   settleTarget,
   startTarget,
+  withoutRest,
 } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -375,6 +376,92 @@ layer(ListingTest)("the published targets", (it) => {
 
           assert(kept?.status._tag === "published");
           assert.deepStrictEqual(kept.status.publishedAt, attemptedAt);
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
+  );
+
+  it.effect(
+    "list a post whose first comment failed as live, once, and keep it so when a member leaves the comment out",
+    () =>
+      Effect.gen(function* commentFailed() {
+        const { ids, postId } = yield* insertPost([
+          { finishedAt: null, platformPostId: null, status: "pending" },
+        ]);
+
+        yield* Effect.gen(function* checks() {
+          const posts = yield* PostRepository;
+          const published = yield* PublishedTargets;
+          const [targetId] = ids;
+
+          assert.isDefined(targetId);
+
+          const stored = (yield* posts.targets(postId)).find(
+            ({ id }) => id === targetId
+          );
+
+          assert.isDefined(stored);
+
+          const at = yield* TestClock.withLive(DateTime.now);
+          const started = Result.getOrThrow(startTarget(stored, at));
+
+          const first = Result.getOrThrow(
+            recordLivePart(started, {
+              index: 0,
+              permalink: Option.some("https://social.example/p/2201"),
+              platformPostId: Option.some(PlatformPostIdSchema.make("2201")),
+              publishedAt: at,
+              round: 1,
+            })
+          );
+
+          const failed = Result.getOrThrow(
+            settleTarget(
+              first,
+              { _tag: "failed", reason: "contentRejected" },
+              at
+            )
+          );
+
+          const since = DateTime.subtractDuration(at, "1 minute");
+
+          const listed = published
+            .from({ publishedAt: since, targetId: Option.none() }, 100)
+            .pipe(
+              Effect.map((found) =>
+                found.filter((one) => one.targetId === targetId)
+              )
+            );
+
+          yield* TestClock.withLive(
+            Effect.gen(function* settle() {
+              assert.isTrue(yield* posts.updateTarget(started, stored));
+              // The router marks it before it sends the comment.
+              yield* posts.markFirstComment(targetId);
+              assert.isTrue(yield* posts.updateTarget(failed, started));
+            })
+          );
+
+          const [live] = yield* listed;
+
+          assert.isDefined(live);
+          assert.strictEqual(live.platformPostId, "2201");
+          assert.deepStrictEqual(
+            live.permalink,
+            Option.some("https://social.example/p/2201")
+          );
+
+          // A member leaves the comment out: published, listed once, where
+          // it was.
+          const settled = Result.getOrThrow(withoutRest(failed));
+
+          assert.isTrue(
+            yield* TestClock.withLive(posts.updateTarget(settled, failed))
+          );
+
+          const after = yield* listed;
+
+          assert.lengthOf(after, 1);
+          assert.deepStrictEqual(after[0]?.publishedAt, live.publishedAt);
         }).pipe(Effect.ensuring(deletePost(postId)));
       })
   );

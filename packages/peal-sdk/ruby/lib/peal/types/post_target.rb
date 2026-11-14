@@ -27,6 +27,8 @@ module Peal
 
       field :removed_at, -> { String }, optional: false, nullable: true, api_name: "removedAt"
 
+      field :parts_left_out, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "partsLeftOut"
+
       field :round, -> { Integer }, optional: false, nullable: false
 
       field :status, -> { Peal::Types::PostTargetStatus }, optional: false, nullable: false

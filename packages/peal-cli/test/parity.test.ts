@@ -210,6 +210,7 @@ const coverage = {
   "posts.outcome": by("posts wait"),
   "posts.removeTarget": by("posts remove-target"),
   "posts.repost": by("posts repost"),
+  "posts.leaveOutRest": by("posts leave-out-rest"),
   "posts.reschedule": by("posts reschedule"),
   "posts.schedule": by("posts schedule"),
   "posts.search": by("posts list"),

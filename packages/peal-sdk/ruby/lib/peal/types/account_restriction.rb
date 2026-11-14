@@ -18,6 +18,8 @@ module Peal
       member -> { Peal::Types::AccountRestrictionMediaTypesRefused }, key: "MEDIA_TYPES_REFUSED"
 
       member -> { Peal::Types::AccountRestrictionOptionNeedsReconnect }, key: "OPTION_NEEDS_RECONNECT"
+
+      member -> { Peal::Types::AccountRestrictionPartsNeedReconnect }, key: "PARTS_NEED_RECONNECT"
     end
   end
 end

@@ -8,6 +8,7 @@ export type { DiscardPostsRequest } from "./DiscardPostsRequest.js";
 export type { DraftsPostsRequest } from "./DraftsPostsRequest.js";
 export type { DuplicatePostsRequest } from "./DuplicatePostsRequest.js";
 export type { GetPostsRequest } from "./GetPostsRequest.js";
+export type { LeaveOutRestPostsRequest } from "./LeaveOutRestPostsRequest.js";
 export type { ListPostsRequest } from "./ListPostsRequest.js";
 export type { LivePostEdit } from "./LivePostEdit.js";
 export type { NewPost } from "./NewPost.js";

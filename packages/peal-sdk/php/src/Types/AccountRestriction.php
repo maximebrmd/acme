@@ -14,6 +14,7 @@ class AccountRestriction extends JsonSerializableType
      *   |'videoDuration'
      *   |'mediaTypesRefused'
      *   |'optionNeedsReconnect'
+     *   |'partsNeedReconnect'
      *   |'_unknown'
      * ) $type
      */
@@ -26,6 +27,7 @@ class AccountRestriction extends JsonSerializableType
      *   |AccountRestrictionVideoDuration
      *   |AccountRestrictionMediaTypesRefused
      *   |AccountRestrictionOptionNeedsReconnect
+     *   |AccountRestrictionPartsNeedReconnect
      *   |mixed
      * ) $value
      */
@@ -39,6 +41,7 @@ class AccountRestriction extends JsonSerializableType
      *   |'videoDuration'
      *   |'mediaTypesRefused'
      *   |'optionNeedsReconnect'
+     *   |'partsNeedReconnect'
      *   |'_unknown'
      * ),
      *   value: (
@@ -47,6 +50,7 @@ class AccountRestriction extends JsonSerializableType
      *   |AccountRestrictionVideoDuration
      *   |AccountRestrictionMediaTypesRefused
      *   |AccountRestrictionOptionNeedsReconnect
+     *   |AccountRestrictionPartsNeedReconnect
      *   |mixed
      * ),
      * } $values
@@ -115,6 +119,18 @@ class AccountRestriction extends JsonSerializableType
         return new AccountRestriction([
             'type' => 'optionNeedsReconnect',
             'value' => $optionNeedsReconnect,
+        ]);
+    }
+
+    /**
+     * @param AccountRestrictionPartsNeedReconnect $partsNeedReconnect
+     * @return AccountRestriction
+     */
+    public static function partsNeedReconnect(AccountRestrictionPartsNeedReconnect $partsNeedReconnect): AccountRestriction
+    {
+        return new AccountRestriction([
+            'type' => 'partsNeedReconnect',
+            'value' => $partsNeedReconnect,
         ]);
     }
 
@@ -229,6 +245,28 @@ class AccountRestriction extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isPartsNeedReconnect(): bool
+    {
+        return $this->value instanceof AccountRestrictionPartsNeedReconnect && $this->type === 'partsNeedReconnect';
+    }
+
+    /**
+     * @return AccountRestrictionPartsNeedReconnect
+     */
+    public function asPartsNeedReconnect(): AccountRestrictionPartsNeedReconnect
+    {
+        if (!($this->value instanceof AccountRestrictionPartsNeedReconnect && $this->type === 'partsNeedReconnect')) {
+            throw new Exception(
+                "Expected partsNeedReconnect; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -266,6 +304,10 @@ class AccountRestriction extends JsonSerializableType
                 break;
             case 'optionNeedsReconnect':
                 $value = $this->asOptionNeedsReconnect()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'partsNeedReconnect':
+                $value = $this->asPartsNeedReconnect()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -318,6 +360,9 @@ class AccountRestriction extends JsonSerializableType
                 break;
             case 'optionNeedsReconnect':
                 $args['value'] = AccountRestrictionOptionNeedsReconnect::jsonDeserialize($data);
+                break;
+            case 'partsNeedReconnect':
+                $args['value'] = AccountRestrictionPartsNeedReconnect::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

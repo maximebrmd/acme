@@ -30,6 +30,17 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
+                  "commentTextLimits": [
+                    {
+                      "maximum": 1,
+                      "unit": "graphemes"
+                    },
+                    {
+                      "maximum": 1,
+                      "unit": "graphemes"
+                    }
+                  ],
                   "kind": "thread",
                   "maxCount": 1
                 },
@@ -270,6 +281,19 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "platform": "x",
+                "poll": {
+                  "choiceLimit": {
+                    "maximum": 1,
+                    "unit": "graphemes"
+                  },
+                  "durationMinutes": {
+                    "maximum": 1,
+                    "minimum": 1
+                  },
+                  "maxChoices": 1,
+                  "minChoices": 1,
+                  "multipleChoice": true
+                },
                 "postFormats": [
                   {
                     "description": "description",
@@ -426,6 +450,13 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "followUps": {
+                  "commentNeeds": "pageAdministrator",
+                  "commentTextLimits": [
+                    {
+                      "maximum": 1,
+                      "unit": "graphemes"
+                    }
+                  ],
                   "kind": "thread",
                   "maxCount": 1
                 },
@@ -504,6 +535,19 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "platform": "x",
+                "poll": {
+                  "choiceLimit": {
+                    "maximum": 1,
+                    "unit": "graphemes"
+                  },
+                  "durationMinutes": {
+                    "maximum": 1,
+                    "minimum": 1
+                  },
+                  "maxChoices": 1,
+                  "minChoices": 1,
+                  "multipleChoice": true
+                },
                 "postFormats": [
                   {
                     "description": "description",

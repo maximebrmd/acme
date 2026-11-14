@@ -9,6 +9,7 @@ import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { GoogleBusinessOptions } from "#publishing/domain/google-business-options.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
@@ -198,5 +199,63 @@ describe(channelsOfSubject, () => {
 
   it("names none of a string that is not a subject", () => {
     expect(channelsOfSubject("not a subject")).toStrictEqual([]);
+  });
+});
+
+const asking = (poll: Poll) =>
+  new PostContent({
+    media: [],
+    overrides: [],
+    poll: Option.some(poll),
+    text: content.text,
+  });
+
+describe("what an approval of a post with a poll covers", () => {
+  const yesNo = new Poll({ choices: ["Yes", "No"], durationMinutes: 1440 });
+  const targets = [target("1", Option.none())];
+
+  it("covers the poll, its choices and how long it stays open", () => {
+    const subject = approvalSubject(asking(yesNo), targets);
+
+    expect(subject).not.toBe(approvalSubject(content, targets));
+    expect(subject).not.toBe(
+      approvalSubject(
+        asking(new Poll({ choices: ["Yes", "Maybe"], durationMinutes: 1440 })),
+        targets
+      )
+    );
+    expect(subject).not.toBe(
+      approvalSubject(
+        asking(new Poll({ choices: ["Yes", "No"], durationMinutes: 60 })),
+        targets
+      )
+    );
+    expect(subject).toBe(approvalSubject(asking(yesNo), targets));
+  });
+
+  it("leaves a post without one as it was written before polls", () => {
+    expect(JSON.parse(approvalSubject(content, targets))).not.toHaveProperty(
+      "poll"
+    );
+  });
+
+  it("covers a first comment, the part after the post", () => {
+    const commented = new PostContent({
+      followUps: [
+        new PostPart({
+          delaySeconds: 0,
+          media: [],
+          overrides: [],
+          text: "The link is in here",
+        }),
+      ],
+      media: [],
+      overrides: [],
+      text: content.text,
+    });
+
+    expect(approvalSubject(commented, targets)).not.toBe(
+      approvalSubject(content, targets)
+    );
   });
 });

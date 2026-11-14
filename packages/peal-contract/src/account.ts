@@ -147,6 +147,15 @@ const ExportedPostSchema = Schema.Struct({
     })
   ),
   media: Schema.Array(ExportedAttachmentSchema),
+  // The poll it asks with its first part: its choices, the minutes it
+  // stays open, whether several may be picked. Left out without one.
+  poll: Schema.optionalKey(
+    Schema.Struct({
+      choices: Schema.Array(Schema.String),
+      durationMinutes: Schema.Int,
+      multipleChoice: Schema.Boolean,
+    })
+  ),
   scheduledAt: nullable(instant),
   // How it was last scheduled; null on a draft, or when it was not kept.
   scheduledVia: nullable(ExportedPostOriginSchema),

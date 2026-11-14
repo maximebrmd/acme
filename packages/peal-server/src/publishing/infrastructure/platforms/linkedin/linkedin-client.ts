@@ -31,6 +31,7 @@ import type {
 import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { inParts } from "#publishing/infrastructure/platforms/byte-parts.ts";
+import { withFirstComments } from "#publishing/infrastructure/platforms/first-comment.ts";
 import {
   codeOf,
   commitUnanswered,
@@ -50,6 +51,7 @@ import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 import { authorUrnOf } from "./linkedin-author.ts";
 import { pageLookUp } from "./linkedin-confirmation.ts";
 import { linkedinDocuments } from "./linkedin-documents.ts";
+import { linkedinCommentCalls } from "./linkedin-first-comment.ts";
 import { documentTitleOf, linkOf, postBodyOf } from "./linkedin-post-body.ts";
 import type { LinkedInLink } from "./linkedin-post-body.ts";
 import { mediaRefusal, postRefusal } from "./linkedin-refusal.ts";
@@ -820,6 +822,11 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       resume: (post) => clientFor(post).resume(post),
     };
 
-    return client;
+    // A page's first comment goes under its post, as the page.
+    return withFirstComments(
+      client,
+      linkedinCommentCalls({ api, apiUrl, credentials, rest }),
+      timing
+    );
   }
 );

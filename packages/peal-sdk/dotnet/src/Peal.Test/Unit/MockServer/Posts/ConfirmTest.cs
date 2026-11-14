@@ -152,6 +152,14 @@ public class ConfirmTest : BaseMockServerTest
                     "text": "x"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices",
+                    "choices"
+                  ],
+                  "durationMinutes": 43829,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {
@@ -227,6 +235,7 @@ public class ConfirmTest : BaseMockServerTest
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
                   "removedAt": "removedAt",
+                  "partsLeftOut": true,
                   "round": 1,
                   "status": "pending",
                   "thumbnailNotSet": true,
@@ -278,6 +287,7 @@ public class ConfirmTest : BaseMockServerTest
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
                   "removedAt": "removedAt",
+                  "partsLeftOut": true,
                   "round": 1,
                   "status": "pending",
                   "thumbnailNotSet": true,
@@ -382,6 +392,13 @@ public class ConfirmTest : BaseMockServerTest
                     "text": "text"
                   }
                 ],
+                "poll": {
+                  "choices": [
+                    "choices"
+                  ],
+                  "durationMinutes": 1,
+                  "multipleChoice": true
+                },
                 "text": "text"
               },
               "createdVia": {
@@ -432,6 +449,7 @@ public class ConfirmTest : BaseMockServerTest
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
                   "removedAt": "removedAt",
+                  "partsLeftOut": true,
                   "round": 1,
                   "status": "pending",
                   "thumbnailNotSet": true,

@@ -51,6 +51,12 @@ class PlatformCapabilities extends JsonSerializableType
     public string $platform;
 
     /**
+     * @var ?PollCapabilities $poll
+     */
+    #[JsonProperty('poll')]
+    public ?PollCapabilities $poll;
+
+    /**
      * @var ?array<PostFormatCapabilities> $postFormats
      */
     #[JsonProperty('postFormats'), ArrayType([PostFormatCapabilities::class])]
@@ -79,6 +85,7 @@ class PlatformCapabilities extends JsonSerializableType
      *   text: TextCapabilities,
      *   version: int,
      *   followUps?: ?FollowUpCapabilities,
+     *   poll?: ?PollCapabilities,
      *   postFormats?: ?array<PostFormatCapabilities>,
      * } $values
      */
@@ -92,6 +99,7 @@ class PlatformCapabilities extends JsonSerializableType
         $this->media = $values['media'];
         $this->options = $values['options'];
         $this->platform = $values['platform'];
+        $this->poll = $values['poll'] ?? null;
         $this->postFormats = $values['postFormats'] ?? null;
         $this->text = $values['text'];
         $this->version = $values['version'];

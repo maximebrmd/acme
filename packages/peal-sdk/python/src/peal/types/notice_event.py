@@ -17,6 +17,7 @@ from .money import Money
 from .notice_channel import NoticeChannel
 from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
 from .paid_plan import PaidPlan
+from .post_parts_not_sent import PostPartsNotSent
 from .recycling_notice_reason import RecyclingNoticeReason
 from .review_party import ReviewParty
 from .webhook_turn_off_reason import WebhookTurnOffReason
@@ -45,6 +46,9 @@ class NoticeEvent_PostFailed(UniversalBaseModel):
         typing.Literal["PostFailed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PostFailed"
     channel: typing.Optional[NoticeChannel] = None
+    not_sent: typing_extensions.Annotated[
+        typing.Optional[PostPartsNotSent], FieldMetadata(alias="notSent"), pydantic.Field(alias="notSent")
+    ] = None
     post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
     reason: FailureReason
 

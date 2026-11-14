@@ -347,6 +347,46 @@ describe(renderNoticeEmail, () => {
     );
   });
 
+  it("says the post went out when only its first comment did not", () => {
+    const event: NoticeEvent = {
+      _tag: "PostFailed",
+      channel: mastodon,
+      notSent: "firstComment",
+      postId,
+      reason: "contentRejected",
+    };
+
+    const english = render(event, "en");
+    const french = render(event, "fr");
+
+    expect(english.subject).toBe(
+      "A first comment did not go out on Mastodon (@alice@social.example)"
+    );
+    expect(english.text).toContain(
+      "A post of Studio Nord is live on Mastodon (@alice@social.example), but its first comment did not go out:"
+    );
+    expect(french.text).toContain(
+      "Une publication de Studio Nord est en ligne sur Mastodon (@alice@social.example), mais son premier commentaire n’est pas parti\u00A0:"
+    );
+  });
+
+  it("says the post went out when only its later parts did not", () => {
+    const event: NoticeEvent = {
+      _tag: "PostFailed",
+      channel: mastodon,
+      notSent: "laterParts",
+      postId,
+      reason: "contentRejected",
+    };
+
+    expect(render(event, "en").text).toContain(
+      "A post of Studio Nord is live on Mastodon (@alice@social.example), but the parts after its first did not go out:"
+    );
+    expect(render(event, "fr").text).toContain(
+      "Une publication de Studio Nord est en ligne sur Mastodon (@alice@social.example), mais les parties après la première ne sont pas parties\u00A0:"
+    );
+  });
+
   // Nothing in Peal turns a channel back on, and reconnecting leaves it off:
   // a new channel for the account is what members can make.
   it("says what members can do with a channel turned off", () => {

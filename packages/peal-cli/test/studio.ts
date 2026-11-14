@@ -3756,6 +3756,27 @@ export const studioGroupsLive = (studio: Studio) =>
 
             return removed;
           }),
+        leaveOutRest: ({ params }) =>
+          publishing.pipe(
+            Effect.andThen(
+              changingTarget(studio, params, (target) =>
+                (target.status === "failed" ||
+                  target.status === "unconfirmed") &&
+                target.parts.live.length > 0
+                  ? Option.some({
+                      ...target,
+                      failureReason: null,
+                      partsLeftOut: true,
+                      status: "published",
+                      unconfirmedReason: null,
+                    })
+                  : Option.none()
+              )
+            ),
+            Effect.tap(() =>
+              record(studio, `leave-out-rest:${params.targetId}`)
+            )
+          ),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(

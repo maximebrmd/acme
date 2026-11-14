@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface NoticeEventPostFailed {
     channel: Peal.NoticeChannel | null;
+    notSent?: Peal.PostPartsNotSent | undefined;
     postId: string;
     reason: Peal.FailureReason;
 }

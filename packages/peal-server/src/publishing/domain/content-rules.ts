@@ -15,8 +15,12 @@ import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import { mediaNamedBy } from "./named-media.ts";
 import type { OptionProblem } from "./option-problem.ts";
-import { followUpsOn, rulesFor } from "./platform-rules.ts";
-import type { FormatLimits, MediaRules } from "./platform-rules.ts";
+import { followUpsThrough, partRulesFor, rulesFor } from "./platform-rules.ts";
+import type {
+  FormatLimits,
+  MediaRules,
+  PlatformRules,
+} from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import {
   emptyContent,
@@ -37,6 +41,7 @@ import {
 } from "./text-length.ts";
 import { ThreadsOptions } from "./threads-options.ts";
 import { TikTokOptions } from "./tiktok-options.ts";
+import { YouTubeOptions } from "./youtube-options.ts";
 
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
@@ -51,6 +56,8 @@ export interface ChannelOnPlatform {
 }
 
 const isThreads = Schema.is(ThreadsOptions);
+
+const isYouTube = Schema.is(YouTubeOptions);
 
 const isTikTok = Schema.is(TikTokOptions);
 
@@ -438,9 +445,9 @@ const atMost = (
 export const violationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  options: Option.Option<TargetOptions> = Option.none()
+  options: Option.Option<TargetOptions> = Option.none(),
+  rules: PlatformRules = rulesFor(channel.platform, options)
 ): readonly ContentViolation[] => {
-  const rules = rulesFor(channel.platform, options);
   const sent = textOn(content, channel.channelId);
   const media = content.media.length;
 
@@ -720,6 +727,89 @@ export const mediaViolationsOn = (
   ];
 };
 
+/**
+ * What the channel's platform would refuse in the post's poll, which goes
+ * with its first part: a poll where Peal sends none there, then its count
+ * of choices, each choice's length (an empty one counts 0), how long it
+ * stays open, several picks, and a file beside it. None without a poll.
+ */
+export const pollViolationsOn = (
+  content: PostContent,
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions> = Option.none()
+): readonly ContentViolation[] => {
+  if (Option.isNone(content.poll)) {
+    return [];
+  }
+
+  const poll = content.poll.value;
+  const rules = rulesFor(channel.platform, options).poll;
+
+  if (rules === undefined) {
+    return [{ _tag: "pollNotSupported", ...channel }];
+  }
+
+  const count = poll.choices.length;
+  const { choiceLimit, duration } = rules;
+
+  return [
+    ...(count < rules.minChoices || count > rules.maxChoices
+      ? [
+          {
+            _tag: "pollChoiceCount" as const,
+            ...channel,
+            count,
+            maximum: rules.maxChoices,
+            minimum: rules.minChoices,
+          },
+        ]
+      : []),
+    ...poll.choices.flatMap((choice, index): readonly ContentViolation[] => {
+      const length = measureText(choice.trim(), choiceLimit.unit);
+
+      return length === 0 || length > choiceLimit.maximum
+        ? [
+            {
+              _tag: "pollChoiceLength",
+              ...channel,
+              choice: index + 1,
+              length,
+              maximum: choiceLimit.maximum,
+              unit: choiceLimit.unit,
+            },
+          ]
+        : [];
+    }),
+    ...poll.choices.flatMap((choice, index): readonly ContentViolation[] =>
+      choice.trim() !== "" &&
+      poll.choices
+        .slice(0, index)
+        .some((before) => before.trim() === choice.trim())
+        ? [{ _tag: "pollChoiceRepeated", ...channel, choice: index + 1 }]
+        : []
+    ),
+    ...(duration._tag === "range" &&
+    (poll.durationMinutes < duration.minimumMinutes ||
+      poll.durationMinutes > duration.maximumMinutes)
+      ? [
+          {
+            _tag: "pollDurationOutOfRange" as const,
+            ...channel,
+            durationMinutes: poll.durationMinutes,
+            maximumMinutes: duration.maximumMinutes,
+            minimumMinutes: duration.minimumMinutes,
+          },
+        ]
+      : []),
+    ...(poll.multipleChoice && !rules.multipleChoice
+      ? [{ _tag: "pollMultipleChoice" as const, ...channel }]
+      : []),
+    ...(content.media.length > 0
+      ? [{ _tag: "pollWithMedia" as const, ...channel }]
+      : []),
+  ];
+};
+
 // The violations of one part, with its place: none for the first.
 const inPart = (
   violations: readonly ContentViolation[],
@@ -739,13 +829,19 @@ export const partViolationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
   files: readonly MediaFile[],
-  options: Option.Option<TargetOptions> = Option.none()
+  options: Option.Option<TargetOptions> = Option.none(),
+  // The way in the channel came through, which violations never name.
+  connection: Option.Option<ChannelConnection> = Option.fromUndefinedOr(
+    channel.connection
+  )
 ): readonly ContentViolation[] => {
   if (content.followUps.length === 0) {
     return [];
   }
 
-  const taken = followUpsOn(channel.platform, options)?.maximum ?? 0;
+  const followUps = followUpsThrough(channel.platform, connection, options);
+
+  const taken = followUps?.maximum ?? 0;
 
   if (content.followUps.length > taken) {
     return [
@@ -758,13 +854,41 @@ export const partViolationsOn = (
     ];
   }
 
+  // A comment holds text alone, within a comment's limits: its files are
+  // refused by their count, and checked no further.
+  const rules = partRulesFor(channel.platform, options);
+
+  // YouTube turns comments off on a video made for kids ("Set your
+  // channel or video's audience", support.google.com/youtube/answer/
+  // 9527654, read 2026-11-14): its first comment would fail once the video
+  // is live.
+  const madeForKids =
+    followUps?.kind === "comment" &&
+    options.pipe(
+      Option.filter(isYouTube),
+      Option.exists(({ madeForKids: forKids }) => forKids === true)
+    );
+
+  if (madeForKids) {
+    return [
+      {
+        _tag: "commentsTurnedOff",
+        ...channel,
+        field: "madeForKids",
+        part: 1,
+      },
+    ];
+  }
+
   return content.followUps.flatMap((_part, position) => {
     const alone = partAlone(content, position + 1);
 
     return inPart(
       [
-        ...violationsOn(alone, channel, options),
-        ...mediaViolationsOn(alone, channel, filesOf(alone, files), options),
+        ...violationsOn(alone, channel, options, rules),
+        ...(followUps?.kind === "comment"
+          ? []
+          : mediaViolationsOn(alone, channel, filesOf(alone, files), options)),
       ],
       position + 1
     );
@@ -800,7 +924,14 @@ export const checkPublishable = (
       return [
         ...violationsOn(sent, channel, chosen),
         ...mediaViolationsOn(sent, channel, filesOf(sent, files), chosen),
-        ...partViolationsOn(sent, channel, files, chosen),
+        ...pollViolationsOn(sent, channel, chosen),
+        ...partViolationsOn(
+          sent,
+          channel,
+          files,
+          chosen,
+          Option.fromUndefinedOr(connected.connection)
+        ),
         ...optionViolationsOn(channel, chosen),
         ...mediaOptionViolationsOn(sent, channel, chosen, files),
         ...connectionViolationsOn(connected, chosen),

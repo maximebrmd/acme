@@ -1,4 +1,5 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
+import type { Result } from "effect";
 
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
@@ -8,6 +9,7 @@ import {
   confirmNotPublished,
   confirmPublished,
   repostTarget,
+  withoutRest,
 } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { reopenPost, reviseOutcome } from "#publishing/domain/post.ts";
@@ -84,6 +86,16 @@ export class PostFollowUp extends Context.Service<
       targetId: PostTargetId,
       confirmation: Confirmation
     ) => Effect.Effect<PostWithTargets, Failure>;
+    /**
+     * Publishes a target whose first part is live without the parts that
+     * did not go out (`withoutRest`): a first comment, or the rest of a
+     * thread, given up. The post's outcome follows, as on a confirmation.
+     */
+    readonly leaveOutRest: (
+      actor: Actor,
+      postId: PostId,
+      targetId: PostTargetId
+    ) => Effect.Effect<PostWithTargets, Failure>;
   }
 >()("peal-server/publishing/application/PostFollowUp") {
   static readonly layer = Layer.effect(
@@ -149,26 +161,25 @@ export class PostFollowUp extends Context.Service<
         );
       });
 
-      const confirm = Effect.fn("PostFollowUp.confirm")(function* confirm(
+      // Settles a target by a member's word, `next` from what it is now,
+      // and has the post's outcome, its notices and webhooks follow.
+      const settleByHand = (
         actor: Actor,
         postId: PostId,
         targetId: PostTargetId,
-        confirmation: Confirmation
-      ) {
-        return yield* transaction(
+        transition: (
+          target: PostTarget,
+          post: Post,
+          now: DateTime.Utc
+        ) => Result.Result<PostTarget, InvalidTargetTransition>
+      ) =>
+        transaction(
           Effect.gen(function* record() {
             const { post, target } = yield* lockBoth(actor, postId, targetId);
             const now = yield* DateTime.now;
 
             const next = yield* Effect.fromResult(
-              confirmation._tag === "published"
-                ? confirmPublished(target, {
-                    now,
-                    parts: partCount(post.content),
-                    permalink: confirmation.permalink,
-                    platformPostId: Option.none(),
-                  })
-                : confirmNotPublished(target, now)
+              transition(target, post, now)
             );
 
             yield* saveTarget(next, target);
@@ -193,9 +204,40 @@ export class PostFollowUp extends Context.Service<
             return { post: revised, targets };
           })
         );
+
+      const confirm = Effect.fn("PostFollowUp.confirm")(function* confirm(
+        actor: Actor,
+        postId: PostId,
+        targetId: PostTargetId,
+        confirmation: Confirmation
+      ) {
+        return yield* settleByHand(
+          actor,
+          postId,
+          targetId,
+          (target, post, now) =>
+            confirmation._tag === "published"
+              ? confirmPublished(target, {
+                  now,
+                  parts: partCount(post.content),
+                  permalink: confirmation.permalink,
+                  platformPostId: Option.none(),
+                })
+              : confirmNotPublished(target, now)
+        );
       });
 
-      return PostFollowUp.of({ confirm, repost });
+      const leaveOutRest = Effect.fn("PostFollowUp.leaveOutRest")(
+        function* leaveOutRest(
+          actor: Actor,
+          postId: PostId,
+          targetId: PostTargetId
+        ) {
+          return yield* settleByHand(actor, postId, targetId, withoutRest);
+        }
+      );
+
+      return PostFollowUp.of({ confirm, leaveOutRest, repost });
     })
   );
 }

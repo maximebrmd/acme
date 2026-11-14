@@ -7,6 +7,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .media_attachment import MediaAttachment
+from .poll import Poll
 from .post_part import PostPart
 from .text_override import TextOverride
 
@@ -17,6 +18,7 @@ class PostContent(UniversalBaseModel):
     ] = None
     media: typing.List[MediaAttachment]
     overrides: typing.List[TextOverride]
+    poll: typing.Optional[Poll] = None
     text: str
 
     if IS_PYDANTIC_V2:

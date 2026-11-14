@@ -684,6 +684,18 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(removed);
         }),
+      leaveOutRest: ({ params }) =>
+        Effect.gen(function* leaveOutRest() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const targetId = yield* targetIdFrom(params.targetId);
+
+          const settled = yield* followUp
+            .leaveOutRest(actor, postId, targetId)
+            .pipe(Effect.catchTags(followUpFailures));
+
+          return postView(settled);
+        }),
       repost: ({ params }) =>
         Effect.gen(function* repost() {
           const actor = actorOf(yield* CurrentMember);

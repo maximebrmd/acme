@@ -237,13 +237,55 @@ export interface MediaRules {
 export type FollowUpKind = "comment" | "thread";
 
 /**
- * The parts a platform takes after a post's first. Each follows the rules
- * of a post there: its text, its media, their limits.
+ * What a comment under a post holds, where the parts after the first are
+ * comments: text alone, within every limit, in place of a post's rules.
+ */
+export interface CommentRules {
+  /**
+   * Who on the account may comment, where the platform restricts it: on a
+   * LinkedIn page, an administrator (the Comments API lists no content
+   * administrator among the roles that comment, while one posts).
+   */
+  readonly needs?: "pageAdministrator";
+  readonly textLimits: readonly TextLimit[];
+}
+
+/**
+ * The parts a platform takes after a post's first. In a thread each
+ * follows the rules of a post there: its text, its media, their limits; a
+ * comment (a first comment under the post) follows `comment`'s.
  */
 export interface FollowUpRules {
+  /** What each part holds, where they are comments; left out on a thread. */
+  readonly comment?: CommentRules;
   readonly kind: FollowUpKind;
   /** The most parts after the first. */
   readonly maximum: number;
+}
+
+/**
+ * How long a platform keeps a poll open: any whole number of minutes
+ * between two bounds, or as long as the platform decides, whatever the
+ * post asks.
+ */
+export type PollDuration =
+  | {
+      readonly _tag: "range";
+      readonly maximumMinutes: number;
+      readonly minimumMinutes: number;
+    }
+  | { readonly _tag: "platformDecides" };
+
+/**
+ * The poll a platform takes with a post, whose first part's text is the
+ * question; never with a file.
+ */
+export interface PollRules {
+  readonly choiceLimit: TextLimit;
+  readonly duration: PollDuration;
+  readonly maxChoices: number;
+  readonly minChoices: number;
+  readonly multipleChoice: boolean;
 }
 
 /**
@@ -286,6 +328,8 @@ export interface PlatformRules {
    * name the options' `format` gives them (`rulesFor` picks them).
    */
   readonly postFormats?: Readonly<Record<string, PostFormatRules>>;
+  /** The poll it takes with a post; left out where the API sends none. */
+  readonly poll?: PollRules;
   /** False where the post goes out without its text; left out, it is sent. */
   readonly sendsText?: boolean;
   /** Every limit applies. */
@@ -436,6 +480,21 @@ const facebookReel: PostFormatRules = {
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
+// A poll's choices on X and Threads: 1 to 25 characters each.
+const shortChoices = { maximum: 25, unit: "codePoints" } as const;
+
+// A first comment, which the account posts under its own post once it is
+// live, held to the platform's limits on a post's text (no platform's
+// page states one for a comment), with no file.
+const firstComment = (
+  textLimits: readonly TextLimit[],
+  needs?: "pageAdministrator"
+): FollowUpRules => ({
+  comment: needs === undefined ? { textLimits } : { needs, textLimits },
+  kind: "comment",
+  maximum: 1,
+});
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     followUps: thread,
@@ -459,6 +518,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     ],
   },
   facebook: {
+    followUps: firstComment([{ maximum: 63_206, unit: "codePoints" }]),
     media: {
       formats: {
         "image/gif": facebookImage,
@@ -488,6 +548,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 1500, unit: "codePoints" }],
   },
   instagram: {
+    followUps: firstComment([{ maximum: 2200, unit: "codePoints" }]),
     maxHashtags: 30,
     maxMedia: 20,
     maxMentions: 20,
@@ -512,6 +573,10 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
+    followUps: firstComment(
+      [{ maximum: 3000, unit: "codePoints" }],
+      "pageAdministrator"
+    ),
     maxMedia: 20,
     media: {
       formats: {
@@ -536,6 +601,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
+    poll: {
+      choiceLimit: { maximum: 50, unit: "codePoints" },
+      duration: { _tag: "range", maximumMinutes: 43_829, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: true,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -573,6 +645,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 800, unit: "codePoints" }],
   },
   threads: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "platformDecides" },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     maxLinks: 5,
     maxMedia: 20,
     media: {
@@ -606,6 +685,13 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "utf16Units" }],
   },
   x: {
+    poll: {
+      choiceLimit: shortChoices,
+      duration: { _tag: "range", maximumMinutes: 10_080, minimumMinutes: 5 },
+      maxChoices: 4,
+      minChoices: 2,
+      multipleChoice: false,
+    },
     followUps: thread,
     maxMedia: 4,
     media: {
@@ -628,6 +714,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   // One video alone; one of 3 minutes or less, square or taller than wide,
   // becomes a Short.
   youtube: {
+    followUps: firstComment([{ maximum: 5000, unit: "utf8Bytes" }]),
     forbiddenCharacters: ["<", ">"],
     maxMedia: 1,
     media: {
@@ -684,6 +771,23 @@ export const rulesFor = (
   } = rules;
 
   return { ...base, ...format };
+};
+
+/**
+ * The rules a part after the first follows on the platform, with the
+ * channel's options: a post's (`rulesFor`) in a thread, a comment's where
+ * the parts are comments (its text's limits, no file).
+ */
+export const partRulesFor = (
+  platform: Platform,
+  options?: TargetOptions
+): PlatformRules => {
+  const rules = rulesFor(platform, options);
+  const comment = rules.followUps?.comment;
+
+  return comment === undefined
+    ? rules
+    : { maxMedia: 0, mediaRequired: false, textLimits: comment.textLimits };
 };
 
 /** What a server's short addresses look like: its base, then a code. */

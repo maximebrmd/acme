@@ -127,6 +127,87 @@ public record ContentViolation
     }
 
     /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PartsNeedReconnect"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PartsNeedReconnect value)
+    {
+        Type = "partsNeedReconnect";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.CommentsTurnedOff"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.CommentsTurnedOff value)
+    {
+        Type = "commentsTurnedOff";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollNotSupported"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollNotSupported value)
+    {
+        Type = "pollNotSupported";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollChoiceCount"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollChoiceCount value)
+    {
+        Type = "pollChoiceCount";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollChoiceLength"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollChoiceLength value)
+    {
+        Type = "pollChoiceLength";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollChoiceRepeated"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollChoiceRepeated value)
+    {
+        Type = "pollChoiceRepeated";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollDurationOutOfRange"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollDurationOutOfRange value)
+    {
+        Type = "pollDurationOutOfRange";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollMultipleChoice"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollMultipleChoice value)
+    {
+        Type = "pollMultipleChoice";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.PollWithMedia"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.PollWithMedia value)
+    {
+        Type = "pollWithMedia";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of ContentViolation with <see cref="ContentViolation.MediaRequired"/>.
     /// </summary>
     public ContentViolation(ContentViolation.MediaRequired value)
@@ -333,6 +414,51 @@ public record ContentViolation
     public bool IsTooManyParts => Type == "tooManyParts";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "partsNeedReconnect"
+    /// </summary>
+    public bool IsPartsNeedReconnect => Type == "partsNeedReconnect";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "commentsTurnedOff"
+    /// </summary>
+    public bool IsCommentsTurnedOff => Type == "commentsTurnedOff";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollNotSupported"
+    /// </summary>
+    public bool IsPollNotSupported => Type == "pollNotSupported";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollChoiceCount"
+    /// </summary>
+    public bool IsPollChoiceCount => Type == "pollChoiceCount";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollChoiceLength"
+    /// </summary>
+    public bool IsPollChoiceLength => Type == "pollChoiceLength";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollChoiceRepeated"
+    /// </summary>
+    public bool IsPollChoiceRepeated => Type == "pollChoiceRepeated";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollDurationOutOfRange"
+    /// </summary>
+    public bool IsPollDurationOutOfRange => Type == "pollDurationOutOfRange";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollMultipleChoice"
+    /// </summary>
+    public bool IsPollMultipleChoice => Type == "pollMultipleChoice";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pollWithMedia"
+    /// </summary>
+    public bool IsPollWithMedia => Type == "pollWithMedia";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "mediaRequired"
     /// </summary>
     public bool IsMediaRequired => Type == "mediaRequired";
@@ -524,6 +650,97 @@ public record ContentViolation
             : throw new global::System.Exception("ContentViolation.Type is not 'tooManyParts'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPartsNeedReconnect"/> if <see cref="Type"/> is 'partsNeedReconnect', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'partsNeedReconnect'.</exception>
+    public Peal.ContentViolationPartsNeedReconnect AsPartsNeedReconnect() =>
+        IsPartsNeedReconnect
+            ? (Peal.ContentViolationPartsNeedReconnect)Value!
+            : throw new global::System.Exception(
+                "ContentViolation.Type is not 'partsNeedReconnect'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationCommentsTurnedOff"/> if <see cref="Type"/> is 'commentsTurnedOff', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'commentsTurnedOff'.</exception>
+    public Peal.ContentViolationCommentsTurnedOff AsCommentsTurnedOff() =>
+        IsCommentsTurnedOff
+            ? (Peal.ContentViolationCommentsTurnedOff)Value!
+            : throw new global::System.Exception(
+                "ContentViolation.Type is not 'commentsTurnedOff'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollNotSupported"/> if <see cref="Type"/> is 'pollNotSupported', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollNotSupported'.</exception>
+    public Peal.ContentViolationPollNotSupported AsPollNotSupported() =>
+        IsPollNotSupported
+            ? (Peal.ContentViolationPollNotSupported)Value!
+            : throw new global::System.Exception("ContentViolation.Type is not 'pollNotSupported'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollChoiceCount"/> if <see cref="Type"/> is 'pollChoiceCount', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollChoiceCount'.</exception>
+    public Peal.ContentViolationPollChoiceCount AsPollChoiceCount() =>
+        IsPollChoiceCount
+            ? (Peal.ContentViolationPollChoiceCount)Value!
+            : throw new global::System.Exception("ContentViolation.Type is not 'pollChoiceCount'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollChoiceLength"/> if <see cref="Type"/> is 'pollChoiceLength', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollChoiceLength'.</exception>
+    public Peal.ContentViolationPollChoiceLength AsPollChoiceLength() =>
+        IsPollChoiceLength
+            ? (Peal.ContentViolationPollChoiceLength)Value!
+            : throw new global::System.Exception("ContentViolation.Type is not 'pollChoiceLength'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollChoiceRepeated"/> if <see cref="Type"/> is 'pollChoiceRepeated', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollChoiceRepeated'.</exception>
+    public Peal.ContentViolationPollChoiceRepeated AsPollChoiceRepeated() =>
+        IsPollChoiceRepeated
+            ? (Peal.ContentViolationPollChoiceRepeated)Value!
+            : throw new global::System.Exception(
+                "ContentViolation.Type is not 'pollChoiceRepeated'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollDurationOutOfRange"/> if <see cref="Type"/> is 'pollDurationOutOfRange', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollDurationOutOfRange'.</exception>
+    public Peal.ContentViolationPollDurationOutOfRange AsPollDurationOutOfRange() =>
+        IsPollDurationOutOfRange
+            ? (Peal.ContentViolationPollDurationOutOfRange)Value!
+            : throw new global::System.Exception(
+                "ContentViolation.Type is not 'pollDurationOutOfRange'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollMultipleChoice"/> if <see cref="Type"/> is 'pollMultipleChoice', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollMultipleChoice'.</exception>
+    public Peal.ContentViolationPollMultipleChoice AsPollMultipleChoice() =>
+        IsPollMultipleChoice
+            ? (Peal.ContentViolationPollMultipleChoice)Value!
+            : throw new global::System.Exception(
+                "ContentViolation.Type is not 'pollMultipleChoice'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationPollWithMedia"/> if <see cref="Type"/> is 'pollWithMedia', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pollWithMedia'.</exception>
+    public Peal.ContentViolationPollWithMedia AsPollWithMedia() =>
+        IsPollWithMedia
+            ? (Peal.ContentViolationPollWithMedia)Value!
+            : throw new global::System.Exception("ContentViolation.Type is not 'pollWithMedia'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.ContentViolationMediaRequired"/> if <see cref="Type"/> is 'mediaRequired', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'mediaRequired'.</exception>
@@ -675,6 +892,15 @@ public record ContentViolation
         Func<Peal.ContentViolationForbiddenCharacters, T> onForbiddenCharacters,
         Func<Peal.ContentViolationTooManyMedia, T> onTooManyMedia,
         Func<Peal.ContentViolationTooManyParts, T> onTooManyParts,
+        Func<Peal.ContentViolationPartsNeedReconnect, T> onPartsNeedReconnect,
+        Func<Peal.ContentViolationCommentsTurnedOff, T> onCommentsTurnedOff,
+        Func<Peal.ContentViolationPollNotSupported, T> onPollNotSupported,
+        Func<Peal.ContentViolationPollChoiceCount, T> onPollChoiceCount,
+        Func<Peal.ContentViolationPollChoiceLength, T> onPollChoiceLength,
+        Func<Peal.ContentViolationPollChoiceRepeated, T> onPollChoiceRepeated,
+        Func<Peal.ContentViolationPollDurationOutOfRange, T> onPollDurationOutOfRange,
+        Func<Peal.ContentViolationPollMultipleChoice, T> onPollMultipleChoice,
+        Func<Peal.ContentViolationPollWithMedia, T> onPollWithMedia,
         Func<Peal.ContentViolationMediaRequired, T> onMediaRequired,
         Func<Peal.ContentViolationTooManyHashtags, T> onTooManyHashtags,
         Func<Peal.ContentViolationTooManyMentions, T> onTooManyMentions,
@@ -707,6 +933,15 @@ public record ContentViolation
             "forbiddenCharacters" => onForbiddenCharacters(AsForbiddenCharacters()),
             "tooManyMedia" => onTooManyMedia(AsTooManyMedia()),
             "tooManyParts" => onTooManyParts(AsTooManyParts()),
+            "partsNeedReconnect" => onPartsNeedReconnect(AsPartsNeedReconnect()),
+            "commentsTurnedOff" => onCommentsTurnedOff(AsCommentsTurnedOff()),
+            "pollNotSupported" => onPollNotSupported(AsPollNotSupported()),
+            "pollChoiceCount" => onPollChoiceCount(AsPollChoiceCount()),
+            "pollChoiceLength" => onPollChoiceLength(AsPollChoiceLength()),
+            "pollChoiceRepeated" => onPollChoiceRepeated(AsPollChoiceRepeated()),
+            "pollDurationOutOfRange" => onPollDurationOutOfRange(AsPollDurationOutOfRange()),
+            "pollMultipleChoice" => onPollMultipleChoice(AsPollMultipleChoice()),
+            "pollWithMedia" => onPollWithMedia(AsPollWithMedia()),
             "mediaRequired" => onMediaRequired(AsMediaRequired()),
             "tooManyHashtags" => onTooManyHashtags(AsTooManyHashtags()),
             "tooManyMentions" => onTooManyMentions(AsTooManyMentions()),
@@ -739,6 +974,15 @@ public record ContentViolation
         Action<Peal.ContentViolationForbiddenCharacters> onForbiddenCharacters,
         Action<Peal.ContentViolationTooManyMedia> onTooManyMedia,
         Action<Peal.ContentViolationTooManyParts> onTooManyParts,
+        Action<Peal.ContentViolationPartsNeedReconnect> onPartsNeedReconnect,
+        Action<Peal.ContentViolationCommentsTurnedOff> onCommentsTurnedOff,
+        Action<Peal.ContentViolationPollNotSupported> onPollNotSupported,
+        Action<Peal.ContentViolationPollChoiceCount> onPollChoiceCount,
+        Action<Peal.ContentViolationPollChoiceLength> onPollChoiceLength,
+        Action<Peal.ContentViolationPollChoiceRepeated> onPollChoiceRepeated,
+        Action<Peal.ContentViolationPollDurationOutOfRange> onPollDurationOutOfRange,
+        Action<Peal.ContentViolationPollMultipleChoice> onPollMultipleChoice,
+        Action<Peal.ContentViolationPollWithMedia> onPollWithMedia,
         Action<Peal.ContentViolationMediaRequired> onMediaRequired,
         Action<Peal.ContentViolationTooManyHashtags> onTooManyHashtags,
         Action<Peal.ContentViolationTooManyMentions> onTooManyMentions,
@@ -794,6 +1038,33 @@ public record ContentViolation
                 break;
             case "tooManyParts":
                 onTooManyParts(AsTooManyParts());
+                break;
+            case "partsNeedReconnect":
+                onPartsNeedReconnect(AsPartsNeedReconnect());
+                break;
+            case "commentsTurnedOff":
+                onCommentsTurnedOff(AsCommentsTurnedOff());
+                break;
+            case "pollNotSupported":
+                onPollNotSupported(AsPollNotSupported());
+                break;
+            case "pollChoiceCount":
+                onPollChoiceCount(AsPollChoiceCount());
+                break;
+            case "pollChoiceLength":
+                onPollChoiceLength(AsPollChoiceLength());
+                break;
+            case "pollChoiceRepeated":
+                onPollChoiceRepeated(AsPollChoiceRepeated());
+                break;
+            case "pollDurationOutOfRange":
+                onPollDurationOutOfRange(AsPollDurationOutOfRange());
+                break;
+            case "pollMultipleChoice":
+                onPollMultipleChoice(AsPollMultipleChoice());
+                break;
+            case "pollWithMedia":
+                onPollWithMedia(AsPollWithMedia());
                 break;
             case "mediaRequired":
                 onMediaRequired(AsMediaRequired());
@@ -1010,6 +1281,132 @@ public record ContentViolation
         if (Type == "tooManyParts")
         {
             value = (Peal.ContentViolationTooManyParts)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPartsNeedReconnect"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPartsNeedReconnect(out Peal.ContentViolationPartsNeedReconnect? value)
+    {
+        if (Type == "partsNeedReconnect")
+        {
+            value = (Peal.ContentViolationPartsNeedReconnect)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationCommentsTurnedOff"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsCommentsTurnedOff(out Peal.ContentViolationCommentsTurnedOff? value)
+    {
+        if (Type == "commentsTurnedOff")
+        {
+            value = (Peal.ContentViolationCommentsTurnedOff)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollNotSupported"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollNotSupported(out Peal.ContentViolationPollNotSupported? value)
+    {
+        if (Type == "pollNotSupported")
+        {
+            value = (Peal.ContentViolationPollNotSupported)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollChoiceCount"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollChoiceCount(out Peal.ContentViolationPollChoiceCount? value)
+    {
+        if (Type == "pollChoiceCount")
+        {
+            value = (Peal.ContentViolationPollChoiceCount)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollChoiceLength"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollChoiceLength(out Peal.ContentViolationPollChoiceLength? value)
+    {
+        if (Type == "pollChoiceLength")
+        {
+            value = (Peal.ContentViolationPollChoiceLength)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollChoiceRepeated"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollChoiceRepeated(out Peal.ContentViolationPollChoiceRepeated? value)
+    {
+        if (Type == "pollChoiceRepeated")
+        {
+            value = (Peal.ContentViolationPollChoiceRepeated)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollDurationOutOfRange"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollDurationOutOfRange(out Peal.ContentViolationPollDurationOutOfRange? value)
+    {
+        if (Type == "pollDurationOutOfRange")
+        {
+            value = (Peal.ContentViolationPollDurationOutOfRange)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollMultipleChoice"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollMultipleChoice(out Peal.ContentViolationPollMultipleChoice? value)
+    {
+        if (Type == "pollMultipleChoice")
+        {
+            value = (Peal.ContentViolationPollMultipleChoice)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationPollWithMedia"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPollWithMedia(out Peal.ContentViolationPollWithMedia? value)
+    {
+        if (Type == "pollWithMedia")
+        {
+            value = (Peal.ContentViolationPollWithMedia)Value!;
             return true;
         }
         value = null;
@@ -1266,6 +1663,34 @@ public record ContentViolation
     public static implicit operator ContentViolation(ContentViolation.TooManyParts value) =>
         new(value);
 
+    public static implicit operator ContentViolation(ContentViolation.PartsNeedReconnect value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.CommentsTurnedOff value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollNotSupported value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollChoiceCount value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollChoiceLength value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollChoiceRepeated value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(
+        ContentViolation.PollDurationOutOfRange value
+    ) => new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollMultipleChoice value) =>
+        new(value);
+
+    public static implicit operator ContentViolation(ContentViolation.PollWithMedia value) =>
+        new(value);
+
     public static implicit operator ContentViolation(ContentViolation.MediaRequired value) =>
         new(value);
 
@@ -1429,6 +1854,69 @@ public record ContentViolation
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.ContentViolationTooManyParts"
                         ),
+                "partsNeedReconnect" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPartsNeedReconnect?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPartsNeedReconnect"
+                        ),
+                "commentsTurnedOff" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationCommentsTurnedOff?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationCommentsTurnedOff"
+                        ),
+                "pollNotSupported" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollNotSupported?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollNotSupported"
+                        ),
+                "pollChoiceCount" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollChoiceCount?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollChoiceCount"
+                        ),
+                "pollChoiceLength" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollChoiceLength?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollChoiceLength"
+                        ),
+                "pollChoiceRepeated" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollChoiceRepeated?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollChoiceRepeated"
+                        ),
+                "pollDurationOutOfRange" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollDurationOutOfRange?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollDurationOutOfRange"
+                        ),
+                "pollMultipleChoice" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollMultipleChoice?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollMultipleChoice"
+                        ),
+                "pollWithMedia" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationPollWithMedia?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationPollWithMedia"
+                        ),
                 "mediaRequired" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationMediaRequired?>(
                         options
@@ -1564,6 +2052,18 @@ public record ContentViolation
                     "forbiddenCharacters" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyMedia" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyParts" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "partsNeedReconnect" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "commentsTurnedOff" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollNotSupported" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollChoiceCount" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollChoiceLength" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollChoiceRepeated" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollDurationOutOfRange" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
+                    "pollMultipleChoice" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pollWithMedia" => JsonSerializer.SerializeToNode(value.Value, options),
                     "mediaRequired" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyHashtags" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyMentions" => JsonSerializer.SerializeToNode(value.Value, options),
@@ -1846,6 +2346,186 @@ public record ContentViolation
 
         public static implicit operator ContentViolation.TooManyParts(
             Peal.ContentViolationTooManyParts value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for partsNeedReconnect
+    /// </summary>
+    [Serializable]
+    public struct PartsNeedReconnect
+    {
+        public PartsNeedReconnect(Peal.ContentViolationPartsNeedReconnect value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPartsNeedReconnect Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PartsNeedReconnect(
+            Peal.ContentViolationPartsNeedReconnect value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for commentsTurnedOff
+    /// </summary>
+    [Serializable]
+    public struct CommentsTurnedOff
+    {
+        public CommentsTurnedOff(Peal.ContentViolationCommentsTurnedOff value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationCommentsTurnedOff Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.CommentsTurnedOff(
+            Peal.ContentViolationCommentsTurnedOff value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollNotSupported
+    /// </summary>
+    [Serializable]
+    public struct PollNotSupported
+    {
+        public PollNotSupported(Peal.ContentViolationPollNotSupported value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollNotSupported Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollNotSupported(
+            Peal.ContentViolationPollNotSupported value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollChoiceCount
+    /// </summary>
+    [Serializable]
+    public struct PollChoiceCount
+    {
+        public PollChoiceCount(Peal.ContentViolationPollChoiceCount value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollChoiceCount Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollChoiceCount(
+            Peal.ContentViolationPollChoiceCount value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollChoiceLength
+    /// </summary>
+    [Serializable]
+    public struct PollChoiceLength
+    {
+        public PollChoiceLength(Peal.ContentViolationPollChoiceLength value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollChoiceLength Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollChoiceLength(
+            Peal.ContentViolationPollChoiceLength value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollChoiceRepeated
+    /// </summary>
+    [Serializable]
+    public struct PollChoiceRepeated
+    {
+        public PollChoiceRepeated(Peal.ContentViolationPollChoiceRepeated value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollChoiceRepeated Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollChoiceRepeated(
+            Peal.ContentViolationPollChoiceRepeated value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollDurationOutOfRange
+    /// </summary>
+    [Serializable]
+    public struct PollDurationOutOfRange
+    {
+        public PollDurationOutOfRange(Peal.ContentViolationPollDurationOutOfRange value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollDurationOutOfRange Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollDurationOutOfRange(
+            Peal.ContentViolationPollDurationOutOfRange value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollMultipleChoice
+    /// </summary>
+    [Serializable]
+    public struct PollMultipleChoice
+    {
+        public PollMultipleChoice(Peal.ContentViolationPollMultipleChoice value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollMultipleChoice Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollMultipleChoice(
+            Peal.ContentViolationPollMultipleChoice value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pollWithMedia
+    /// </summary>
+    [Serializable]
+    public struct PollWithMedia
+    {
+        public PollWithMedia(Peal.ContentViolationPollWithMedia value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationPollWithMedia Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.PollWithMedia(
+            Peal.ContentViolationPollWithMedia value
         ) => new(value);
     }
 

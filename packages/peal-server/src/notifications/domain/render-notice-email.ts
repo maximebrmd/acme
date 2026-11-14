@@ -253,8 +253,12 @@ const contentOf = (
       messages: catalog.postCommented,
       values: [["by", catalog.reviewParties[by]]],
     }),
-    PostFailed: ({ channel, reason }): Content => ({
-      messages: catalog.postFailed,
+    PostFailed: ({ channel, notSent, reason }): Content => ({
+      messages: {
+        firstComment: catalog.firstCommentFailed,
+        laterParts: catalog.laterPartsFailed,
+        none: catalog.postFailed,
+      }[notSent ?? "none"],
       values: [
         ["channel", channelPhrase(catalog, channel)],
         ["reason", catalog.failureReasons[reason]],

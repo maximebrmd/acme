@@ -3,6 +3,7 @@ import { Duration, Effect, Option, Schema } from "effect";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
 import type { MediaAttachment } from "./media-attachment.ts";
+import { Poll } from "./poll.ts";
 import {
   maxFollowUps,
   PartMediaSchema,
@@ -20,6 +21,8 @@ export { maxMediaPerPost } from "./post-part.ts";
  * the override gives some: `partsOn`, `sentTo`). That is its first part, and all of
  * most posts; `followUps` are the parts after it, in order
  * (`./post-part.ts`). Content stored before posts had parts has none.
+ * `poll` is a poll asked with the first part, where its platforms take
+ * one (`./poll.ts`); content from before polls has none.
  */
 export class PostContent extends Schema.Class<PostContent>(
   "peal-server/publishing/domain/PostContent"
@@ -32,6 +35,10 @@ export class PostContent extends Schema.Class<PostContent>(
     ),
   media: PartMediaSchema,
   overrides: PartOverridesSchema,
+  poll: Schema.OptionFromNullOr(Poll).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(null)),
+    Schema.withConstructorDefault(Effect.succeed(Option.none()))
+  ),
   text: PostTextSchema,
 }) {}
 
@@ -125,6 +132,7 @@ export const partAlone = (content: PostContent, index: number): PostContent => {
     ? new PostContent({
         media: content.media,
         overrides: content.overrides,
+        poll: content.poll,
         text: content.text,
       })
     : new PostContent({
@@ -164,6 +172,7 @@ export const withTextOn = (
         followUps: content.followUps,
         media: content.media,
         overrides: overriddenWith(content.overrides, channelId, text),
+        poll: content.poll,
         text: content.text,
       })
     : new PostContent({
@@ -179,6 +188,7 @@ export const withTextOn = (
         ),
         media: content.media,
         overrides: content.overrides,
+        poll: content.poll,
         text: content.text,
       });
 
@@ -246,6 +256,7 @@ export const sentTo = (
     ),
     media: mediaAmong(content.overrides, channelId, content.media),
     overrides: textsOnly(content.overrides),
+    poll: content.poll,
     text: content.text,
   });
 
@@ -272,6 +283,7 @@ export const withoutChannels = (
     ),
     media: content.media,
     overrides: kept(content.overrides),
+    poll: content.poll,
     text: content.text,
   });
 };

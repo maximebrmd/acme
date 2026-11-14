@@ -16,6 +16,7 @@ import social.peal.resources.posts.requests.DiscardPostsRequest;
 import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.DuplicatePostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
+import social.peal.resources.posts.requests.LeaveOutRestPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
 import social.peal.resources.posts.requests.LivePostEdit;
 import social.peal.resources.posts.requests.NewPost;
@@ -567,6 +568,45 @@ public class PostsClient {
             RequestOptions requestOptions) {
         return this.rawClient
                 .confirm(workspaceId, postId, targetId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public Post leaveOutRest(String workspaceId, String postId, String targetId) {
+        return this.rawClient.leaveOutRest(workspaceId, postId, targetId).body();
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public Post leaveOutRest(String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        return this.rawClient
+                .leaveOutRest(workspaceId, postId, targetId, requestOptions)
+                .body();
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public Post leaveOutRest(String workspaceId, String postId, String targetId, LeaveOutRestPostsRequest request) {
+        return this.rawClient
+                .leaveOutRest(workspaceId, postId, targetId, request)
+                .body();
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public Post leaveOutRest(
+            String workspaceId,
+            String postId,
+            String targetId,
+            LeaveOutRestPostsRequest request,
+            RequestOptions requestOptions) {
+        return this.rawClient
+                .leaveOutRest(workspaceId, postId, targetId, request, requestOptions)
                 .body();
     }
 

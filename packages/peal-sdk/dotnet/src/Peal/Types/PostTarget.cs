@@ -44,6 +44,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("removedAt")]
     public string? RemovedAt { get; set; }
 
+    [JsonPropertyName("partsLeftOut")]
+    public bool? PartsLeftOut { get; set; }
+
     [JsonPropertyName("round")]
     public required int Round { get; set; }
 

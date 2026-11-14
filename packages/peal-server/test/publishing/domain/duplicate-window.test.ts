@@ -5,6 +5,7 @@ import { contentOn } from "#publishing/domain/duplicate-window.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
@@ -198,5 +199,24 @@ describe(contentOn, () => {
         Option.some(new InstagramOptions({ format: "story" }))
       )
     ).toBe(`{"media":["${picture}"],"text":"","format":"story"}`);
+  });
+});
+
+const asking = (choices: readonly string[]) =>
+  new PostContent({
+    media: [],
+    overrides: [],
+    poll: Option.some(new Poll({ choices, durationMinutes: 60 })),
+    text: "Which one?",
+  });
+
+describe("a post asking a poll", () => {
+  it("is another post than the same words without it, or with other choices", () => {
+    const plain = contentOn(post("Which one?"), channel);
+    const yesNo = contentOn(asking(["Yes", "No"]), channel);
+
+    expect(yesNo).not.toBe(plain);
+    expect(yesNo).not.toBe(contentOn(asking(["Yes", "Maybe"]), channel));
+    expect(yesNo).toBe(contentOn(asking(["Yes", "No"]), channel));
   });
 });

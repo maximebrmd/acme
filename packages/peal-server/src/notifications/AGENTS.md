@@ -11,6 +11,10 @@
   from its catalogues, and emails are rendered when they go out. Add members
   and fields to an event; never rename or remove one, since notices are
   stored with it.
+- `PostFailed.notSent` (`firstComment`, `laterParts`) says the post itself
+  is live and only what followed it did not go out: its notice and email
+  say so (`firstCommentFailed`, `laterPartsFailed`), never that the post
+  did not go out. Publishing sets it from the target's live parts.
 - Other contexts tell people through `Notify`, with a key that names the
   event, such as `post-target:<id>:<round>`: a key seen before
   (`notifications.sent_notices`) notifies nobody. Keys hold ids and instants,

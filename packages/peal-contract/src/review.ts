@@ -15,6 +15,7 @@ import { Forbidden } from "./forbidden.ts";
 import { MediaKindSchema } from "./media.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
+import { PollSchema } from "./poll.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostNotReviewable } from "./post-not-reviewable.ts";
 import { PostScheduleSchema } from "./posts.ts";
@@ -289,6 +290,9 @@ export const PostReviewSchema = Schema.Struct({
   channels: Schema.Array(ReviewedChannelSchema),
   comments: Schema.Array(ReviewCommentSchema),
   media: Schema.Array(ReviewedMediaSchema),
+  // The poll the post asks with its first part: an approval covers it.
+  // Left out on a post without one.
+  poll: Schema.optionalKey(PollSchema),
 }).annotate({ identifier: "PostReview" });
 
 export type PostReview = typeof PostReviewSchema.Type;

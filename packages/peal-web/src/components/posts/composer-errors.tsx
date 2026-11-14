@@ -158,6 +158,47 @@ export const useViolationText = (
           count,
           maximum,
         }),
+      commentsTurnedOff: ({ channelId }) =>
+        t("violation.commentsTurnedOff", { channel: channelName(channelId) }),
+      partsNeedReconnect: ({ channelId }) =>
+        t("violation.partsNeedReconnect", { channel: channelName(channelId) }),
+      pollChoiceCount: ({ channelId, count, maximum, minimum }) =>
+        t("violation.pollChoiceCount", {
+          channel: channelName(channelId),
+          count,
+          maximum,
+          minimum,
+        }),
+      pollChoiceLength: ({ channelId, choice, length, maximum }) =>
+        t("violation.pollChoiceLength", {
+          channel: channelName(channelId),
+          choice,
+          length,
+          maximum,
+        }),
+      pollChoiceRepeated: ({ channelId, choice }) =>
+        t("violation.pollChoiceRepeated", {
+          channel: channelName(channelId),
+          choice,
+        }),
+      pollDurationOutOfRange: ({
+        channelId,
+        durationMinutes,
+        maximumMinutes,
+        minimumMinutes,
+      }) =>
+        t("violation.pollDurationOutOfRange", {
+          channel: channelName(channelId),
+          durationMinutes,
+          maximumMinutes,
+          minimumMinutes,
+        }),
+      pollMultipleChoice: ({ channelId }) =>
+        t("violation.pollMultipleChoice", { channel: channelName(channelId) }),
+      pollNotSupported: ({ channelId }) =>
+        t("violation.pollNotSupported", { channel: channelName(channelId) }),
+      pollWithMedia: ({ channelId }) =>
+        t("violation.pollWithMedia", { channel: channelName(channelId) }),
     });
 
   // A violation of a part after the first says which: parts are numbered

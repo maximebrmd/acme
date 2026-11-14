@@ -7,7 +7,7 @@ import {
   measureText,
   rulesFor,
 } from "peal-contract/post-text";
-import type { TextUnit } from "peal-contract/post-text";
+import type { PlatformRules, TextUnit } from "peal-contract/post-text";
 
 // What the composer tells about the text on each channel, counted as the
 // server counts it: the contract carries the server's rules.
@@ -75,9 +75,10 @@ export const fitOn = (
   platform: Platform,
   text: string,
   media: number,
-  options?: TargetOptions
+  options?: TargetOptions,
+  // A part after the first follows its own (`partRulesFor`): a comment's.
+  rules: PlatformRules = rulesFor(platform, options)
 ): ChannelFit => {
-  const rules = rulesFor(platform, options);
   const sent = rules.sendsText !== false;
   const counted = countedText(sent ? text : "", options);
 

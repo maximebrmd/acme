@@ -77,7 +77,7 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   planLimit:
     "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:
-    "the platform's daily upload allowance stayed spent: post it again after it resets",
+    "the platform's daily allowance (its uploads, or YouTube's quota a first comment spends too) stayed spent: post it again after it resets",
   rateLimited: "the platform kept limiting Peal, which stopped trying",
   repliesNotAllowed:
     "its first parts are live and X did not let this server's app post the rest as replies (self-serve access replies only where the post's author mentioned or quoted the account): it cannot be reposted, so post the rest on X",
@@ -404,6 +404,49 @@ const unschedule = Command.make(
 ).pipe(
   Command.withDescription(
     "Take a scheduled post back to draft, so it goes out at no time and can change. A post already publishing cannot."
+  )
+);
+
+const leaveOutRest = Command.make(
+  "leave-out-rest",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    targetId: targetArgument,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.leaveOutRest")(function* leaveOutRest({
+    json,
+    postId,
+    targetId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const post = yield* client.posts
+      .leaveOutRest({ params: { postId, targetId, workspaceId: workspace.id } })
+      .pipe(explainingPublishing(url));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    yield* Option.match(targetOf(post, targetId), {
+      onNone: () =>
+        Console.log(`Post ${postId} is published without what did not go out.`),
+      onSome: (target) =>
+        Console.log(
+          `Post ${postId} is published on ${named(names, target.channelId)} without what did not go out after its first part: nothing more is sent there.`
+        ),
+    });
+  })
+).pipe(
+  Command.withDescription(
+    "Publish a post on one channel without the parts that did not go out after its first (a first comment the platform refused, the rest of a thread): its first part is live, and nothing more is sent there."
   )
 );
 
@@ -956,6 +999,7 @@ export const posts = Command.make("posts").pipe(
     cancel,
     removeTarget,
     repost,
+    leaveOutRest,
     confirm,
     unpublish,
     edit,

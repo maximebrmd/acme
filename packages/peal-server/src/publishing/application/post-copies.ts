@@ -101,6 +101,7 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
             text: part.text,
           })
       ),
+      poll: content.poll,
       text: content.text,
     }),
     // An option naming a file gone since is left out.

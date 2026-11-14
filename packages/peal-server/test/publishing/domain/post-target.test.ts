@@ -16,6 +16,7 @@ import {
   repostTarget,
   settleTarget,
   startTarget,
+  withoutRest,
 } from "#publishing/domain/post-target.ts";
 import type { TargetSettlement } from "#publishing/domain/target-settlement.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -354,5 +355,47 @@ describe(repostTarget, () => {
       action: "repost",
       from: from.status._tag,
     });
+  });
+});
+
+describe(withoutRest, () => {
+  const live = {
+    index: 0,
+    permalink: Option.some("https://social.example/p/1"),
+    platformPostId: Option.some(platformPostId),
+    publishedAt: startedAt,
+    round: 1,
+  };
+
+  const withLivePost = (target: PostTarget) =>
+    new PostTarget({
+      channelId: target.channelId,
+      id: target.id,
+      liveParts: [live],
+      options: target.options,
+      postId: target.postId,
+      round: target.round,
+      status: target.status,
+    });
+
+  it("publishes a failed or unconfirmed target as the parts that are live", () => {
+    for (const target of [statuses.failed, statuses.unconfirmed]) {
+      expect(statusOf(withoutRest(withLivePost(target)))).toStrictEqual({
+        _tag: "published",
+        partsLeftOut: true,
+        permalink: live.permalink,
+        platformPostId: live.platformPostId,
+        publishedAt: startedAt,
+      });
+    }
+  });
+
+  it("refuses a target whose post itself did not go out, or one settled", () => {
+    expect(failureOf(withoutRest(statuses.failed))?.action).toBe(
+      "leaveOutRest"
+    );
+    expect(
+      failureOf(withoutRest(withLivePost(statuses.published)))?.action
+    ).toBe("leaveOutRest");
   });
 });

@@ -155,7 +155,7 @@ describe("the parts that follow a post, as the composer edits them", () => {
       _tag: "taken",
       kind: "thread",
     });
-    expect(partsTaken("youtube", 1)).toStrictEqual({ _tag: "alone" });
+    expect(partsTaken("pinterest", 1)).toStrictEqual({ _tag: "alone" });
     expect(partsTaken("youtube", 0)).toStrictEqual({
       _tag: "taken",
       kind: "none",
@@ -169,5 +169,24 @@ describe("the parts that follow a post, as the composer edits them", () => {
     ]);
     expect(delayChoices(45)).toContain(45);
     expect(delayChoices(45).indexOf(45)).toBe(1);
+  });
+});
+
+describe("the parts a platform takes, as this server sends them", () => {
+  it("are a first comment under the post where the platform takes comments", () => {
+    expect(partsTaken("youtube", 1)).toStrictEqual({
+      _tag: "taken",
+      kind: "comment",
+    });
+    expect(partsTaken("youtube", 2)).toStrictEqual({
+      _tag: "tooMany",
+      maximum: 1,
+    });
+  });
+
+  it("are none where the server sends no parts there", () => {
+    expect(partsTaken("youtube", 1, undefined, false)).toStrictEqual({
+      _tag: "alone",
+    });
   });
 });

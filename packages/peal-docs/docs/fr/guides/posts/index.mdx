@@ -132,7 +132,7 @@ Un canal qui la refuserait est signalé, et ce qu’il faut corriger est montré
 
 ## Fils [#threads]
 
-Une publication peut avoir des parties à sa suite. Sous **Fil**, choisissez **Ajouter une partie**. Chaque partie a son texte, ses images et vidéos, un compteur pour chaque canal et, si vous le souhaitez, une attente après la partie précédente, d’une minute à un jour. Montez ou descendez une partie, ou retirez-la, avec ses boutons. Une publication a au plus 24 parties après la première.
+Une publication peut avoir des parties à sa suite. Sous **Fil et premier commentaire**, choisissez **Ajouter une partie**. Chaque partie a son texte, ses images et vidéos, un compteur pour chaque canal et, si vous le souhaitez, une attente après la partie précédente, d’une minute à un jour. Montez ou descendez une partie, ou retirez-la, avec ses boutons. Une publication a au plus 24 parties après la première.
 
 Sur les plateformes qui ont des fils, chaque partie part en réponse à la précédente :
 
@@ -142,7 +142,7 @@ Sur les plateformes qui ont des fils, chaque partie part en réponse à la préc
 | Bluesky    | Un fil : chaque partie nomme la première publication du fil et son parent |
 | Mastodon   | Un fil : chaque partie répond à la précédente                             |
 
-Chaque partie suit les règles d’une publication sur sa plateforme : sa longueur, comptée comme la plateforme la compte, et ses images et vidéos. Les autres plateformes prennent une publication seule : une publication avec des parties y est refusée quand vous la programmez, et l’éditeur le dit dès que vous cochez un tel canal. Les commentaires sous une publication, sur les plateformes qui en prennent, ne sont pas encore envoyés.
+Chaque partie suit les règles d’une publication sur sa plateforme : sa longueur, comptée comme la plateforme la compte, et ses images et vidéos. Sur les Pages Facebook, Instagram, les pages LinkedIn et YouTube, l’unique partie après la publication est plutôt un [premier commentaire](#first-comment). Les autres plateformes prennent une publication seule : une publication avec des parties y est refusée quand vous la programmez, et l’éditeur le dit dès que vous cochez un tel canal.
 
 <Callout type="warning" title="Les fils sur X">
   Qu’un fil parte sur X dépend de l’accès qu’a l’application du serveur. X
@@ -165,6 +165,35 @@ Les parties partent dans l’ordre, chacune par sa propre requête à la platefo
 | Vous choisissez **Annuler**           | Les parties qui ne sont pas encore parties s’arrêtent. Une partie qui attend n’est pas envoyée à la fin de son attente, et les parties déjà parties restent en ligne.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 L’adresse de la publication est celle de sa première partie, et les [statistiques](/guides/engage/analytics) lisent les compteurs de la première partie.
+
+## Premier commentaire [#first-comment]
+
+Sur certaines plateformes, la partie après la publication est un commentaire que le compte publie sous sa propre publication, une fois celle-ci en ligne : un premier commentaire, souvent utilisé pour un lien ou des hashtags que vous voulez garder hors de la publication. Écrivez-le comme deuxième partie, sous **Fil et premier commentaire**. L’éditeur nomme chaque canal où il part en premier commentaire.
+
+| Plateforme     | Où va le premier commentaire                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| Pages Facebook | Sous la publication de la Page, au nom de la Page                                                   |
+| Instagram      | Sous la publication, au nom du compte                                                               |
+| LinkedIn       | Sous la publication d’une page d’entreprise, au nom de la page ; un profil de membre n’en prend pas |
+| YouTube        | Sous la vidéo, au nom de la chaîne                                                                  |
+
+Un premier commentaire est du texte seul, tenu à la longueur que la plateforme permet au texte d’une publication, car aucune de ces plateformes ne dit quelle longueur un commentaire peut avoir. Cette limite n’est pas vérifiée : une plateforme peut refuser un long commentaire que Peal a laissé passer, une fois la publication en ligne. L’aide de LinkedIn donne 1 250 caractères pour les commentaires dans les groupes : gardez un commentaire LinkedIn court. Il ne prend ni image ni vidéo, et une publication en a au plus un. Une story ou un reel n’en prend pas. YouTube désactive les commentaires sur une vidéo conçue pour les enfants : une publication avec un premier commentaire et **Conçue pour les enfants** y est donc refusée quand vous la programmez. Sur LinkedIn, c’est l’administrateur de la page qui doit l’avoir connectée : LinkedIn ne cite aucun administrateur de contenu parmi les rôles qui commentent, et le commentaire serait refusé.
+
+Un premier commentaire utilise l’autorisation qui répond aux commentaires dans la [boîte de réception](/guides/engage/inbox). Il n’est donc proposé que là où le serveur lit les commentaires de cette plateforme ([`PEAL_INBOX_PLATFORMS`](/self-hosting/environment-variables)). Ailleurs, la plateforme prend une publication seule. Quand le serveur cesse de lire les commentaires d’une plateforme, une publication déjà programmée avec un premier commentaire y est refusée à son heure, avant tout envoi, avec la raison que les premiers commentaires sont désactivés. Un canal connecté avant que le serveur lise ses commentaires doit être reconnecté : d’ici là, une publication avec un premier commentaire y est refusée, et les capacités du canal le disent.
+
+Le commentaire part après la publication, par le même canal, après l’attente de la partie. Si la publication est en ligne et que le commentaire échoue, la publication reste publiée. Le canal indique **Échec**, la publication est **publiée en partie**, les webhooks reçoivent `post.finished` avec ce résultat, et la notification dit que la publication est en ligne et que seul son premier commentaire n’est pas parti. Les statistiques, la boîte de réception et les publicités la comptent en ligne quand même. **Republier** envoie le commentaire seul. **Publier sans le premier commentaire** y renonce : le canal indique **Publiée**, comme sa publication, et rien de plus n’est envoyé. Aucune de ces plateformes ne garde de clé qui distinguerait un commentaire envoyé deux fois. Quand la réponse de la plateforme se perd, Peal cherche donc le commentaire parmi les plus récents de la publication. Il prend celui écrit par le compte depuis le début de la tentative, avec le même texte. S’il n’en trouve aucun, ou deux, le canal indique **À vérifier** : Peal ne renvoie jamais le commentaire à l’aveugle. Une approbation couvre le premier commentaire, comme elle couvre chaque partie.
+
+## Sondage [#polls]
+
+Une publication peut poser un sondage. Son texte en est la question. Sous **Sondage**, choisissez **Ajouter un sondage**, puis écrivez de deux à quatre choix. Choisissez combien de temps il reste ouvert et si les lecteurs peuvent choisir plusieurs réponses.
+
+| Plateforme | Choix                       | Ouvert pendant                     | Plusieurs réponses |
+| ---------- | --------------------------- | ---------------------------------- | ------------------ |
+| X          | 2 à 4, 25 caractères chacun | 5 minutes à 7 jours                | Non                |
+| Mastodon   | 2 à 4, 50 caractères chacun | 5 minutes à 30 jours environ       | Oui                |
+| Threads    | 2 à 4, 25 caractères chacun | Aussi longtemps que Threads décide | Non                |
+
+Un sondage part avec la première partie de la publication, et jamais avec une image ou une vidéo, que ces plateformes refusent ensemble. Les limites de Mastodon sont celles par défaut : un serveur réglé autrement peut refuser le sondage au départ de la publication. Threads fixe sa propre durée, quoi que demande la publication. Les autres plateformes ne prennent pas de sondage de Peal : une publication avec un sondage y est refusée, et l’éditeur le dit. Les sondages de LinkedIn ont leur propre question, et ceux d’Instagram passent seulement par Facebook Login : Peal n’envoie encore ni l’un ni l’autre. Une approbation couvre le sondage : ses choix, sa durée et la possibilité de plusieurs réponses.
 
 ## Options des plateformes [#options]
 

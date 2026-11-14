@@ -37,6 +37,12 @@ export interface FakeStatus {
   mediaIds: readonly string[];
   /** Whether it holds a poll, as one made elsewhere would. */
   poll: boolean;
+  /** The poll it was sent with, as the instance took it; null without. */
+  readonly sentPoll: {
+    readonly expiresIn: number;
+    readonly multiple: boolean;
+    readonly options: readonly string[];
+  } | null;
   sensitive: boolean;
   spoilerText: string;
   text: string;
@@ -72,7 +78,14 @@ export interface FakeMastodonOptions {
 const StatusBodySchema = Schema.Struct({
   in_reply_to_id: Schema.optionalKey(Schema.String),
   language: Schema.optionalKey(Schema.String),
-  media_ids: Schema.Array(Schema.String),
+  media_ids: Schema.optionalKey(Schema.Array(Schema.String)),
+  poll: Schema.optionalKey(
+    Schema.Struct({
+      expires_in: Schema.Int,
+      multiple: Schema.optionalKey(Schema.Boolean),
+      options: Schema.Array(Schema.String),
+    })
+  ),
   quote_approval_policy: Schema.optionalKey(
     Schema.Literals(["public", "followers", "nobody"])
   ),
@@ -180,8 +193,16 @@ export const fakeMastodonInstance = Effect.fnUntraced(
         idempotencyKey: key === "" ? null : key,
         inReplyToId: body.in_reply_to_id ?? null,
         language: body.language ?? null,
-        mediaIds: body.media_ids,
-        poll: false,
+        mediaIds: body.media_ids ?? [],
+        poll: body.poll !== undefined,
+        sentPoll:
+          body.poll === undefined
+            ? null
+            : {
+                expiresIn: body.poll.expires_in,
+                multiple: body.poll.multiple === true,
+                options: body.poll.options,
+              },
         sensitive: body.sensitive === true || body.spoiler_text !== undefined,
         spoilerText: body.spoiler_text ?? "",
         text: body.status,

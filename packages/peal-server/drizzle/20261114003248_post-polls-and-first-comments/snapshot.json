@@ -1,0 +1,193 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "68fad7c9-755e-45d3-9a12-f5dae4559337",
+  "prevIds": [
+    "0183eb57-2238-463b-88eb-d58323b8d86e"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "post_targets",
+        "post_targets_published"
+      ],
+      "writes": [
+        "s|idx|publishing.post_targets_published",
+        "n|idx|publishing.post_targets_published",
+        "e|idx|publishing.post_targets_published",
+        "n|rel|publishing.post_targets_published"
+      ],
+      "reads": [
+        "e|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "e|col|publishing.post_targets.listed_at",
+        "e|col|publishing.post_targets.id"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "post_targets",
+        "first_comment"
+      ],
+      "writes": [
+        "s|col|publishing.post_targets.first_comment",
+        "n|col|publishing.post_targets.first_comment",
+        "e|col|publishing.post_targets.first_comment"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "post_targets",
+        "parts_left_out"
+      ],
+      "writes": [
+        "s|col|publishing.post_targets.parts_left_out",
+        "n|col|publishing.post_targets.parts_left_out",
+        "e|col|publishing.post_targets.parts_left_out"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "posts",
+        "poll"
+      ],
+      "writes": [
+        "s|col|publishing.posts.poll",
+        "n|col|publishing.posts.poll",
+        "e|col|publishing.posts.poll"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "post_targets",
+        "post_targets_listed"
+      ],
+      "writes": [
+        "s|idx|publishing.post_targets_listed",
+        "n|idx|publishing.post_targets_listed",
+        "e|idx|publishing.post_targets_listed",
+        "n|rel|publishing.post_targets_listed"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.post_targets.listed_at",
+        "n|col|publishing.post_targets.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "post_targets",
+        "name": "first_comment",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "post_targets",
+        "name": "parts_left_out",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "posts",
+        "name": "poll",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "post_targets",
+        "name": "post_targets_listed",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "listed_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"listed_at\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"publishing\",\"post_targets_published\"]"
+    }
+  ]
+}

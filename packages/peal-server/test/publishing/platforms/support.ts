@@ -276,6 +276,7 @@ export const outgoing = Effect.fn("test.outgoing")(function* outgoing(
     media: [],
     options: Option.none(),
     part: 0,
+    poll: Option.none(),
     replyTo: Option.none(),
     startedAt: yield* DateTime.now,
     text: "Hello from a synthetic account",
