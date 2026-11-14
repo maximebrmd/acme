@@ -450,8 +450,9 @@ describe("notification preferences", () => {
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
       Option.some("recyclingEnded"),
-      // Billing's eight, deliveries failing, then the webhook endpoint
+      // Billing's nine, deliveries failing, then the webhook endpoint
       // turned off.
+      Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),
