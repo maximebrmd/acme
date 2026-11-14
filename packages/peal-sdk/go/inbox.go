@@ -592,31 +592,6 @@ func (i *InboxAbilities) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
-type InboxAbilityStanding string
-
-const (
-	InboxAbilityStandingAvailable   InboxAbilityStanding = "available"
-	InboxAbilityStandingReconnect   InboxAbilityStanding = "reconnect"
-	InboxAbilityStandingUnsupported InboxAbilityStanding = "unsupported"
-)
-
-func NewInboxAbilityStandingFromString(s string) (InboxAbilityStanding, error) {
-	switch s {
-	case "available":
-		return InboxAbilityStandingAvailable, nil
-	case "reconnect":
-		return InboxAbilityStandingReconnect, nil
-	case "unsupported":
-		return InboxAbilityStandingUnsupported, nil
-	}
-	var t InboxAbilityStanding
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (i InboxAbilityStanding) Ptr() *InboxAbilityStanding {
-	return &i
-}
-
 var (
 	inboxAuthorFieldDisplayName = big.NewInt(1 << 0)
 	inboxAuthorFieldHandle      = big.NewInt(1 << 1)
@@ -1407,37 +1382,6 @@ func NewInboxReplyReasonFromString(s string) (InboxReplyReason, error) {
 }
 
 func (i InboxReplyReason) Ptr() *InboxReplyReason {
-	return &i
-}
-
-type InboxReplyStatus string
-
-const (
-	InboxReplyStatusSending     InboxReplyStatus = "sending"
-	InboxReplyStatusSent        InboxReplyStatus = "sent"
-	InboxReplyStatusFailed      InboxReplyStatus = "failed"
-	InboxReplyStatusUnconfirmed InboxReplyStatus = "unconfirmed"
-	InboxReplyStatusWithdrawn   InboxReplyStatus = "withdrawn"
-)
-
-func NewInboxReplyStatusFromString(s string) (InboxReplyStatus, error) {
-	switch s {
-	case "sending":
-		return InboxReplyStatusSending, nil
-	case "sent":
-		return InboxReplyStatusSent, nil
-	case "failed":
-		return InboxReplyStatusFailed, nil
-	case "unconfirmed":
-		return InboxReplyStatusUnconfirmed, nil
-	case "withdrawn":
-		return InboxReplyStatusWithdrawn, nil
-	}
-	var t InboxReplyStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (i InboxReplyStatus) Ptr() *InboxReplyStatus {
 	return &i
 }
 

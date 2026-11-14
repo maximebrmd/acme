@@ -4201,6 +4201,198 @@
       }
     },
     {
+      "id": "364d5299-1fd6-4c3b-ab49-ddcd30a2db7a",
+      "name": "List the locations' reviews - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/reviews/threads",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"averageRating\": \"Infinity\",\n      \"channelId\": \"channelId\",\n      \"id\": \"id\",\n      \"kind\": \"reviews\",\n      \"lastCollectedAt\": \"lastCollectedAt\",\n      \"lastReviewAt\": \"lastReviewAt\",\n      \"reviews\": 1,\n      \"totalReviewCount\": 1,\n      \"unanswered\": 1\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "364d5299-1fd6-4c3b-ab49-ddcd30a2db7a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "bc377e66-409c-4790-bfd2-99b619d739e4",
+      "name": "Get a location's reviews - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "threadId": {
+            "equalTo": "threadId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"abilities\": {\n    \"read\": \"available\",\n    \"reply\": \"available\",\n    \"withdraw\": \"available\"\n  },\n  \"platform\": \"x\",\n  \"replies\": [\n    {\n      \"authorId\": \"authorId\",\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"reason\": \"channelUnavailable\",\n      \"reviewId\": \"reviewId\",\n      \"settledAt\": \"settledAt\",\n      \"status\": \"sending\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"id\": \"id\",\n      \"markedAnswered\": true,\n      \"photos\": 1,\n      \"rating\": 1,\n      \"receivedAt\": \"receivedAt\",\n      \"reply\": {\n        \"moderation\": null,\n        \"text\": \"text\",\n        \"updatedAt\": \"updatedAt\"\n      },\n      \"reviewerName\": \"reviewerName\",\n      \"state\": \"new\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\",\n      \"updatedAt\": \"updatedAt\",\n      \"writtenAt\": \"writtenAt\"\n    }\n  ],\n  \"thread\": {\n    \"averageRating\": \"Infinity\",\n    \"channelId\": \"channelId\",\n    \"id\": \"id\",\n    \"kind\": \"reviews\",\n    \"lastCollectedAt\": \"lastCollectedAt\",\n    \"lastReviewAt\": \"lastReviewAt\",\n    \"reviews\": 1,\n    \"totalReviewCount\": 1,\n    \"unanswered\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "bc377e66-409c-4790-bfd2-99b619d739e4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0be2989c-7146-4f89-850d-d871ba482b68",
+      "name": "Reply to a review - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "reviewId": {
+            "equalTo": "reviewId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"reason\": \"channelUnavailable\",\n  \"reviewId\": \"reviewId\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0be2989c-7146-4f89-850d-d871ba482b68",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3f8e6821-a075-4d62-acee-a6eb07eecc70",
+      "name": "Delete a review's reply - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "reviewId": {
+            "equalTo": "reviewId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": \"id\",\n  \"markedAnswered\": true,\n  \"photos\": 1,\n  \"rating\": 1,\n  \"receivedAt\": \"receivedAt\",\n  \"reply\": {\n    \"moderation\": \"pending\",\n    \"text\": \"text\",\n    \"updatedAt\": \"updatedAt\"\n  },\n  \"reviewerName\": \"reviewerName\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"updatedAt\": \"updatedAt\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3f8e6821-a075-4d62-acee-a6eb07eecc70",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e85835c7-8d1f-4009-bc06-0ffe6a5505c0",
+      "name": "Mark a review answered - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "reviewId": {
+            "equalTo": "reviewId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": \"id\",\n  \"markedAnswered\": true,\n  \"photos\": 1,\n  \"rating\": 1,\n  \"receivedAt\": \"receivedAt\",\n  \"reply\": {\n    \"moderation\": \"pending\",\n    \"text\": \"text\",\n    \"updatedAt\": \"updatedAt\"\n  },\n  \"reviewerName\": \"reviewerName\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"updatedAt\": \"updatedAt\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e85835c7-8d1f-4009-bc06-0ffe6a5505c0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "51893598-1ba1-4331-a21d-d5e06d33ef09",
       "name": "Get what the server offers of ads - default",
       "request": {
@@ -7754,6 +7946,6 @@
     }
   ],
   "meta": {
-    "total": 207
+    "total": 212
   }
 }

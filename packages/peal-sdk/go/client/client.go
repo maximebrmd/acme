@@ -18,6 +18,7 @@ import (
 	credential "github.com/peal-social/peal/packages/peal-sdk/go/credential"
 	feeds "github.com/peal-social/peal/packages/peal-sdk/go/feeds"
 	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
+	inboxreviews "github.com/peal-social/peal/packages/peal-sdk/go/inboxreviews"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
 	lookups "github.com/peal-social/peal/packages/peal-sdk/go/lookups"
@@ -66,6 +67,7 @@ type Client struct {
 	Lookups                 *lookups.Client
 	Webhooks                *webhooks.Client
 	Inbox                   *inbox.Client
+	InboxReviews            *inboxreviews.Client
 	Ads                     *ads.Client
 	Activity                *activity.Client
 	Partner                 *partner.Client
@@ -111,6 +113,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Lookups:                 lookups.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
 		Inbox:                   inbox.NewClient(options),
+		InboxReviews:            inboxreviews.NewClient(options),
 		Ads:                     ads.NewClient(options),
 		Activity:                activity.NewClient(options),
 		Partner:                 partner.NewClient(options),

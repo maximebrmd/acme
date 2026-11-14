@@ -20,6 +20,7 @@ import social.peal.resources.connectlinks.AsyncConnectLinksClient;
 import social.peal.resources.credential.AsyncCredentialClient;
 import social.peal.resources.feeds.AsyncFeedsClient;
 import social.peal.resources.inbox.AsyncInboxClient;
+import social.peal.resources.inboxreviews.AsyncInboxReviewsClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
 import social.peal.resources.lookups.AsyncLookupsClient;
 import social.peal.resources.media.AsyncMediaClient;
@@ -88,6 +89,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncInboxClient> inboxClient;
 
+    protected final Supplier<AsyncInboxReviewsClient> inboxReviewsClient;
+
     protected final Supplier<AsyncAdsClient> adsClient;
 
     protected final Supplier<AsyncActivityClient> activityClient;
@@ -142,6 +145,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.lookupsClient = Suppliers.memoize(() -> new AsyncLookupsClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new AsyncWebhooksClient(clientOptions));
         this.inboxClient = Suppliers.memoize(() -> new AsyncInboxClient(clientOptions));
+        this.inboxReviewsClient = Suppliers.memoize(() -> new AsyncInboxReviewsClient(clientOptions));
         this.adsClient = Suppliers.memoize(() -> new AsyncAdsClient(clientOptions));
         this.activityClient = Suppliers.memoize(() -> new AsyncActivityClient(clientOptions));
         this.partnerClient = Suppliers.memoize(() -> new AsyncPartnerClient(clientOptions));
@@ -241,6 +245,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncInboxClient inbox() {
         return this.inboxClient.get();
+    }
+
+    public AsyncInboxReviewsClient inboxReviews() {
+        return this.inboxReviewsClient.get();
     }
 
     public AsyncAdsClient ads() {
