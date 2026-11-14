@@ -136,6 +136,7 @@ export const billingView = (
     upcomingInvoice,
     usage,
     withdrawableUntil,
+    x,
   }: Overview,
   account: Option.Option<AccountView>
 ): Billing => ({
@@ -189,4 +190,11 @@ export const billingView = (
   usage,
   vatRate: displayVatRate,
   withdrawableUntil: Option.getOrNull(withdrawableUntil),
+  x: x.pipe(
+    Option.map(({ reads, setAt }) => ({
+      reads,
+      setAt: Option.getOrNull(setAt),
+    })),
+    Option.getOrNull
+  ),
 });

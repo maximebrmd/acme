@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { SpendGroup } from "#billing/domain/meter-claims.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -23,6 +23,15 @@ export interface MeterRow {
 export interface SpendCeiling {
   readonly cents: number;
   readonly group: SpendGroup;
+  readonly setAt: DateTime.Utc;
+}
+
+/**
+ * Whether a workspace reads its X channels at X's rates, and when that
+ * last changed.
+ */
+export interface XUsageSetting {
+  readonly reads: boolean;
   readonly setAt: DateTime.Utc;
 }
 
@@ -77,11 +86,23 @@ export class MeterUsageStore extends Context.Service<
       holder: WorkspaceId,
       ceiling: SpendCeiling
     ) => Effect.Effect<void, DatabaseError>;
+    /** The workspace's X reads, as last set; none: never set, so off. */
+    readonly xUsage: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Option.Option<XUsageSetting>, DatabaseError>;
+    /** Sets the workspace's X reads, replacing what was set before. */
+    readonly setXUsage: (
+      workspaceId: WorkspaceId,
+      setting: XUsageSetting
+    ) => Effect.Effect<void, DatabaseError>;
     /** Deletes the months before `cutoff`: how many rows. */
     readonly purgeBefore: (
       cutoff: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
-    /** Deletes the workspace's rows and ceilings, in the caller's transaction. */
+    /**
+     * Deletes the workspace's rows, ceilings and X reads, in the caller's
+     * transaction.
+     */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
@@ -92,6 +113,7 @@ export class MeterUsageStore extends Context.Service<
         readonly months: readonly (MeterRow & {
           readonly month: DateTime.Utc;
         })[];
+        readonly xUsage: Option.Option<XUsageSetting>;
       },
       DatabaseError
     >;

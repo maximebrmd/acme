@@ -1,11 +1,12 @@
 import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
-import { DateTime, Effect, Layer, Schema } from "effect";
+import { Array as Arr, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { MeterUsageStore } from "#billing/application/ports/meter-usage-store.ts";
 import type {
   MeterRow,
   SpendCeiling,
+  XUsageSetting,
 } from "#billing/application/ports/meter-usage-store.ts";
 import { SpendGroupSchema } from "#billing/domain/meter-claims.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -14,7 +15,7 @@ import { MeterSchema } from "#shared/domain/meter.ts";
 import type { Meter } from "#shared/domain/meter.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { meterUsage, spendCeilings } from "./schema.ts";
+import { meterUsage, spendCeilings, xUsageSettings } from "./schema.ts";
 
 type UsageRow = typeof meterUsage.$inferSelect;
 
@@ -209,6 +210,41 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
         );
     };
 
+    const xUsage = (workspaceId: WorkspaceId) =>
+      db
+        .select()
+        .from(xUsageSettings)
+        .where(eq(xUsageSettings.workspaceId, workspaceId))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.map((rows) =>
+            Arr.head(rows).pipe(
+              Option.map((row): XUsageSetting => ({
+                reads: row.reads,
+                setAt: DateTime.fromDateUnsafe(row.setAt),
+              }))
+            )
+          ),
+          Effect.withSpan("MeterUsageStore.xUsage")
+        );
+
+    const setXUsage = (workspaceId: WorkspaceId, setting: XUsageSetting) => {
+      const values = {
+        reads: setting.reads,
+        setAt: DateTime.toDateUtc(setting.setAt),
+      };
+
+      return db
+        .insert(xUsageSettings)
+        .values({ ...values, workspaceId })
+        .onConflictDoUpdate({ set: values, target: xUsageSettings.workspaceId })
+        .pipe(
+          Effect.mapError(failed),
+          Effect.asVoid,
+          Effect.withSpan("MeterUsageStore.setXUsage")
+        );
+    };
+
     // Counted in the database: a month's purge may be many rows.
     const purgeBefore = (cutoff: DateTime.Utc) =>
       client<{
@@ -227,6 +263,9 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
         db
           .delete(spendCeilings)
           .where(eq(spendCeilings.holderWorkspaceId, workspaceId)),
+        db
+          .delete(xUsageSettings)
+          .where(eq(xUsageSettings.workspaceId, workspaceId)),
       ]).pipe(
         Effect.mapError(failed),
         Effect.asVoid,
@@ -245,6 +284,7 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(withMonth))
           ),
+        xUsage: xUsage(workspaceId),
       }).pipe(Effect.withSpan("MeterUsageStore.allOf"));
 
     return MeterUsageStore.of({
@@ -257,6 +297,8 @@ export const DrizzleMeterUsageStoreLive = Layer.effect(
       purgeBefore,
       save,
       setCeiling,
+      setXUsage,
+      xUsage,
     });
   })
 );

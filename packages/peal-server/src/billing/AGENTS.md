@@ -258,6 +258,15 @@
   `unconfirmedMeters` (the rate card's `awaitingDecision`), which every
   surface shows as coming. Meters and ceilings go with the export
   (`meterMonths`, `spendCeilings`) and the erasure.
+- X is passed through at X's rates (README D4, D6), on a server that
+  bills only: `xApi` has no allowance, a payment method is needed, and
+  the billing account's `x` ceiling ($25 by default) bounds it. Its
+  reads are a switch per workspace (`XReads`, `billing.x_usage_settings`:
+  reads, set_at, no row is off; the activity log keeps who), set by
+  billing:manage in person (`PUT …/billing/x`, in `billingActions`) on any
+  workspace of the account, answered as `x` on `GET …/billing`, kept in
+  the export (`xReads`) and erased with the workspace. A server that does
+  not bill answers `BillingNotEnabled` and reads none of it.
 - Sandbox runbook for the meters (the owner, test mode, never in tests):
   on a `payAsYouGo` subscription with a test clock, send 10,001 replies'
   worth (seed `meter_usage` at 10,000, then reply once) and read the

@@ -152,6 +152,10 @@ const billingOf = Effect.fn("billingOf")(function* billingOf(
   return yield* bodyOf(Schema.toCodecJson(BillingSchema), reply);
 });
 
+// What the workspace's billing page tells of its X reads.
+const readsOf = (person: Person, workspace: string) =>
+  billingOf(person, workspace).pipe(Effect.map(({ x }) => x));
+
 // A workspace whose Stripe customer is `customerId`, as Better Auth records
 // it before the first checkout.
 const billedWorkspace = Effect.fn("billedWorkspace")(function* billedWorkspace(
@@ -1239,6 +1243,70 @@ layer(BillingIntegration, {
         );
 
         assert.strictEqual(byKey.status, 403);
+      })
+  );
+
+  it.effect(
+    "turns a workspace's X reads on only for a member who manages billing, in person, and tells its billing page",
+    () =>
+      Effect.gen(function* xReads() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("x-reads-owner");
+        const workspaceId = yield* workspaceOf(owner, "X reads");
+        const second = yield* workspaceOf(owner, "X reads, again");
+
+        const put = (person: Person, workspace: string, reads: boolean) =>
+          app.request(`/api/workspaces/${workspace}/billing/x`, {
+            body: { reads },
+            headers: { cookie: person.cookies },
+            method: "PUT",
+          });
+
+        // Off until someone turns it on.
+        assert.deepInclude(yield* readsOf(owner, workspaceId), {
+          reads: false,
+        });
+
+        const on = yield* put(owner, workspaceId, true);
+
+        assert.strictEqual(on.status, 200);
+        assert.deepInclude(on.body, { reads: true });
+        assert.deepInclude(yield* readsOf(owner, workspaceId), { reads: true });
+
+        // Each workspace decides for its own channels.
+        assert.deepInclude(yield* readsOf(owner, second), { reads: false });
+        assert.strictEqual((yield* put(owner, second, true)).status, 200);
+
+        const editor = yield* signedUp("x-reads-editor");
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+        assert.strictEqual(
+          (yield* put(editor, workspaceId, false)).status,
+          403
+        );
+        assert.deepInclude(yield* readsOf(owner, workspaceId), { reads: true });
+
+        const { key } = yield* apiKeyOf(owner, workspaceId, [
+          "billing:read",
+          "billing:manage",
+        ]);
+
+        const byKey = yield* app.request(
+          `/api/workspaces/${workspaceId}/billing/x`,
+          {
+            body: { reads: false },
+            headers: { authorization: `Bearer ${key}` },
+            method: "PUT",
+          }
+        );
+
+        assert.strictEqual(byKey.status, 403);
+
+        const off = yield* put(owner, workspaceId, false);
+
+        assert.deepInclude(off.body, { reads: false });
       })
   );
 

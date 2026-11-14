@@ -544,6 +544,14 @@ export interface BillingRecord {
     readonly postsWithLinks: number;
   }[];
   readonly plan: string | null;
+  /**
+   * Whether it reads its X channels at X's rates, and when that last
+   * changed; null: never set.
+   */
+  readonly xReads: {
+    readonly reads: boolean;
+    readonly setAt: DateTime.Utc;
+  } | null;
   /** The monthly ceilings its billing account set, in US dollar cents. */
   readonly spendCeilings: readonly {
     readonly cents: number;

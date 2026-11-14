@@ -694,7 +694,8 @@ export const cleanUpAccounts = (workspaceIds: readonly WorkspaceId[]) =>
 export const NoMetersTest = Layer.succeed(
   MeterUsageStore,
   MeterUsageStore.of({
-    allOf: () => Effect.succeed({ ceilings: [], months: [] }),
+    allOf: () =>
+      Effect.succeed({ ceilings: [], months: [], xUsage: Option.none() }),
     between: () => Effect.succeed([]),
     ceilings: () => Effect.succeed([]),
     eraseWorkspace: () => Effect.void,
@@ -703,5 +704,7 @@ export const NoMetersTest = Layer.succeed(
     purgeBefore: () => Effect.succeed(0),
     save: () => Effect.die("no meter is claimed in this test"),
     setCeiling: () => Effect.void,
+    setXUsage: () => Effect.void,
+    xUsage: () => Effect.succeedNone,
   })
 );

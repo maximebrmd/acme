@@ -1,0 +1,102 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "5fef7c46-834c-466b-b5fc-1e07a7f9ae52",
+  "prevIds": [
+    "0183eb57-2238-463b-88eb-d58323b8d86e"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "x_usage_settings"
+      ],
+      "writes": [
+        "s|tbl|billing.x_usage_settings",
+        "n|tbl|billing.x_usage_settings",
+        "e|tbl|billing.x_usage_settings",
+        "n|rel|billing.x_usage_settings",
+        "n|type|billing.x_usage_settings",
+        "n|rel|billing.x_usage_settings_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "x_usage_settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "x_usage_settings",
+        "name": "reads",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "x_usage_settings",
+        "name": "set_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "x_usage_settings",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "x_usage_settings",
+        "name": "x_usage_settings_pkey",
+        "columns": [
+          "workspace_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

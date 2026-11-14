@@ -29,6 +29,7 @@ import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
 import { TransferWorkspace } from "#billing/application/transfer-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
+import { XReads } from "#billing/application/x-reads.ts";
 import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden, personRequired } from "#shared/api/forbidden.ts";
@@ -77,6 +78,7 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
     const transfers = yield* TransferWorkspace;
     const accounts = yield* AccountViews;
     const ceilings = yield* SpendCeilings;
+    const xReads = yield* XReads;
     const limitReached = yield* limitRefusal;
 
     const withdrawalErrors = {
@@ -296,6 +298,22 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
             group: set.group,
             setAt: set.setAt,
           };
+        })
+      )
+      .handle("setXReads", ({ payload }) =>
+        Effect.gen(function* setXReads() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          const set = yield* xReads.set(actor, payload.reads).pipe(
+            Effect.catchTags({
+              BillingOff: notEnabled,
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PersonRequired: forbidden,
+            })
+          );
+
+          return { reads: set.reads, setAt: set.setAt };
         })
       );
   })
