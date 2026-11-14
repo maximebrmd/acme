@@ -33,7 +33,7 @@ On a server that bills, as Peal Cloud does, the number depends on the [billing a
 | `override` | What Peal set for the workspace       | On request, {{api-on-request-en}} usually: write to us                                                  |
 
 - An API key takes its workspace's account, a partner key its partner's home workspace's, and an application the workspace its token is bound to. A token bound to no workspace, as the command line's, takes the account its member pays for (the free tier when they pay for none), and the limit Peal set for the workspace a request names, if any.
-- On the `free` policy, every key, partner key and application of a billing account shares one count: more credentials send no more. With a payment method, each credential counts on its own.
+- On the `free` policy, every key, partner key and application of a billing account shares one count, and a member who pays for no account has one of their own: more credentials send no more. With a payment method, each credential counts on its own.
 - A payment method added raises the limit within a minute.
 - A server that does not bill applies its one setting to every credential.
 

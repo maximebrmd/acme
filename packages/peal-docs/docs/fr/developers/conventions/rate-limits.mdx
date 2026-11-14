@@ -33,7 +33,7 @@ Sur un serveur qui facture, comme Peal Cloud, le nombre dépend du [compte de fa
 | `override` | Ce que Peal a fixé pour l’espace de travail | Sur demande, {{api-on-request-fr}} en général : écrivez-nous                                                          |
 
 - Une clé d’API prend le compte de son espace de travail, une clé partenaire celui de l’espace principal de son partenaire, et une application l’espace de travail auquel son jeton est lié. Un jeton lié à aucun espace de travail, comme celui de la ligne de commande, prend le compte que son membre paie (l’offre gratuite s’il n’en paie aucun), et la limite que Peal a fixée pour l’espace de travail qu’une requête nomme, s’il y en a une.
-- Sous la règle `free`, toutes les clés, clés partenaires et applications d’un compte de facturation partagent un seul compte : davantage de moyens d’authentification n’envoient pas davantage. Avec un moyen de paiement, chacun compte seul.
+- Sous la règle `free`, toutes les clés, clés partenaires et applications d’un compte de facturation partagent un seul compte, et un membre qui ne paie aucun compte a le sien : davantage de moyens d’authentification n’envoient pas davantage. Avec un moyen de paiement, chacun compte seul.
 - Un moyen de paiement ajouté relève la limite dans la minute.
 - Un serveur qui ne facture pas applique son seul réglage à tous.
 
