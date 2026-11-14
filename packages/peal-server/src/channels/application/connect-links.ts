@@ -15,7 +15,7 @@ import { starterOf } from "#channels/domain/connect-attempt.ts";
 import { ConnectLinkIdSchema } from "#channels/domain/connect-link-id.ts";
 import { ConnectLinkUnusable } from "#channels/domain/connect-link-unusable.ts";
 import {
-  completeLink,
+  connectedThrough,
   createLink,
   defaultLinkLifetime,
   isExpired,
@@ -25,6 +25,7 @@ import {
   revokeLink,
   startLink,
   usable,
+  waitingPlatforms,
 } from "#channels/domain/connect-link.ts";
 import type { ConnectLink } from "#channels/domain/connect-link.ts";
 import { linkInputOf } from "#channels/domain/link-input.ts";
@@ -87,7 +88,8 @@ export interface NewConnectLink {
   /** How long it works, in hours; a week unless given. */
   readonly expiresInHours: Option.Option<number>;
   readonly locale: Option.Option<Locale>;
-  readonly platform: Platform;
+  /** What it connects, each once: one platform with `channelId`. */
+  readonly platforms: readonly [Platform, ...Platform[]];
   readonly returnUrl: Option.Option<string>;
 }
 
@@ -100,14 +102,26 @@ export interface CreatedConnectLink {
 /** Where a link stands for whoever opens it. */
 export type HostedLinkState = "completed" | "expired" | "pending" | "revoked";
 
+/** One of the platforms a hosted page offers. */
+export interface HostedPlatform {
+  /** Whether the link connected it already. */
+  readonly connected: boolean;
+  /** What the page asks for before the platform: a server, a handle. */
+  readonly input: LinkInput;
+  readonly platform: Platform;
+}
+
 /** What a link's hosted page shows before anything is asked. */
 export interface HostedLink {
   readonly expiresAt: DateTime.Utc;
   readonly host: LinkHost;
-  /** What the page asks for before the platform: a server, a handle. */
+  /** What the page asks for before `platform`: a server, a handle. */
   readonly input: LinkInput;
   readonly locale: Option.Option<Locale>;
+  /** The first platform the link still waits on, else its first. */
   readonly platform: Platform;
+  /** Every platform it connects, in its order. */
+  readonly platforms: readonly HostedPlatform[];
   /** The handle of the account to sign in to, when it reconnects one. */
   readonly reconnecting: Option.Option<string>;
   /**
@@ -130,6 +144,8 @@ export type HostedOutcome =
   | {
       readonly _tag: "connected";
       readonly channels: readonly Channel[];
+      /** The platforms the link still waits on: none once it is used. */
+      readonly remaining: readonly Platform[];
       readonly returnTo: Option.Option<string>;
     }
   | {
@@ -153,6 +169,7 @@ const unusableReasons = {
   completed: "linkCompleted",
   exhausted: "tooManyAttempts",
   expired: "linkExpired",
+  notOffered: "platformNotOffered",
   revoked: "linkRevoked",
 } as const;
 
@@ -191,13 +208,25 @@ const reasonOf = (failure: Failure): Option.Option<HostedFailureReason> =>
 
 // The reasons a new try may get past: the link keeps them as its last
 // failure, and stays usable. The link's own end is not a failure of a
-// sign-in.
+// sign-in, nor is a platform asked that it does not offer.
 const linkEnded: ReadonlySet<HostedFailureReason> = new Set([
   "linkCompleted",
   "linkExpired",
   "linkRevoked",
+  "platformNotOffered",
   "tooManyAttempts",
 ]);
+
+// The way in the link asks for, when it is one of `platform`'s.
+const connectionFor = (link: ConnectLink, platform: Platform) =>
+  link.connection.pipe(
+    Option.filter((connection) => isConnectionOf(platform, connection))
+  );
+
+// The platform whose sign-in the link's browser started: a link that
+// names none was started before links named several, at its one.
+const startedAt = (link: ConnectLink) =>
+  Option.getOrElse(link.startedPlatform, () => link.platform);
 
 const stateOf = (link: ConnectLink, now: DateTime.Utc): HostedLinkState =>
   isExpired(link, now) ? "expired" : link.status._tag;
@@ -212,8 +241,9 @@ const stateOf = (link: ConnectLink, now: DateTime.Utc): HostedLinkState =>
  * | get, list                    | channel:read                    |
  * | open, start, complete, choose | the link's token, and no session |
  *
- * A link names one platform, or one channel to reconnect; works until it
- * connected something, was revoked or expired; and is opened by its token,
+ * A link names one or several platforms, or one channel to reconnect;
+ * works until each of its platforms connected once, it was revoked or it
+ * expired; and is opened by its token,
  * 256 random bits Peal keeps the digest of. Its return address must be on
  * an origin the workspace's partner registered (`LinkHosts`).
  *
@@ -266,11 +296,16 @@ export class ConnectLinks extends Context.Service<
     readonly open: (
       token: Redacted.Redacted
     ) => Effect.Effect<HostedLink, ConnectLinkNotFound | DatabaseError>;
+    /**
+     * Starts a sign-in at `platform`, one the link still waits on: its
+     * first one when none is given.
+     */
     readonly start: (
       token: Redacted.Redacted,
       request: {
         readonly handle: Option.Option<string>;
         readonly instance: Option.Option<string>;
+        readonly platform?: Option.Option<Platform>;
       }
     ) => Effect.Effect<HostedStart, HostedFailure>;
     readonly complete: (
@@ -320,20 +355,77 @@ export class ConnectLinks extends Context.Service<
       });
 
       // The channel a link reconnects, which must be the workspace's, on
-      // the link's platform.
+      // the link's one platform.
       const reconnected = Effect.fn("ConnectLinks.reconnected")(
-        function* reconnected(actor: Actor, platform: Platform, given: string) {
+        function* reconnected(
+          actor: Actor,
+          platforms: readonly Platform[],
+          given: string
+        ) {
           const id = decodeChannelId(given);
 
           const channel = Option.isSome(id)
             ? yield* channels.findById(actor.workspaceId, id.value)
             : Option.none<Channel>();
 
-          return Option.isSome(channel) && channel.value.platform === platform
+          return Option.isSome(channel) &&
+            platforms.length === 1 &&
+            channel.value.platform === platforms[0]
             ? channel.value.id
             : yield* new ChannelNotFound({ channelId: given });
         }
       );
+
+      // Refused unless the server connects every platform asked, the way
+      // in asked included, which must be one of theirs.
+      // Why the server cannot connect every platform asked, the way in
+      // asked included, which must be one of theirs; none when it can.
+      const unconnectable = (
+        asked: NewConnectLink
+      ): Option.Option<PlatformNotConnectable> => {
+        const owner = asked.connection.pipe(
+          Option.flatMap((connection) =>
+            Option.fromUndefinedOr(
+              asked.platforms.find((platform) =>
+                isConnectionOf(platform, connection)
+              )
+            )
+          )
+        );
+
+        // A way in that is no platform's of the link connects nothing.
+        if (Option.isSome(asked.connection) && Option.isNone(owner)) {
+          return Option.some(
+            new PlatformNotConnectable({
+              platform: asked.platforms[0],
+              reason: "notSupported",
+            })
+          );
+        }
+
+        return Option.fromUndefinedOr(
+          asked.platforms
+            .map((platform) => {
+              const connection = asked.connection.pipe(
+                Option.filter(() => Option.contains(owner, platform))
+              );
+
+              return Option.isSome(authorizers.for(platform, connection))
+                ? undefined
+                : new PlatformNotConnectable({
+                    platform,
+                    reason:
+                      authorizers.unconfigured.has(platform) ||
+                      // The platform's other way in is set up, and not
+                      // this one.
+                      (hasConnections(platform) && Option.isSome(connection))
+                        ? "notConfigured"
+                        : "notSupported",
+                  });
+            })
+            .find((refusal) => refusal !== undefined)
+        );
+      };
 
       const create = Effect.fn("ConnectLinks.create")(function* create(
         actor: Actor,
@@ -341,33 +433,14 @@ export class ConnectLinks extends Context.Service<
       ) {
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
-        // A way in that is another platform's, or given to a platform that
-        // has one way in, connects nothing.
-        const itsOwn = Option.match(asked.connection, {
-          onNone: () => true,
-          onSome: (connection) => isConnectionOf(asked.platform, connection),
+        yield* Option.match(unconnectable(asked), {
+          onNone: () => Effect.void,
+          onSome: Effect.fail,
         });
-
-        if (
-          !itsOwn ||
-          Option.isNone(authorizers.for(asked.platform, asked.connection))
-        ) {
-          return yield* new PlatformNotConnectable({
-            platform: asked.platform,
-            reason:
-              itsOwn &&
-              (authorizers.unconfigured.has(asked.platform) ||
-                // The platform's other way in is set up, and not this one.
-                (hasConnections(asked.platform) &&
-                  Option.isSome(asked.connection)))
-                ? "notConfigured"
-                : "notSupported",
-          });
-        }
 
         const channelId = Option.isSome(asked.channelId)
           ? Option.some(
-              yield* reconnected(actor, asked.platform, asked.channelId.value)
+              yield* reconnected(actor, asked.platforms, asked.channelId.value)
             )
           : Option.none();
 
@@ -396,7 +469,7 @@ export class ConnectLinks extends Context.Service<
               onSome: Duration.hours,
             }),
             locale: asked.locale,
-            platform: asked.platform,
+            platforms: asked.platforms,
             returnUrl: asked.returnUrl,
             workspaceId: actor.workspaceId,
           },
@@ -490,19 +563,32 @@ export class ConnectLinks extends Context.Service<
           ? yield* channels.findById(link.workspaceId, link.channelId.value)
           : Option.none<Channel>();
 
+        // What each platform's sign-in needs first: nothing to reconnect
+        // a channel, whose account is known.
+        const inputOf = (platform: Platform) =>
+          Option.isSome(link.channelId) ? "none" : linkInputOf(platform);
+
+        const [next = link.platform] = waitingPlatforms(link);
+
         const hosted: HostedLink = {
           expiresAt: link.expiresAt,
           host: host.value,
-          input: Option.isSome(link.channelId)
-            ? "none"
-            : linkInputOf(link.platform),
+          input: inputOf(next),
           locale: link.locale,
-          platform: link.platform,
+          platform: next,
+          platforms: link.platforms.map((platform) => ({
+            connected: link.connectedPlatforms.includes(platform),
+            input: inputOf(platform),
+            platform,
+          })),
           reconnecting: channel.pipe(Option.map(({ handle }) => handle)),
-          // A link still open offers a way back for whoever declines.
+          // A link still open offers a way back for whoever declines, or
+          // stops once some of its platforms are connected.
           returnTo: yield* wayBack(
             link,
-            state === "completed" ? "connected" : "cancelled"
+            state === "completed" || link.connectedPlatforms.length > 0
+              ? "connected"
+              : "cancelled"
           ),
           state,
         };
@@ -576,6 +662,7 @@ export class ConnectLinks extends Context.Service<
         request: {
           readonly handle: Option.Option<string>;
           readonly instance: Option.Option<string>;
+          readonly platform?: Option.Option<Platform>;
         }
       ) {
         const link = yield* opened(token);
@@ -584,8 +671,15 @@ export class ConnectLinks extends Context.Service<
           const now = yield* DateTime.now;
           const issued = yield* tokens.issue;
 
+          const [next = link.platform] = waitingPlatforms(link);
+
+          const platform = Option.getOrElse(
+            request.platform ?? Option.none(),
+            () => next
+          );
+
           const started = yield* Effect.fromResult(
-            startLink(link, issued.digest, now)
+            startLink(link, issued.digest, platform, now)
           );
 
           // Counted before the platform is asked anything, so a link
@@ -598,8 +692,8 @@ export class ConnectLinks extends Context.Service<
 
           const authorizationUrl = yield* Option.match(started.channelId, {
             onNone: () =>
-              connect.start(actor, started.platform, {
-                connection: started.connection,
+              connect.start(actor, platform, {
+                connection: connectionFor(started, platform),
                 handle: request.handle,
                 instance: request.instance,
               }),
@@ -646,7 +740,8 @@ export class ConnectLinks extends Context.Service<
       const held = (link: ConnectLink) =>
         store.lock(link.id).pipe(Effect.map(Option.getOrElse(() => link)));
 
-      // The link used, with what it connected. A link used or revoked
+      // The link with what it connected: used once each of its platforms
+      // has, waiting on the others until then. A link used or revoked
       // while its sign-in ended keeps how it stood: the account was
       // connected by a sign-in that started while it was open.
       const completed = Effect.fn("ConnectLinks.completed")(function* completed(
@@ -655,9 +750,17 @@ export class ConnectLinks extends Context.Service<
         step: ConnectingStep
       ) {
         const channelIds = connected.map(({ id }) => id);
-        const done = completeLink(link, channelIds, yield* DateTime.now);
 
-        yield* store.ended(done);
+        const done = connectedThrough(
+          link,
+          startedAt(link),
+          channelIds,
+          yield* DateTime.now
+        );
+
+        yield* done.status._tag === "pending"
+          ? store.progressed(done)
+          : store.ended(done);
 
         // The workspace reads that the link connected them. The accounts
         // are connected either way: a log that cannot be kept is logged.
@@ -675,6 +778,8 @@ export class ConnectLinks extends Context.Service<
         const outcome: HostedOutcome = {
           _tag: "connected",
           channels: connected,
+          remaining:
+            done.status._tag === "pending" ? waitingPlatforms(done) : [],
           returnTo: yield* wayBack(done, "connected"),
         };
 
@@ -698,7 +803,7 @@ export class ConnectLinks extends Context.Service<
 
             const outcome = yield* connect.complete(
               linkActor(pending),
-              pending.platform,
+              startedAt(pending),
               returned
             );
 
@@ -734,7 +839,7 @@ export class ConnectLinks extends Context.Service<
 
             const connected = yield* connect.choose(
               linkActor(pending),
-              pending.platform,
+              startedAt(pending),
               choice
             );
 

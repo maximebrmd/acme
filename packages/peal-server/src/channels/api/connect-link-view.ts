@@ -1,9 +1,11 @@
 import type { DateTime } from "effect";
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { HostedConnectFailureSchema } from "peal-contract";
 import type {
   ConnectLink as ConnectLinkView,
   ConnectLinkStatus,
+  NewConnectLink,
+  Platform,
 } from "peal-contract";
 
 import { isExpired } from "#channels/domain/connect-link.ts";
@@ -17,6 +19,19 @@ export const linkStatusAt = (
   now: DateTime.Utc
 ): ConnectLinkStatus => (isExpired(link, now) ? "expired" : link.status._tag);
 
+/**
+ * The platforms a new link connects, as the API and the MCP tools are
+ * asked: `platforms`, or `platform` alone. The contract's schema makes
+ * sure a request names one or the other.
+ */
+export const platformsOf = ({ platform, platforms }: NewConnectLink) => {
+  const [first = platform, ...rest] = platforms ?? [];
+
+  return first === undefined
+    ? Effect.die(new Error("A new connect link named no platform"))
+    : Effect.succeed<readonly [Platform, ...Platform[]]>([first, ...rest]);
+};
+
 /** A link as the API and the MCP tools show it: never its token. */
 export const toConnectLinkView = (
   link: ConnectLink,
@@ -26,7 +41,9 @@ export const toConnectLinkView = (
 
   return {
     channelId: Option.getOrNull(link.channelId),
-    channelIds: status._tag === "completed" ? status.channelIds : [],
+    connectedPlatforms: link.connectedPlatforms,
+    channelIds:
+      status._tag === "completed" ? status.channelIds : link.connectedChannels,
     completedAt: status._tag === "pending" ? null : status.at,
     createdAt: link.createdAt,
     expiresAt: link.expiresAt,
@@ -37,6 +54,7 @@ export const toConnectLinkView = (
     ),
     id: link.id,
     platform: link.platform,
+    platforms: link.platforms,
     returnUrl: Option.getOrNull(link.returnUrl),
     status: linkStatusAt(link, now),
   };

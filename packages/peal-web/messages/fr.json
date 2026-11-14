@@ -847,6 +847,13 @@
   },
   "ConnectLink": {
     "title": "Connecter un compte",
+    "headingSeveral": "Connecter vos comptes",
+    "asksSeveral": "{host} demande à connecter vos comptes sur ces plateformes, pour y publier pour vous.",
+    "platformName": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformConnected": "Connecté",
+    "connectPlatform": "Connecter {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "left": "Il reste {platforms} à connecter.",
+    "connectAnother": "Connecter un autre compte",
     "heading": "Connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "loading": "Ouverture du lien…",
     "retry": "Réessayer",
@@ -897,6 +904,7 @@
       "planLimit": "Aucun compte de plus ne peut être connecté pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
       "channelGone": "Le compte à reconnecter a été retiré depuis. Demandez un nouveau lien à la personne qui vous l’a envoyé.",
       "platformUnreachable": "La plateforme n’a pas répondu. Réessayez dans un instant.",
+      "platformNotOffered": "Ce lien ne connecte pas de compte de cette plateforme, ou en a déjà connecté un.",
       "notFound": "Ce lien n’ouvre rien. Vérifiez que l’adresse est complète, ou demandez un nouveau lien.",
       "tooMany": "Trop d’essais depuis votre réseau pour le moment. Réessayez dans une heure.",
       "unknown": "Une erreur est survenue. Réessayez."

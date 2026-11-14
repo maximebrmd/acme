@@ -199,8 +199,11 @@ export const CompleteHostedConnection = ({
   }, [connected]);
 
   // It then goes back, after a moment to read what happened, where the
-  // link says.
-  const returnTo = connected?.returnTo ?? null;
+  // link says, unless the link waits on other platforms still.
+  const returnTo =
+    connected === null || connected.remaining.length > 0
+      ? null
+      : connected.returnTo;
 
   useEffect(() => {
     const timer =
@@ -218,8 +221,10 @@ export const CompleteHostedConnection = ({
   if (connected !== null) {
     return (
       <HostedConnected
+        again={<Link href={`/connect/link#${encodeURIComponent(token)}`} />}
         handles={connected.channels.map(({ handle }) => handle)}
         platform={platform}
+        remaining={connected.remaining}
         returnTo={connected.returnTo}
       />
     );

@@ -1,0 +1,115 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "4e1b7954-623c-4b2b-82d8-85a81d62bbc0",
+  "prevIds": [
+    "643ae43b-79e6-41e2-8c7a-92a7b1b4e467"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "channels",
+        "connect_links",
+        "platforms"
+      ],
+      "writes": [
+        "s|col|channels.connect_links.platforms",
+        "n|col|channels.connect_links.platforms",
+        "e|col|channels.connect_links.platforms"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "channels",
+        "connect_links",
+        "connected_platforms"
+      ],
+      "writes": [
+        "s|col|channels.connect_links.connected_platforms",
+        "n|col|channels.connect_links.connected_platforms",
+        "e|col|channels.connect_links.connected_platforms"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "channels",
+        "connect_links",
+        "started_platform"
+      ],
+      "writes": [
+        "s|col|channels.connect_links.started_platform",
+        "n|col|channels.connect_links.started_platform",
+        "e|col|channels.connect_links.started_platform"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "channels",
+        "table": "connect_links",
+        "name": "platforms",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "channels",
+        "table": "connect_links",
+        "name": "connected_platforms",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 1,
+        "default": "'{}'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "channels",
+        "table": "connect_links",
+        "name": "started_platform",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

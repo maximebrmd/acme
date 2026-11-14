@@ -1,16 +1,27 @@
 import { Context, Effect, Layer, Option, Redacted, Ref } from "effect";
+import { Digest, SecureRandom } from "effect/crypto";
+import { FetchHttpClient } from "effect/http";
 
 import { ConnectLinkAddresses } from "#channels/application/connect-link-addresses.ts";
 import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
 import type { NewConnectLink } from "#channels/application/connect-links.ts";
 import { LinkHosts } from "#channels/application/link-hosts.ts";
+import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
+import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
+import type { Platform } from "#channels/domain/platform.ts";
+import { tokenPolicies } from "#channels/domain/token-policy.ts";
 import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connect-link-store.ts";
+import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
+import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
 import { RandomConnectLinkTokens } from "#channels/infrastructure/random-connect-link-tokens.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
+import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import {
+  authorizersOf,
   connectChannelWith,
-  MastodonAuthorizersTest,
+  testPublicUrl,
 } from "#test/channels/connect-support.ts";
 import {
   actorIn,
@@ -54,6 +65,75 @@ const RememberedConnections = Layer.effect(
   )
 );
 
+/** Where a fake platform's sign-in page is: its state in the query. */
+export const fakeSignIn = (platform: Platform) =>
+  `https://${platform}.example.test/authorize`;
+
+// A platform whose sign-in always connects the account its callback's
+// code names, without asking anything first: for links of several
+// platforms beside Mastodon's fake instance.
+const fakeAuthorizer = (
+  platform: Platform,
+  connection?: InstagramConnection
+): PlatformAuthorizer => {
+  const authorizer: PlatformAuthorizer = {
+    begin: () =>
+      Effect.sync(() => {
+        const state = `synthetic-${platform}-${globalThis.crypto.randomUUID()}`;
+
+        return {
+          authorizationUrl: `${fakeSignIn(platform)}?state=${state}`,
+          instance: Option.none(),
+          secret: Redacted.make("synthetic-secret"),
+          state,
+        };
+      }),
+    complete: ({ callback }) =>
+      Effect.succeed({
+        accountId: `${platform}-${Option.getOrElse(callback.code, () => "account")}`,
+        avatarUrl: Option.none(),
+        displayName: Option.none(),
+        handle: `synthetic.${platform}`,
+        tokens: {
+          accessToken: Redacted.make("synthetic-access-token"),
+          expiresAt: Option.none(),
+          refreshToken: Option.none(),
+          renewable: false,
+          scopes: [],
+        },
+      }),
+    platform,
+    policy: tokenPolicies.threads,
+    refresh: () => Effect.die(new Error("A fake sign-in renews nothing")),
+  };
+
+  return connection === undefined ? authorizer : { ...authorizer, connection };
+};
+
+// Mastodon on its fake instance, Threads, and Instagram through Instagram
+// Login only.
+const LinkAuthorizersTest = Layer.effect(
+  PlatformAuthorizers,
+  Effect.gen(function* LinkAuthorizersTest() {
+    const http = yield* publicHttpClient;
+
+    return authorizersOf(
+      yield* mastodonAuthorizer({ http, publicUrl: testPublicUrl }),
+      fakeAuthorizer("threads"),
+      fakeAuthorizer("instagram", "instagramLogin")
+    );
+  })
+).pipe(
+  Layer.provide(MastodonApps.layer),
+  Layer.provide(
+    Layer.mergeAll(
+      FetchHttpClient.layer,
+      SecureRandom.layerWebCrypto,
+      Digest.layerWebCrypto
+    )
+  )
+);
+
 /** Where the links' pages are, in these tests. */
 export const pages = "https://peal.test/connect/link#";
 
@@ -65,7 +145,9 @@ export const partnerOrigins = ["https://app.example.test"];
 
 /**
  * ConnectLinks with the real store and tokens, under a partner named
- * Partner Suite that returns to https://app.example.test.
+ * Partner Suite that returns to https://app.example.test, connecting
+ * Mastodon (a fake instance), Threads and Instagram (fakes that connect
+ * whatever their callback names).
  */
 export const LinksTest = ConnectLinks.layer.pipe(
   Layer.provideMerge(
@@ -93,7 +175,7 @@ export const LinksTest = ConnectLinks.layer.pipe(
   ),
   Layer.provideMerge(
     connectChannelWith(
-      MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
+      LinkAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
     )
   )
 );
@@ -108,7 +190,7 @@ export const mastodonLink: NewConnectLink = {
   connection: Option.none(),
   expiresInHours: Option.none(),
   locale: Option.none(),
-  platform: "mastodon",
+  platforms: ["mastodon"],
   returnUrl: Option.some("https://app.example.test/settings/social?tab=1"),
 };
 

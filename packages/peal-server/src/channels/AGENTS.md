@@ -337,12 +337,20 @@
 ## Connect links
 
 - A connect link (`ConnectLinks`, `channels.connect_links`) lets whoever
-  holds its address connect an account of one platform to a workspace
-  (those they pick, when the sign-in reached several, as a member's
-  picker lets them), and nothing else, without a session: `POST …/connect-links`
+  holds its address connect an account of one platform, or of each of
+  several (`platforms`, in their order), to a workspace (those they pick,
+  when the sign-in reached several, as a member's picker lets them), and
+  nothing else, without a session: `POST …/connect-links`
   (channel:connect) answers the address once, and only the SHA-256 of its
-  token is kept. It works once, for a sign-in that connects an account;
-  opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
+  token is kept. It works once a platform, for a sign-in that connects an
+  account there: `connectedThrough` keeps the platform and its channels
+  (`connected_platforms`, `channel_ids`) and completes the link once none
+  is left (`waitingPlatforms`); a start names the platform
+  (`started_platform`, the one `complete` and `choose` finish at), and one
+  not waiting is `notOffered`, kept as no failure. Its way in
+  (`connection`) is the platform's it belongs to; a row without one asks
+  the server's first, never an older way in (unlike a channel's row).
+  Opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
   starts 20 sign-ins at most, and a workspace has 100 pending at most; the
   `channels.connect-link-retention` cron deletes those ended 30 days ago.
   With `channelId` it reconnects that channel only. Its actor holds

@@ -12,7 +12,9 @@ import { errorEnvelope } from "./error-envelope.ts";
  *   allows;
  * - `planLimit`: the workspace's plan has no room for one more channel;
  * - `channelGone`: the channel it was to reconnect was disconnected;
- * - `platformUnreachable`: the platform did not answer for now.
+ * - `platformUnreachable`: the platform did not answer for now;
+ * - `platformNotOffered`: the platform asked is not one the link
+ *   connects, or the link connected it already.
  */
 export const HostedConnectFailureSchema = Schema.Literals([
   "platformNotSupported",
@@ -32,6 +34,7 @@ export const HostedConnectFailureSchema = Schema.Literals([
   "planLimit",
   "channelGone",
   "platformUnreachable",
+  "platformNotOffered",
 ]).annotate({ identifier: "HostedConnectFailure" });
 
 export type HostedConnectFailure = typeof HostedConnectFailureSchema.Type;

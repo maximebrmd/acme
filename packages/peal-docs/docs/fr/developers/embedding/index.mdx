@@ -176,7 +176,7 @@ Un espace de travail que vous créez n’a pas de membres : personne ne s’y co
 
 ## Laisser un client connecter ses comptes [#connect]
 
-Votre client possède ses comptes sociaux, et lui seul peut s’y connecter. Vous créez un lien de connexion pour une plateforme, vous y envoyez son navigateur, et il revient dans votre produit une fois le compte connecté. Il ne voit jamais un champ de mot de passe chez vous, et Peal ne voit jamais son mot de passe non plus : c’est la page de connexion de la plateforme qui le demande.
+Votre client possède ses comptes sociaux, et lui seul peut s’y connecter. Vous créez un lien de connexion pour une plateforme, ou pour plusieurs à la fois, vous y envoyez son navigateur, et il revient dans votre produit une fois le compte connecté. Il ne voit jamais un champ de mot de passe chez vous, et Peal ne voit jamais son mot de passe non plus : c’est la page de connexion de la plateforme qui le demande.
 
 <CodeGroup>
 
@@ -207,6 +207,7 @@ created = peal.connect_links.create(
 | Champ            | Ce que c’est                                                                                                                                                                                                                                                                                                                                             |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `platform`       | L’une des plateformes que [l’instance connecte](/guides/channels#connect)                                                                                                                                                                                                                                                                                |
+| `platforms`      | À la place de `platform`, plusieurs d’entre elles, chacune une fois, comme `["instagram", "linkedin", "mastodon"]` : la page les propose dans cet ordre ([Plusieurs plateformes](#several)). Jamais les deux, et une seule avec `channelId` : 400 sinon.                                                                                                 |
 | `returnUrl`      | Où la page le renvoie une fois terminé. Son origine doit être l’une de vos [origines de retour](#account), exactement : 422 `ReturnUrlNotAllowed` sinon.                                                                                                                                                                                                 |
 | `expiresInHours` | Combien de temps le lien fonctionne, de 1 à 720 (30 jours) : 168 (une semaine) par défaut                                                                                                                                                                                                                                                                |
 | `locale`         | `en` ou `fr` : la langue dans laquelle la page s’ouvre. Sans elle, celle du visiteur.                                                                                                                                                                                                                                                                    |
@@ -214,6 +215,26 @@ created = peal.connect_links.create(
 | `connection`     | La voie d’accès, sur les plateformes qui en ont plusieurs : pour Instagram, `instagramLogin` ou `facebookLogin` ([Instagram](/platforms/instagram#connect)) ; pour LinkedIn, `linkedinProfile` (le profil du membre) ou `linkedinPage` (les pages d’entreprise qu’il gère) ([LinkedIn](/platforms/linkedin#connect)). Sans elle, la première du serveur. |
 
 L’`url` de la réponse est affichée une seule fois : Peal ne garde qu’une empreinte du jeton qu’elle contient. Demande `channel:connect`.
+
+### Plusieurs plateformes dans un lien [#several]
+
+Un lien avec `platforms` permet à votre client de connecter un compte sur chacune depuis une seule page, en une visite ou plusieurs. La page liste les plateformes, signale celles connectées, et lance une connexion à la fois. Après chacune, elle propose **Connecter un autre compte**, ou **Continuer** vers votre `returnUrl`.
+
+| Tant qu’il attend    | Ce que vous lisez                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `connectedPlatforms` | Les plateformes qu’il a connectées jusqu’ici                                            |
+| `channelIds`         | Les canaux qu’il a connectés jusqu’ici, dans l’ordre                                    |
+| `status`             | `pending` jusqu’à ce que chaque plateforme ait été connectée une fois, puis `completed` |
+
+Chaque plateforme se connecte une fois : une deuxième connexion à une plateforme déjà connectée reçoit `platformNotOffered`. Révoquez le lien quand votre client a fini, ou laissez-le expirer : ce qu’il a connecté le reste dans les deux cas, et `channelIds` dit toujours quoi. Ses 20 connexions se comptent sur toutes ses plateformes.
+
+```typescript
+const { link, url } = await peal.connectLinks.create({
+  workspaceId: workspace.id,
+  platforms: ["instagram", "linkedin", "mastodon"],
+  returnUrl: "https://app.example.com/settings/social",
+});
+```
 
 ### Ce que voit votre client [#hosted-page]
 
@@ -285,7 +306,7 @@ Quand une plateforme n’accepte plus l’autorisation d’un canal, Peal envoie
   ceux dont vous n’avez plus besoin.
 </Callout>
 
-- Un lien sert une fois, par une connexion qui connecte un compte. L’ouvrir ne consomme rien : un aperçu de lien ne le dépense pas.
+- Un lien sert une fois pour chacune de ses plateformes, par une connexion qui y connecte un compte. L’ouvrir ne consomme rien : un aperçu de lien ne le dépense pas.
 - Il ne donne rien d’autre. Il ne lit aucune publication, aucun canal ni aucun jeton, et n’atteint aucun autre espace de travail.
 - Seul le navigateur qui a lancé la connexion la termine. La réponse de la plateforme, rejouée dans un autre navigateur, ne connecte rien.
 - Il ne revient que là où vous l’avez dit. Un `returnUrl` sur une origine que vous n’avez pas enregistrée est refusé à la création du lien : un lien n’envoie jamais personne sur le site de quelqu’un d’autre.

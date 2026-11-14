@@ -66,8 +66,11 @@ export type ConnectLinkStatus = typeof ConnectLinkStatusSchema.Type;
 export const ConnectLinkSchema = Schema.Struct({
   // The channel it reconnects; null when it connects a new account.
   channelId: Schema.NullOr(Schema.String),
-  // What it connected, or reconnected, once `completed`.
+  // What it connected, or reconnected: everything once `completed`, and,
+  // for a link of several platforms, what it connected so far.
   channelIds: Schema.Array(Schema.String),
+  // The platforms of `platforms` it connected so far.
+  connectedPlatforms: Schema.Array(PlatformSchema),
   // When it was used or revoked; null while it waits, and once expired.
   completedAt: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,
@@ -76,12 +79,25 @@ export const ConnectLinkSchema = Schema.Struct({
   failedAt: Schema.NullOr(Schema.DateTimeUtc),
   failure: Schema.NullOr(HostedConnectFailureSchema),
   id: Schema.String,
+  // The first of `platforms`.
   platform: PlatformSchema,
+  // Every platform it connects, each once, in the order its page offers
+  // them.
+  platforms: Schema.Array(PlatformSchema),
   returnUrl: Schema.NullOr(Schema.String),
   status: ConnectLinkStatusSchema,
 }).annotate({ identifier: "ConnectLink" });
 
 export type ConnectLink = typeof ConnectLinkSchema.Type;
+
+const linkPlatforms = Schema.Array(PlatformSchema).check(
+  Schema.isMinLength(1),
+  Schema.makeFilter(
+    (platforms: readonly string[]) =>
+      new Set(platforms).size === platforms.length,
+    { expected: "each platform once" }
+  )
+);
 
 export const NewConnectLinkSchema = Schema.Struct({
   // Reconnect this channel, instead of connecting a new account: only a
@@ -89,7 +105,8 @@ export const NewConnectLinkSchema = Schema.Struct({
   channelId: Schema.optionalKey(Schema.String),
   // The way in, on the platforms that have several: for Instagram,
   // Instagram Login or Facebook Login; for LinkedIn, the member's profile
-  // or the company pages they manage. Left out, the server's first.
+  // or the company pages they manage. Left out, the server's first. With
+  // several platforms, it is the way in of the one it belongs to.
   connection: Schema.optionalKey(ChannelConnectionSchema),
   expiresInHours: Schema.optionalKey(
     Schema.Int.check(
@@ -101,13 +118,37 @@ export const NewConnectLinkSchema = Schema.Struct({
   ),
   // The language the page opens in; the visitor's own unless given.
   locale: Schema.optionalKey(ConnectLinkLocaleSchema),
-  platform: PlatformSchema,
+  // The platform it connects; or `platforms`, never both.
+  platform: Schema.optionalKey(PlatformSchema),
+  // Several platforms it connects, each once, in the order its page
+  // offers them; or `platform`, never both. One alone with `channelId`.
+  platforms: Schema.optionalKey(linkPlatforms),
   // Where the page sends people once done: an address on an origin the
   // workspace's partner account registered.
   returnUrl: Schema.optionalKey(
     Schema.String.check(Schema.isBetweenLength(1, maxReturnUrlLength))
   ),
-}).annotate({ identifier: "NewConnectLink" });
+})
+  .check(
+    Schema.makeFilter(
+      (link: {
+        readonly platform?: string;
+        readonly platforms?: readonly string[];
+      }) => (link.platform === undefined) !== (link.platforms === undefined),
+      { expected: "either platform or platforms" }
+    ),
+    Schema.makeFilter(
+      (link: {
+        readonly channelId?: string;
+        readonly platforms?: readonly string[];
+      }) =>
+        link.channelId === undefined ||
+        link.platforms === undefined ||
+        link.platforms.length === 1,
+      { expected: "one platform to reconnect a channel" }
+    )
+  )
+  .annotate({ identifier: "NewConnectLink" });
 
 export type NewConnectLink = typeof NewConnectLinkSchema.Type;
 
@@ -140,7 +181,7 @@ export class ConnectLinksApi extends HttpApiGroup.make("connectLinks")
       success: CreatedConnectLinkSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates a link to hand to whoever owns an account of \`platform\`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. The answer holds the link's address, shown this once. The link works once, for ${defaultConnectLinkHours} hours unless \`expiresInHours\` (${minConnectLinkHours} to ${maxConnectLinkHours}) says otherwise; with \`channelId\`, it reconnects that channel, and only a sign-in to the channel's own account goes through. \`returnUrl\` is where the page sends them once done, with \`peal_link\` (the link's id) and \`peal_status\` (\`connected\`, \`cancelled\` or \`failed\`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 \`ReturnUrlNotAllowed\` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 \`ConnectFailed\`. A workspace has ${maxPendingConnectLinks} links waiting at most. Needs channel:connect.`,
+        description: `Creates a link to hand to whoever owns an account of \`platform\`, or accounts of each of \`platforms\`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. With \`platforms\`, the page offers each in turn, and the link waits until each one connected an account, or it is revoked or expires: \`connectedPlatforms\` and \`channelIds\` say what it connected so far. The answer holds the link's address, shown this once. The link works once, for ${defaultConnectLinkHours} hours unless \`expiresInHours\` (${minConnectLinkHours} to ${maxConnectLinkHours}) says otherwise; with \`channelId\`, it reconnects that channel, and only a sign-in to the channel's own account goes through. \`returnUrl\` is where the page sends them once done, with \`peal_link\` (the link's id) and \`peal_status\` (\`connected\`, \`cancelled\` or \`failed\`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 \`ReturnUrlNotAllowed\` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 \`ConnectFailed\`. A workspace has ${maxPendingConnectLinks} links waiting at most. Needs channel:connect.`,
         summary: "Create a connect link",
       })
     ),

@@ -174,7 +174,7 @@ A workspace you create has no members: nobody signs in to it, and only your keys
 
 ## Let a customer connect their accounts [#connect]
 
-Your customer owns their social accounts, and only they can sign in to them. You create a connect link for one platform, send their browser to it, and they come back to your product once the account is connected. They never see a password field of yours, and Peal never sees their password either: the platform's own sign-in page asks for it.
+Your customer owns their social accounts, and only they can sign in to them. You create a connect link for one platform, or for several at once, send their browser to it, and they come back to your product once the account is connected. They never see a password field of yours, and Peal never sees their password either: the platform's own sign-in page asks for it.
 
 <CodeGroup>
 
@@ -205,6 +205,7 @@ created = peal.connect_links.create(
 | Field            | What it is                                                                                                                                                                                                                                                                                                                        |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `platform`       | One of the platforms [the instance connects](/guides/channels#connect)                                                                                                                                                                                                                                                            |
+| `platforms`      | Instead of `platform`, several of them, each once, such as `["instagram", "linkedin", "mastodon"]`: the page offers each in that order ([Several platforms](#several)). Never both, and one alone with `channelId`: 400 otherwise.                                                                                                |
 | `returnUrl`      | Where the page sends them once done. Its origin must be one of your [return origins](#account), exactly: 422 `ReturnUrlNotAllowed` otherwise.                                                                                                                                                                                     |
 | `expiresInHours` | How long the link works, from 1 to 720 (30 days): 168 (a week) unless given                                                                                                                                                                                                                                                       |
 | `locale`         | `en` or `fr`: the language the page opens in. Left out, the visitor's own.                                                                                                                                                                                                                                                        |
@@ -212,6 +213,26 @@ created = peal.connect_links.create(
 | `connection`     | The way in, on the platforms that have several: for Instagram, `instagramLogin` or `facebookLogin` ([Instagram](/platforms/instagram#connect)); for LinkedIn, `linkedinProfile` (the member's profile) or `linkedinPage` (the company pages they manage) ([LinkedIn](/platforms/linkedin#connect)). Left out, the server's first. |
 
 The answer's `url` is shown once: Peal keeps only a digest of the token it holds. Needs `channel:connect`.
+
+### Several platforms in one link [#several]
+
+A link with `platforms` lets your customer connect an account on each of them from one page, in one visit or several. The page lists the platforms, marks those connected, and starts one sign-in at a time. After each, it offers **Connect another account**, or **Continue** back to your `returnUrl`.
+
+| While it waits       | What you read                                                  |
+| -------------------- | -------------------------------------------------------------- |
+| `connectedPlatforms` | The platforms it connected so far                              |
+| `channelIds`         | The channels it connected so far, in the order it did          |
+| `status`             | `pending` until each platform connected once, then `completed` |
+
+Each platform connects once: a second sign-in at one already connected answers `platformNotOffered`. Revoke the link once your customer is done, or let it expire: what it connected stays connected either way, and `channelIds` still says what. Its 20 sign-ins are counted across all its platforms.
+
+```typescript
+const { link, url } = await peal.connectLinks.create({
+  workspaceId: workspace.id,
+  platforms: ["instagram", "linkedin", "mastodon"],
+  returnUrl: "https://app.example.com/settings/social",
+});
+```
 
 ### What your customer sees [#hosted-page]
 
@@ -281,7 +302,7 @@ When a platform stops accepting a channel's authorization, Peal sends [`channel.
   shortest life that fits, and revoke those you no longer need.
 </Callout>
 
-- A link is used once, by a sign-in that connects an account. Opening it uses nothing, so a link preview does not spend it.
+- A link is used once for each of its platforms, by a sign-in that connects an account there. Opening it uses nothing, so a link preview does not spend it.
 - It gives nothing else. It reads no post, no channel and no token, and reaches no other workspace.
 - Only the browser that started the sign-in completes it. The platform's answer, replayed in another browser, connects nothing.
 - It returns only where you said. A `returnUrl` on an origin you did not register is refused when the link is created, so a link never sends anyone to a site of someone else's.

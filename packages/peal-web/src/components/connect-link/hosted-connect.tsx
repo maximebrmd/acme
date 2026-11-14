@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { HostedLink } from "peal-contract";
+import type { HostedLink, Platform } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useState, useSyncExternalStore, useTransition } from "react";
 
@@ -44,12 +44,23 @@ const noToken = () => null;
 
 // What the sign-in starts from: the server or the handle the visitor
 // gave, under the name the platform's sign-in takes it by.
-const startPayload = (input: HostedLink["input"], given: string) => {
+const given = (input: HostedLink["input"], value: string) => {
   if (input === "handle") {
-    return { handle: given };
+    return { handle: value };
   }
 
-  return input === "instance" ? { instance: given } : {};
+  return input === "instance" ? { instance: value } : {};
+};
+
+// The sign-in at the platform chosen: named, for a link of several.
+const startPayload = (link: HostedLink, platform: Platform, value: string) => {
+  const input =
+    link.platforms.find((offered) => offered.platform === platform)?.input ??
+    link.input;
+
+  return link.platforms.length > 1
+    ? { ...given(input, value), platform }
+    : given(input, value);
 };
 
 // A link that waits: asks what the sign-in needs, then leaves for the
@@ -62,6 +73,7 @@ const Welcome = ({
   readonly token: string;
 }) => {
   const start = useAtomSet(startHostedLink, { mode: "promiseExit" });
+  const [chosen, setChosen] = useState<Platform>(link.platform);
   const [value, setValue] = useState("");
   const [error, setError] = useState<HostedErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,14 +82,14 @@ const Welcome = ({
     startTransition(async () => {
       const exit = await start({
         headers: tokenHeaders(token),
-        payload: startPayload(link.input, value.trim()),
+        payload: startPayload(link, chosen, value.trim()),
       });
 
       if (exit._tag === "Success") {
         setError(null);
         // This tab is on a link's sign-in now, whatever it started before.
         forgetConnection();
-        rememberLink({ platform: link.platform, token });
+        rememberLink({ platform: chosen, token });
         globalThis.location.assign(exit.value.authorizationUrl);
 
         return;
@@ -94,10 +106,16 @@ const Welcome = ({
 
   return (
     <HostedWelcome
+      chosen={chosen}
       error={error}
       isPending={isPending}
       link={link}
       value={value}
+      onChoose={(platform) => {
+        setChosen(platform);
+        setValue("");
+        setError(null);
+      }}
       onInput={setValue}
       onStart={handleStart}
     />
@@ -140,7 +158,11 @@ const Loaded = ({ token }: { readonly token: string }) => {
     onSuccess: ({ value: link }) => (
       <HostedCard
         host={link.host}
-        title={t("heading", { platform: link.platform })}
+        title={
+          link.platforms.length > 1
+            ? t("headingSeveral")
+            : t("heading", { platform: link.platform })
+        }
       >
         {link.status === "pending" ? (
           <Welcome link={link} token={token} />

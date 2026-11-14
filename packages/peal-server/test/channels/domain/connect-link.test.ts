@@ -4,6 +4,7 @@ import { DateTime, Duration, Option, Result } from "effect";
 import { ConnectLinkIdSchema } from "#channels/domain/connect-link-id.ts";
 import {
   completeLink,
+  connectedThrough,
   createLink,
   isExpired,
   linkActor,
@@ -11,9 +12,11 @@ import {
   revokeLink,
   startLink,
   usable,
+  waitingPlatforms,
 } from "#channels/domain/connect-link.ts";
 import type { ConnectLink } from "#channels/domain/connect-link.ts";
 import { linkInputOf } from "#channels/domain/link-input.ts";
+import type { Platform } from "#channels/domain/platform.ts";
 import { returnAddressOf } from "#channels/domain/return-address.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 
@@ -23,7 +26,10 @@ const workspaceId = WorkspaceIdSchema.make(
   "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60"
 );
 
-const linkOf = (returnUrl: Option.Option<string> = Option.none()) =>
+const linkOf = (
+  returnUrl: Option.Option<string> = Option.none(),
+  platforms: readonly [Platform, ...Platform[]] = ["mastodon"]
+) =>
   createLink(
     {
       channelId: Option.none(),
@@ -32,12 +38,15 @@ const linkOf = (returnUrl: Option.Option<string> = Option.none()) =>
       id: ConnectLinkIdSchema.make("00000000-0000-7000-8000-0000000000aa"),
       lifetime: Duration.hours(2),
       locale: Option.none(),
-      platform: "mastodon",
+      platforms,
       returnUrl,
       workspaceId,
     },
     now
   );
+
+const channelOf = (last: string) =>
+  ChannelIdSchema.make(`00000000-0000-7000-8000-0000000000${last}`);
 
 const after = (duration: Duration.Input) =>
   DateTime.addDuration(now, Duration.fromInputUnsafe(duration));
@@ -58,12 +67,16 @@ describe("a connect link", () => {
     let link = linkOf();
 
     for (let started = 0; started < maxLinkStarts; started += 1) {
-      link = Result.getOrThrow(startLink(link, `browser-${started}`, now));
+      link = Result.getOrThrow(
+        startLink(link, `browser-${started}`, "mastodon", now)
+      );
     }
 
     expect(link.starts).toBe(maxLinkStarts);
     expect(Option.getOrNull(link.browser)).toBe(`browser-${maxLinkStarts - 1}`);
-    expect(refusal(startLink(link, "one-more", now))).toBe("exhausted");
+    expect(refusal(startLink(link, "one-more", "mastodon", now))).toBe(
+      "exhausted"
+    );
   });
 
   it("ends once: used or revoked, it starts nothing more", () => {
@@ -74,11 +87,80 @@ describe("a connect link", () => {
     const used = completeLink(linkOf(), [channelId], now);
     const revoked = revokeLink(linkOf(), now);
 
-    expect(refusal(startLink(used, "browser", now))).toBe("completed");
-    expect(refusal(startLink(revoked, "browser", now))).toBe("revoked");
+    expect(refusal(startLink(used, "browser", "mastodon", now))).toBe(
+      "completed"
+    );
+    expect(refusal(startLink(revoked, "browser", "mastodon", now))).toBe(
+      "revoked"
+    );
     // Revoking what was used leaves it used, and never expired.
     expect(revokeLink(used, now)).toBe(used);
     expect(isExpired(used, after("3 hours"))).toBeFalsy();
+  });
+
+  it("names each of its platforms once, in the order given", () => {
+    const link = linkOf(Option.none(), ["threads", "mastodon", "threads"]);
+
+    expect(link.platforms).toStrictEqual(["threads", "mastodon"]);
+    expect(link.platform).toBe("threads");
+    expect(waitingPlatforms(link)).toStrictEqual(["threads", "mastodon"]);
+  });
+
+  it("starts a sign-in only for a platform it still waits on", () => {
+    const link = linkOf(Option.none(), ["mastodon", "threads"]);
+
+    expect(refusal(startLink(link, "browser", "bluesky", now))).toBe(
+      "notOffered"
+    );
+
+    const started = Result.getOrThrow(
+      startLink(link, "browser", "threads", now)
+    );
+
+    expect(Option.getOrNull(started.startedPlatform)).toBe("threads");
+  });
+
+  it("with several platforms, waits until each connected once", () => {
+    const link = linkOf(Option.none(), ["mastodon", "threads"]);
+
+    const first = connectedThrough(link, "mastodon", [channelOf("c1")], now);
+
+    expect({
+      channels: first.connectedChannels,
+      platforms: first.connectedPlatforms,
+      status: first.status,
+      waiting: waitingPlatforms(first),
+    }).toStrictEqual({
+      channels: [channelOf("c1")],
+      platforms: ["mastodon"],
+      status: { _tag: "pending" },
+      waiting: ["threads"],
+    });
+    expect(refusal(startLink(first, "browser", "mastodon", now))).toBe(
+      "notOffered"
+    );
+
+    const both = connectedThrough(
+      first,
+      "threads",
+      [channelOf("c2")],
+      after("1 minute")
+    );
+
+    expect(both.status).toStrictEqual({
+      _tag: "completed",
+      at: after("1 minute"),
+      channelIds: [channelOf("c1"), channelOf("c2")],
+    });
+  });
+
+  it("with one platform, is used by its first connection", () => {
+    const used = connectedThrough(linkOf(), "mastodon", [channelOf("c3")], now);
+
+    expect(used.status._tag).toBe("completed");
+    expect(refusal(startLink(used, "browser", "mastodon", now))).toBe(
+      "completed"
+    );
   });
 
   it("acts in its workspace to connect accounts, and nothing else", () => {

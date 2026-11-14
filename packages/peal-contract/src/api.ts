@@ -2073,6 +2073,7 @@ export {
   HostedChannelSchema,
   HostedConnectApi,
   HostedLinkInputSchema,
+  HostedLinkPlatformSchema,
   HostedLinkSchema,
   HostedOutcomeSchema,
   HostedStartSchema,

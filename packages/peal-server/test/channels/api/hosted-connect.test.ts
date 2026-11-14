@@ -42,6 +42,9 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
         },
         input: "instance",
         platform: "mastodon",
+        platforms: [
+          { connected: false, input: "instance", platform: "mastodon" },
+        ],
         reconnecting: null,
         returnTo: `https://app.example.test/settings/social?tab=1&peal_link=${link.id}&peal_status=cancelled`,
         status: "pending",

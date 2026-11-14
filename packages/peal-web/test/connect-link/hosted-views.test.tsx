@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Cause, DateTime, Exit, Option } from "effect";
 import { constVoid } from "effect/Function";
 import { NextIntlClientProvider } from "next-intl";
+import NextLink from "next/link";
 import type { HostedLink } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -24,6 +25,7 @@ const link: HostedLink = {
   },
   input: "instance",
   platform: "mastodon",
+  platforms: [{ connected: false, input: "instance", platform: "mastodon" }],
   reconnecting: null,
   returnTo: "https://app.example.test/social?peal_link=1&peal_status=cancelled",
   status: "pending",
@@ -40,15 +42,22 @@ const inMessages = async (locale: "en" | "fr", element: React.ReactElement) =>
     </NextIntlClientProvider>
   );
 
-const welcome = async (locale: "en" | "fr", shown: HostedLink, value = "") => {
+const welcome = async (
+  locale: "en" | "fr",
+  shown: HostedLink,
+  value = "",
+  chosen = shown.platform
+) => {
   const html = await inMessages(
     locale,
     <HostedCard host={shown.host} title="Synthetic title">
       <HostedWelcome
+        chosen={chosen}
         error={null}
         isPending={false}
         link={shown}
         value={value}
+        onChoose={constVoid}
         onInput={constVoid}
         onStart={constVoid}
       />
@@ -124,6 +133,39 @@ describe("a connect link's page", () => {
     expect(html).toContain("&lt;img src=x");
   });
 
+  it("offers each platform of a link for several, and says which are done", async () => {
+    const several: HostedLink = {
+      ...link,
+      input: "none",
+      platform: "threads",
+      platforms: [
+        { connected: true, input: "instance", platform: "mastodon" },
+        { connected: false, input: "none", platform: "threads" },
+        { connected: false, input: "handle", platform: "bluesky" },
+      ],
+    };
+
+    const html = await welcome("en", several);
+
+    expect(html).toContain(
+      "Partner Suite asks to connect your accounts on these platforms, to publish there for you."
+    );
+    expect(
+      [
+        "Mastodon",
+        "Connected",
+        "Continue to Threads",
+        "Connect Bluesky",
+      ].filter((text) => !html.includes(text))
+    ).toStrictEqual([]);
+
+    // The platform chosen asks what its sign-in needs.
+    const bluesky = await welcome("fr", several, "", "bluesky");
+
+    expect(bluesky).toContain("Votre identifiant Bluesky");
+    expect(bluesky).toContain("Continuer vers Bluesky");
+  });
+
   it("names the account a link reconnects", async () => {
     const html = await welcome("en", {
       ...link,
@@ -173,6 +215,24 @@ describe("a connect link's page", () => {
 
     expect(here).toContain("Ces comptes sont connectés : Page A, Page B.");
     expect(here).toContain("Vous pouvez fermer cette page.");
+  });
+
+  it("offers to connect the platforms a link still waits on", async () => {
+    const html = await inMessages(
+      "en",
+      <HostedConnected
+        again={<NextLink href="/en/connect/link#synthetic" />}
+        handles={["@peal_example"]}
+        platform="mastodon"
+        remaining={["threads", "bluesky"]}
+        returnTo="https://app.example.test/social?peal_status=connected"
+      />
+    );
+
+    expect(html).toContain("Threads and Bluesky are left to connect.");
+    expect(html).toContain('href="/en/connect/link#synthetic"');
+    expect(html).toContain("Connect another account");
+    expect(html).not.toContain("Taking you back");
   });
 
   it("explains every failure in both languages", async () => {

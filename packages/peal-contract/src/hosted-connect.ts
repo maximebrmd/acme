@@ -27,6 +27,14 @@ export const HostedLinkInputSchema = Schema.Literals([
   "handle",
 ]).annotate({ identifier: "HostedLinkInput" });
 
+/** One of the platforms a connect link's page offers. */
+export const HostedLinkPlatformSchema = Schema.Struct({
+  // Whether the link connected it already.
+  connected: Schema.Boolean,
+  input: HostedLinkInputSchema,
+  platform: PlatformSchema,
+}).annotate({ identifier: "HostedLinkPlatform" });
+
 /** What a connect link's hosted page shows whoever opens it. */
 export const HostedLinkSchema = Schema.Struct({
   expiresAt: Schema.DateTimeUtc,
@@ -38,8 +46,13 @@ export const HostedLinkSchema = Schema.Struct({
     logoUrl: Schema.NullOr(Schema.String),
     name: Schema.String,
   }),
+  // What the sign-in at `platform` needs first.
   input: HostedLinkInputSchema,
+  // The first platform the link still waits on (its first once it is
+  // over).
   platform: PlatformSchema,
+  // Every platform it connects, in its order, and which are connected.
+  platforms: Schema.Array(HostedLinkPlatformSchema),
   // The handle of the account to sign in to, when the link reconnects one.
   reconnecting: Schema.NullOr(Schema.String),
   // Where the page offers to go back to, when the link has a return
@@ -55,6 +68,9 @@ export const HostedStartSchema = Schema.Struct({
   handle: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
   // A Mastodon instance, when the link asks for one.
   instance: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
+  // The platform to sign in at, among those the link still waits on;
+  // left out, the first of them.
+  platform: Schema.optionalKey(PlatformSchema),
 }).annotate({ identifier: "HostedStart" });
 
 export const HostedAuthorizationSchema = Schema.Struct({
@@ -76,6 +92,9 @@ export const HostedChannelSchema = Schema.Struct({
 export const HostedOutcomeSchema = Schema.Union([
   Schema.TaggedStruct("connected", {
     channels: Schema.Array(HostedChannelSchema),
+    // The platforms the link still waits on, for whoever connects more:
+    // none once it is used.
+    remaining: Schema.Array(PlatformSchema),
     returnTo: Schema.NullOr(Schema.String),
   }),
   Schema.TaggedStruct("choose", {
@@ -127,7 +146,7 @@ export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
       success: HostedAuthorizationSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Starts the link's sign-in: answers with the platform's sign-in page, where the browser goes next, and sets a cookie only this browser holds, so only it completes the sign-in, within 15 minutes. A link's sign-in can be started ${maxConnectLinkStarts} times.`,
+        description: `Starts the link's sign-in at \`platform\`, one it still waits on (the first of them when left out; another answers \`platformNotOffered\`): answers with the platform's sign-in page, where the browser goes next, and sets a cookie only this browser holds, so only it completes the sign-in, within 15 minutes. A link's sign-in can be started ${maxConnectLinkStarts} times.`,
         summary: "Start a connect link's sign-in",
       })
     ),

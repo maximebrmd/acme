@@ -258,8 +258,20 @@ export const connectLinks = channelsSchema.table(
     failureReason: text("failure_reason"),
     id: uuid("id").primaryKey(),
     locale: text("locale"),
+    // The first of `platforms`, which a link for one platform names alone.
     platform: text("platform").notNull(),
+    // Every platform it connects, in its order; null for a link written
+    // before links named several, which names `platform` alone.
+    platforms: text("platforms").array(),
+    // The platforms it connected so far, whose channels are in
+    // `channel_ids`.
+    connectedPlatforms: text("connected_platforms")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     returnUrl: text("return_url"),
+    // The platform of the sign-in `browser_digest` started.
+    startedPlatform: text("started_platform"),
     starts: integer("starts").notNull(),
     status: text("status").notNull(),
     tokenDigest: text("token_digest").notNull(),

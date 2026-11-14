@@ -15,6 +15,7 @@ import {
 } from "#channels/domain/connect-link.ts";
 import { mastodonInstance } from "#test/channels/connect-support.ts";
 import {
+  fakeSignIn,
   LinkConnections,
   linked,
   partnerOrigins,
@@ -47,6 +48,13 @@ const reasonOf = <A, E extends { readonly _tag: string }>(
   );
 
 const CountSchema = Schema.Array(Schema.Struct({ rows: Schema.Number }));
+
+// What a fake platform's sign-in sends back for the account `code`.
+const fakeCallback = (authorizationUrl: string, code: string) =>
+  callbackOf({
+    code,
+    state: new URL(authorizationUrl).searchParams.get("state") ?? "",
+  });
 
 layer(LinksTest)("connect links", (it) => {
   it.effect(
@@ -524,7 +532,7 @@ layer(LinksTest)("connect links", (it) => {
           .create(manager(workspaceId), {
             ...mastodon,
             connection: Option.some("linkedinPage"),
-            platform,
+            platforms: [platform],
           })
           .pipe(Effect.flip);
 
@@ -541,7 +549,7 @@ layer(LinksTest)("connect links", (it) => {
         .create(manager(workspaceId), {
           ...mastodon,
           connection: Option.some("linkedinPage"),
-          platform: "linkedin",
+          platforms: ["linkedin"],
         })
         .pipe(Effect.flip);
 
@@ -685,6 +693,239 @@ layer(LinksTest)("connect links", (it) => {
       assert.strictEqual(
         Option.getOrNull(read.failure.pipe(Option.map(({ reason }) => reason))),
         "platformUnreachable"
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("for several platforms, connect each once, then are used", () =>
+    Effect.gen(function* several() {
+      const instance = yield* mastodonInstance();
+      const links = yield* ConnectLinks;
+
+      const { link, token, workspaceId } = yield* linked({
+        platforms: ["mastodon", "threads"],
+      });
+
+      assert.deepStrictEqual(link.platforms, ["mastodon", "threads"]);
+
+      const opened = yield* links.open(token);
+
+      assert.strictEqual(opened.platform, "mastodon");
+      assert.deepStrictEqual(opened.platforms, [
+        { connected: false, input: "instance", platform: "mastodon" },
+        { connected: false, input: "none", platform: "threads" },
+      ]);
+
+      // Threads first, though Mastodon comes first.
+      const atThreads = yield* links.start(token, {
+        handle: Option.none(),
+        instance: Option.none(),
+        platform: Option.some("threads"),
+      });
+
+      assert.isTrue(
+        atThreads.authorizationUrl.startsWith(fakeSignIn("threads"))
+      );
+
+      const first = yield* links.complete(
+        token,
+        Option.some(atThreads.browser),
+        fakeCallback(atThreads.authorizationUrl, "first")
+      );
+
+      assert(first._tag === "connected");
+      assert.deepStrictEqual(first.remaining, ["mastodon"]);
+      assert.strictEqual(
+        Option.getOrNull(first.returnTo),
+        `https://app.example.test/settings/social?tab=1&peal_link=${link.id}&peal_status=connected`
+      );
+
+      const [threads] = first.channels;
+
+      assert(threads !== undefined);
+      assert.strictEqual(threads.platform, "threads");
+
+      // Still waiting, on Mastodon alone, and saying what it connected.
+      const halfway = yield* links.get(manager(workspaceId), link.id);
+
+      assert.deepStrictEqual(halfway.status, { _tag: "pending" });
+      assert.deepStrictEqual(halfway.connectedPlatforms, ["threads"]);
+      assert.deepStrictEqual(halfway.connectedChannels, [threads.id]);
+      assert.isTrue(Option.isNone(halfway.browser));
+
+      const reopened = yield* links.open(token);
+
+      assert.strictEqual(reopened.state, "pending");
+      assert.strictEqual(reopened.platform, "mastodon");
+      assert.strictEqual(reopened.input, "instance");
+      assert.deepStrictEqual(
+        reopened.platforms.map(({ connected }) => connected),
+        [false, true]
+      );
+
+      // Threads is done: a second Threads account is not this link's.
+      assert.strictEqual(
+        yield* reasonOf(
+          links.start(token, {
+            handle: Option.none(),
+            instance: Option.none(),
+            platform: Option.some("threads"),
+          })
+        ),
+        "platformNotOffered"
+      );
+
+      // Left out, the platform is the first it still waits on.
+      const atMastodon = yield* links.start(token, {
+        handle: Option.none(),
+        instance: Option.some(instance.url),
+      });
+
+      const second = yield* links.complete(
+        token,
+        Option.some(atMastodon.browser),
+        callbackOf(instance.approve(atMastodon.authorizationUrl))
+      );
+
+      assert(second._tag === "connected");
+      assert.deepStrictEqual(second.remaining, []);
+
+      const [mastodonChannel] = second.channels;
+
+      assert(mastodonChannel !== undefined);
+
+      const used = yield* links.get(manager(workspaceId), link.id);
+
+      assert(used.status._tag === "completed");
+      assert.deepStrictEqual(used.status.channelIds, [
+        threads.id,
+        mastodonChannel.id,
+      ]);
+      assert.strictEqual((yield* links.open(token)).state, "completed");
+
+      // Told to the log once a sign-in, each with what it connected.
+      assert.deepStrictEqual(
+        (yield* Ref.get(yield* LinkConnections))
+          .filter(({ linkId }) => linkId === link.id)
+          .map(({ channelIds }) => channelIds),
+        [[threads.id], [mastodonChannel.id]]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("start nothing at a platform they do not name", () =>
+    Effect.gen(function* notNamed() {
+      const links = yield* ConnectLinks;
+
+      const { link, token, workspaceId } = yield* linked({
+        platforms: ["mastodon", "threads"],
+      });
+
+      assert.strictEqual(
+        yield* reasonOf(
+          links.start(token, {
+            handle: Option.none(),
+            instance: Option.none(),
+            platform: Option.some("bluesky"),
+          })
+        ),
+        "platformNotOffered"
+      );
+
+      // Not a failure of a sign-in: nothing is kept, nothing counted.
+      const read = yield* links.get(manager(workspaceId), link.id);
+
+      assert.isTrue(Option.isNone(read.failure));
+      assert.strictEqual(read.starts, 0);
+    })
+  );
+
+  it.effect(
+    "take the way in asked for the platform it belongs to, and the server's first otherwise",
+    () =>
+      Effect.gen(function* waysIn() {
+        const links = yield* ConnectLinks;
+        const actor = manager(yield* freshWorkspace);
+
+        // Instagram Login is the only way in here: a link that asks none
+        // takes it, and keeps asking none.
+        const { link, token, workspaceId } = yield* linked({
+          platforms: ["mastodon", "instagram"],
+        });
+
+        const read = yield* links.get(manager(workspaceId), link.id);
+
+        assert.isTrue(Option.isNone(read.connection));
+
+        const started = yield* links.start(token, {
+          handle: Option.none(),
+          instance: Option.none(),
+          platform: Option.some("instagram"),
+        });
+
+        assert.isTrue(
+          started.authorizationUrl.startsWith(fakeSignIn("instagram"))
+        );
+
+        // Through a Page, which this server does not offer; and a way in
+        // that is no platform's of the link.
+        const refusals = yield* Effect.all(
+          (["facebookLogin", "linkedinPage"] as const).map((connection) =>
+            links
+              .create(actor, {
+                ...mastodon,
+                connection: Option.some(connection),
+                platforms: ["mastodon", "instagram"],
+              })
+              .pipe(Effect.flip)
+          )
+        );
+
+        assert.deepStrictEqual(
+          refusals.map((refusal) =>
+            refusal._tag === "PlatformNotConnectable"
+              ? [refusal.platform, refusal.reason]
+              : [refusal._tag]
+          ),
+          [
+            ["instagram", "notConfigured"],
+            ["mastodon", "notSupported"],
+          ]
+        );
+      })
+  );
+
+  it.effect("reconnect one channel, on its platform alone", () =>
+    Effect.gen(function* reconnectOne() {
+      const links = yield* ConnectLinks;
+      const instance = yield* mastodonInstance();
+      const first = yield* linked();
+
+      const started = yield* links.start(first.token, {
+        handle: Option.none(),
+        instance: Option.some(instance.url),
+      });
+
+      const connected = yield* links.complete(
+        first.token,
+        Option.some(started.browser),
+        callbackOf(instance.approve(started.authorizationUrl))
+      );
+
+      assert(connected._tag === "connected");
+
+      const [channel] = connected.channels;
+
+      assert(channel !== undefined);
+      assert.strictEqual(
+        yield* reasonOf(
+          links.create(manager(first.workspaceId), {
+            ...mastodon,
+            channelId: Option.some(channel.id),
+            platforms: ["mastodon", "threads"],
+          })
+        ),
+        "ChannelNotFound"
       );
     }).pipe(Effect.scoped)
   );

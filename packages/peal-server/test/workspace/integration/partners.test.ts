@@ -71,6 +71,7 @@ const LinkSchema = Schema.Struct({
   channelIds: Schema.Array(Schema.String),
   failure: Schema.NullOr(Schema.String),
   id: Schema.String,
+  platforms: Schema.Array(Schema.String),
   status: Schema.String,
 });
 
@@ -1261,10 +1262,30 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             });
           }
 
+          // A link names `platform` or `platforms`, never both nor
+          // neither, each platform once, and one alone to reconnect.
+          for (const body of [
+            { platform: "mastodon", platforms: ["mastodon"] },
+            {},
+            { platforms: [] },
+            { platforms: ["mastodon", "mastodon"] },
+            {
+              channelId: "0190f3a0-0000-7000-8000-000000000001",
+              platforms: ["mastodon", "bluesky"],
+            },
+          ]) {
+            const refused = yield* app.request(base, {
+              body,
+              headers: bearer(key),
+            });
+
+            assert.strictEqual(refused.status, 400, JSON.stringify(body));
+          }
+
           const created = yield* app.request(base, {
             body: {
               locale: "fr",
-              platform: "mastodon",
+              platforms: ["mastodon"],
               returnUrl: "https://app.example.test/social",
             },
             headers: bearer(key),
@@ -1277,6 +1298,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.isTrue(url.startsWith(prefix));
           assert.strictEqual(link.status, "pending");
+          assert.deepStrictEqual(link.platforms, ["mastodon"]);
 
           const token = url.slice(prefix.length);
           const hosted = "/api/connect-links";
@@ -1340,6 +1362,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             channelIds: [],
             failure: reason,
             id: link.id,
+            platforms: ["mastodon"],
             status: "pending",
           });
 
