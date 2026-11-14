@@ -34,10 +34,12 @@ describe(renderNoticeEmail, () => {
 
   it("sends members whose channel's messages were turned off to the inbox's own steps", () => {
     const bluesky = { handle: "@studio.example", platform: "bluesky" } as const;
+
     const english = render(
       { _tag: "MessagesTurnedOff", channel: bluesky },
       "en"
     );
+
     const french = render(
       { _tag: "MessagesTurnedOff", channel: bluesky },
       "fr"
