@@ -1,5 +1,7 @@
 import { Context, Effect, Layer, Option } from "effect";
 
+import type { ArticleId } from "#publishing/domain/article-id.ts";
+import type { Article } from "#publishing/domain/article.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { keepingMedia, namesMedia } from "#publishing/domain/named-media.ts";
 import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
@@ -17,6 +19,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { ArticleStore } from "./article-store.ts";
 import { PostRepository } from "./post-repository.ts";
 
 /** The posts that show a media asset, by where they are in their life. */
@@ -28,12 +31,25 @@ export interface MediaUse {
    * deleted.
    */
   readonly scheduled: readonly PostId[];
+  /**
+   * Articles that show it: those scheduled or publishing keep it from
+   * being deleted; the others keep its id, and are refused it when they
+   * are sent.
+   */
+  readonly articles: {
+    readonly drafts: readonly ArticleId[];
+    readonly scheduled: readonly ArticleId[];
+  };
 }
 
 /** What releasing the media came to. */
 export type MediaRelease =
-  // Posts about to go out show it: nothing changed.
-  | { readonly _tag: "inUse"; readonly scheduled: readonly PostId[] }
+  // Posts or articles about to go out show it: nothing changed.
+  | {
+      readonly _tag: "inUse";
+      readonly articles: readonly ArticleId[];
+      readonly scheduled: readonly PostId[];
+    }
   // These drafts no longer show it.
   | { readonly _tag: "released"; readonly drafts: readonly PostId[] }
   // No post that may still go out shows it.
@@ -49,6 +65,16 @@ const scheduledStatuses: readonly PostStatusName[] = [
 ];
 
 const ids = (posts: readonly Post[]) => posts.map(({ id }) => id);
+
+// An article that still goes out, so needs its files.
+const goesOut = (article: Article) =>
+  article.state._tag === "scheduled" || article.state._tag === "publishing";
+
+// The articles that show the media, by where they are.
+const articleUse = (shown: readonly Article[]) => ({
+  drafts: shown.flatMap((article) => (goesOut(article) ? [] : [article.id])),
+  scheduled: shown.flatMap((article) => (goesOut(article) ? [article.id] : [])),
+});
 
 // A post with its targets, whose options may name files.
 interface Locked {
@@ -116,8 +142,9 @@ const without = (post: Post, mediaId: MediaAssetId) =>
  * thumbnail, a cover), for the media context, which asks before deleting
  * one: a post scheduled or publishing keeps it from being deleted, and
  * drafts let go of it. Finished and cancelled posts keep their media ids
- * as they were. It acts for the workspace, as the media context checked who
- * deletes.
+ * as they were. Articles count too: one scheduled or publishing keeps the
+ * media, and the others keep its id, which their sending refuses. It acts
+ * for the workspace, as the media context checked who deletes.
  */
 export class MediaInPosts extends Context.Service<
   MediaInPosts,
@@ -141,6 +168,7 @@ export class MediaInPosts extends Context.Service<
     MediaInPosts,
     Effect.gen(function* MediaInPostsLive() {
       const posts = yield* PostRepository;
+      const articles = yield* ArticleStore;
       const { transaction } = yield* TransactionRunner;
 
       const usage = Effect.fn("MediaInPosts.usage")(function* usage(
@@ -160,6 +188,7 @@ export class MediaInPosts extends Context.Service<
         );
 
         const use: MediaUse = {
+          articles: articleUse(yield* articles.showing(workspaceId, mediaId)),
           drafts: ids(drafts),
           scheduled: ids(scheduled),
         };
@@ -245,7 +274,23 @@ export class MediaInPosts extends Context.Service<
       ) {
         return yield* transaction(
           Effect.gen(function* releasing() {
+            // The articles first, held: one scheduled meanwhile waits for
+            // this, and is then refused the file.
+            const shown = articleUse(
+              yield* articles.lockShowing(workspaceId, mediaId)
+            );
+
             const listed = yield* usage(workspaceId, mediaId);
+
+            if (shown.scheduled.length > 0) {
+              const inUse: MediaRelease = {
+                _tag: "inUse",
+                articles: shown.scheduled,
+                scheduled: listed.scheduled,
+              };
+
+              return inUse;
+            }
 
             if (listed.drafts.length === 0 && listed.scheduled.length === 0) {
               const unused: MediaRelease = { _tag: "unused" };
@@ -261,6 +306,7 @@ export class MediaInPosts extends Context.Service<
             if (listed.scheduled.length > 0 || scheduled.length > 0) {
               const inUse: MediaRelease = {
                 _tag: "inUse",
+                articles: [],
                 scheduled: [...listed.scheduled, ...ids(scheduled)],
               };
 

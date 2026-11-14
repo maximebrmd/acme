@@ -3524,7 +3524,12 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             yield* reader.call("get_media_usage", MediaUsageSchema, {
               mediaId,
             }),
-            { drafts: [draftId], scheduled: [scheduledId] }
+            {
+              draftArticles: [],
+              drafts: [draftId],
+              scheduled: [scheduledId],
+              scheduledArticles: [],
+            }
           );
 
           const refused = yield* writer.refused("delete_media", { mediaId });

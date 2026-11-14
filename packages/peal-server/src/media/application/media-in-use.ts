@@ -10,8 +10,10 @@ import { PostIdSchema } from "#shared/domain/ids.ts";
 export class MediaInUse extends Schema.TaggedError<MediaInUse>()("MediaInUse", {
   assetId: MediaAssetIdSchema,
   postIds: Schema.Array(PostIdSchema),
+  // The articles, scheduled or publishing, that show it.
+  articleIds: Schema.Array(Schema.String),
 }) {
   override get message(): string {
-    return `Media asset ${this.assetId} is shown by ${this.postIds.length} scheduled posts`;
+    return `Media asset ${this.assetId} is shown by ${this.postIds.length} scheduled posts and ${this.articleIds.length} articles`;
   }
 }

@@ -342,14 +342,18 @@ const fakesWith = (setup: Setup) =>
       const usage = MediaUsage.of({
         of: (_, assetId) =>
           Effect.succeed({
+            draftArticles: [],
             drafts: [],
+            scheduledArticles: [],
             scheduled: setup.scheduled.has(assetId)
               ? [PostIdSchema.make("019a7b2c-3d4e-7f00-8a1b-0000000000aa")]
               : [],
           }),
         release: (_, assetId) =>
           setup.scheduled.has(assetId)
-            ? Effect.fail(new MediaInUse({ assetId, postIds: [] }))
+            ? Effect.fail(
+                new MediaInUse({ articleIds: [], assetId, postIds: [] })
+              )
             : log(`release:${assetId}`).pipe(Effect.as([])),
       });
 

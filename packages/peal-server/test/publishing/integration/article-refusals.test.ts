@@ -1,12 +1,15 @@
 // What an article is refused before anything reaches its site: whatever
 // would send it while the workspace's posts wait for an approval.
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import type { ArticleEvents } from "#publishing/application/article-events.ts";
 import { claimArticleRun } from "#publishing/application/article-publication.ts";
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
+import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
+import { DrizzleArticleStore } from "#publishing/infrastructure/drizzle-article-store.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import type { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
@@ -296,5 +299,61 @@ describe("an article refused at scheduling", () => {
         assert.lengthOf(site.requests(), 0);
       })
     )
+  );
+});
+
+describe("a file of the library an article shows", () => {
+  it.effect(
+    "is kept while the article is scheduled, and listed for a draft",
+    () =>
+      onArticles(
+        Effect.gen(function* kept() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const articles = yield* Articles;
+          const actor = writer(workspaceId);
+          const cover = coverImage.media.mediaId;
+
+          const scheduled = yield* articles.create(
+            actor,
+            { channelId: channel.id, content: content() },
+            later
+          );
+
+          const draft = yield* articles.create(
+            actor,
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          const inPosts = yield* MediaInPosts.pipe(
+            Effect.provide(
+              MediaInPosts.layer.pipe(
+                Layer.provide(
+                  Layer.merge(DrizzlePostRepository, DrizzleArticleStore)
+                )
+              )
+            )
+          );
+
+          assert.deepStrictEqual(
+            (yield* inPosts.usage(workspaceId, cover)).articles,
+            { drafts: [draft.id], scheduled: [scheduled.id] }
+          );
+          assert.deepStrictEqual(yield* inPosts.release(workspaceId, cover), {
+            _tag: "inUse",
+            articles: [scheduled.id],
+            scheduled: [],
+          });
+
+          yield* articles.unschedule(actor, scheduled.id);
+
+          assert.strictEqual(
+            (yield* inPosts.release(workspaceId, cover))._tag,
+            "unused"
+          );
+        })
+      )
   );
 });

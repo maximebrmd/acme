@@ -445,12 +445,12 @@ export const PublishingLive = publishingOver(
 );
 
 /**
- * Which posts show a media asset, for the media context to ask before it
- * deletes one (MediaInPosts). Needs the database (Drizzle) and a
+ * Which posts and articles show a media asset, for the media context to
+ * ask before it deletes one (MediaInPosts). Needs the database (Drizzle) and a
  * TransactionRunner.
  */
 export const MediaInPostsLive = MediaInPosts.layer.pipe(
-  Layer.provide(DrizzlePostRepository)
+  Layer.provide(Layer.merge(DrizzlePostRepository, DrizzleArticleStore))
 );
 
 /**
