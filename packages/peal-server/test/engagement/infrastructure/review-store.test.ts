@@ -486,10 +486,12 @@ layer(StoreTest)("the review store", (it) => {
       Effect.gen(function* keys() {
         const workspaceId = yield* freshWorkspace;
         const store = yield* ReviewStore;
+
         const thread = yield* locationOf(
           workspaceId,
           "2047-02-07T10:00:00.000Z"
         );
+
         const at = utc("2047-02-07T10:00:00.000Z");
 
         const key = Option.some({

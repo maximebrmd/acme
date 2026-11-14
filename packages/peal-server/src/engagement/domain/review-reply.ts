@@ -218,10 +218,15 @@ export const settleReviewReply = (
   );
 };
 
-// Google may trim what it is given: a reply is the same when its text,
-// trimmed, is.
+// Google may trim what it is given, write its line breaks and spaces
+// otherwise, or compose letters another way: a reply is the same when its
+// text is, its letters composed (NFC) and each run of white space one
+// space.
+const normalized = (text: string): string =>
+  text.normalize("NFC").replaceAll(/\s+/gu, " ").trim();
+
 const sameText = (left: string, right: string): boolean =>
-  left.trim() === right.trim();
+  normalized(left) === normalized(right);
 
 /** Whether the location's reply, as read, is this reply's text. */
 export const isLocationReply = (

@@ -89,6 +89,24 @@ describe("a reply to a review", () => {
     );
   });
 
+  it("is the location's reply whatever line endings, spaces and composed letters Google wrote it with", () => {
+    const sent = writeReviewReply(
+      reviewReplyId(2),
+      review(1),
+      Option.none(),
+      "Merci,\r\nà bientôt  !",
+      reviewedAt
+    );
+
+    const found = Option.some({
+      moderation: Option.none(),
+      text: "Merci,\na\u0300 bientôt !",
+      updatedAt: later,
+    });
+
+    expect(isLocationReply(sent, found)).toBeTruthy();
+  });
+
   it("is settled by the next read as never sent when the location shows another reply, or none", () => {
     const other = Option.some({
       moderation: Option.none(),
