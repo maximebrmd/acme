@@ -29,10 +29,15 @@ export interface PaidInvoice {
   readonly periodStart: Option.Option<DateTime.Utc>;
 }
 
-/** What goes back to the consumer of one paid invoice, in its currency. */
+/**
+ * What goes back to the consumer of one paid invoice, in its currency:
+ * `amount`, or, with `share`, that share (0 to 1) of what is still
+ * refundable of it, never more than `amount`.
+ */
 export interface InvoiceCredit {
   readonly amount: number;
   readonly invoiceId: string;
+  readonly share?: number;
 }
 
 /**
@@ -45,6 +50,8 @@ export interface InvoiceCredited {
   readonly credited: number;
   readonly currency: string;
   readonly invoiceId: string;
+  /** Stripe's code, when it refused this invoice's credit for good. */
+  readonly refused: Option.Option<string>;
 }
 
 /**
@@ -111,7 +118,10 @@ export class StripeContracts extends Context.Service<
      * request), however long after it is asked again, as each note
      * carries its key and one found is not made again. Each is capped at
      * what is still refundable of its invoice: what it took, less the
-     * credit notes made since and the refunds made outside them.
+     * credit notes made since and the refunds made outside them. A legacy
+     * plan's end, by a move or its retirement, shares one key per invoice,
+     * so it is credited once. An invoice Stripe refuses for good is said
+     * (`refused`) and the others go on; only Stripe not answering fails.
      */
     readonly credit: (
       workspaceId: WorkspaceId,

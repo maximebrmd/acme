@@ -196,12 +196,9 @@ const creditKeyOf = (reason: CreditReason, id: string, invoiceId: string) => {
     return `withdrawal-credit-${id}-${invoiceId}`;
   }
 
-  if (reason._tag === "movedToRateCard") {
-    return `moved-credit-${id}-${invoiceId}`;
-  }
-
-  return reason._tag === "retirement"
-    ? `retirement-credit-${id}-${invoiceId}`
+  // A legacy plan ends once, by a move or by its retirement: one credit.
+  return reason._tag === "movedToRateCard" || reason._tag === "retirement"
+    ? `legacy-end-credit-${id}-${invoiceId}`
     : `late-cancellation-credit-${reason.requestKey}-${invoiceId}`;
 };
 
@@ -500,7 +497,7 @@ export const StripeContractsLive = Layer.effect(
     ) =>
       Effect.forEach(
         credits.filter(({ amount }) => amount > 0),
-        ({ amount, invoiceId }) => {
+        ({ amount, invoiceId, share }) => {
           const key = creditKeyOf(reason, id, invoiceId);
 
           return call(workspaceId, async (stripe): Promise<InvoiceCredited> => {
@@ -518,6 +515,7 @@ export const StripeContractsLive = Layer.effect(
                 credited: found.amount ?? amount,
                 currency: found.currency ?? "eur",
                 invoiceId,
+                refused: Option.none(),
               };
             }
 
@@ -527,7 +525,10 @@ export const StripeContractsLive = Layer.effect(
               made
             );
 
-            const credited = Math.min(amount, left);
+            const credited = Math.min(
+              amount,
+              share === undefined ? left : Math.floor(left * share)
+            );
 
             if (credited > 0) {
               await stripe.creditNotes.create(
@@ -542,8 +543,27 @@ export const StripeContractsLive = Layer.effect(
               );
             }
 
-            return { asked: amount, credited, currency, invoiceId };
-          });
+            return {
+              asked: amount,
+              credited,
+              currency,
+              invoiceId,
+              refused: Option.none(),
+            };
+          }).pipe(
+            // Refused for good: said, and the next invoice is tried.
+            Effect.catchIf(
+              ({ permanent }) => permanent,
+              (refusal) =>
+                Effect.succeed<InvoiceCredited>({
+                  asked: amount,
+                  credited: 0,
+                  currency: "eur",
+                  invoiceId,
+                  refused: Option.some(refusal.code ?? "refused"),
+                })
+            )
+          );
         }
       ).pipe(Effect.withSpan("StripeContracts.credit"));
 

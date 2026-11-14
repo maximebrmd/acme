@@ -121,8 +121,21 @@ const notesOf = (invoice: string | null) =>
 // note gave back since, and 500 a refund made in Stripe's dashboard,
 // outside any credit note; the note's own refund shows among the
 // payment's too.
-const retrieved = (invoice: string): JsonValue =>
-  invoice === "in_refunded"
+// `in_refused` and `in_two` each took 1000, nothing given back since.
+const takenWhole = new Set(["in_refused", "in_two"]);
+
+const retrieved = (invoice: string): JsonValue => {
+  if (takenWhole.has(invoice)) {
+    return {
+      amount_paid: 1000,
+      currency: "eur",
+      id: invoice,
+      object: "invoice",
+      post_payment_credit_notes_amount: 0,
+    };
+  }
+
+  return invoice === "in_refunded"
     ? {
         amount_paid: 1900,
         currency: "eur",
@@ -136,6 +149,7 @@ const retrieved = (invoice: string): JsonValue =>
         object: "invoice",
         post_payment_credit_notes_amount: 0,
       };
+};
 
 // What paid `in_refunded`, and what was refunded of it.
 const refundsAnswer = (request: {
@@ -206,8 +220,59 @@ const refundableAnswer = (request: {
     : undefined;
 };
 
-const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
-  platformServer((request): PlatformAnswer => {
+// The credit notes this stand-in made, by invoice: a credit refused on
+// `in_refused`, as an amount Stripe will not take.
+const creditNotesAnswer = (
+  made: Map<string, JsonValue[]>,
+  request: {
+    readonly method: string;
+    readonly path: string;
+    readonly query: URLSearchParams;
+  },
+  body: string
+): PlatformAnswer => {
+  if (request.method !== "POST") {
+    const invoice = request.query.get("invoice");
+
+    return list(
+      [...notesOf(invoice), ...(made.get(invoice ?? "") ?? [])],
+      request.path
+    );
+  }
+
+  const form = new URLSearchParams(body);
+  const invoice = form.get("invoice") ?? "";
+
+  if (invoice === "in_refused") {
+    return json(
+      {
+        error: {
+          code: "credit_note_amount_too_large",
+          message: "Synthetic refusal",
+          type: "invalid_request_error",
+        },
+      },
+      400
+    );
+  }
+
+  const note: JsonValue = {
+    amount: Number(form.get("amount")),
+    currency: "eur",
+    id: `cn_${String((made.get(invoice) ?? []).length + 1)}`,
+    metadata: { key: form.get("metadata[key]") ?? "" },
+    object: "credit_note",
+  };
+
+  made.set(invoice, [...(made.get(invoice) ?? []), note]);
+
+  return json(note);
+};
+
+const fakeStripe = (options: { readonly failing?: boolean } = {}) => {
+  const made = new Map<string, JsonValue[]>();
+
+  return platformServer((request): PlatformAnswer => {
     if (options.failing === true) {
       return empty(500);
     }
@@ -250,9 +315,7 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
     }
 
     if (path === "/v1/credit_notes") {
-      return method === "POST"
-        ? json({ id: "cn_synthetic", object: "credit_note" })
-        : list(notesOf(query.get("invoice")), path);
+      return creditNotesAnswer(made, request, textOf(request));
     }
 
     const subscription = /^\/v1\/subscriptions\/(?<id>[^/]+)$/u.exec(path)
@@ -281,6 +344,7 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
 
     return json({ error: { message: "Unrecognized request URL" } }, 404);
   });
+};
 
 const contractsOn = (apiUrl: string) =>
   Layer.build(
@@ -460,7 +524,7 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
           creditNote === undefined
             ? ""
             : headerOf(creditNote, "idempotency-key"),
-          "moved-credit-sub_paid-in_proration"
+          "legacy-end-credit-sub_paid-in_proration"
         );
         assert.strictEqual(
           ended === undefined ? "" : headerOf(ended, "idempotency-key"),
@@ -495,6 +559,7 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
             credited: 1000,
             currency: "eur",
             invoiceId: "in_refunded",
+            refused: Option.none(),
           },
         ]);
 
@@ -511,6 +576,88 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
 
         assert.strictEqual(form.get("amount"), "1000");
         assert.strictEqual(form.get("refund_amount"), "1000");
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "credit the unused share of what is still refundable, not of what was first paid",
+    () =>
+      Effect.gen(function* shared() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        // Half the period unused, of the 1000 still refundable of 1900.
+        const [credited] = yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 950, invoiceId: "in_refunded", share: 0.5 }],
+          { _tag: "movedToRateCard" }
+        );
+
+        assert.strictEqual(credited?.credited, 500);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "go on past an invoice Stripe refuses to credit, and say which",
+    () =>
+      Effect.gen(function* refusedOne() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        const credited = yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [
+            { amount: 500, invoiceId: "in_refused" },
+            { amount: 300, invoiceId: "in_two" },
+          ],
+          { _tag: "movedToRateCard" }
+        );
+
+        assert.deepStrictEqual(
+          credited.map(({ credited: given, invoiceId, refused }) => [
+            invoiceId,
+            given,
+            Option.getOrNull(refused),
+          ]),
+          [
+            ["in_refused", 0, "credit_note_amount_too_large"],
+            ["in_two", 300, null],
+          ]
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "credit a legacy plan's invoice once, whether it ended by a move or by its retirement",
+    () =>
+      Effect.gen(function* once() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 300, invoiceId: "in_two" }],
+          { _tag: "movedToRateCard" }
+        );
+        yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 200, invoiceId: "in_two" }],
+          { _tag: "retirement" }
+        );
+
+        assert.strictEqual(
+          stripe
+            .requests()
+            .filter(
+              ({ method, path }) =>
+                method === "POST" && path === "/v1/credit_notes"
+            ).length,
+          1
+        );
       }).pipe(Effect.scoped)
   );
 

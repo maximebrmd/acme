@@ -27,6 +27,7 @@ import { ReportUsage } from "#billing/application/report-usage.ts";
 import { RetireLegacyPlans } from "#billing/application/retire-legacy-plans.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
+import { SettleCreditProblem } from "#billing/application/settle-credit-problem.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
 import { StartAccountDays } from "#billing/application/start-account-days.ts";
@@ -39,6 +40,7 @@ import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
 import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
+import { AuditedCreditProblemReviewLive } from "#billing/infrastructure/audited-credit-problem-review.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
 import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-billing-mode.ts";
@@ -378,9 +380,18 @@ export const ContractRequestsLive = Layer.mergeAll(
  * payment method. The composition root provides the channels context's
  * SharedPlatformAccounts and ChannelUsage, the workspace context's
  * PartnerOwnership and WorkspaceOwners, the staff context's
- * BillingAccountAudit, Ids and the TransactionRunner.
+ * BillingAccountAudit and CreditProblemAudit, Ids and the
+ * TransactionRunner.
  */
-export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
+export const BillingAccountsDeskLive = Layer.mergeAll(
+  BillingAccountDesk.layer,
+  // Staff marking a credit or a refund Stripe did not give as settled.
+  SettleCreditProblem.layer.pipe(
+    Layer.provide(
+      Layer.merge(DrizzleCreditProblemsLive, AuditedCreditProblemReviewLive)
+    )
+  )
+).pipe(
   Layer.provide(
     Layer.mergeAll(
       AccountsLive,

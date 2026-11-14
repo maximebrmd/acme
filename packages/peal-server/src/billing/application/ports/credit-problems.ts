@@ -17,6 +17,8 @@ export interface CreditProblem {
   readonly occurredAt: DateTime.Utc;
   readonly reason: Option.Option<string>;
   readonly refundId: Option.Option<string>;
+  /** When staff marked it settled by hand; none while it is owed. */
+  readonly settledAt: Option.Option<DateTime.Utc>;
   readonly stripeSubscriptionId: Option.Option<string>;
   readonly workspaceId: Option.Option<WorkspaceId>;
 }
@@ -32,6 +34,14 @@ export class CreditProblems extends Context.Service<
     readonly record: (
       problem: CreditProblem
     ) => Effect.Effect<boolean, DatabaseError>;
+    readonly find: (
+      key: string
+    ) => Effect.Effect<Option.Option<CreditProblem>, DatabaseError>;
+    /** Marks it settled at `at`; one settled already stays as it was. */
+    readonly settle: (
+      key: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
     /** The newest first, `limit` at most. */
     readonly latest: (
       limit: number

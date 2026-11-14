@@ -52,6 +52,7 @@ export class CreditProblemDesk extends Context.Service<
             occurredAt: failure.occurredAt,
             reason: Option.none(),
             refundId: Option.some(failure.refundId),
+            settledAt: Option.none(),
             stripeSubscriptionId: Option.none(),
             workspaceId: Option.none(),
           });

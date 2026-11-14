@@ -394,6 +394,7 @@ const ContractRequestsLive = Layer.mergeAll(
       detach: () => notStaff,
       merge: () => notStaff,
       requirePaymentMethod: () => notStaff,
+      settleCreditProblem: () => notStaff,
       sharedChannels: () => notStaff,
     })
   )

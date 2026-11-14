@@ -40,7 +40,7 @@ describe("the unused time of a legacy plan's invoices", () => {
     );
 
     expect(movedCredits([renewal], at("2026-11-16T00:00:00Z"))).toStrictEqual([
-      { amount: 1500, invoiceId: "in_synthetic" },
+      { amount: 1500, invoiceId: "in_synthetic", share: 0.375 },
     ]);
   });
 
@@ -57,10 +57,10 @@ describe("the unused time of a legacy plan's invoices", () => {
     );
 
     expect(movedCredits([taxed], at("2026-11-16T00:00:00Z"))).toStrictEqual([
-      { amount: 600, invoiceId: "in_synthetic" },
+      { amount: 600, invoiceId: "in_synthetic", share: 0.5 },
     ]);
     expect(movedCredits([taxed], at("2026-10-01T00:00:00Z"))).toStrictEqual([
-      { amount: 1200, invoiceId: "in_synthetic" },
+      { amount: 1200, invoiceId: "in_synthetic", share: 1 },
     ]);
   });
 });

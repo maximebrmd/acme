@@ -261,45 +261,63 @@ export class RecordSubscription extends Context.Service<
 
           const credits = movedCredits(invoices, at);
 
-          yield* stripe
-            .credit(workspaceId, stripeSubscriptionId, credits, reason)
-            .pipe(
-              Effect.catchIf(
-                ({ permanent }) => permanent,
-                (refused) =>
-                  Effect.gen(function* keptForStaff() {
-                    const fresh = yield* problems.record({
-                      amount: credits.reduce(
-                        (sum, { amount }) => sum + amount,
-                        0
-                      ),
-                      code: Option.fromUndefinedOr(refused.code),
-                      currency: invoices[0]?.paid.currency ?? "eur",
-                      key: `credit:${stripeSubscriptionId}:${reason._tag}`,
-                      kind: "creditRefused",
-                      occurredAt: yield* DateTime.now,
-                      reason: Option.some(reason._tag),
-                      refundId: Option.none(),
-                      stripeSubscriptionId: Option.some(stripeSubscriptionId),
-                      workspaceId: Option.some(workspaceId),
-                    });
+          const credited = yield* stripe.credit(
+            workspaceId,
+            stripeSubscriptionId,
+            credits,
+            reason
+          );
 
-                    if (fresh) {
-                      yield* Metric.update(creditProblemsCount, 1);
-                    }
-
-                    yield* Effect.logError(
-                      "Stripe refused for good to credit a legacy plan's unused time: kept for staff"
-                    ).pipe(
-                      Effect.annotateLogs({
-                        code: refused.code ?? "",
-                        stripeSubscriptionId,
-                        workspaceId,
-                      })
-                    );
+          // Each invoice Stripe refused for good is kept for staff, once.
+          for (const outcome of credited) {
+            if (Option.isNone(outcome.refused)) {
+              if (outcome.credited < outcome.asked) {
+                yield* Effect.logInfo(
+                  "A legacy plan's credit was less than its unused time: the rest went back already"
+                ).pipe(
+                  Effect.annotateLogs({
+                    asked: outcome.asked,
+                    credited: outcome.credited,
+                    invoiceId: outcome.invoiceId,
                   })
-              )
+                );
+              }
+
+              continue;
+            }
+
+            const fresh = yield* problems.record({
+              amount: outcome.asked,
+              code: outcome.refused,
+              currency:
+                invoices.find(
+                  ({ invoiceId }) => invoiceId === outcome.invoiceId
+                )?.paid.currency ?? outcome.currency,
+              key: `credit:${stripeSubscriptionId}:${outcome.invoiceId}`,
+              kind: "creditRefused",
+              occurredAt: yield* DateTime.now,
+              reason: Option.some(reason._tag),
+              refundId: Option.none(),
+              settledAt: Option.none(),
+              stripeSubscriptionId: Option.some(stripeSubscriptionId),
+              workspaceId: Option.some(workspaceId),
+            });
+
+            if (fresh) {
+              yield* Metric.update(creditProblemsCount, 1);
+            }
+
+            yield* Effect.logError(
+              "Stripe refused for good to credit a legacy plan's unused time: kept for staff"
+            ).pipe(
+              Effect.annotateLogs({
+                code: Option.getOrElse(outcome.refused, () => ""),
+                invoiceId: outcome.invoiceId,
+                stripeSubscriptionId,
+                workspaceId,
+              })
             );
+          }
         }
       );
 

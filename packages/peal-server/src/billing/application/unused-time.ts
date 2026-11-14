@@ -69,7 +69,9 @@ const unusedShare = (
  * retired) is credited of each paid invoice: each line's own period not
  * supplied yet, to the second, weighed by what the line charged, as a
  * share of what the invoice took (its tax included), rounded down and
- * never more than it took. A renewal that also carries an earlier
+ * never more than it took; with that share, which Stripe applies to what
+ * is still refundable of it (a goodwill refund made since is not given
+ * twice). A renewal that also carries an earlier
  * period's prorations is so credited line by line, not over the joined
  * span. An invoice whose lines give no period is read over its own
  * period; one with neither gives nothing rather than all, as a move may
@@ -93,23 +95,31 @@ export const movedCredits = (
         0
       );
 
+      const share = Math.min(1, Math.max(0, unused / charged));
+
       return {
-        amount: Math.min(
-          paid,
-          Math.max(0, Math.floor((paid * unused) / charged))
-        ),
+        amount: Math.floor(paid * share),
         invoiceId: invoice.invoiceId,
+        share,
       };
     }
 
-    return {
-      amount: Option.match(
-        Option.all({ end: invoice.periodEnd, start: invoice.periodStart }),
-        {
-          onNone: () => 0,
-          onSome: ({ end, start }) => refundOf({ end, paid, start }, at),
-        }
-      ),
-      invoiceId: invoice.invoiceId,
-    };
+    return Option.match(
+      Option.all({ end: invoice.periodEnd, start: invoice.periodStart }),
+      {
+        onNone: (): InvoiceCredit => ({
+          amount: 0,
+          invoiceId: invoice.invoiceId,
+        }),
+        onSome: ({ end, start }): InvoiceCredit => {
+          const share = unusedShare(start, end, at);
+
+          return {
+            amount: Math.floor(paid * share),
+            invoiceId: invoice.invoiceId,
+            share,
+          };
+        },
+      }
+    );
   });

@@ -21,6 +21,7 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { refusedAsFailure } from "./credited.ts";
 import { contractAt, subscriptionNamed } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
@@ -277,12 +278,14 @@ export class Withdraw extends Context.Service<
         // Computed at the time recorded: tried again, each invoice gets the
         // same credit, under the same key.
         if (recorded.refunded.amount > 0) {
-          yield* stripe.credit(
-            workspaceId,
-            id,
-            creditsAt(found.invoices, subscription, recorded.requestedAt),
-            { _tag: "withdrawal" }
-          );
+          yield* stripe
+            .credit(
+              workspaceId,
+              id,
+              creditsAt(found.invoices, subscription, recorded.requestedAt),
+              { _tag: "withdrawal" }
+            )
+            .pipe(Effect.flatMap(refusedAsFailure(workspaceId)));
         }
 
         // Per-account pricing bills the month past: its usage to now is

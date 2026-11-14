@@ -11,6 +11,7 @@ import {
 } from "peal-ui/components/table";
 
 import { Instant } from "#components/staff/instant.tsx";
+import { SettleCreditProblem } from "#components/staff/settle-credit-problem.tsx";
 import { Link } from "#i18n/navigation.ts";
 
 // Money Peal owes back that Stripe did not give: a credit it refused for
@@ -35,6 +36,7 @@ export const CreditProblemsTable = async ({
           <TableHead>{t("amount")}</TableHead>
           <TableHead>{t("stripe")}</TableHead>
           <TableHead>{t("workspace")}</TableHead>
+          <TableHead>{t("settled")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -68,6 +70,13 @@ export const CreditProblemsTable = async ({
                 <Link href={`/admin/workspaces/${problem.workspaceId}`}>
                   <code>{problem.workspaceId}</code>
                 </Link>
+              )}
+            </TableCell>
+            <TableCell>
+              {problem.settledAt === null ? (
+                <SettleCreditProblem problemKey={problem.key} />
+              ) : (
+                <Instant value={DateTime.formatIso(problem.settledAt)} />
               )}
             </TableCell>
           </TableRow>

@@ -6,11 +6,13 @@ import {
   BillingAccountNotFound,
   CurrentStaff,
 } from "peal-contract";
-import type { StaffBillingAccount } from "peal-contract";
+import type { StaffBillingAccount, StaffCreditProblem } from "peal-contract";
 
 import type { DeskAccount } from "#billing/application/billing-account-desk.ts";
 import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts";
 import { CreditProblemDesk } from "#billing/application/credit-problem-desk.ts";
+import type { CreditProblem } from "#billing/application/ports/credit-problems.ts";
+import { SettleCreditProblem } from "#billing/application/settle-credit-problem.ts";
 import { BillingAccountIdSchema } from "#billing/domain/billing-account.ts";
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -60,6 +62,20 @@ const namedAccount = (
   return undefined;
 };
 
+const problemView = (problem: CreditProblem): StaffCreditProblem => ({
+  amount: problem.amount,
+  code: Option.getOrNull(problem.code),
+  currency: problem.currency,
+  key: problem.key,
+  kind: problem.kind,
+  occurredAt: problem.occurredAt,
+  reason: Option.getOrNull(problem.reason),
+  refundId: Option.getOrNull(problem.refundId),
+  settledAt: Option.getOrNull(problem.settledAt),
+  stripeSubscriptionId: Option.getOrNull(problem.stripeSubscriptionId),
+  workspaceId: Option.getOrNull(problem.workspaceId),
+});
+
 const deskView = ({
   account,
   merged,
@@ -88,27 +104,35 @@ export const BillingAccountsDeskHandlers = HttpApiBuilder.group(
   Effect.fn(function* billingAccountsDeskHandlers(handlers) {
     const desk = yield* BillingAccountDesk;
     const problems = yield* CreditProblemDesk;
+    const settle = yield* SettleCreditProblem;
 
     return handlers
       .handle("creditProblems", () =>
         problems.latest(staffCreditProblems).pipe(
           Effect.orDie,
-          Effect.map((found) => ({
-            items: found.map((problem) => ({
-              amount: problem.amount,
-              code: Option.getOrNull(problem.code),
-              currency: problem.currency,
-              kind: problem.kind,
-              occurredAt: problem.occurredAt,
-              reason: Option.getOrNull(problem.reason),
-              refundId: Option.getOrNull(problem.refundId),
-              stripeSubscriptionId: Option.getOrNull(
-                problem.stripeSubscriptionId
-              ),
-              workspaceId: Option.getOrNull(problem.workspaceId),
-            })),
-          }))
+          Effect.map((found) => ({ items: found.map(problemView) }))
         )
+      )
+      .handle("settleCreditProblem", ({ payload }) =>
+        Effect.gen(function* settleCreditProblem() {
+          const staff = yield* CurrentStaff;
+
+          return problemView(
+            yield* settle
+              .settle({
+                key: payload.key,
+                reason: payload.reason,
+                staffId: UserIdSchema.make(staff.userId),
+              })
+              .pipe(
+                Effect.catchTags({
+                  CreditProblemNotFound: () =>
+                    Effect.fail(new HttpApiError.NotFound()),
+                  DatabaseError: Effect.die,
+                })
+              )
+          );
+        })
       )
       .handle("sharedChannels", ({ query }) =>
         Effect.gen(function* sharedChannels() {

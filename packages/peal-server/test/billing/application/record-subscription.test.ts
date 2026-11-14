@@ -192,14 +192,16 @@ const PortsInMemory = Layer.mergeAll(
           cancelAtPeriodEnd: (_workspace, id) =>
             asked(`cancelAtPeriodEnd ${id}`),
           // Stripe refuses for good any credit of one subscription.
-          credit: (workspace, id, credits, reason) =>
+          credit: (_workspace, id, credits, reason) =>
             id === "sub_synthetic_refused_credit"
-              ? Effect.fail(
-                  new StripeUnreachable({
-                    code: "credit_note_amount_too_large",
-                    permanent: true,
-                    workspaceId: workspace,
-                  })
+              ? Effect.succeed(
+                  credits.map(({ amount, invoiceId }) => ({
+                    asked: amount,
+                    credited: 0,
+                    currency: "eur",
+                    invoiceId,
+                    refused: Option.some("credit_note_amount_too_large"),
+                  }))
                 )
               : asked(
                   `credit ${id} ${credits
@@ -268,7 +270,9 @@ const PortsInMemory = Layer.mergeAll(
     RecordLog.use(({ problems }) =>
       Effect.succeed(
         CreditProblems.of({
+          find: () => Effect.succeedNone,
           latest: () => Ref.get(problems),
+          settle: () => Effect.void,
           record: (problem) =>
             Ref.update(problems, (all) => [...all, problem]).pipe(
               Effect.as(true)
@@ -543,7 +547,7 @@ layer(RecordTest)("recording a subscription", (it) => {
           ]),
           [
             [
-              "credit:sub_synthetic_refused_credit:movedToRateCard",
+              "credit:sub_synthetic_refused_credit:in_refused",
               "creditRefused",
               "credit_note_amount_too_large",
               "movedToRateCard",

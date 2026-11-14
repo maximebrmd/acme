@@ -35,6 +35,12 @@ export const disableWorkspaceShortLinks = PealApi.mutation(
 // Opens a partner account for a workspace.
 export const grantPartner = PealApi.mutation("staff", "grantPartner");
 
+// Marks a credit or a refund Stripe did not give as settled by hand.
+export const settleCreditProblem = PealApi.mutation(
+  "billingAccountsDesk",
+  "settleCreditProblem"
+);
+
 // Gives a workspace an API rate limit of its own, or its standing's again.
 export const setWorkspaceRequestLimit = PealApi.mutation(
   "staff",

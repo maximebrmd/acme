@@ -76,8 +76,12 @@ export const StaffCreditProblemSchema = Schema.Struct({
   // Why it was owed: movedToRateCard, retirement…
   reason: Schema.NullOr(Schema.String),
   refundId: Schema.NullOr(Schema.String),
+  // When staff marked it settled by hand; null while it is owed.
+  settledAt: Schema.NullOr(Schema.DateTimeUtc),
   stripeSubscriptionId: Schema.NullOr(Schema.String),
   workspaceId: Schema.NullOr(Schema.String),
+  // What names it, for marking it settled.
+  key: Schema.String,
 }).annotate({ identifier: "StaffCreditProblem" });
 
 export type StaffCreditProblem = typeof StaffCreditProblemSchema.Type;
@@ -191,6 +195,26 @@ export class BillingAccountsDeskApi extends HttpApiGroup.make(
         description:
           "The latest 100 sums Peal owes back that Stripe did not give, newest first: credits Stripe refused for good, and refunds it reported failed. Each is settled by hand, in Stripe's dashboard or another way.",
         summary: "List credits and refunds that did not go through",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post(
+      "settleCreditProblem",
+      "/billing/credit-problems/settle",
+      {
+        error: HttpApiError.NotFound,
+        payload: Schema.Struct({
+          key: Schema.String,
+          reason: StaffReasonSchema,
+        }),
+        success: StaffCreditProblemSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Marks a credit Stripe refused, or a refund it reported failed, as settled by hand: it stays listed, with when. Recorded in the audit log first, with its Stripe ids and the reason. One settled already stays as it was.",
+        summary: "Mark a credit or a refund settled",
       })
     )
   )

@@ -77,7 +77,10 @@ export const StaffReasonSchema = Schema.Trim.check(
  * the account's id among the object ids and the workspace as the event's;
  * and a workspace given an API rate limit of its own, or its standing's
  * again (`setRequestLimit`), the limit (`requestsPerMinute`, `standing`
- * once removed) among the object ids.
+ * once removed) among the object ids; and a credit Stripe refused or a
+ * refund it reported failed, marked settled by hand
+ * (`settleCreditProblem`), its subscription or refund among the object
+ * ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -101,6 +104,7 @@ export const StaffActionSchema = Schema.Literals([
   "restoreFreeTier",
   "detachBillingWorkspace",
   "setRequestLimit",
+  "settleCreditProblem",
 ]).annotate({ identifier: "StaffAction" });
 
 /**

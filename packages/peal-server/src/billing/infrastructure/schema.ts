@@ -563,6 +563,7 @@ export const creditProblems = billing.table(
     // Why the money went back: movedToRateCard, retirement, withdrawal…
     reason: text("reason"),
     refundId: text("refund_id"),
+    settledAt: instant("settled_at"),
     stripeSubscriptionId: text("stripe_subscription_id"),
     workspaceId: uuid("workspace_id"),
   },

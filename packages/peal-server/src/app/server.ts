@@ -130,6 +130,7 @@ import {
 } from "#shortlinks/container.ts";
 import {
   BillingAccountAuditLive,
+  CreditProblemAuditLive,
   ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
@@ -552,7 +553,8 @@ const BillingAccountsDeskContextLive = BillingAccountsDeskLive.pipe(
       SharedPlatformAccountsLive,
       PartnerOwnershipLive,
       WorkspaceOwnersLive,
-      BillingAccountAuditLive
+      BillingAccountAuditLive,
+      CreditProblemAuditLive
     )
   )
 );
