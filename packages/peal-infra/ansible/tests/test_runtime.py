@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 
 from ansible.template import trust_as_template
 
-from conftest import INFRA, ansible_render, render, role_file, settings, task
+from conftest import INFRA, ansible_render, render, render_inventory, role_file, settings, task
 
 ENVIRONMENTS = ["production", "sandbox"]
 
@@ -133,8 +134,13 @@ def test_the_server_issues_short_links_on_the_host_the_tunnel_routes(rendered: P
 
 
 def test_short_links_are_off_without_their_host_name() -> None:
-    expression = role_file("peal_runtime", "vars")["peal_runtime_host_settings"]
-    names = {**settings("sandbox"), "peal_short_link_hostname": ""}
+    role_vars = role_file("peal_runtime", "vars")
+    expression = role_vars["peal_runtime_host_settings"]
+    names = {
+        **settings("sandbox"),
+        "peal_short_link_hostname": "",
+        "peal_runtime_slack_alerts": trust_as_template(role_vars["peal_runtime_slack_alerts"]),
+    }
 
     assert "PEAL_SHORT_LINK_BASE" not in ansible_render(expression, **names)
 
@@ -186,6 +192,93 @@ def test_the_sandbox_sends_none(rendered: Path) -> None:
 
     assert "PEAL_GRAFANA_HEARTBEAT" not in host_env
     assert "PEAL_HEARTBEAT_URL" not in host_env
+
+
+ALERTING = INFRA.parent.parent / "peal-docker" / "config" / "production" / "grafana" / "alerting"
+# A synthetic webhook, as an environment's vault would hold it.
+SLACK_WEBHOOK = "http://127.0.0.1:9/services/synthetic"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_grafana_alerts_telegram_alone_without_a_slack_webhook(rendered: Path, environment: str) -> None:
+    host_env = _host_env(rendered, environment)
+
+    assert host_env["PEAL_GRAFANA_CONTACT_POINTS"] == "./config/production/grafana/alerting/telegram.yaml"
+    assert host_env["PEAL_GRAFANA_ENVIRONMENT"] == environment
+
+
+@pytest.fixture(scope="module")
+def rendered_slack(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Each server's files with the environment's Slack webhook in its
+    vault."""
+    return render_inventory(tmp_path_factory.mktemp("slack"), peal_credentials={"SLACK_ALERTS_WEBHOOK_URL": SLACK_WEBHOOK})
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_grafana_alerts_telegram_and_slack_with_the_webhook(rendered_slack: Path, environment: str) -> None:
+    host_env = _host_env(rendered_slack, environment)
+
+    assert host_env["PEAL_GRAFANA_CONTACT_POINTS"] == "./config/production/grafana/alerting/telegram-slack.yaml"
+    assert SLACK_WEBHOOK not in (rendered_slack / f"peal-{environment}" / "host.env").read_text()
+
+
+def test_an_empty_slack_webhook_in_the_vault_keeps_telegram_alone(tmp_path: Path) -> None:
+    rendered = render_inventory(tmp_path, peal_credentials={"SLACK_ALERTS_WEBHOOK_URL": ""})
+
+    assert _host_env(rendered, "production")["PEAL_GRAFANA_CONTACT_POINTS"].endswith("/telegram.yaml")
+
+
+def test_the_slack_webhook_is_optional() -> None:
+    assert "SLACK_ALERTS_WEBHOOK_URL" not in _required("production")
+    assert "SLACK_ALERTS_WEBHOOK_URL" not in _required("sandbox")
+
+
+def _optional_set(tmp_path: Path, credentials: str) -> list[str]:
+    """Runs the role's search for the optional credentials in a
+    credentials.env written by hand, and returns the names it finds set."""
+    (tmp_path / "credentials.env").write_text(credentials)
+    found = task("peal_runtime", "Find the optional credentials set on the server")
+    script = render(
+        found["ansible.builtin.shell"],
+        peal_root=str(tmp_path),
+        peal_runtime_optional_credentials=role_file("peal_runtime", "vars")["peal_runtime_optional_credentials"],
+    )
+    return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout.splitlines()
+
+
+def test_a_slack_webhook_written_by_hand_is_found_by_name(tmp_path: Path) -> None:
+    assert _optional_set(tmp_path, f"TELEGRAM_BOT_TOKEN='synthetic'\nSLACK_ALERTS_WEBHOOK_URL='{SLACK_WEBHOOK}'\n") == [
+        "SLACK_ALERTS_WEBHOOK_URL"
+    ]
+    assert _optional_set(tmp_path, "SLACK_ALERTS_WEBHOOK_URL=''\n") == []
+
+
+def test_the_slack_contact_points_send_telegram_s_alerts_and_slack_s_alike() -> None:
+    """The Telegram receiver is telegram.yaml's, the policy routes the same
+    alerts, and the Slack receiver posts to the webhook the environment
+    names, with no annotation, value or log line."""
+    telegram = yaml.safe_load((ALERTING / "telegram.yaml").read_text())
+    both = yaml.safe_load((ALERTING / "telegram-slack.yaml").read_text())
+    (point,) = both["contactPoints"]
+    receivers = {receiver["uid"]: receiver for receiver in point["receivers"]}
+    (policy,) = both["policies"]
+
+    assert receivers["telegram"] == telegram["contactPoints"][0]["receivers"][0]
+    assert receivers["slack"]["type"] == "slack"
+    assert receivers["slack"]["settings"]["url"] == "$SLACK_ALERTS_WEBHOOK_URL"
+    message = receivers["slack"]["settings"]["title"] + receivers["slack"]["settings"]["text"]
+    assert "$PEAL_GRAFANA_ENVIRONMENT" in message
+    assert not re.search(r"Annotations|Values|ValueString|Message|Description|Summary", message)
+    assert policy | {"receiver": "Telegram"} == telegram["policies"][0]
+    assert policy["receiver"] == point["name"]
+
+
+def test_the_heartbeat_never_goes_to_slack() -> None:
+    heartbeat = yaml.safe_load((ALERTING / "heartbeat.yaml").read_text())
+    (rule,) = heartbeat["groups"][0]["rules"]
+
+    assert rule["notification_settings"]["receiver"] == "Heartbeat"
+    assert {receiver["type"] for receiver in heartbeat["contactPoints"][0]["receivers"]} == {"webhook"}
 
 
 def _misread(host_settings: dict[str, Any]) -> list[str]:
