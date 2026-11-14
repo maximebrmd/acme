@@ -129,6 +129,10 @@ On a server that bills, a workspace's page shows the [rate limit](/developers/co
 | `GET /api/admin/workspaces/{workspaceId}/request-limit`         | What the workspace sends under now                              |
 | `POST …/request-limit`, with `requestsPerMinute` and a `reason` | Sets its own limit, or removes it with `requestsPerMinute` null |
 
+## Refunds that did not go through [#refunds]
+
+On a server that bills, **Billing accounts** lists, newest first, the money Peal owes back that Stripe did not give: a credit of a legacy plan's unused time that Stripe refused for good (the plan was ended all the same), and a refund Stripe reported failed after it was made (its `refund.failed` event: subscribe the webhook endpoint to it). Each shows its amount, Stripe's code, the subscription or the refund and the workspace. Settle each by hand, in Stripe's dashboard or another way: the customer was told the money goes back. The alert `peal-credit-problems` fires on each. `GET /api/admin/billing/credit-problems` answers the same list.
+
 ## The audit log [#audit-log]
 
 Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote.
