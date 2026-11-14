@@ -20,6 +20,7 @@ export const PublishingFollowedPosts = Layer.effect(
     const targets = yield* PublishedTargets;
 
     return FollowedPosts.of({
+      channelsOf: targets.channelsOf,
       from: (cursor, limit) =>
         targets.from(cursor, limit, unfollowed).pipe(
           Effect.map((published) =>

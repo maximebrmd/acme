@@ -52,6 +52,7 @@ import { EngagementReplies } from "./engagement-replies.ts";
 import { CommentRuleStore } from "./ports/comment-rule-store.ts";
 import type { MatchOutcome, RuleMatch } from "./ports/comment-rule-store.ts";
 import { EngagementChannels } from "./ports/engagement-channels.ts";
+import { FollowedPosts } from "./ports/followed-posts.ts";
 import type { EngagedChannel } from "./ports/engagement-channels.ts";
 import { ReplyLimits } from "./ports/reply-limits.ts";
 import { RuleStarters } from "./ports/rule-starters.ts";
@@ -259,6 +260,7 @@ export class CommentRules extends Context.Service<
     Effect.gen(function* CommentRulesLive() {
       const store = yield* CommentRuleStore;
       const channels = yield* EngagementChannels;
+      const posts = yield* FollowedPosts;
       const limits = yield* ReplyLimits;
       const starters = yield* RuleStarters;
       const replies = yield* EngagementReplies;
@@ -315,10 +317,14 @@ export class CommentRules extends Context.Service<
           let named: readonly ChannelId[] = [];
 
           if (rule.scope._tag === "post") {
-            named = yield* store.channelsOfPost(
-              rule.workspaceId,
-              rule.scope.postId
-            );
+            // Where it went out, as the inbox follows it, and where it is
+            // for, so a rule is taken on a post not out yet.
+            const [followed, meant] = yield* Effect.all([
+              store.channelsOfPost(rule.workspaceId, rule.scope.postId),
+              posts.channelsOf(rule.workspaceId, rule.scope.postId),
+            ]);
+
+            named = [...new Set([...followed, ...meant])].toSorted();
           } else if (
             yield* channels.belongs(rule.scope.channelId, rule.workspaceId)
           ) {

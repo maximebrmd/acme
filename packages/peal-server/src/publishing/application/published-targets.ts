@@ -72,6 +72,15 @@ export class PublishedTargets extends Context.Service<
       limit: number,
       without?: readonly PostFormat[]
     ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
+    /**
+     * The channels a post of the workspace is for, whatever became of it
+     * there (scheduled, out or not), but those Peal deleted it from; none
+     * for a post of another workspace.
+     */
+    readonly channelsOf: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<readonly ChannelId[], DatabaseError>;
     /** The channels a post of the workspace went live on, oldest first. */
     readonly ofPost: (
       workspaceId: WorkspaceId,

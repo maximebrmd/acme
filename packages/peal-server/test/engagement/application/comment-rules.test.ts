@@ -7,6 +7,7 @@ import { CommentRules } from "#engagement/application/comment-rules.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { EngagementChannels } from "#engagement/application/ports/engagement-channels.ts";
 import { EngagementOutcomes } from "#engagement/application/ports/engagement-outcomes.ts";
+import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
@@ -49,6 +50,22 @@ const utc = (iso: string) => DateTime.makeUnsafe(iso);
 // The channels' platforms, as a test sets them.
 const platformsOf = Ref.makeUnsafe<ReadonlyMap<ChannelId, Platform>>(new Map());
 
+// The channels each post is for, as publishing would say, scheduled or out.
+const postChannels = Ref.makeUnsafe<ReadonlyMap<PostId, readonly ChannelId[]>>(
+  new Map()
+);
+
+const FakeFollowedPosts = Layer.succeed(
+  FollowedPosts,
+  FollowedPosts.of({
+    channelsOf: (_workspaceId, postId) =>
+      Ref.get(postChannels).pipe(
+        Effect.map((known) => known.get(postId) ?? [])
+      ),
+    from: () => Effect.succeed([]),
+  })
+);
+
 // The replies' jobs started: a reply is journalled, never sent here.
 const started = Ref.makeUnsafe<readonly string[]>([]);
 
@@ -82,6 +99,7 @@ const RulesTest = CommentRules.layer.pipe(
       DrizzleCommentRuleStore,
       DrizzleEngagementStore,
       FakeChannels,
+      FakeFollowedPosts,
       PublishingReplyLimits,
       Layer.succeed(
         ReplyJobs,
@@ -338,6 +356,47 @@ describe("comment rules", () => {
         const stopped = yield* rules.get(actorIn(workspaceId), rule.rule.id);
 
         assert.strictEqual(stopped.rule.status._tag, "ended");
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("take a rule on a post not out yet, on the channels it is for", () =>
+    Effect.gen(function* scheduled() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const postId = yield* newId(PostIdSchema);
+        const mastodon = yield* newId(ChannelIdSchema);
+
+        yield* Ref.update(
+          platformsOf,
+          (known) => new Map([...known, [mastodon, "mastodon"]])
+        );
+        yield* Ref.update(
+          postChannels,
+          (known) => new Map([...known, [postId, [mastodon]]])
+        );
+
+        const rules = yield* CommentRules;
+
+        const rule = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "post", postId },
+        });
+
+        assert.deepStrictEqual(
+          rule.channels.map(({ channelId, reply }) => [channelId, reply]),
+          [[mastodon, "available"]]
+        );
+
+        // Once out, the inbox follows it there, and the rule answers.
+        const thread = yield* threadOn(workspaceId, "mastodon", postId);
+
+        yield* Effect.sleep("5 millis");
+        yield* received(thread, [{ author: 3, text: "price?" }]);
+
+        assert.strictEqual((yield* rules.runDue).replied, 1);
       }).pipe(Effect.ensuring(forget(workspaceId)));
     }).pipe(Effect.provide(RulesTest))
   );
