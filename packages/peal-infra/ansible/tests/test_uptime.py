@@ -21,7 +21,9 @@ from typing import Any
 import pytest
 import yaml
 
-from conftest import INFRA, ansible_render, render, role_file, settings, task
+from ansible.template import trust_as_template
+
+from conftest import INFRA, ansible_render, render, render_inventory, role_file, settings, task
 
 UPTIME = settings("uptime")
 ENVIRONMENTS = {environment["name"]: environment for environment in UPTIME["uptime_environments"]}
@@ -689,3 +691,181 @@ def test_caddy_validates_the_configuration(rendered: Path, tmp_path: Path, publi
                       image, "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"])
 
     assert validated.returncode == 0, validated.stderr
+
+
+# --- Slack, beside Telegram --------------------------------------------------
+
+# Synthetic webhooks, for 127.0.0.1: what the vault would hold.
+SLACK = {
+    "SLACK_ALERTS_WEBHOOK_URL": "http://127.0.0.1:9/services/synthetic-production",
+    "SLACK_SANDBOX_ALERTS_WEBHOOK_URL": "http://127.0.0.1:9/services/synthetic-sandbox",
+}
+# The vault's other names, which never turn Slack on.
+TELEGRAM_ONLY = {name: "synthetic" for name in _provided() if not name.endswith("HEARTBEAT_TOKEN")}
+
+
+@pytest.fixture(scope="module")
+def rendered_unset(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The uptime server's files with a vault whose Slack webhooks are
+    empty."""
+    credentials = TELEGRAM_ONLY | dict.fromkeys([*SLACK, "SLACK_CHANGELOG_WEBHOOK_URL"], "")
+    return render_inventory(tmp_path_factory.mktemp("slack-unset"), uptime_credentials=credentials)
+
+
+@pytest.fixture(scope="module")
+def rendered_slack(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The same with both alert webhooks set."""
+    return render_inventory(tmp_path_factory.mktemp("slack"), uptime_credentials=TELEGRAM_ONLY | SLACK)
+
+
+def _files(folder: Path) -> dict[str, bytes]:
+    server = folder / "peal-uptime"
+    return {str(path.relative_to(server)): path.read_bytes() for path in sorted(server.rglob("*")) if path.is_file()}
+
+
+def test_without_slack_webhooks_the_files_are_as_before(rendered: Path, rendered_unset: Path) -> None:
+    """Slack is optional: with its webhooks unset, or empty in the vault,
+    every file the uptime server gets is byte for byte the same, and alerts
+    Telegram alone."""
+    assert _files(rendered_unset) == _files(rendered)
+    config = _config(rendered_unset)
+    assert set(config["alerting"]) == {"telegram"}
+    endpoints = [*config["endpoints"], *config["external-endpoints"]]
+    assert {alert["type"] for endpoint in endpoints for alert in endpoint["alerts"]} == {"telegram"}
+    assert b"slack" not in b"".join(_files(rendered_unset).values()).lower()
+
+
+def test_with_slack_webhooks_every_alert_goes_to_slack_too(rendered_slack: Path) -> None:
+    """The same incidents, at the same thresholds, on both."""
+    config = _config(rendered_slack)
+    slack = config["alerting"]["slack"]
+
+    assert slack["webhook-url"] == "${SLACK_ALERTS_WEBHOOK_URL}"
+    assert slack["default-alert"] == config["alerting"]["telegram"]["default-alert"]
+    for endpoint in [*config["endpoints"], *config["external-endpoints"]]:
+        telegram, other = endpoint["alerts"]
+        assert telegram["type"] == "telegram"
+        assert other == telegram | {"type": "slack"}, endpoint["name"]
+
+
+def test_the_sandbox_alerts_its_own_slack_channel(rendered_slack: Path) -> None:
+    """As on Telegram: the sandbox's checks go to #alerts-sandbox, the
+    others and the uptime server's own to #alerts-production."""
+    assert _config(rendered_slack)["alerting"]["slack"]["overrides"] == [
+        {"group": "sandbox", "webhook-url": "${SLACK_SANDBOX_ALERTS_WEBHOOK_URL}"}
+    ]
+    assert ENVIRONMENTS["sandbox"]["slack"] is True
+
+
+def _slack_of(credentials: dict[str, str]) -> dict[str, Any]:
+    return ansible_render(
+        "{{ uptime_slack_channels }}",
+        uptime_environments=UPTIME["uptime_environments"],
+        uptime_credentials=credentials,
+        **{name: trust_as_template(VARS[name]) for name in ("uptime_slack_channels", "uptime_slack_own_channels", "uptime_set_credentials")},
+    )
+
+
+def test_each_group_alerts_slack_once_its_own_webhook_is_set() -> None:
+    assert _slack_of({}) == {}
+    assert _slack_of({"SLACK_ALERTS_WEBHOOK_URL": "x"}) == dict.fromkeys(["production", "uptime"], "SLACK_ALERTS_WEBHOOK_URL")
+    assert _slack_of({"SLACK_SANDBOX_ALERTS_WEBHOOK_URL": "x", "SLACK_ALERTS_WEBHOOK_URL": ""}) == {
+        "sandbox": "SLACK_SANDBOX_ALERTS_WEBHOOK_URL"
+    }
+
+
+def test_the_sandbox_s_webhook_alone_alerts_the_sandbox_alone(tmp_path: Path) -> None:
+    """Gatus needs a webhook for the provider itself: the sandbox's, then,
+    with no override, and no Slack alert on the other groups."""
+    credentials = TELEGRAM_ONLY | {"SLACK_SANDBOX_ALERTS_WEBHOOK_URL": SLACK["SLACK_SANDBOX_ALERTS_WEBHOOK_URL"]}
+    config = _config(render_inventory(tmp_path, uptime_credentials=credentials))
+
+    assert config["alerting"]["slack"]["webhook-url"] == "${SLACK_SANDBOX_ALERTS_WEBHOOK_URL}"
+    assert "overrides" not in config["alerting"]["slack"]
+    for endpoint in config["endpoints"]:
+        types = [alert["type"] for alert in endpoint["alerts"]]
+        assert types == (["telegram", "slack"] if endpoint["group"] == "sandbox" else ["telegram"]), endpoint["name"]
+
+
+def test_slack_s_webhooks_are_named_never_written_in_the_configuration(rendered_slack: Path) -> None:
+    text = (rendered_slack / "peal-uptime" / "gatus" / "config.yaml").read_text()
+
+    assert "synthetic-production" not in text
+    assert "synthetic-sandbox" not in text
+    assert _references(_config(rendered_slack)) == _provided() | set(SLACK)
+
+
+def _optional_set(root: Path, credentials: str | None) -> list[str]:
+    """Runs the role's search for the optional credentials in a
+    credentials.env written by hand, and returns the names it finds set."""
+    if credentials is not None:
+        (root / "credentials.env").write_text(credentials)
+    found = task("uptime", "Find the optional credentials set on the server")
+    script = render(
+        found["ansible.builtin.shell"],
+        uptime_root=str(root),
+        uptime_optional_credentials=[*SLACK, "SLACK_CHANGELOG_WEBHOOK_URL"],
+    )
+    return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout.splitlines()
+
+
+def test_optional_credentials_are_found_by_name_with_a_value(tmp_path: Path) -> None:
+    credentials = (
+        "TELEGRAM_BOT_TOKEN='synthetic'\n"
+        "SLACK_ALERTS_WEBHOOK_URL='https://hooks.slack.invalid/synthetic'\n"
+        "SLACK_SANDBOX_ALERTS_WEBHOOK_URL=''\n"
+    )
+
+    assert _optional_set(tmp_path, credentials) == ["SLACK_ALERTS_WEBHOOK_URL"]
+    assert _optional_set(tmp_path / "missing", None) == []
+
+
+def test_the_search_reads_names_only() -> None:
+    """Its output is names; the values stay in the file."""
+    found = task("uptime", "Find the optional credentials set on the server")
+
+    assert found["changed_when"] is False
+    assert found["check_mode"] is False
+    assert found["when"] == "uptime_credentials is not defined"
+    assert 'echo "$name"' in found["ansible.builtin.shell"]
+    assert "cat " not in found["ansible.builtin.shell"]
+
+
+def test_slack_s_webhooks_are_optional_credentials_never_required() -> None:
+    names = {"uptime_environments": UPTIME["uptime_environments"]}
+    optional = ansible_render(
+        VARS["uptime_optional_credentials"], **names, uptime_slack_own_channels=trust_as_template(VARS["uptime_slack_own_channels"])
+    )
+
+    assert optional == ["SLACK_ALERTS_WEBHOOK_URL", "SLACK_SANDBOX_ALERTS_WEBHOOK_URL", "SLACK_CHANGELOG_WEBHOOK_URL"]
+    assert not set(optional) & set(ansible_render(VARS["uptime_required_credentials"], **names))
+
+
+@needs_docker
+def test_gatus_loads_the_configuration_with_slack(rendered_slack: Path, tmp_path: Path) -> None:
+    config = tmp_path / "gatus"
+    shutil.copytree(rendered_slack / "peal-uptime" / "gatus", config)
+    for path in [config, *config.rglob("*")]:
+        path.chmod(0o755 if path.is_dir() else 0o644)
+    image = _compose(rendered_slack)["services"]["gatus"]["image"]
+    name = f"peal-uptime-slack-{secrets.token_hex(4)}"
+    environment = ENVIRONMENT | SLACK
+    try:
+        _run(["docker", "run", "--detach", "--name", name, "--network", "none", "--read-only", "--user", "65534:65534",
+              "--tmpfs", "/data:uid=65534,gid=65534", "--tmpfs", "/tmp", "--volume", f"{config}:/config:ro",
+              "--env", "GATUS_CONFIG_PATH=/config/config.yaml",
+              *[option for item in environment.items() for option in ("--env", "=".join(item))],
+              image]).check_returncode()
+        output = ""
+        for _ in range(30):
+            logs = _run(["docker", "logs", name])
+            output = logs.stdout + logs.stderr
+            if "configuredProviders=" in output:
+                break
+            time.sleep(1)
+        running = _run(["docker", "inspect", "--format", "{{.State.Running}}", name]).stdout.strip()
+
+        assert running == "true", output
+        assert re.search(r"configuredProviders=\[(slack telegram|telegram slack)\]", output), output
+    finally:
+        _run(["docker", "rm", "--force", name])

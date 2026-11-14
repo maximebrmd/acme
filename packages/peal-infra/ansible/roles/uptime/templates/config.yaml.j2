@@ -44,6 +44,27 @@ alerting:
         id: {{ secret(environment, 'TELEGRAM_CHAT_ID') }}
 {% endfor %}
 {% endif %}
+{% if uptime_slack_channels %}
+{% set slack_default = 'SLACK_ALERTS_WEBHOOK_URL' if 'SLACK_ALERTS_WEBHOOK_URL' in uptime_slack_channels.values() else uptime_slack_channels.values() | first %}
+  # The same alerts go to Slack, beside Telegram, for the groups whose
+  # webhook is set: production's and the uptime server's own to
+  # SLACK_ALERTS_WEBHOOK_URL, an environment's with a channel of its own
+  # (slack: true in uptime_environments) to SLACK_<NAME>_ALERTS_WEBHOOK_URL.
+  slack:
+    webhook-url: "{{ '${%s}' | format(slack_default) }}"
+    default-alert:
+      failure-threshold: {{ uptime_failure_threshold }}
+      success-threshold: {{ uptime_success_threshold }}
+      send-on-resolved: true
+{% set slack_overrides = uptime_slack_channels | dict2items | rejectattr('value', 'equalto', slack_default) | list %}
+{% if slack_overrides %}
+    overrides:
+{% for override in slack_overrides %}
+      - group: {{ text(override.key) }}
+        webhook-url: "{{ '${%s}' | format(override.value) }}"
+{% endfor %}
+{% endif %}
+{% endif %}
 
 endpoints:
 {% for environment in uptime_environments %}
@@ -68,8 +89,10 @@ endpoints:
 {% endif %}
       - "[RESPONSE_TIME] < {{ check.max_ms }}"
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if environment.name in uptime_slack_channels else []) %}
+      - type: {{ type }}
         description: {{ text(url) }}
+{% endfor %}
 {% endfor %}
 {% for host in environment.hostnames.values() | unique %}
   - name: {{ text('certificate of ' ~ host) }}
@@ -82,10 +105,12 @@ endpoints:
       - "[CONNECTED] == true"
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if environment.name in uptime_slack_channels else []) %}
+      - type: {{ type }}
         failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of ' ~ host ~ ' expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
+{% endfor %}
   - name: {{ text('dns of ' ~ host) }}
     group: {{ text(environment.name) }}
     url: {{ text(uptime_dns_resolver) }}
@@ -97,9 +122,11 @@ endpoints:
       - "[DNS_RCODE] == NOERROR"
       - "[BODY] == pat(*.*.*.*)"
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if environment.name in uptime_slack_channels else []) %}
+      - type: {{ type }}
         failure-threshold: {{ uptime_dns_failure_threshold }}
         description: {{ text(host ~ ' does not resolve through ' ~ uptime_dns_resolver ~ '.') }}
+{% endfor %}
 {% endfor %}
 {% endfor %}
   # The uptime server's own certificate, which Caddy renews: the heartbeats
@@ -114,10 +141,12 @@ endpoints:
       - "[CONNECTED] == true"
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if 'uptime' in uptime_slack_channels else []) %}
+      - type: {{ type }}
         failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of ' ~ uptime_hostname ~ ', which Caddy renews on this server, expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
+{% endfor %}
 
 {% if uptime_public_status %}
   # The status page's certificate, which Caddy renews too.
@@ -131,10 +160,12 @@ endpoints:
       - "[CONNECTED] == true"
       - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if 'uptime' in uptime_slack_channels else []) %}
+      - type: {{ type }}
         failure-threshold: {{ uptime_certificate_failure_threshold }}
         success-threshold: 1
         description: {{ text('The certificate of the status page, ' ~ uptime_status_hostname ~ ', which Caddy renews on this server, expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
+{% endfor %}
 {% endif %}
 
 {% set heartbeats = uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat') | list %}
@@ -149,8 +180,10 @@ external-endpoints:{{ ' []' if not heartbeats else '' }}
     heartbeat:
       interval: {{ uptime_heartbeat_interval }}
     alerts:
-      - type: telegram
+{% for type in ['telegram'] + (['slack'] if environment.name in uptime_slack_channels else []) %}
+      - type: {{ type }}
         failure-threshold: 1
         success-threshold: 1
         description: {{ text(environment.name ~ "'s Grafana has sent no heartbeat for " ~ uptime_heartbeat_interval ~ ': its own alerts may not reach anyone. Check that Grafana runs there and reaches ' ~ uptime_hostname ~ '.') }}
+{% endfor %}
 {% endfor %}

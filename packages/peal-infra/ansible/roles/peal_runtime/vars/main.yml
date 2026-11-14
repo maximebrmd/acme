@@ -22,7 +22,9 @@ peal_runtime_host_settings: >-
        'PEAL_GRAFANA_URL': 'https://' ~ peal_hostnames.grafana,
        'PEAL_GRAFANA_ACCESS_TEAM': cloudflare_access_team,
        'PEAL_GRAFANA_ACCESS_AUD': cloudflare_access_aud.grafana,
-       'PEAL_GRAFANA_CONTACT_POINTS': './config/production/grafana/alerting/telegram.yaml',
+       'PEAL_GRAFANA_CONTACT_POINTS': './config/production/grafana/alerting/'
+                                      ~ ('telegram-slack.yaml' if peal_runtime_slack_alerts | bool else 'telegram.yaml'),
+       'PEAL_GRAFANA_ENVIRONMENT': peal_environment,
        'PEAL_SERVER_PORT': peal_ports.server,
        'PEAL_WEB_PORT': peal_ports.web,
        'PEAL_SITE_PORT': peal_ports.site,
@@ -40,6 +42,19 @@ peal_runtime_host_settings: >-
          'PEAL_HEARTBEAT_URL': peal_heartbeat_url,
        } if peal_heartbeat_url else {})
      | combine(peal_settings) }}
+
+# Grafana alerts Slack too, beside Telegram, once the environment's Slack
+# webhook (SLACK_ALERTS_WEBHOOK_URL, to #alerts-production or
+# #alerts-sandbox) is among its credentials: in the vault, or found by name
+# in credentials.env on the server. Grafana refuses to start on a contact
+# point whose setting is missing, so the file follows the credentials.
+peal_runtime_optional_credentials: [SLACK_ALERTS_WEBHOOK_URL]
+peal_runtime_slack_alerts: >-
+  {{ 'SLACK_ALERTS_WEBHOOK_URL'
+     in ((peal_credentials | dict2items | rejectattr('value', 'equalto', '') | rejectattr('value', 'none')
+          | map(attribute='key') | list)
+         if peal_credentials is defined
+         else (peal_runtime_optional_set.stdout_lines | default([]))) }}
 
 # The credentials this server needs, by name: peal_required_credentials, the
 # heartbeat's token when Grafana sends one, and the docs' assistant's key

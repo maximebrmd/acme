@@ -11,6 +11,54 @@ uptime_required_credentials: >-
         | map(attribute='name') | map('upper')
         | product(['_ACCESS_CLIENT_ID', '_ACCESS_CLIENT_SECRET']) | map('join') | list) }}
 
+# The credentials the server may have, by name, whose absence turns a
+# feature off rather than stopping the run: the Slack webhook production's
+# alerts and the uptime server's own go to, that of each environment with a
+# channel of its own (slack: true in uptime_environments), and the platform
+# watch's (README.md, "Slack").
+uptime_optional_credentials: >-
+  {{ ['SLACK_ALERTS_WEBHOOK_URL']
+     + (uptime_slack_own_channels | map('upper') | map('regex_replace', '^', 'SLACK_')
+        | map('regex_replace', '$', '_ALERTS_WEBHOOK_URL') | list)
+     + ['SLACK_CHANGELOG_WEBHOOK_URL'] }}
+uptime_slack_own_channels: >-
+  {{ uptime_environments | selectattr('slack', 'defined') | selectattr('slack') | map(attribute='name') | list }}
+
+# The credentials that hold a value, by name: the vault's, or the optional
+# ones the role found set in credentials.env on the server. A template
+# rendered before either is known (tests/render.yml) finds none.
+uptime_set_credentials: >-
+  {{ (uptime_credentials | dict2items | rejectattr('value', 'equalto', '') | rejectattr('value', 'none')
+      | map(attribute='key') | list)
+     if uptime_credentials is defined
+     else (uptime_optional_set.stdout_lines | default([])) }}
+
+# The Slack webhook each group of checks alerts, by the credential's name,
+# for the groups whose webhook is set: an environment with a channel of its
+# own its SLACK_<NAME>_ALERTS_WEBHOOK_URL, the others and the uptime
+# server's own checks SLACK_ALERTS_WEBHOOK_URL. A group left out alerts on
+# Telegram alone.
+uptime_slack_channels: >-
+  {{ dict(((uptime_environments | map(attribute='name') | reject('in', uptime_slack_own_channels) | list) + ['uptime'])
+          | product(['SLACK_ALERTS_WEBHOOK_URL']))
+     | combine(dict(uptime_slack_own_channels
+                    | zip(uptime_slack_own_channels | map('upper') | map('regex_replace', '^', 'SLACK_')
+                          | map('regex_replace', '$', '_ALERTS_WEBHOOK_URL'))))
+     | dict2items | selectattr('value', 'in', uptime_set_credentials) | items2dict }}
+
+# The platform watch runs once its webhook is set (README.md, "The platform
+# watch").
+uptime_platform_watch: "{{ 'SLACK_CHANGELOG_WEBHOOK_URL' in uptime_set_credentials }}"
+
+# The resolvers on this machine /etc/resolv.conf names (systemd-resolved's
+# stub, 127.0.0.53, on Ubuntu), the one local address the platform watch
+# may reach: its unit denies the rest of localhost.
+uptime_platform_watch_resolvers: >-
+  {{ (uptime_resolv_conf.content | default('') | b64decode).splitlines()
+     | select('match', '^\s*nameserver\s+') | map('regex_replace', '^\s*nameserver\s+(\S+).*$', '\1')
+     | map('regex_replace', '%.*$', '')
+     | select('match', '^(127\.|::1$|fe80:|169\.254\.)') | unique | list }}
+
 # The heartbeat tokens generated on the server, one per environment whose
 # Grafana sends a heartbeat.
 uptime_heartbeat_tokens: >-

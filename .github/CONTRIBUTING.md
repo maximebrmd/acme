@@ -713,7 +713,7 @@ Peal's own servers, production and the sandbox, each run on a server at a
 European provider and are reachable only through a Cloudflare Tunnel: no
 inbound port, SSH included.
 Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox;
-Grafana's alerts go to a Telegram chat; Postgres is backed up to R2. A third
+Grafana's alerts go to a Telegram chat, and to Slack once its webhook is set; Postgres is backed up to R2. A third
 server, linked to neither, at another provider and in another city, checks
 their public endpoints from outside with
 Gatus, alerts when production's Grafana stops sending its heartbeat, and
