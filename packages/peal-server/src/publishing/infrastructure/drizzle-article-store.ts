@@ -236,24 +236,41 @@ export const DrizzleArticleStore = Layer.effect(
           .delete(articles)
           .where(eq(articles.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed), Effect.asVoid),
-      recordedOn: (channelId, platformPostIds) =>
-        platformPostIds.length === 0
-          ? Effect.succeed(new Set<string>())
-          : db
-              .select({ id: sql<string>`${articles.state}->>'platformPostId'` })
-              .from(articles)
-              .where(
-                and(
-                  eq(articles.channelId, channelId),
-                  inArray(sql<string>`${articles.state}->>'platformPostId'`, [
-                    ...platformPostIds,
-                  ])
-                )
+      // What the articles settled with, and what their calls answered
+      // before they settled.
+      recordedOn: Effect.fn("ArticleStore.recordedOn")(
+        function* recordedOn(channelId, platformPostIds) {
+          if (platformPostIds.length === 0) {
+            return new Set<string>();
+          }
+
+          const wanted = [...platformPostIds];
+          const settledId = sql<string>`${articles.state}->>'platformPostId'`;
+          const answeredId = sql<string>`${articleCalls.outcome}->>'platformPostId'`;
+
+          const settledRows = yield* db
+            .select({ id: settledId })
+            .from(articles)
+            .where(
+              and(eq(articles.channelId, channelId), inArray(settledId, wanted))
+            )
+            .pipe(Effect.mapError(failed));
+
+          const answeredRows = yield* db
+            .select({ id: answeredId })
+            .from(articleCalls)
+            .innerJoin(articles, eq(articles.id, articleCalls.articleId))
+            .where(
+              and(
+                eq(articles.channelId, channelId),
+                inArray(answeredId, wanted)
               )
-              .pipe(
-                Effect.mapError(failed),
-                Effect.map((rows) => new Set(rows.map(({ id }) => id)))
-              ),
+            )
+            .pipe(Effect.mapError(failed));
+
+          return new Set([...settledRows, ...answeredRows].map(({ id }) => id));
+        }
+      ),
       remove: (workspaceId, articleId) =>
         db
           .delete(articles)

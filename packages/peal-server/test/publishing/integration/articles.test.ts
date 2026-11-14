@@ -12,6 +12,7 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ArticleJournal } from "#publishing/application/article-journal.ts";
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
 import {
@@ -586,6 +587,49 @@ describe("an article", () => {
             again._tag === "inFlight" &&
               DateTime.Equivalence(again.committedAt, committedAt)
           );
+        })
+      )
+  );
+  it.effect(
+    "never takes a post another article's call answered, before that one settled",
+    () =>
+      onArticles(
+        Effect.gen(function* answered() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const calls = yield* ArticleJournal;
+
+          const article = yield* (yield* Articles).create(
+            writer(workspaceId),
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          const at = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
+          const key = `${article.id}:synthetic:1`;
+
+          yield* calls.begin({
+            articleId: article.id,
+            attempt: 1,
+            idempotencyKey: key,
+            round: 0,
+            startedAt: at,
+          });
+          yield* calls.finish(
+            key,
+            {
+              _tag: "published",
+              platformPostId: PlatformPostIdSchema.make("4242"),
+            },
+            at
+          );
+
+          const taken = yield* ArticleStore.use((store) =>
+            store.recordedOn(channel.id, ["4242", "4343"])
+          );
+
+          assert.deepStrictEqual([...taken], ["4242"]);
         })
       )
   );

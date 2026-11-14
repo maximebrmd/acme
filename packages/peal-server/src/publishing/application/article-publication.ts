@@ -15,6 +15,7 @@ import { BadRequest } from "#shared/domain/bad-request.ts";
 import { ArticleEvents } from "./article-events.ts";
 import type { ArticleJob } from "./article-jobs.ts";
 import { ArticleJournal } from "./article-journal.ts";
+import { ArticleSendTurns } from "./article-send-turns.ts";
 import { ArticleStore } from "./article-store.ts";
 import { SitePublisher } from "./site-publisher.ts";
 import type { SitePublishRequest } from "./site-publisher.ts";
@@ -129,6 +130,7 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
     const journal = yield* ArticleJournal;
     const publisher = yield* SitePublisher;
     const store = yield* ArticleStore;
+    const turns = yield* ArticleSendTurns;
 
     const article = yield* store.get(attempt.articleId);
 
@@ -182,24 +184,29 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       startedAt: start._tag === "inFlight" ? start.committedAt : startedAt,
     };
 
+    // The call, and the journal's record of how it ended, in the
+    // channel's turn: no other attempt looks for its post on the site
+    // before this one recorded it.
     const { finishedAt, outcome } =
       start._tag === "completed"
         ? start
-        : yield* (
-            start._tag === "inFlight"
+        : yield* turns.inTurn(
+            article.value.channelId,
+            (start._tag === "inFlight"
               ? publisher.resume(request)
               : publisher.publish(request)
-          ).pipe(
-            Effect.catch((error) => Effect.succeed(error)),
-            Effect.catchDefect(() => Effect.succeed(adapterFailed)),
-            Effect.flatMap((ended: AttemptOutcome) =>
-              DateTime.now.pipe(
-                Effect.tap((at) =>
-                  journal
-                    .finish(attempt.idempotencyKey, ended, at)
-                    .pipe(Effect.retry(outcomeWriteRetry))
-                ),
-                Effect.map((at) => ({ finishedAt: at, outcome: ended }))
+            ).pipe(
+              Effect.catch((error) => Effect.succeed(error)),
+              Effect.catchDefect(() => Effect.succeed(adapterFailed)),
+              Effect.flatMap((ended: AttemptOutcome) =>
+                DateTime.now.pipe(
+                  Effect.tap((at) =>
+                    journal
+                      .finish(attempt.idempotencyKey, ended, at)
+                      .pipe(Effect.retry(outcomeWriteRetry))
+                  ),
+                  Effect.map((at) => ({ finishedAt: at, outcome: ended }))
+                )
               )
             )
           );

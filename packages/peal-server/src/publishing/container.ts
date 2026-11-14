@@ -120,6 +120,7 @@ import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/
 import { WordPressSitePublisherLive } from "#publishing/infrastructure/platforms/wordpress/wordpress-articles.ts";
 import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ShortLinksShortLinkDefaults } from "#publishing/infrastructure/shortlinks-short-link-defaults.ts";
+import { SqlArticleSendTurns } from "#publishing/infrastructure/sql-article-send-turns.ts";
 import { SqlPostAttentionReads } from "#publishing/infrastructure/sql-post-attention-reads.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
@@ -686,6 +687,7 @@ export const ArticlesLive = Layer.merge(
 export const ArticleWorkersLive = PublishArticleV1Live.pipe(
   Layer.provide(
     Layer.mergeAll(
+      SqlArticleSendTurns,
       DrizzleArticleStore,
       DrizzleArticleJournal,
       WebhookArticleEvents,
