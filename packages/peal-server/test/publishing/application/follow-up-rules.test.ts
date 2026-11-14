@@ -47,6 +47,7 @@ import {
   FakeRecycling,
   resetRecycling,
   startersAre,
+  whileRunning,
 } from "#test/publishing/fakes/fake-recycling.ts";
 import {
   eventually,
@@ -180,30 +181,37 @@ const RecordingClients = Layer.mergeAll(
 
 // The server whose gates carry follow-ups out as the server does, through
 // the routed publisher, to platform clients that record what they get.
-const RoutedServer = postsServerBehind(
-  ApprovalGate.open,
-  attachableMedia(),
-  postAllowance(),
-  PostEvents.none,
-  FakeRecycling,
-  FeedsUnused,
-  ShortLinkDefaults.none,
-  Layer.mergeAll(
-    FollowUpChannels.supported,
-    FakeFollowUpCounts,
-    RoutedFollowUpPublisher.pipe(
-      Layer.provide(
-        Layer.mergeAll(
-          RecordingClients,
-          PostMeter.unmetered,
-          DrizzleFollowUpStore,
-          DrizzlePostRepository,
-          RepositoryCredentials
+const routedServerBehind = (gate: Layer.Layer<ApprovalGate>) =>
+  postsServerBehind(
+    gate,
+    attachableMedia(),
+    postAllowance(),
+    PostEvents.none,
+    FakeRecycling,
+    FeedsUnused,
+    ShortLinkDefaults.none,
+    Layer.mergeAll(
+      FollowUpChannels.supported,
+      FakeFollowUpCounts,
+      RoutedFollowUpPublisher.pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            RecordingClients,
+            PostMeter.unmetered,
+            DrizzleFollowUpStore,
+            DrizzlePostRepository,
+            RepositoryCredentials,
+            FakeRecycling,
+            gate
+          )
         )
       )
     )
-  )
-);
+  );
+
+const RoutedServer = routedServerBehind(ApprovalGate.open);
+
+const HoldingRoutedServer = routedServerBehind(HoldingContributors);
 
 const HoldingServer = serverBehind(HoldingContributors);
 
@@ -1035,6 +1043,113 @@ describe("follow-up rules", () => {
               )
             )
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "send nothing from the gate once the starter is held, as the text is read",
+    () =>
+      setTime(start).pipe(
+        Effect.andThen(resetRecycling),
+        Effect.andThen(resetFollowUps),
+        Effect.andThen(Ref.set(sentPosts, [])),
+        Effect.andThen(Ref.set(refusingPosts, 0)),
+        Effect.andThen(
+          Effect.gen(function* heldAtGate() {
+            const workspaceId = yield* freshWorkspace;
+            const mastodon = yield* connected(workspaceId, "mastodon");
+            const postId = yield* published(workspaceId, [mastodon]);
+            const [target] = yield* targetsOf(postId);
+
+            assert.isDefined(target);
+
+            const started = yield* FollowUpRules.use((rules) =>
+              rules.start(
+                actorIn(workspaceId),
+                onPost(postId, { repost: false })
+              )
+            );
+
+            // The run and the job find an editor; the gate, as it reads
+            // the text, a contributor whose posts the policy holds.
+            const asked = { times: 0 };
+
+            yield* startersAre(() => {
+              asked.times += 1;
+
+              return {
+                _tag: "acting",
+                actor: actorIn(
+                  workspaceId,
+                  permissionsFor(asked.times <= 2 ? "editor" : "contributor")
+                ),
+              };
+            });
+
+            yield* likesOf(target.id, 10);
+            assert.strictEqual((yield* runDue).triggered, 1);
+            yield* eventually(
+              "the follow-up is armed again",
+              ruleNow(workspaceId, started.rule.id).pipe(
+                Effect.map(({ followUps }) =>
+                  followUps.every(
+                    ({ attempt, status }) =>
+                      status._tag === "armed" && attempt === 1
+                  )
+                )
+              )
+            );
+
+            assert.deepStrictEqual(yield* Ref.get(sentPosts), []);
+            assert.isAtLeast(asked.times, 3);
+          }).pipe(
+            Effect.ensuring(forgetRules),
+            Effect.provide(HoldingRoutedServer)
+          )
+        )
+      ),
+    timeout
+  );
+
+  it.effect(
+    "send nothing of a rule paused after its follow-up was set out",
+    () =>
+      onServer(
+        Effect.gen(function* pausedMeanwhile() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          // A member pauses it as the run sets it out.
+          yield* whileRunning(
+            FollowUpRules.use((rules) =>
+              rules.change(actorIn(workspaceId), started.rule.id, {
+                paused: true,
+              })
+            ).pipe(Effect.asVoid, Effect.orDie)
+          );
+
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+          yield* eventually(
+            "the follow-up is armed again",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.every(({ status }) => status._tag === "armed")
+              )
+            )
+          );
+
+          assert.strictEqual((yield* followUpCalls).length, 0);
         })
       ),
     timeout

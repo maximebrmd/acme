@@ -9,7 +9,6 @@ import {
 } from "effect";
 
 import type { FollowUpId } from "#publishing/domain/follow-up-id.ts";
-import { mayAct } from "#publishing/domain/follow-up-rule.ts";
 import {
   beginFollowUpCall,
   settleFollowUp,
@@ -24,6 +23,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
+import { actsNow } from "./follow-up-acts-now.ts";
 import { FollowUpPublisher } from "./follow-up-publisher.ts";
 import { FollowUpStore } from "./follow-up-store.ts";
 import { RecyclingActors } from "./recycling-actors.ts";
@@ -93,23 +93,17 @@ export class SendFollowUp extends Context.Service<
       });
 
       // Whether what the rule sends may still go out as its starter, just
-      // before the call: a change since the run triggered it may need an
-      // approval, and the policy may hold the starter now. A rule gone is
-      // the publisher's to refuse.
+      // before the call waits its turn at the gate, which judges it again
+      // as it reads the text: a rule paused, stopped or changed since the
+      // run triggered it, or a starter the policy holds now. A rule gone
+      // is the publisher's to refuse.
       const stillMayAct = Effect.fn("SendFollowUp.stillMayAct")(
         function* stillMayAct(followUp: FollowUp) {
           const rule = yield* store.rule(followUp.workspaceId, followUp.ruleId);
 
-          if (Option.isNone(rule)) {
-            return true;
-          }
-
-          const starter = yield* actors.of(rule.value);
-
-          return (
-            starter._tag === "acting" &&
-            mayAct(rule.value, yield* gate.holds(starter.actor))
-          );
+          return Option.isNone(rule)
+            ? true
+            : yield* actsNow(rule.value, { holds: gate.holds, of: actors.of });
         }
       );
 

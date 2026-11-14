@@ -1,5 +1,6 @@
 import { DateTime, Effect, Layer, Option } from "effect";
 
+import type { FollowUpRule } from "#publishing/domain/follow-up-rule.ts";
 import type { FollowUp } from "#publishing/domain/follow-up.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { livePartsOf } from "#publishing/domain/post-target.ts";
@@ -19,6 +20,8 @@ import type {
   PublishResult,
 } from "#shared/domain/publish-result.ts";
 
+import { ApprovalGate } from "./approval-gate.ts";
+import { actsNow } from "./follow-up-acts-now.ts";
 import { FollowUpPublisher } from "./follow-up-publisher.ts";
 import type { FollowUpRequest } from "./follow-up-publisher.ts";
 import { FollowUpStore } from "./follow-up-store.ts";
@@ -28,6 +31,7 @@ import { PlatformCredentials } from "./platform-credentials.ts";
 import { PlatformReposts } from "./platform-reposts.ts";
 import { PostMeter } from "./post-meter.ts";
 import { PostRepository } from "./post-repository.ts";
+import { RecyclingActors } from "./recycling-actors.ts";
 import { meterCodes } from "./routed-platform-publisher.ts";
 import { CurrentThreadedPlatforms } from "./threaded-platforms.ts";
 
@@ -94,11 +98,18 @@ export const RoutedFollowUpPublisher = Layer.effect(
   Effect.gen(function* RoutedFollowUpPublisher() {
     const store = yield* FollowUpStore;
     const posts = yield* PostRepository;
+    const actors = yield* RecyclingActors;
+    const gate = yield* ApprovalGate;
     const credentials = yield* PlatformCredentials;
     const clients = yield* PlatformClients;
     const reposts = yield* PlatformReposts;
     const threaded = yield* CurrentThreadedPlatforms;
     const meter = yield* PostMeter;
+
+    const stillActs = (rule: FollowUpRule) =>
+      actsNow(rule, { holds: gate.holds, of: actors.of }).pipe(
+        Effect.catchTag("DatabaseError", databaseDown)
+      );
 
     const prepared = Effect.fn("FollowUps.prepared")(function* prepared(
       request: FollowUpRequest
@@ -124,6 +135,14 @@ export const RoutedFollowUpPublisher = Layer.effect(
 
       if (Option.isNone(rule) || Option.isNone(target)) {
         return yield* new BadRequest({ code: "followUpGone" });
+      }
+
+      // Judged again here, as the text is read, right before the call: a
+      // rule paused, stopped or changed since, or a starter the policy
+      // holds now, sends nothing. Put off, it is armed again for the run
+      // to judge.
+      if (!(yield* stillActs(rule.value))) {
+        return yield* new PlatformUnavailable();
       }
 
       const account = yield* credentials.account(request.channelId);
