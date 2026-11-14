@@ -15,6 +15,8 @@ module Peal
 
       field :likes, -> { Integer }, optional: false, nullable: true
 
+      field :not_before, -> { String }, optional: false, nullable: true, api_name: "notBefore"
+
       field :permalink, -> { String }, optional: false, nullable: true
 
       field :platform_post_id, -> { String }, optional: false, nullable: true, api_name: "platformPostId"

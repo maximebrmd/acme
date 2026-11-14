@@ -38,6 +38,12 @@ class FollowUp extends JsonSerializableType
     public ?int $likes;
 
     /**
+     * @var ?string $notBefore
+     */
+    #[JsonProperty('notBefore')]
+    public ?string $notBefore;
+
+    /**
      * @var ?string $permalink
      */
     #[JsonProperty('permalink')]
@@ -101,6 +107,7 @@ class FollowUp extends JsonSerializableType
      *   status: value-of<FollowUpStatus>,
      *   targetId: string,
      *   likes?: ?int,
+     *   notBefore?: ?string,
      *   permalink?: ?string,
      *   platformPostId?: ?string,
      *   reason?: ?string,
@@ -117,6 +124,7 @@ class FollowUp extends JsonSerializableType
         $this->id = $values['id'];
         $this->kind = $values['kind'];
         $this->likes = $values['likes'] ?? null;
+        $this->notBefore = $values['notBefore'] ?? null;
         $this->permalink = $values['permalink'] ?? null;
         $this->platformPostId = $values['platformPostId'] ?? null;
         $this->postId = $values['postId'];

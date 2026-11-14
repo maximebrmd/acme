@@ -4413,6 +4413,7 @@
     "platform": "{platform, select, x {on X} bluesky {on Bluesky} mastodon {on Mastodon} other {}}",
     "followUpStatus": "{status, select, armed {Waiting for the likes} waiting {Waiting for the channel to be connected again} sending {Going out} sent {Sent} failed {Failed} unconfirmed {Not confirmed: check the platform} expired {Window passed} cancelled {Given up} other {Unknown}}",
     "reason": "{reason, select, belowThreshold {the post did not reach the likes} paused {the rule was paused} notApproved {the rule was not approved} dailyLimit {the channel’s day was full} windowEnded {the platform put it off until its seven days ended} notGranted {the channel was not connected again in time} ruleEnded {the rule ended} postGone {the post is no longer live} unavailable {the channel can no longer carry it} notAsked {the rule no longer asks it} other {{reason}}}",
+    "nextTry": "The platform put it off: next try at {at}",
     "open": "Open",
     "post": "On a post",
     "onChannel": "On every new post of a channel",

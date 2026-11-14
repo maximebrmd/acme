@@ -26,6 +26,9 @@ public record FollowUp : IJsonOnDeserialized
     [JsonPropertyName("likes")]
     public int? Likes { get; set; }
 
+    [JsonPropertyName("notBefore")]
+    public string? NotBefore { get; set; }
+
     [JsonPropertyName("permalink")]
     public string? Permalink { get; set; }
 

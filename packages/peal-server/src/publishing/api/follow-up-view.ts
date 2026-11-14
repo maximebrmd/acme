@@ -12,8 +12,9 @@ import { originView } from "./recycling-view.ts";
 // What a follow-up's state says, field by field: null where it says none.
 const stateOf = (followUp: FollowUp) =>
   Match.valueTags(followUp.status, {
-    armed: ({ until }) => ({
+    armed: ({ notBefore, until }) => ({
       likes: null,
+      notBefore: notBefore ?? null,
       permalink: null,
       platformPostId: null,
       reason: null,
@@ -23,6 +24,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     waiting: ({ until }) => ({
       likes: null,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason: null,
@@ -32,6 +34,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     cancelled: ({ reason }) => ({
       likes: null,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason,
@@ -41,6 +44,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     expired: ({ reason }) => ({
       likes: null,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason,
@@ -50,6 +54,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     failed: ({ code, likes, reason, triggeredAt }) => ({
       likes,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason: Option.getOrElse(code, () => reason),
@@ -59,6 +64,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     sending: ({ likes, triggeredAt }) => ({
       likes,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason: null,
@@ -68,6 +74,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     sent: ({ likes, permalink, platformPostId, sentAt, triggeredAt }) => ({
       likes,
+      notBefore: null,
       permalink: Option.getOrNull(permalink),
       platformPostId,
       reason: null,
@@ -77,6 +84,7 @@ const stateOf = (followUp: FollowUp) =>
     }),
     unconfirmed: ({ likes, reason, triggeredAt }) => ({
       likes,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       reason,

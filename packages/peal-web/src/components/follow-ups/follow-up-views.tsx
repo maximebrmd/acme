@@ -50,6 +50,14 @@ const FollowUpLineView = ({
           timeStyle: "short",
         });
 
+  const nextTry =
+    followUp.notBefore === null
+      ? null
+      : format.dateTime(DateTime.toDate(followUp.notBefore), {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+
   return (
     <li className="flex flex-wrap items-center gap-2 text-sm">
       <span>{t("kind", { kind: followUp.kind })}</span>
@@ -62,6 +70,11 @@ const FollowUpLineView = ({
       {followUp.reason === null ? null : (
         <span className="text-muted-foreground">
           {t("reason", { reason: followUp.reason })}
+        </span>
+      )}
+      {nextTry === null ? null : (
+        <span className="text-muted-foreground">
+          {t("nextTry", { at: nextTry })}
         </span>
       )}
       {when === null ? null : (

@@ -16,6 +16,9 @@ class FollowUp(UniversalBaseModel):
     id: str
     kind: FollowUpKind
     likes: typing.Optional[int] = None
+    not_before: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="notBefore"), pydantic.Field(alias="notBefore")
+    ] = None
     permalink: typing.Optional[str] = None
     platform_post_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="platformPostId"), pydantic.Field(alias="platformPostId")

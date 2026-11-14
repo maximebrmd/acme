@@ -54,6 +54,7 @@ const rule: FollowUpRule = {
       id: "0190f3a0-0000-7000-8000-0000000f0101",
       kind: "comment",
       likes: 52,
+      notBefore: null,
       permalink: "https://social.example.test/@studio/1",
       platformPostId: "1",
       postId,
@@ -70,6 +71,7 @@ const rule: FollowUpRule = {
       id: "0190f3a0-0000-7000-8000-0000000f0102",
       kind: "repost",
       likes: null,
+      notBefore: null,
       permalink: null,
       platformPostId: null,
       postId,
@@ -169,6 +171,53 @@ describe("the workspace's follow-up rules", () => {
     );
 
     expect(french).toContain("À 50 J’aime : un commentaire et un repartage");
+  });
+
+  it("say when a follow-up the platform put off is tried next", async () => {
+    const putOff: FollowUpRule = {
+      ...rule,
+      followUps: [
+        {
+          armedAt: at("2026-07-06T07:00:00Z"),
+          channelId: "0190f3a0-0000-7000-8000-00000000c001",
+          id: "0190f3a0-0000-7000-8000-0000000f0103",
+          kind: "comment",
+          likes: null,
+          notBefore: at("2026-07-07T09:10:00Z"),
+          permalink: null,
+          platformPostId: null,
+          postId,
+          reason: null,
+          sentAt: null,
+          status: "armed",
+          targetId: "0190f3a0-0000-7000-8000-00000000e011",
+          triggeredAt: null,
+          until: at("2026-07-13T07:00:00Z"),
+        },
+      ],
+    };
+
+    const english = await render(
+      "en",
+      <FollowUpRuleView actions={null} rule={putOff} scope="On a post" />
+    );
+
+    expect(english).toContain(
+      "The platform put it off: next try at Jul 7, 2026, 9:10 AM"
+    );
+
+    const french = await render(
+      "fr",
+      <FollowUpRuleView
+        actions={null}
+        rule={putOff}
+        scope="Sur une publication"
+      />
+    );
+
+    expect(french).toContain(
+      "La plateforme l’a repoussée : prochain essai le 7 juil. 2026, 09:10"
+    );
   });
 
   it("offer to allow reposts on a channel that must be connected again for them, to who may", async () => {

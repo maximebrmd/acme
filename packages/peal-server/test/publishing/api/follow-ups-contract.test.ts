@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Duration, Schema } from "effect";
+import { DateTime, Duration, Result, Schema } from "effect";
 import {
   FollowUpAbilitySchema,
   FollowUpEndReasonSchema as ContractEndReasonSchema,
@@ -34,6 +34,9 @@ import { FollowUpBlockerSchema } from "#publishing/domain/follow-up-support.ts";
 import {
   FollowUpKindSchema,
   FollowUpStatusSchema,
+  armFollowUp,
+  settleFollowUp,
+  triggerFollowUp,
   waitFollowUp,
 } from "#publishing/domain/follow-up.ts";
 import {
@@ -42,6 +45,7 @@ import {
   PostTargetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
 // The contract's copy of follow-up rules' limits and words, which clients
 // read: equal to the server's.
@@ -122,6 +126,45 @@ describe("the follow-ups' contract", () => {
     expect(shown.status).toBe("waiting");
     expect(shown.until).toStrictEqual(
       DateTime.makeUnsafe("2026-07-13T07:00:00Z")
+    );
+  });
+
+  it("says when a follow-up the platform put off is tried next", () => {
+    const at = DateTime.makeUnsafe("2026-07-06T07:00:00Z");
+
+    const armed = armFollowUp(
+      {
+        channelId: ChannelIdSchema.make("00000000-0000-7000-8000-000000000101"),
+        id: FollowUpIdSchema.make("00000000-0000-7000-8000-000000000402"),
+        kind: "comment",
+        postId: PostIdSchema.make("00000000-0000-7000-8000-000000000201"),
+        ruleId: FollowUpRuleIdSchema.make(
+          "00000000-0000-7000-8000-000000000301"
+        ),
+        targetId: PostTargetIdSchema.make(
+          "00000000-0000-7000-8000-000000000501"
+        ),
+        until: DateTime.makeUnsafe("2026-07-13T07:00:00Z"),
+        workspaceId: WorkspaceIdSchema.make(
+          "00000000-0000-7000-8000-000000000601"
+        ),
+      },
+      at
+    );
+
+    expect(followUpView(armed).notBefore).toBeNull();
+
+    const putOff = settleFollowUp(
+      Result.getOrThrow(triggerFollowUp(armed, 12, at)),
+      { _tag: "refused", failure: new PlatformUnavailable() },
+      at
+    );
+
+    const shown = followUpView(Result.getOrThrow(putOff));
+
+    expect(shown.status).toBe("armed");
+    expect(shown.notBefore).toStrictEqual(
+      DateTime.makeUnsafe("2026-07-06T07:10:00Z")
     );
   });
 });

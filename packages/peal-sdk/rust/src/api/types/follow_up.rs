@@ -13,6 +13,9 @@ pub struct FollowUp {
     pub kind: FollowUpKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub likes: Option<i64>,
+    #[serde(rename = "notBefore")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub not_before: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permalink: Option<String>,
     #[serde(rename = "platformPostId")]
@@ -51,6 +54,7 @@ pub struct FollowUpBuilder {
     id: Option<String>,
     kind: Option<FollowUpKind>,
     likes: Option<i64>,
+    not_before: Option<String>,
     permalink: Option<String>,
     platform_post_id: Option<String>,
     post_id: Option<String>,
@@ -85,6 +89,11 @@ impl FollowUpBuilder {
 
     pub fn likes(mut self, value: i64) -> Self {
         self.likes = Some(value);
+        self
+    }
+
+    pub fn not_before(mut self, value: impl Into<String>) -> Self {
+        self.not_before = Some(value.into());
         self
     }
 
@@ -153,6 +162,7 @@ impl FollowUpBuilder {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             kind: self.kind.ok_or_else(|| BuildError::missing_field("kind"))?,
             likes: self.likes,
+            not_before: self.not_before,
             permalink: self.permalink,
             platform_post_id: self.platform_post_id,
             post_id: self

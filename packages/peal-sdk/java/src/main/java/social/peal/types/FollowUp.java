@@ -34,6 +34,8 @@ public final class FollowUp {
 
     private final Optional<Integer> likes;
 
+    private final Optional<String> notBefore;
+
     private final Optional<String> permalink;
 
     private final Optional<String> platformPostId;
@@ -60,6 +62,7 @@ public final class FollowUp {
             String id,
             FollowUpKind kind,
             Optional<Integer> likes,
+            Optional<String> notBefore,
             Optional<String> permalink,
             Optional<String> platformPostId,
             String postId,
@@ -75,6 +78,7 @@ public final class FollowUp {
         this.id = id;
         this.kind = kind;
         this.likes = likes;
+        this.notBefore = notBefore;
         this.permalink = permalink;
         this.platformPostId = platformPostId;
         this.postId = postId;
@@ -113,6 +117,14 @@ public final class FollowUp {
             return Optional.empty();
         }
         return likes;
+    }
+
+    @JsonIgnore
+    public Optional<String> getNotBefore() {
+        if (notBefore == null) {
+            return Optional.empty();
+        }
+        return notBefore;
     }
 
     @JsonIgnore
@@ -185,6 +197,12 @@ public final class FollowUp {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("notBefore")
+    private Optional<String> _getNotBefore() {
+        return notBefore;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("permalink")
     private Optional<String> _getPermalink() {
         return permalink;
@@ -237,6 +255,7 @@ public final class FollowUp {
                 && id.equals(other.id)
                 && kind.equals(other.kind)
                 && likes.equals(other.likes)
+                && notBefore.equals(other.notBefore)
                 && permalink.equals(other.permalink)
                 && platformPostId.equals(other.platformPostId)
                 && postId.equals(other.postId)
@@ -256,6 +275,7 @@ public final class FollowUp {
                 this.id,
                 this.kind,
                 this.likes,
+                this.notBefore,
                 this.permalink,
                 this.platformPostId,
                 this.postId,
@@ -318,6 +338,12 @@ public final class FollowUp {
         _FinalStage likes(Integer likes);
 
         _FinalStage likes(Nullable<Integer> likes);
+
+        _FinalStage notBefore(Optional<String> notBefore);
+
+        _FinalStage notBefore(String notBefore);
+
+        _FinalStage notBefore(Nullable<String> notBefore);
 
         _FinalStage permalink(Optional<String> permalink);
 
@@ -392,6 +418,8 @@ public final class FollowUp {
 
         private Optional<String> permalink = Optional.empty();
 
+        private Optional<String> notBefore = Optional.empty();
+
         private Optional<Integer> likes = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -405,6 +433,7 @@ public final class FollowUp {
             id(other.getId());
             kind(other.getKind());
             likes(other.getLikes());
+            notBefore(other.getNotBefore());
             permalink(other.getPermalink());
             platformPostId(other.getPlatformPostId());
             postId(other.getPostId());
@@ -617,6 +646,31 @@ public final class FollowUp {
         }
 
         @java.lang.Override
+        public _FinalStage notBefore(Nullable<String> notBefore) {
+            if (notBefore.isNull()) {
+                this.notBefore = null;
+            } else if (notBefore.isEmpty()) {
+                this.notBefore = Optional.empty();
+            } else {
+                this.notBefore = Optional.of(notBefore.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage notBefore(String notBefore) {
+            this.notBefore = Optional.ofNullable(notBefore);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "notBefore", nulls = Nulls.SKIP)
+        public _FinalStage notBefore(Optional<String> notBefore) {
+            this.notBefore = notBefore;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage likes(Nullable<Integer> likes) {
             if (likes.isNull()) {
                 this.likes = null;
@@ -649,6 +703,7 @@ public final class FollowUp {
                     id,
                     kind,
                     likes,
+                    notBefore,
                     permalink,
                     platformPostId,
                     postId,
@@ -668,6 +723,7 @@ public final class FollowUp {
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("kind")
                     || key.equalsIgnoreCase("likes")
+                    || key.equalsIgnoreCase("notBefore")
                     || key.equalsIgnoreCase("permalink")
                     || key.equalsIgnoreCase("platformPostId")
                     || key.equalsIgnoreCase("postId")

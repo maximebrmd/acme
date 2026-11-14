@@ -413,20 +413,22 @@ var (
 	followUpFieldID             = big.NewInt(1 << 2)
 	followUpFieldKind           = big.NewInt(1 << 3)
 	followUpFieldLikes          = big.NewInt(1 << 4)
-	followUpFieldPermalink      = big.NewInt(1 << 5)
-	followUpFieldPlatformPostID = big.NewInt(1 << 6)
-	followUpFieldPostID         = big.NewInt(1 << 7)
-	followUpFieldReason         = big.NewInt(1 << 8)
-	followUpFieldSentAt         = big.NewInt(1 << 9)
-	followUpFieldStatus         = big.NewInt(1 << 10)
-	followUpFieldTargetID       = big.NewInt(1 << 11)
-	followUpFieldTriggeredAt    = big.NewInt(1 << 12)
-	followUpFieldUntil          = big.NewInt(1 << 13)
+	followUpFieldNotBefore      = big.NewInt(1 << 5)
+	followUpFieldPermalink      = big.NewInt(1 << 6)
+	followUpFieldPlatformPostID = big.NewInt(1 << 7)
+	followUpFieldPostID         = big.NewInt(1 << 8)
+	followUpFieldReason         = big.NewInt(1 << 9)
+	followUpFieldSentAt         = big.NewInt(1 << 10)
+	followUpFieldStatus         = big.NewInt(1 << 11)
+	followUpFieldTargetID       = big.NewInt(1 << 12)
+	followUpFieldTriggeredAt    = big.NewInt(1 << 13)
+	followUpFieldUntil          = big.NewInt(1 << 14)
 )
 
 // followUpNullableFields maps the wire names of FollowUp's nullable fields (required or optional) to their field bits.
 var followUpNullableFields = map[string]*big.Int{
 	"likes":          followUpFieldLikes,
+	"notBefore":      followUpFieldNotBefore,
 	"permalink":      followUpFieldPermalink,
 	"platformPostId": followUpFieldPlatformPostID,
 	"reason":         followUpFieldReason,
@@ -441,6 +443,7 @@ type FollowUp struct {
 	ID             string         `json:"id" url:"id"`
 	Kind           FollowUpKind   `json:"kind" url:"kind"`
 	Likes          *int           `json:"likes,omitempty" url:"likes,omitempty"`
+	NotBefore      *string        `json:"notBefore,omitempty" url:"notBefore,omitempty"`
 	Permalink      *string        `json:"permalink,omitempty" url:"permalink,omitempty"`
 	PlatformPostID *string        `json:"platformPostId,omitempty" url:"platformPostId,omitempty"`
 	PostID         string         `json:"postId" url:"postId"`
@@ -491,6 +494,13 @@ func (f *FollowUp) GetLikes() *int {
 		return nil
 	}
 	return f.Likes
+}
+
+func (f *FollowUp) GetNotBefore() *string {
+	if f == nil {
+		return nil
+	}
+	return f.NotBefore
 }
 
 func (f *FollowUp) GetPermalink() *string {
@@ -605,6 +615,13 @@ func (f *FollowUp) SetKind(kind FollowUpKind) {
 func (f *FollowUp) SetLikes(likes *int) {
 	f.Likes = likes
 	f.require(followUpFieldLikes)
+}
+
+// SetNotBefore sets the NotBefore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUp) SetNotBefore(notBefore *string) {
+	f.NotBefore = notBefore
+	f.require(followUpFieldNotBefore)
 }
 
 // SetPermalink sets the Permalink field and marks it as non-optional;

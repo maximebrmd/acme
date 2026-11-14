@@ -1000,6 +1000,14 @@ func TestSettersFollowUp(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetNotBefore", func(t *testing.T) {
+		obj := &FollowUp{}
+		var fernTestValueNotBefore *string
+		obj.SetNotBefore(fernTestValueNotBefore)
+		assert.Equal(t, fernTestValueNotBefore, obj.NotBefore)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPermalink", func(t *testing.T) {
 		obj := &FollowUp{}
 		var fernTestValuePermalink *string
@@ -1198,6 +1206,39 @@ func TestGettersFollowUp(t *testing.T) {
 			}
 		}()
 		_ = obj.GetLikes() // Should return zero value
+	})
+
+	t.Run("GetNotBefore", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUp{}
+		var expected *string
+		obj.NotBefore = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetNotBefore(), "getter should return the property value")
+	})
+
+	t.Run("GetNotBefore_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUp{}
+		obj.NotBefore = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetNotBefore(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetNotBefore_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowUp
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetNotBefore() // Should return zero value
 	})
 
 	t.Run("GetPermalink", func(t *testing.T) {
@@ -1602,6 +1643,37 @@ func TestSettersMarkExplicitFollowUp(t *testing.T) {
 
 		// Act
 		obj.SetLikes(fernTestValueLikes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetNotBefore_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUp{}
+		var fernTestValueNotBefore *string
+
+		// Act
+		obj.SetNotBefore(fernTestValueNotBefore)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3535,6 +3607,7 @@ func TestJSONMarshalingFollowUpRulePage(t *testing.T) {
 func TestRequiredNullableRoundTripFollowUp(t *testing.T) {
 	requiredNullableKeys := []string{
 		"likes",
+		"notBefore",
 		"permalink",
 		"platformPostId",
 		"reason",
@@ -3553,7 +3626,7 @@ func TestRequiredNullableRoundTripFollowUp(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj FollowUp
-		require.NoError(t, json.Unmarshal([]byte(`{"likes":null,"permalink":null,"platformPostId":null,"reason":null,"sentAt":null,"triggeredAt":null,"until":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"likes":null,"notBefore":null,"permalink":null,"platformPostId":null,"reason":null,"sentAt":null,"triggeredAt":null,"until":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

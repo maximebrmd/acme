@@ -8,6 +8,7 @@ export interface FollowUp {
     id: string;
     kind: Peal.FollowUpKind;
     likes: number | null;
+    notBefore: string | null;
     permalink: string | null;
     platformPostId: string | null;
     postId: string;

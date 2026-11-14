@@ -4413,6 +4413,7 @@
     "platform": "{platform, select, x {sur X} bluesky {sur Bluesky} mastodon {sur Mastodon} other {}}",
     "followUpStatus": "{status, select, armed {Attend les mentions J’aime} waiting {Attend que le canal soit reconnecté} sending {En cours d’envoi} sent {Envoyée} failed {Échouée} unconfirmed {Non confirmée : vérifiez la plateforme} expired {Délai passé} cancelled {Abandonnée} other {Inconnu}}",
     "reason": "{reason, select, belowThreshold {la publication n’a pas atteint les mentions J’aime} paused {la règle était en pause} notApproved {la règle n’a pas été approuvée} dailyLimit {la journée du canal était pleine} windowEnded {la plateforme l’a repoussée jusqu’à la fin de ses sept jours} notGranted {le canal n’a pas été reconnecté à temps} ruleEnded {la règle a pris fin} postGone {la publication n’est plus en ligne} unavailable {le canal ne peut plus la porter} notAsked {la règle ne la demande plus} other {{reason}}}",
+    "nextTry": "La plateforme l’a repoussée : prochain essai le {at}",
     "open": "Ouvrir",
     "post": "Sur une publication",
     "onChannel": "Sur chaque nouvelle publication d’un canal",
