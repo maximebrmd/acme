@@ -99,9 +99,7 @@ export const advisoryLocks = (namespace: string, heldAtOnce: number) =>
                   })
                 );
 
-          return acquired
-            ? Option.some(yield* effect)
-            : Option.none<A>();
+          return acquired ? Option.some(yield* effect) : Option.none<A>();
         })
       );
 

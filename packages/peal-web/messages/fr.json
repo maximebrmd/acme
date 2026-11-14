@@ -1913,7 +1913,7 @@
       "inUse": "{count, plural, one {Une publication programmée l’utilise.} other {# publications programmées l’utilisent.}} Repassez-{count, plural, one {la} other {les}} en brouillon et retirez-le d’abord, ou attendez {count, plural, one {qu’elle soit partie} other {qu’elles soient parties}}.",
       "inUsePost": "Ouvrir la publication programmée {number}",
       "inUseArticles": "{count, plural, one {Un article planifié l’utilise.} other {# articles planifiés l’utilisent.}} Repassez-{count, plural, one {le} other {les}} en brouillon et retirez-la d’abord, ou attendez {count, plural, one {qu’il soit parti} other {qu’ils soient partis}}.",
-      "draftArticlesKeep": "{count, plural, one {Un article l’utilise : il ne pourra plus être envoyé sans elle.} other {# articles l’utilisent : ils ne pourront plus être envoyés sans elle.}}",
+      "draftArticlesKeep": "{count, plural, one {Un article pas encore envoyé l’utilise, et la perdra.} other {# articles pas encore envoyés l’utilisent, et la perdront.}}",
       "draftsLose": "{count, plural, one {Un brouillon l’utilise, et le perdra.} other {# brouillons l’utilisent, et le perdront.}}",
       "inUseFailed": "Des publications programmées l’utilisent désormais : repassez-les d’abord en brouillon.",
       "deleteConfirm": "Supprimer",

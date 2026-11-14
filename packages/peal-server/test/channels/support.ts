@@ -25,8 +25,6 @@ import { Ids, newId } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { connectionOf } from "#shared/domain/channel-connection.ts";
-import { isSocialPlatform } from "#shared/domain/platform.ts";
-import type { ChannelPlatform } from "#shared/domain/platform.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   ChannelIdSchema,
@@ -34,6 +32,8 @@ import {
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { isSocialPlatform } from "#shared/domain/platform.ts";
+import type { ChannelPlatform } from "#shared/domain/platform.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";

@@ -34,6 +34,18 @@ const root = "https://garden.example/wp-json/";
 // How many times a site was asked.
 const verified = Ref.makeUnsafe(0);
 
+// The API root each address leads to: the same site without pretty
+// permalinks, a copy of it elsewhere, or the site.
+const rootFor = (address: string) => {
+  if (address.endsWith("/plain")) {
+    return "https://garden.example/?rest_route=/";
+  }
+
+  return address.startsWith("clone.example")
+    ? "https://clone.example/wp-json/"
+    : root;
+};
+
 const answerFor = (
   signIn: SiteSignIn
 ): Effect.Effect<VerifiedSite, PlatformUnavailable | SiteRefused> => {
@@ -43,11 +55,7 @@ const answerFor = (
 
   return Redacted.value(signIn.applicationPassword) === "synthetic pass"
     ? Effect.succeed({
-        accountId: signIn.address.endsWith("/plain")
-          ? "https://garden.example/?rest_route=/"
-          : signIn.address.startsWith("clone.example")
-            ? "https://clone.example/wp-json/"
-            : root,
+        accountId: rootFor(signIn.address),
         avatarUrl: Option.none(),
         displayName: Option.some("Synthetic Garden Journal"),
         handle: "garden.example",

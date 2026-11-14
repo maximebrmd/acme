@@ -318,8 +318,9 @@
   authorizer may renew nothing (LinkedIn's profiles) while another does
   (its pages).
 - Refresh a channel's tokens only inside `ChannelLocks.withLock` (Postgres
-  advisory locks). A process holds at most four at once, each on a pool
-  connection, so never nest `withLock`. Bluesky and X refresh tokens work
+  advisory locks, `#shared/infrastructure/advisory-locks.ts`). A process
+  holds at most four at once, each on a pool connection, beside the two
+  article turns of the publishing context, so never nest `withLock`. Bluesky and X refresh tokens work
   once.
 - Other contexts get a working token only from `ChannelAccess`
   (`channels/application/channel-access.ts`). `withToken` decrypts it,

@@ -4,6 +4,7 @@ import { Option, Schema } from "effect";
 import {
   ArticleBodySchema,
   bodyMediaOf,
+  bodyWithout,
   bodyTextLength,
   NestedWithinSchema,
 } from "#publishing/domain/article-body.ts";
@@ -242,5 +243,38 @@ describe("an article's HTML", () => {
         type: "doc",
       })
     ).toBeTruthy();
+  });
+
+  it("loses a file of the library where it showed it, and nothing else", () => {
+    const kept = MediaAssetIdSchema.make(
+      "01900000-0000-7000-8000-0000000000a1"
+    );
+
+    const lost = MediaAssetIdSchema.make(
+      "01900000-0000-7000-8000-0000000000a2"
+    );
+
+    const shown = Schema.decodeUnknownSync(ArticleBodySchema)({
+      content: [
+        { attrs: { alt: "kept", mediaId: kept }, type: "image" },
+        {
+          content: [
+            {
+              content: [
+                { attrs: { alt: "lost", mediaId: lost }, type: "image" },
+              ],
+              type: "listItem",
+            },
+          ],
+          type: "bulletList",
+        },
+      ],
+      type: "doc",
+    });
+
+    const without = bodyWithout(shown, lost);
+
+    expect(bodyMediaOf(without)).toStrictEqual([kept]);
+    expect(Schema.is(ArticleBodySchema)(without)).toBeTruthy();
   });
 });

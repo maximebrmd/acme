@@ -422,20 +422,10 @@ export const WordPressSitePublisherLive = Layer.effect(
         "categories",
         content.categories
       );
+
       const tags = yield* termIds(token, "tags", content.tags);
 
-      // A new post naming no category takes the site's default one, which
-      // an empty list would take away; a change on the site sends them
-      // whole, empty included.
-      const terms = withStatus
-        ? {
-            ...(categories.length === 0 ? {} : { categories }),
-            ...(tags.length === 0 ? {} : { tags }),
-          }
-        : { categories, tags };
-
-      const fields: PostFields = {
-        ...terms,
+      const said: PostFields = {
         content: articleHtml(content.body, images),
         // None removes the site's, as a change on the site must.
         excerpt: Option.getOrElse(
@@ -445,6 +435,17 @@ export const WordPressSitePublisherLive = Layer.effect(
         featured_media: featured,
         title: siteTitle(article),
       };
+
+      // A new post naming no category takes the site's default one, which
+      // an empty list would take away; a change on the site sends them
+      // whole, empty included.
+      const categorised: PostFields =
+        withStatus && categories.length === 0 ? said : { ...said, categories };
+
+      const fields: PostFields =
+        withStatus && tags.length === 0
+          ? categorised
+          : { ...categorised, tags };
 
       if (!withStatus) {
         return fields;

@@ -8,8 +8,8 @@ import type { ReactNode } from "react";
 /**
  * What deleting the media would do to the posts and articles that show
  * it: refused while scheduled posts show it, each with its link from
- * `postLinks`, in order, or scheduled articles; drafts lose it, and
- * articles keep its id, which their sending then refuses.
+ * `postLinks`, in order, or scheduled articles; drafts and articles not
+ * on their way out lose it.
  */
 export const MediaUsageNotice = ({
   postLinks,

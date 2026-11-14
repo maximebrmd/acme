@@ -224,7 +224,12 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   It calls the site directly, not through a channel's gate, but in the
   channel's turn (`ArticleSendTurns`, an advisory lock): the attempt and
   the journal's record of the post it made end before another attempt of
-  the channel looks for its own.
+  the channel looks for its own. A turn is never waited for (a send's
+  uploads may hold it many minutes): one taken, or none of the process's
+  two left, makes the attempt again a minute later, nothing written. An
+  attempt the journal says ended answers what it recorded, outside any
+  turn; one whose call may have reached the site is looked for before
+  the plan is checked.
 - WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
   sends each file the article shows to `/wp/v2/media` (the bytes as the
   body, `Content-Disposition` naming the file, streamed), finds tags and

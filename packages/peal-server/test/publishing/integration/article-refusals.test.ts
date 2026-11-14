@@ -16,6 +16,7 @@ import { freshWorkspace } from "#test/channels/support.ts";
 import {
   afterArticleRead,
   approvalsHeld,
+  bodyImage,
   coverImage,
   deletedMedia,
   planChannels,
@@ -355,5 +356,44 @@ describe("a file of the library an article shows", () => {
           );
         })
       )
+  );
+
+  it.effect("is taken off a draft article when it is deleted", () =>
+    onArticles(
+      Effect.gen(function* detached() {
+        const site = yield* fakeWordPress();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* siteChannel(workspaceId, site);
+        const articles = yield* Articles;
+        const actor = writer(workspaceId);
+
+        const draft = yield* articles.create(
+          actor,
+          { channelId: channel.id, content: content() },
+          Option.none()
+        );
+
+        const inPosts = yield* MediaInPosts.pipe(
+          Effect.provide(
+            MediaInPosts.layer.pipe(
+              Layer.provide(
+                Layer.merge(DrizzlePostRepository, DrizzleArticleStore)
+              )
+            )
+          )
+        );
+
+        yield* inPosts.release(workspaceId, coverImage.media.mediaId);
+        yield* inPosts.release(workspaceId, bodyImage.media.mediaId);
+
+        const kept = yield* articles.get(actor, draft.id);
+
+        assert.isTrue(Option.isNone(kept.content.coverMediaId));
+        assert.deepStrictEqual(
+          (yield* inPosts.usage(workspaceId, bodyImage.media.mediaId)).articles,
+          { drafts: [], scheduled: [] }
+        );
+      })
+    )
   );
 });

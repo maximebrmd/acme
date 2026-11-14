@@ -77,11 +77,11 @@ export const sentTo = Effect.fn("test.sentTo")(function* sentTo(
   fields: Partial<ArticleContent> = {},
   password?: string,
   // What the site holds already, before the article is sent.
-  prepare: (site: FakeWordPress) => void = () => undefined
+  prepare?: (site: FakeWordPress) => void
 ) {
   const site = yield* fakeWordPress(options);
 
-  prepare(site);
+  prepare?.(site);
 
   const workspaceId = yield* freshWorkspace;
   const channel = yield* siteChannel(workspaceId, site, password);

@@ -1,8 +1,9 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 import { MediaAssetIdSchema } from "#shared/domain/ids.ts";
+import type { MediaAssetId } from "#shared/domain/ids.ts";
 
-import { ArticleBodySchema } from "./article-body.ts";
+import { ArticleBodySchema, bodyWithout } from "./article-body.ts";
 
 /**
  * What the site makes of the article when Peal sends it: a post `publish`ed
@@ -28,3 +29,23 @@ export class ArticleContent extends Schema.Class<ArticleContent>(
   tags: Schema.Array(Schema.String),
   title: Schema.String,
 }) {}
+
+/**
+ * What the article says without the library's file: no cover when it was
+ * the cover, and no image of it in the body.
+ */
+export const contentWithout = (
+  content: ArticleContent,
+  mediaId: MediaAssetId
+): ArticleContent =>
+  new ArticleContent({
+    body: bodyWithout(content.body, mediaId),
+    categories: content.categories,
+    coverMediaId: content.coverMediaId.pipe(
+      Option.filter((cover) => cover !== mediaId)
+    ),
+    excerpt: content.excerpt,
+    siteStatus: content.siteStatus,
+    tags: content.tags,
+    title: content.title,
+  });

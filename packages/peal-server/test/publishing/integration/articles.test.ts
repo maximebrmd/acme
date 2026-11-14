@@ -316,21 +316,23 @@ describe("an article", () => {
       )
   );
 
-  it.effect("is adopted by a title with an apostrophe, as WordPress keeps it", () =>
-    onArticles(
-      Effect.gen(function* apostrophe() {
-        const { sent: article, site } = yield* sentTo(
-          {
-            drop: (request) =>
-              request.route === "/wp/v2/posts" && request.method === "POST",
-          },
-          { title: "What's new" }
-        );
+  it.effect(
+    "is adopted by a title with an apostrophe, as WordPress keeps it",
+    () =>
+      onArticles(
+        Effect.gen(function* apostrophe() {
+          const { sent: article, site } = yield* sentTo(
+            {
+              drop: (request) =>
+                request.route === "/wp/v2/posts" && request.method === "POST",
+            },
+            { title: "What's new" }
+          );
 
-        assert.strictEqual(site.posts()[0]?.title, "What&#039;s new");
-        assert.strictEqual(stateOf(article), "published");
-      })
-    )
+          assert.strictEqual(site.posts()[0]?.title, "What&#039;s new");
+          assert.strictEqual(stateOf(article), "published");
+        })
+      )
   );
 
   it.effect("leaves the site's default category when it names none", () =>
@@ -404,7 +406,9 @@ describe("an article", () => {
 
         assert.strictEqual(post?.title, "Spring sowing, revised");
         assert.notStrictEqual(post?.featured_media, cover);
-        assert.isTrue(site.media().some(({ id }) => id === post?.featured_media));
+        assert.isTrue(
+          site.media().some(({ id }) => id === post?.featured_media)
+        );
       })
     )
   );

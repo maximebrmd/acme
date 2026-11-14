@@ -300,10 +300,6 @@ const measure = (blocks: readonly Block[]): Measure => {
   return { depth, nodes, text };
 };
 
-/**
- * An article's body: the editor's document, its nodes and marks on the
- * allow-list, within the bounds above.
- */
 // How deep a body's JSON may nest before it is read: a document of the
 // allow-list nests at most three levels of JSON for each of its own
 // (`maxBodyDepth`), and reading one deeper would only exhaust the stack.
@@ -343,6 +339,10 @@ export const NestedWithinSchema = Schema.Unknown.check(
   )
 );
 
+/**
+ * An article's body: the editor's document, its nodes and marks on the
+ * allow-list, within the bounds above.
+ */
 export const ArticleBodySchema = Schema.Struct({
   content: Schema.Array(BlockSchema),
   type: Schema.Literal("doc"),
@@ -382,4 +382,40 @@ export const bodyMediaOf = (body: ArticleBody): readonly MediaAssetId[] => {
   }
 
   return found;
+};
+
+// An empty paragraph, where an image was: a list item or a quote keeps a
+// block, so the document stays the editor's.
+const emptyParagraph: Block = { type: "paragraph" };
+
+/**
+ * The body without the library's file: each image showing it becomes an
+ * empty paragraph, the rest as it was. Bodies nest no deeper than
+ * `maxBodyDepth`, so the walk may recurse.
+ */
+export const bodyWithout = (
+  body: ArticleBody,
+  mediaId: MediaAssetId
+): ArticleBody => {
+  const blocks = (content: readonly Block[]): Block[] =>
+    content.map((block) => blockWithout(block));
+
+  const items = (content: readonly ListItem[]): ListItem[] =>
+    content.map((item) => ({ ...item, content: blocks(item.content) }));
+
+  const blockWithout: (block: Block) => Block = Match.type<Block>().pipe(
+    Match.discriminatorsExhaustive("type")({
+      blockquote: (quote) => ({ ...quote, content: blocks(quote.content) }),
+      bulletList: (list) => ({ ...list, content: items(list.content) }),
+      codeBlock: (block) => block,
+      heading: (block) => block,
+      horizontalRule: (block) => block,
+      image: (image) =>
+        image.attrs.mediaId === mediaId ? emptyParagraph : image,
+      orderedList: (list) => ({ ...list, content: items(list.content) }),
+      paragraph: (block) => block,
+    })
+  );
+
+  return { ...body, content: blocks(body.content) };
 };

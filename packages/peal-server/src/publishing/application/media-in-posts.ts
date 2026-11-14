@@ -1,6 +1,8 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 
+import { contentWithout } from "#publishing/domain/article-content.ts";
 import type { ArticleId } from "#publishing/domain/article-id.ts";
+import { edited as editedArticle } from "#publishing/domain/article.ts";
 import type { Article } from "#publishing/domain/article.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { keepingMedia, namesMedia } from "#publishing/domain/named-media.ts";
@@ -33,8 +35,8 @@ export interface MediaUse {
   readonly scheduled: readonly PostId[];
   /**
    * Articles that show it: those scheduled or publishing keep it from
-   * being deleted; the others keep its id, and are refused it when they
-   * are sent.
+   * being deleted; drafts and failed ones lose it when it is, and one
+   * already on its site keeps the id it went out with.
    */
   readonly articles: {
     readonly drafts: readonly ArticleId[];
@@ -143,8 +145,9 @@ const without = (post: Post, mediaId: MediaAssetId) =>
  * one: a post scheduled or publishing keeps it from being deleted, and
  * drafts let go of it. Finished and cancelled posts keep their media ids
  * as they were. Articles count too: one scheduled or publishing keeps the
- * media, and the others keep its id, which their sending refuses. It acts
- * for the workspace, as the media context checked who deletes.
+ * media, drafts and failed ones lose it, and those on their site keep the
+ * id they went out with. It acts for the workspace, as the media context
+ * checked who deletes.
  */
 export class MediaInPosts extends Context.Service<
   MediaInPosts,
@@ -268,6 +271,33 @@ export class MediaInPosts extends Context.Service<
           )
         );
 
+      // A draft or failed article without the media, under its row lock.
+      const detachArticle = (article: Article, mediaId: MediaAssetId) =>
+        DateTime.now.pipe(
+          Effect.flatMap((now) =>
+            Result.match(
+              editedArticle(
+                article,
+                contentWithout(article.content, mediaId),
+                now
+              ),
+              {
+                onFailure: () => Effect.void,
+                onSuccess: (detached) =>
+                  articles
+                    .update(detached, article)
+                    .pipe(
+                      Effect.flatMap((written) =>
+                        written
+                          ? Effect.void
+                          : Effect.die("An article changed under its row lock")
+                      )
+                    ),
+              }
+            )
+          )
+        );
+
       const release = Effect.fn("MediaInPosts.release")(function* release(
         workspaceId: WorkspaceId,
         mediaId: MediaAssetId
@@ -275,10 +305,9 @@ export class MediaInPosts extends Context.Service<
         return yield* transaction(
           Effect.gen(function* releasing() {
             // The articles first, held: one scheduled meanwhile waits for
-            // this, and is then refused the file.
-            const shown = articleUse(
-              yield* articles.lockShowing(workspaceId, mediaId)
-            );
+            // this, and then finds the file gone from it.
+            const showing = yield* articles.lockShowing(workspaceId, mediaId);
+            const shown = articleUse(showing);
 
             const listed = yield* usage(workspaceId, mediaId);
 
@@ -292,7 +321,18 @@ export class MediaInPosts extends Context.Service<
               return inUse;
             }
 
+            // Once the media goes, the articles that may still be sent
+            // lose it, as drafts do; one already on its site keeps the id
+            // it went out with.
+            const detachArticles = Effect.forEach(
+              showing,
+              (article) => detachArticle(article, mediaId),
+              { discard: true }
+            );
+
             if (listed.drafts.length === 0 && listed.scheduled.length === 0) {
+              yield* detachArticles;
+
               const unused: MediaRelease = { _tag: "unused" };
 
               return unused;
@@ -316,6 +356,8 @@ export class MediaInPosts extends Context.Service<
             yield* Effect.forEach(drafts, (draft) => detach(draft, mediaId), {
               discard: true,
             });
+
+            yield* detachArticles;
 
             const released: MediaRelease = {
               _tag: "released",
