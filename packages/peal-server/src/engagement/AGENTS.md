@@ -408,6 +408,9 @@
   collection turns them off (`forgetChannelMessages`) and tells
   `MessagesTurnedOff` (the channel, to `channel:connect`, emailed under
   `channelReconnect`, once a box: keyed on its `createdAt`): the switch never stays on unread.
+  Scopes that still name the chat (or a Mastodon reading scope) in a form
+  `messageAbilitiesOf` does not take pause instead (`namesMessageScopes`):
+  a token refresh rewrites them, and is no reason to delete.
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):
@@ -480,6 +483,8 @@
   which its lexicon does not say and the early end rests on: listed by
   any other activity (a reaction), a conversation below a page of older
   ones would be missed by two whole listings, and deleted.
+  Check too that, after a forced token refresh on the Bluesky test
+  account, the channel's stored scopes still pass `grantsBlueskyChat`.
 - Sending (`EngagementMessages.send`, `engagement:message`, in
   `publishingPermissions`): the conversation, the channel able, the
   platform's `replyWindowOf` open (always, on these two), the text within

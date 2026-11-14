@@ -13,6 +13,7 @@ import { FetchHttpClient } from "effect/http";
 
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
+import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
 import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import { MessageSource } from "#engagement/application/ports/message-source.ts";
@@ -659,6 +660,45 @@ describe("the gate's message source", () => {
           .pipe(Effect.flip);
 
         assert.deepStrictEqual(read, new MessagesUngranted());
+        assert.lengthOf(server.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "pauses, rather than turns off, a Bluesky channel whose stored chat scopes no longer read as granted",
+    () =>
+      Effect.gen(function* changedForm() {
+        const server = yield* platformServer(() => json({ convos: [] }));
+        const url = new URL(server.url);
+
+        const source = yield* messageSourceOn(url, makeMessageWorld().store, {
+          accountId: "did:plc:syntheticstudio",
+          channelId: channelId(1),
+          connection: Option.none(),
+          platform: "bluesky",
+          // The chat's scopes, as a refresh might answer them in another
+          // form: the service without its fragment.
+          scopes: [
+            "atproto",
+            "rpc:chat.bsky.convo.listConvos?aud=did:web:api.bsky.chat",
+            "rpc:chat.bsky.convo.getMessages?aud=did:web:api.bsky.chat",
+          ],
+        });
+
+        const read = yield* source
+          .read({
+            channelId: channelId(1),
+            keptSince: DateTime.subtractDuration(
+              yield* DateTime.now,
+              "30 days"
+            ),
+          })
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          read,
+          new ChannelUnreadable({ reason: "paused" })
+        );
         assert.lengthOf(server.requests(), 0);
       }).pipe(Effect.scoped)
   );

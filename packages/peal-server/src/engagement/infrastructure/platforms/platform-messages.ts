@@ -12,6 +12,7 @@ import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import { dueForCheck } from "#engagement/domain/conversation.ts";
 import {
   messageAbilitiesOf,
+  namesMessageScopes,
   readsMessagesOn,
 } from "#engagement/domain/message-abilities.ts";
 import type {
@@ -105,12 +106,16 @@ export const platformMessagesWith = (settings: {
 
         // A channel whose account does not grant what reading takes is
         // never called: its messages were turned on with it, so it was
-        // signed in again without it, and they are turned off.
+        // signed in again without it, and they are turned off. One whose
+        // scopes still name it in another form is paused instead: what a
+        // refresh answers is not a reason to delete.
         if (
           messageAbilitiesOf(account.platform, account.scopes, messages)
             .read !== "available"
         ) {
-          return yield* new MessagesUngranted();
+          return yield* namesMessageScopes(account.platform, account.scopes)
+            ? new ChannelUnreadable({ reason: "paused" })
+            : new MessagesUngranted();
         }
 
         const known = yield* store
