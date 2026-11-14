@@ -367,8 +367,10 @@
   deleted on a test location.
 - A comment rule (`domain/comment-rule.ts`, `CommentRules`,
   `engagement.comment_rules`) answers by itself, in public, a comment
-  received after it started under a post it answers on (one post's, or
-  every post of a channel's) that holds one of its keywords as a word
+  received after it started or was last set going again (`answersFrom`)
+  under a post it answers on (one post's, on the channels the post is
+  for, out or not, `FollowedPosts.channelsOf`; or every post of a
+  channel's) that holds one of its keywords as a word
   (`isMatch`: folded, accents dropped, whole words). The collection's cron
   runs `CommentRules.runDue` after each read: a comment is claimed once a
   rule (`comment_rule_matches`, unique on rule and comment, cascading with
@@ -377,11 +379,20 @@
   workspace's `ActorsNow`) under the key `comment-rule:<rule>:<comment>`,
   so the journal, the once-a-comment index and the outbound message
   apply and a run cut short answers once; one person once a rule
-  (`samePerson`), `maxRuleRepliesPerDay` (25) a rule and UTC day, a meter
-  without room releasing the claim for a later run. Where it answers is
+  (`samePerson`), `maxRuleRepliesPerDay` (25) a rule and
+  `maxChannelRepliesPerDay` (100) a channel, every rule together, each
+  UTC day, a meter without room releasing the claim for a later run, a
+  claim left `claimed` `claimLifetime` (30 minutes) taken again, and one
+  rule's database error logged without stopping the others. The caps are
+  counted without a lock: the cron runs on one runner, and only runs that
+  overlap could pass one by a few. Where it answers is
   `commentRuleSupport`, from each platform's pages: Bluesky (its bot
   guidance), X, LinkedIn and YouTube are `notAllowed`, refused when the
-  rule starts (`CommentRuleNotPossible`, each channel with its reason).
+  rule starts (`CommentRuleNotPossible`, each channel with its reason)
+  and skipped at every run, whatever the inbox may do there. A channel
+  disconnected ends its rules `channelGone` (`EngagementRecords.channelGone`).
+  The account export holds the rules with the comments each looked at,
+  by id.
   The approval policy does not apply, as it does not to a member's
   reply; staff acting as a member start none. Never a private reply, a
   like or a follow: decision 6.

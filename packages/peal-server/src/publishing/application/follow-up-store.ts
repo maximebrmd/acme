@@ -41,6 +41,15 @@ export class FollowUpStore extends Context.Service<
     readonly claim: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Holds back, until the transaction it runs in ends, any other that
+     * claims the channel's day: counting what it triggered today, then
+     * triggering one more, takes turns, so overlapping runs never pass
+     * the channel's cap.
+     */
+    readonly claimChannelDay: (
+      channelId: ChannelId
+    ) => Effect.Effect<void, DatabaseError>;
     readonly insertRule: (
       rule: FollowUpRule
     ) => Effect.Effect<void, DatabaseError>;

@@ -276,6 +276,11 @@ export const DrizzleFollowUpStore = Layer.effect(
           Effect.asVoid,
           Effect.mapError(failed)
         ),
+      claimChannelDay: (channelId) =>
+        client`SELECT pg_advisory_xact_lock(hashtext('peal-server/publishing/follow-up-channel-day'), hashtext(${channelId}))`.pipe(
+          Effect.asVoid,
+          Effect.mapError(failed)
+        ),
       claimCall: (followUpId, now) =>
         db
           .update(followUps)

@@ -486,6 +486,8 @@ export class FollowUps extends Context.Service<
             : ("skipped" satisfies Step);
         }
 
+        yield* store.claimChannelDay(followUp.channelId);
+
         const today = yield* store.triggeredSince(
           followUp.channelId,
           DateTime.startOf(now, "day")

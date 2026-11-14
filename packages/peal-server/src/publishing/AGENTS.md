@@ -1094,41 +1094,60 @@ publishing's schema, naming nobody: each goes with its workspace
   `publishing.follow_up_rules`) acts on one post, or on every post a
   channel publishes after it started, once it has `likes` likes: its
   `comment` under the post, a repost, or both, once each a target
-  (`follow_ups` unique on target and kind, whatever rules act on it),
+  (`follow_ups` unique on target and kind but for those `cancelled`,
+  whatever rules act on it: a rule stopped leaves the kind to the next,
+  and a post rule another rule already follows up in full is refused
+  `alreadyFollowedUp`),
   within `followUpWindow` (7 days) of the post going live there,
   `maxFollowUpsPerChannelDay` (10) a channel and UTC day. What each
   platform carries is `followUpSupport` (`domain/follow-up-support.ts`,
   from each platform's pages: LinkedIn's terms forbid both), and a
   channel's own abilities `followUpsOn` (the operator's X threads, the
-  Bluesky repost scope from `ChannelGrants`, analytics' coverage):
+  Bluesky repost scope from `ChannelGrants`, which sign-in never asks:
+  a repost rule on a channel without it says `reconnect`, and the
+  reconnect with `reposts=true` asks it, as chat's; analytics' coverage):
   `FollowUpNotPossible` refuses a rule no channel can carry, or whose
   comment is too long for one that could. `FollowUps.arm` arms a target
   in the transaction that settles it (`armedOutcomes`, around
   `PublicationOutcomes.settled`), and `armPublished` a post already out
-  when its rule starts. The `publishing.follow-ups` cron (every ten
+  when its rule starts or a change gives it a kind. The `publishing.follow-ups` cron (every ten
   minutes from 9) reads the likes analytics last counted
   (`FollowUpCounts`, analytics' `PostLikes`: never a platform call, so a
-  rule never makes a read happen, X's paid ones included), expires what
+  rule never makes a read happen, X's paid ones included; a resumed X
+  comment does list the account's recent posts, `client.resume`, Peal's
+  own unmetered cost as for posts), expires what
   its window passed with why, and triggers the rest one transaction each
   under the follow-up's lock (`FOR UPDATE SKIP LOCKED`), as the starter
   is now (`RecyclingActors`: gone ends the rule `starterGone`), only when
   the rule is approved or the starter's posts need no approval
-  (`mayAct`, `ApprovalGate.holds`), on a post still live, the channel
-  still able. `SendFollowUpV1` (payload `followUpId`, activity `send`,
-  persisted contract) sends it as engagement sends a reply: the row is the
+  (`mayAct`, `ApprovalGate.holds`: a rule the policy comes to hold waits
+  for `approve`, which approves any rule not approved, and expires
+  `notApproved`; a change by a member in person who approves posts and
+  is not held approves it), on a post still live, the channel still
+  able, the channel's day counted under its lock (`claimChannelDay`).
+  A channel's rule whose channel was disconnected ends `channelGone`.
+  Staff acting as a member start and change none. `SendFollowUpV1`
+  (payload `followUpId` and `attempt`, keyed by both, so a follow-up
+  armed again runs as a new execution; activity `send`, persisted
+  contract) checks `mayAct` again just before the call, putting it off
+  as a passing refusal when it no longer holds, then sends it as
+  engagement sends a reply: the row is the
   journal (`attemptedAt` committed before the call), a resume never sends
   blindly, and the gate (`SendFollowUp`, `ResumeFollowUp`, ids only)
   claims the call first (`claimCall`). `RoutedFollowUpPublisher` hands a
   comment to the platform's `PlatformClient` as the post's next part
   (`replyTo` the last live part and the first, the follow-up's id as the
-  idempotency key, X's claimed on `PostMeter`), a repost to
+  idempotency key, with `:<attempt>` after the first, X's claimed on
+  `PostMeter`), a repost to
   `PlatformReposts` (`platforms/platform-reposts-live.ts`: Bluesky's
   `app.bsky.feed.repost` record under a key from the attempt, read back
   on a resume; Mastodon's reblog, which Mastodon answers once). A refusal
   that passes (the platform unreachable, a rate limit) arms it again; any
   other fails it with the platform's code. A follow-up still `sending`
-  an hour on is handed over by the cron (`settleStranded`). Erasure
-  deletes the rules with what they armed; a call already under way when
+  an hour on is handed over by the cron (`settleStranded`). The account
+  export holds the rules with their follow-ups, never who started or
+  approved one; erasing a member clears `started_by` and the approval's
+  `approvedBy`. Erasure deletes the rules with what they armed; a call already under way when
   its workspace is erased may still go out (a gate claims no call for a
   row gone, so the window is the call itself).
 - A feed (`domain/feed.ts`, `Feeds`, `publishing.feeds`) is a web feed a
