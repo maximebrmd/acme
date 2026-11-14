@@ -26,7 +26,6 @@ from ..types.draft_page import DraftPage
 from ..types.import_result import ImportResult
 from ..types.live_post_change import LivePostChange
 from ..types.live_post_changes import LivePostChanges
-from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.platform import Platform
 from ..types.post import Post
 from ..types.post_content import PostContent
@@ -688,9 +687,9 @@ class RawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1937,9 +1936,9 @@ class RawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -2079,9 +2078,9 @@ class RawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -2221,9 +2220,9 @@ class RawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -4014,9 +4013,9 @@ class AsyncRawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -5263,9 +5262,9 @@ class AsyncRawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -5405,9 +5404,9 @@ class AsyncRawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -5547,9 +5546,9 @@ class AsyncRawPostsClient:
                 raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        PlanLimitReachedEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=PlanLimitReachedEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

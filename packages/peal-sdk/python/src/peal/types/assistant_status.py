@@ -7,6 +7,8 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .assistant_images_status import AssistantImagesStatus
+from .assistant_month import AssistantMonth
+from .assistant_off_reason import AssistantOffReason
 from .assistant_text_source import AssistantTextSource
 
 
@@ -17,6 +19,8 @@ class AssistantStatus(UniversalBaseModel):
     max_text_length: typing_extensions.Annotated[
         int, FieldMetadata(alias="maxTextLength"), pydantic.Field(alias="maxTextLength")
     ]
+    month: typing.Optional[AssistantMonth] = None
+    reason: typing.Optional[AssistantOffReason] = None
     remaining: int
     resets_at: typing_extensions.Annotated[str, FieldMetadata(alias="resetsAt"), pydantic.Field(alias="resetsAt")]
     source: typing.Optional[AssistantTextSource] = None

@@ -27,11 +27,14 @@ const tenant = (
   externalId: string | null,
   home = false
 ): TenantUsage => ({
+  assistantImages: 0,
   assistantRequests: 0,
   byPlatform: [{ platform: "mastodon", posts: 3 }],
   channelDays: 8,
   channels: 4,
   daysCounted: 2,
+  managedAds: 0,
+  outboundMessages: 0,
   externalId,
   home,
   mediaStorage: null,
@@ -65,10 +68,13 @@ const report: PartnerUsageReport = {
   period: { from: "2026-11-10", to: "2026-11-11" },
   plan: null,
   totals: {
+    assistantImages: 0,
     billableAccountDays: null,
     byPlatform: [{ platform: "mastodon", posts: 6 }],
     channelDays: 9,
     daysCounted: 1,
+    managedAds: 0,
+    outboundMessages: 0,
     meteredPosts: [],
     publishedPosts: 6,
   },

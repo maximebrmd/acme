@@ -11,6 +11,9 @@ from .platform_posts import PlatformPosts
 
 
 class TenantUsage(UniversalBaseModel):
+    assistant_images: typing_extensions.Annotated[
+        int, FieldMetadata(alias="assistantImages"), pydantic.Field(alias="assistantImages")
+    ]
     assistant_requests: typing_extensions.Annotated[
         int, FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
     ]
@@ -24,6 +27,7 @@ class TenantUsage(UniversalBaseModel):
     days_counted: typing_extensions.Annotated[
         int, FieldMetadata(alias="daysCounted"), pydantic.Field(alias="daysCounted")
     ]
+    managed_ads: typing_extensions.Annotated[int, FieldMetadata(alias="managedAds"), pydantic.Field(alias="managedAds")]
     external_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="externalId"), pydantic.Field(alias="externalId")
     ] = None
@@ -35,6 +39,9 @@ class TenantUsage(UniversalBaseModel):
         typing.List[MeteredPosts], FieldMetadata(alias="meteredPosts"), pydantic.Field(alias="meteredPosts")
     ]
     name: str
+    outbound_messages: typing_extensions.Annotated[
+        int, FieldMetadata(alias="outboundMessages"), pydantic.Field(alias="outboundMessages")
+    ]
     published_posts: typing_extensions.Annotated[
         int, FieldMetadata(alias="publishedPosts"), pydantic.Field(alias="publishedPosts")
     ]

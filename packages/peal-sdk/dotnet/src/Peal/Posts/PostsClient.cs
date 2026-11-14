@@ -743,7 +743,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 402:
                         throw new PaymentRequiredError(
-                            JsonUtils.Deserialize<PlanLimitReachedEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -2417,7 +2417,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 402:
                         throw new PaymentRequiredError(
-                            JsonUtils.Deserialize<PlanLimitReachedEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -2599,7 +2599,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 402:
                         throw new PaymentRequiredError(
-                            JsonUtils.Deserialize<PlanLimitReachedEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -2781,7 +2781,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 402:
                         throw new PaymentRequiredError(
-                            JsonUtils.Deserialize<PlanLimitReachedEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,

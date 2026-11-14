@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = TenantUsage.Builder.class)
 public final class TenantUsage {
+    private final int assistantImages;
+
     private final int assistantRequests;
 
     private final List<PlatformPosts> byPlatform;
@@ -35,6 +37,8 @@ public final class TenantUsage {
     private final int channels;
 
     private final int daysCounted;
+
+    private final int managedAds;
 
     private final Optional<String> externalId;
 
@@ -46,6 +50,8 @@ public final class TenantUsage {
 
     private final String name;
 
+    private final int outboundMessages;
+
     private final int publishedPosts;
 
     private final String workspaceId;
@@ -53,32 +59,43 @@ public final class TenantUsage {
     private final Map<String, Object> additionalProperties;
 
     private TenantUsage(
+            int assistantImages,
             int assistantRequests,
             List<PlatformPosts> byPlatform,
             long channelDays,
             int channels,
             int daysCounted,
+            int managedAds,
             Optional<String> externalId,
             boolean home,
             Optional<Long> mediaStorage,
             List<MeteredPosts> meteredPosts,
             String name,
+            int outboundMessages,
             int publishedPosts,
             String workspaceId,
             Map<String, Object> additionalProperties) {
+        this.assistantImages = assistantImages;
         this.assistantRequests = assistantRequests;
         this.byPlatform = byPlatform;
         this.channelDays = channelDays;
         this.channels = channels;
         this.daysCounted = daysCounted;
+        this.managedAds = managedAds;
         this.externalId = externalId;
         this.home = home;
         this.mediaStorage = mediaStorage;
         this.meteredPosts = meteredPosts;
         this.name = name;
+        this.outboundMessages = outboundMessages;
         this.publishedPosts = publishedPosts;
         this.workspaceId = workspaceId;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("assistantImages")
+    public int getAssistantImages() {
+        return assistantImages;
     }
 
     @JsonProperty("assistantRequests")
@@ -104,6 +121,11 @@ public final class TenantUsage {
     @JsonProperty("daysCounted")
     public int getDaysCounted() {
         return daysCounted;
+    }
+
+    @JsonProperty("managedAds")
+    public int getManagedAds() {
+        return managedAds;
     }
 
     @JsonIgnore
@@ -135,6 +157,11 @@ public final class TenantUsage {
     @JsonProperty("name")
     public String getName() {
         return name;
+    }
+
+    @JsonProperty("outboundMessages")
+    public int getOutboundMessages() {
+        return outboundMessages;
     }
 
     @JsonProperty("publishedPosts")
@@ -171,16 +198,19 @@ public final class TenantUsage {
     }
 
     private boolean equalTo(TenantUsage other) {
-        return assistantRequests == other.assistantRequests
+        return assistantImages == other.assistantImages
+                && assistantRequests == other.assistantRequests
                 && byPlatform.equals(other.byPlatform)
                 && channelDays == other.channelDays
                 && channels == other.channels
                 && daysCounted == other.daysCounted
+                && managedAds == other.managedAds
                 && externalId.equals(other.externalId)
                 && home == other.home
                 && mediaStorage.equals(other.mediaStorage)
                 && meteredPosts.equals(other.meteredPosts)
                 && name.equals(other.name)
+                && outboundMessages == other.outboundMessages
                 && publishedPosts == other.publishedPosts
                 && workspaceId.equals(other.workspaceId);
     }
@@ -188,16 +218,19 @@ public final class TenantUsage {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.assistantImages,
                 this.assistantRequests,
                 this.byPlatform,
                 this.channelDays,
                 this.channels,
                 this.daysCounted,
+                this.managedAds,
                 this.externalId,
                 this.home,
                 this.mediaStorage,
                 this.meteredPosts,
                 this.name,
+                this.outboundMessages,
                 this.publishedPosts,
                 this.workspaceId);
     }
@@ -207,14 +240,18 @@ public final class TenantUsage {
         return ObjectMappers.stringify(this);
     }
 
-    public static AssistantRequestsStage builder() {
+    public static AssistantImagesStage builder() {
         return new Builder();
+    }
+
+    public interface AssistantImagesStage {
+        AssistantRequestsStage assistantImages(int assistantImages);
+
+        Builder from(TenantUsage other);
     }
 
     public interface AssistantRequestsStage {
         ChannelDaysStage assistantRequests(int assistantRequests);
-
-        Builder from(TenantUsage other);
     }
 
     public interface ChannelDaysStage {
@@ -226,7 +263,11 @@ public final class TenantUsage {
     }
 
     public interface DaysCountedStage {
-        HomeStage daysCounted(int daysCounted);
+        ManagedAdsStage daysCounted(int daysCounted);
+    }
+
+    public interface ManagedAdsStage {
+        HomeStage managedAds(int managedAds);
     }
 
     public interface HomeStage {
@@ -234,7 +275,11 @@ public final class TenantUsage {
     }
 
     public interface NameStage {
-        PublishedPostsStage name(@NotNull String name);
+        OutboundMessagesStage name(@NotNull String name);
+    }
+
+    public interface OutboundMessagesStage {
+        PublishedPostsStage outboundMessages(int outboundMessages);
     }
 
     public interface PublishedPostsStage {
@@ -279,15 +324,20 @@ public final class TenantUsage {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AssistantRequestsStage,
+            implements AssistantImagesStage,
+                    AssistantRequestsStage,
                     ChannelDaysStage,
                     ChannelsStage,
                     DaysCountedStage,
+                    ManagedAdsStage,
                     HomeStage,
                     NameStage,
+                    OutboundMessagesStage,
                     PublishedPostsStage,
                     WorkspaceIdStage,
                     _FinalStage {
+        private int assistantImages;
+
         private int assistantRequests;
 
         private long channelDays;
@@ -296,9 +346,13 @@ public final class TenantUsage {
 
         private int daysCounted;
 
+        private int managedAds;
+
         private boolean home;
 
         private String name;
+
+        private int outboundMessages;
 
         private int publishedPosts;
 
@@ -318,18 +372,28 @@ public final class TenantUsage {
 
         @java.lang.Override
         public Builder from(TenantUsage other) {
+            assistantImages(other.getAssistantImages());
             assistantRequests(other.getAssistantRequests());
             byPlatform(other.getByPlatform());
             channelDays(other.getChannelDays());
             channels(other.getChannels());
             daysCounted(other.getDaysCounted());
+            managedAds(other.getManagedAds());
             externalId(other.getExternalId());
             home(other.getHome());
             mediaStorage(other.getMediaStorage());
             meteredPosts(other.getMeteredPosts());
             name(other.getName());
+            outboundMessages(other.getOutboundMessages());
             publishedPosts(other.getPublishedPosts());
             workspaceId(other.getWorkspaceId());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("assistantImages")
+        public AssistantRequestsStage assistantImages(int assistantImages) {
+            this.assistantImages = assistantImages;
             return this;
         }
 
@@ -356,8 +420,15 @@ public final class TenantUsage {
 
         @java.lang.Override
         @JsonSetter("daysCounted")
-        public HomeStage daysCounted(int daysCounted) {
+        public ManagedAdsStage daysCounted(int daysCounted) {
             this.daysCounted = daysCounted;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("managedAds")
+        public HomeStage managedAds(int managedAds) {
+            this.managedAds = managedAds;
             return this;
         }
 
@@ -370,8 +441,15 @@ public final class TenantUsage {
 
         @java.lang.Override
         @JsonSetter("name")
-        public PublishedPostsStage name(@NotNull String name) {
+        public OutboundMessagesStage name(@NotNull String name) {
             this.name = Objects.requireNonNull(name, "name must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("outboundMessages")
+        public PublishedPostsStage outboundMessages(int outboundMessages) {
+            this.outboundMessages = outboundMessages;
             return this;
         }
 
@@ -490,16 +568,19 @@ public final class TenantUsage {
         @java.lang.Override
         public TenantUsage build() {
             return new TenantUsage(
+                    assistantImages,
                     assistantRequests,
                     byPlatform,
                     channelDays,
                     channels,
                     daysCounted,
+                    managedAds,
                     externalId,
                     home,
                     mediaStorage,
                     meteredPosts,
                     name,
+                    outboundMessages,
                     publishedPosts,
                     workspaceId,
                     additionalProperties);
@@ -507,16 +588,19 @@ public final class TenantUsage {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("assistantRequests")
+            if (key.equalsIgnoreCase("assistantImages")
+                    || key.equalsIgnoreCase("assistantRequests")
                     || key.equalsIgnoreCase("byPlatform")
                     || key.equalsIgnoreCase("channelDays")
                     || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("daysCounted")
+                    || key.equalsIgnoreCase("managedAds")
                     || key.equalsIgnoreCase("externalId")
                     || key.equalsIgnoreCase("home")
                     || key.equalsIgnoreCase("mediaStorage")
                     || key.equalsIgnoreCase("meteredPosts")
                     || key.equalsIgnoreCase("name")
+                    || key.equalsIgnoreCase("outboundMessages")
                     || key.equalsIgnoreCase("publishedPosts")
                     || key.equalsIgnoreCase("workspaceId")) {
                 return;

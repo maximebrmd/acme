@@ -211,12 +211,13 @@ export class InboxClient {
     }
 
     /**
-     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 `UsageAllowanceReached`) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      *
      * @param {Peal.NewInboxReply} request
      * @param {InboxClient.RequestOptions} requestOptions - Request-specific configuration.
      *
      * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.PaymentRequiredError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
@@ -261,6 +262,7 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 402: throw new Peal.PaymentRequiredError(_response.error.body as unknown, _response.rawResponse);
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);

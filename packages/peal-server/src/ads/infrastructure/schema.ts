@@ -376,3 +376,25 @@ export const auditEvents = adsSchema.table(
     index("audit_events_at").on(table.at),
   ]
 );
+
+/**
+ * Each ad a sync saw delivering or in review in a calendar month (UTC),
+ * by the workspace that connected its account: the managed ads the
+ * billing account's meter counts, one each a month, however often it was
+ * seen. Ids only. Kept 13 months, as the days of numbers are; erasing the
+ * workspace deletes its rows.
+ */
+export const activeAdMonths = adsSchema.table(
+  "active_ad_months",
+  {
+    adExternalId: text("ad_external_id").notNull(),
+    month: date("month", { mode: "date" }).notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.workspaceId, table.month, table.adExternalId],
+    }),
+    index("active_ad_months_month").on(table.month),
+  ]
+);

@@ -16,6 +16,7 @@ import { ExcessSchema } from "./billing.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
+import { MeterSchema } from "./rate-card.ts";
 
 /**
  * Why Peal turned a webhook endpoint off: every attempt failed for days
@@ -177,6 +178,16 @@ export const NoticeEventSchema = Schema.Union([
     accounts: Schema.Int,
     allowed: Schema.Int,
     graceUntil: Schema.DateTimeUtc,
+  }),
+  // The billing account, without a payment method, used the `allowed`
+  // units of `meter` its month includes: what it meters (sending inbox
+  // messages, managed ads) pauses until `resetsAt`, the first of next
+  // month UTC, unless a payment method is added on the billing page.
+  // Reading and publishing go on.
+  Schema.TaggedStruct("AllowanceReached", {
+    allowed: Schema.Int,
+    meter: MeterSchema,
+    resetsAt: Schema.DateTimeUtc,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
   // charge, VAT included, unless it is cancelled before.

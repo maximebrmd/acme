@@ -22,6 +22,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionStarted'
      *   |'TrialEnding'
      *   |'PaymentMethodNeeded'
+     *   |'AllowanceReached'
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
@@ -51,6 +52,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionStarted
      *   |NoticeEventTrialEnding
      *   |NoticeEventPaymentMethodNeeded
+     *   |NoticeEventAllowanceReached
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
@@ -81,6 +83,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionStarted'
      *   |'TrialEnding'
      *   |'PaymentMethodNeeded'
+     *   |'AllowanceReached'
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
@@ -106,6 +109,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionStarted
      *   |NoticeEventTrialEnding
      *   |NoticeEventPaymentMethodNeeded
+     *   |NoticeEventAllowanceReached
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
@@ -279,6 +283,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'PaymentMethodNeeded',
             'value' => $paymentMethodNeeded,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventAllowanceReached $allowanceReached
+     * @return NoticeEvent
+     */
+    public static function allowanceReached(NoticeEventAllowanceReached $allowanceReached): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'AllowanceReached',
+            'value' => $allowanceReached,
         ]);
     }
 
@@ -679,6 +695,28 @@ class NoticeEvent extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isAllowanceReached(): bool
+    {
+        return $this->value instanceof NoticeEventAllowanceReached && $this->type === 'AllowanceReached';
+    }
+
+    /**
+     * @return NoticeEventAllowanceReached
+     */
+    public function asAllowanceReached(): NoticeEventAllowanceReached
+    {
+        if (!($this->value instanceof NoticeEventAllowanceReached && $this->type === 'AllowanceReached')) {
+            throw new Exception(
+                "Expected AllowanceReached; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isSubscriptionRenewing(): bool
     {
         return $this->value instanceof NoticeEventSubscriptionRenewing && $this->type === 'SubscriptionRenewing';
@@ -946,6 +984,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asPaymentMethodNeeded()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'AllowanceReached':
+                $value = $this->asAllowanceReached()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'SubscriptionRenewing':
                 $value = $this->asSubscriptionRenewing()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -1056,6 +1098,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'PaymentMethodNeeded':
                 $args['value'] = NoticeEventPaymentMethodNeeded::jsonDeserialize($data);
+                break;
+            case 'AllowanceReached':
+                $args['value'] = NoticeEventAllowanceReached::jsonDeserialize($data);
                 break;
             case 'SubscriptionRenewing':
                 $args['value'] = NoticeEventSubscriptionRenewing::jsonDeserialize($data);

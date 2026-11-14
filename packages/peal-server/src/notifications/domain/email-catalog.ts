@@ -1,3 +1,4 @@
+import type { Meter } from "#shared/domain/meter.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import type { TwoStepChange } from "./auth-email.ts";
@@ -185,6 +186,13 @@ export interface EmailCatalog {
    * schedules and publishes.
    */
   readonly paymentMethodNeeded: EmailMessages;
+  /**
+   * `{workspaceName}`'s billing account, without a payment method, used
+   * the `{allowed}` `{meter}` its month includes, until `{resetsAt}`.
+   */
+  readonly allowanceReached: EmailMessages;
+  /** What each meter counts, as `{meter}`: "inbox messages sent". */
+  readonly meters: Readonly<Record<Meter, string>>;
   /** "month" or "year", as `{interval}`. */
   readonly intervals: { readonly month: string; readonly year: string };
   /**

@@ -88,6 +88,28 @@ const readAll = Effect.gen(function* readAll() {
 const onPlan = (plan: Plan) =>
   readAll.pipe(Effect.provide(allowancesWith(everyWorkspaceOn(plan))));
 
+// Whether a workspace on `plan` is metered by month.
+const meteredOn = (plan: Plan, enabled = true) =>
+  AssistantAllowance.use((allowance) => allowance.metered(workspaceId)).pipe(
+    Effect.provide(
+      PlanAssistantAllowanceLive.pipe(
+        Layer.provide(
+          Layer.succeed(
+            BillingMode,
+            BillingMode.of({
+              enabled,
+              graceSince: Option.none(),
+              graceUntil: Option.none(),
+            })
+          )
+        ),
+        Layer.provide(PlanPools.layerAlone),
+        Layer.provide(everyWorkspaceOn(plan)),
+        Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown({})))
+      )
+    )
+  );
+
 describe("the plan allowances", () => {
   it.effect("follow the workspace's plan", () =>
     Effect.gen(function* plans() {
@@ -334,6 +356,17 @@ describe("the plan allowances", () => {
           pooled: false,
           reported: [],
         });
+      })
+  );
+
+  it.effect(
+    "meter the free tier and per-account pricing by month, and keep a legacy plan's day until it moves",
+    () =>
+      Effect.gen(function* paths() {
+        assert.isTrue(yield* meteredOn("free"));
+        assert.isTrue(yield* meteredOn("payAsYouGo"));
+        assert.isFalse(yield* meteredOn("business"));
+        assert.isFalse(yield* meteredOn("payAsYouGo", false));
       })
   );
 });

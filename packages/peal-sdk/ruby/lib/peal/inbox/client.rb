@@ -170,8 +170,12 @@ module Peal
       # `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is
       # safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the
       # reply the first request made, however it stands, and makes no other; with another comment or text it is refused
-      # (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope
-      # workspace:publish, and which staff acting as a member never hold.
+      # (409 `IdempotencyKeyReused`). On a server that bills, each reply counts one of the billing account's inbox
+      # messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's
+      # allowance is refused before anything is journalled (402 `UsageAllowanceReached`) until the first of next month;
+      # with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply,
+      # which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never
+      # hold.
       #
       # @param request_options [Hash]
       # @param params [Peal::Inbox::Types::NewInboxReply]

@@ -53,7 +53,6 @@ import social.peal.types.Channel;
 import social.peal.types.ChannelPage;
 import social.peal.types.ConnectOutcome;
 import social.peal.types.ConnectablePlatforms;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Platform;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -542,8 +541,7 @@ public class AsyncRawChannelsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:
@@ -672,8 +670,7 @@ public class AsyncRawChannelsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:
@@ -803,8 +800,7 @@ public class AsyncRawChannelsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:

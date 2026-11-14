@@ -86,6 +86,21 @@ const GenerateDialog = ({
   const hint = imageAllowanceHint(status);
   const blank = prompt.trim() === "";
 
+  // What an image costs: nothing from the workspace's own provider, one
+  // of the month's images on a server that bills, today's requests
+  // elsewhere.
+  const costLine = () => {
+    if (own) {
+      return t("ownProvider");
+    }
+
+    return images.month === null
+      ? t("cost", { cost: images.requestCost, remaining })
+      : t("costMonth", {
+          remaining: Math.max(0, images.month.most - images.month.used),
+        });
+  };
+
   const handleOpenChange = (next: boolean) => {
     // An image being made is waited for: closing would lose its answer.
     if (generating) {
@@ -191,11 +206,7 @@ const GenerateDialog = ({
               </SelectContent>
             </Select>
           </div>
-          <p className="text-muted-foreground text-sm">
-            {own
-              ? t("ownProvider")
-              : t("cost", { cost: images.requestCost, remaining })}
-          </p>
+          <p className="text-muted-foreground text-sm">{costLine()}</p>
           <div aria-live="polite" className="flex flex-col gap-2">
             {hint === null ? null : (
               <Alert>

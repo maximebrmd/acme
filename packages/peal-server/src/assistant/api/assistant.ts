@@ -29,6 +29,7 @@ import type { TextProviderView } from "#assistant/application/use-cases/text-pro
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { imageRequestCost } from "#assistant/domain/image-limits.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { allowanceRefusal } from "#shared/api/allowance-reached.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
@@ -101,6 +102,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
     const assistant = yield* WritingAssistant;
     const paths = yield* UpgradePaths;
     const limitReached = yield* limitRefusal;
+    const allowanceReached = yield* allowanceRefusal;
 
     // The quota's refusal, with the smallest plan whose day holds `needed`
     // requests, and where to order it.
@@ -139,6 +141,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
 
           return yield* assistant.generateImage(actor, payload).pipe(
             Effect.catchTags({
+              AllowanceReached: allowanceReached,
               AssistantQuotaExceeded: ({ dailyLimit, resetsAt }) =>
                 quotaExceeded(actor, {
                   dailyLimit,
@@ -240,6 +243,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
 
           return yield* assistant.suggest(actor, payload).pipe(
             Effect.catchTags({
+              AllowanceReached: allowanceReached,
               AnswerRejected: () =>
                 Effect.fail(new AssistantFailed({ reason: "invalidAnswer" })),
               AssistantQuotaExceeded: ({ dailyLimit, resetsAt }) =>

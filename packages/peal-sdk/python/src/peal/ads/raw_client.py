@@ -15,6 +15,7 @@ from ..errors.bad_request_error import BadRequestError
 from ..errors.conflict_error import ConflictError
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.not_found_error import NotFoundError
+from ..errors.payment_required_error import PaymentRequiredError
 from ..errors.service_unavailable_error import ServiceUnavailableError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
@@ -1869,7 +1870,7 @@ class RawAdsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Boost]:
         """
-        **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.
+        **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached `paymentMethodRequired`); running boosts are never touched. Needs ads:spend; never staff acting as a member.
 
         Parameters
         ----------
@@ -1955,6 +1956,17 @@ class RawAdsClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -4367,7 +4379,7 @@ class AsyncRawAdsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Boost]:
         """
-        **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.
+        **Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until `endsAt`. The `Idempotency-Key` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as `requested`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached `paymentMethodRequired`); running boosts are never touched. Needs ads:spend; never staff acting as a member.
 
         Parameters
         ----------
@@ -4453,6 +4465,17 @@ class AsyncRawAdsClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

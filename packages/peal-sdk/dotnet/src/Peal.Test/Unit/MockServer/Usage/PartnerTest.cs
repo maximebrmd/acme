@@ -65,6 +65,7 @@ public class PartnerTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "assistantImages": 1,
                 "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
@@ -78,6 +79,7 @@ public class PartnerTest : BaseMockServerTest
                 ],
                 "channelDays": 1000000,
                 "daysCounted": 1,
+                "managedAds": 1,
                 "meteredPosts": [
                   {
                     "month": "month",
@@ -92,6 +94,7 @@ public class PartnerTest : BaseMockServerTest
                     "postsWithLinks": 1
                   }
                 ],
+                "outboundMessages": 1,
                 "publishedPosts": 1
               },
               "workspaces": {
@@ -99,6 +102,7 @@ public class PartnerTest : BaseMockServerTest
                 "total": 1,
                 "workspaces": [
                   {
+                    "assistantImages": 1,
                     "assistantRequests": 1,
                     "byPlatform": [
                       {
@@ -113,6 +117,7 @@ public class PartnerTest : BaseMockServerTest
                     "channelDays": 1000000,
                     "channels": 1,
                     "daysCounted": 1,
+                    "managedAds": 1,
                     "externalId": "externalId",
                     "home": true,
                     "mediaStorage": 1000000,
@@ -131,10 +136,12 @@ public class PartnerTest : BaseMockServerTest
                       }
                     ],
                     "name": "name",
+                    "outboundMessages": 1,
                     "publishedPosts": 1,
                     "workspaceId": "workspaceId"
                   },
                   {
+                    "assistantImages": 1,
                     "assistantRequests": 1,
                     "byPlatform": [
                       {
@@ -149,6 +156,7 @@ public class PartnerTest : BaseMockServerTest
                     "channelDays": 1000000,
                     "channels": 1,
                     "daysCounted": 1,
+                    "managedAds": 1,
                     "externalId": "externalId",
                     "home": true,
                     "mediaStorage": 1000000,
@@ -167,6 +175,7 @@ public class PartnerTest : BaseMockServerTest
                       }
                     ],
                     "name": "name",
+                    "outboundMessages": 1,
                     "publishedPosts": 1,
                     "workspaceId": "workspaceId"
                   }
@@ -231,6 +240,7 @@ public class PartnerTest : BaseMockServerTest
               },
               "plan": "free",
               "totals": {
+                "assistantImages": 1,
                 "billableAccountDays": 1000000,
                 "byPlatform": [
                   {
@@ -240,6 +250,7 @@ public class PartnerTest : BaseMockServerTest
                 ],
                 "channelDays": 1000000,
                 "daysCounted": 1,
+                "managedAds": 1,
                 "meteredPosts": [
                   {
                     "month": "month",
@@ -248,6 +259,7 @@ public class PartnerTest : BaseMockServerTest
                     "postsWithLinks": 1
                   }
                 ],
+                "outboundMessages": 1,
                 "publishedPosts": 1
               },
               "workspaces": {
@@ -255,6 +267,7 @@ public class PartnerTest : BaseMockServerTest
                 "total": 1,
                 "workspaces": [
                   {
+                    "assistantImages": 1,
                     "assistantRequests": 1,
                     "byPlatform": [
                       {
@@ -265,6 +278,7 @@ public class PartnerTest : BaseMockServerTest
                     "channelDays": 1000000,
                     "channels": 1,
                     "daysCounted": 1,
+                    "managedAds": 1,
                     "home": true,
                     "meteredPosts": [
                       {
@@ -275,6 +289,7 @@ public class PartnerTest : BaseMockServerTest
                       }
                     ],
                     "name": "name",
+                    "outboundMessages": 1,
                     "publishedPosts": 1,
                     "workspaceId": "workspaceId"
                   }

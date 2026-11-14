@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { DateTime } from "effect";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   accountsMonthly,
   displayVatRate,
@@ -8,11 +9,13 @@ import {
   withDisplayVat,
 } from "peal-contract";
 import type { RateCard } from "peal-contract";
+import { unconfirmedMeters } from "peal-contract/rate-card";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import type { ReactElement } from "react";
 
 import { nextAccountOf } from "#billing/ladder.ts";
 import { useMoney, useSize } from "#billing/size.ts";
+import { isMeterReason } from "#billing/upgrade.ts";
 import type { UpgradeReason } from "#billing/upgrade.ts";
 import {
   Consent,
@@ -64,6 +67,24 @@ const Reached = ({
   const t = useTranslations("Upgrade");
   const billing = useTranslations("Billing");
   const size = useSize();
+  const format = useFormatter();
+
+  if (isMeterReason(reason)) {
+    return (
+      <p>
+        {t("reachedMeter", {
+          allowed: reason.allowed,
+          meter: reason.meter,
+          resetsAt: format.dateTime(DateTime.toDate(reason.resetsAt), {
+            dateStyle: "long",
+            timeZone: "UTC",
+          }),
+          workspace: workspaceName,
+        })}
+      </p>
+    );
+  }
+
   const { allowed, limit, plan, used } = reason;
   const storage = limit === "mediaStorage";
   const workspace = workspaceName;
@@ -113,6 +134,19 @@ const Gives = ({ card, reason }: Pick<UpgradeViewProps, "card" | "reason">) => {
   const t = useTranslations("Upgrade");
   const dollars = useMoney("usd");
   const size = useSize();
+
+  if (isMeterReason(reason)) {
+    return (
+      <p>
+        {unconfirmedMeters.includes(reason.meter)
+          ? t("givesMeterComing")
+          : t("givesMeter", {
+              included: card.meters[reason.meter].allowance,
+              meter: reason.meter,
+            })}
+      </p>
+    );
+  }
 
   if (reason.limit === "mediaStorage") {
     return (
@@ -223,7 +257,9 @@ export const UpgradeView = (props: UpgradeViewProps) => {
     if (planWithRoom === null) {
       // Only the ceiling before a first paid invoice has a "then".
       const ceiling =
-        reason.plan === "payAsYouGo" && reason.limit === "channels";
+        !isMeterReason(reason) &&
+        reason.plan === "payAsYouGo" &&
+        reason.limit === "channels";
 
       return contactUrl === null ? (
         <p>{t(ceiling ? "noRoomCeilingOperator" : "noRoomOperator")}</p>
@@ -271,7 +307,9 @@ export const UpgradeView = (props: UpgradeViewProps) => {
       <div className="flex flex-col gap-1">
         <Reached reason={reason} workspaceName={workspaceName} />
         <p className="text-muted-foreground">
-          {t("orRemove", { limit: reason.limit })}
+          {isMeterReason(reason)
+            ? t("orWait")
+            : t("orRemove", { limit: reason.limit })}
         </p>
       </div>
       {trialing && canManage && planWithRoom !== null ? (

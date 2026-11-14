@@ -160,7 +160,8 @@
       "disconnecting": "Déconnexion…",
       "disconnectTitle": "Déconnecter {name} ?",
       "disconnectDescription": "Ce que Peal a lu de ce compte publicitaire est supprimé. L’historique de ses mises en avant reste, et ce qu’elles ont engagé ce mois-ci compte encore si le même compte est reconnecté. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
-      "disconnected": "{name} est déconnecté."
+      "disconnected": "{name} est déconnecté.",
+      "untracked": "Les publicités gérées du mois sont épuisées : les nouvelles publicités de ce compte ne sont pas suivies avant le {date, date, long}. Celles déjà comptées, et les boosts faits avec Peal, continuent d’être mis à jour. Un moyen de paiement sur la page de facturation lève cette limite."
     },
     "spending": {
       "title": "Dépenses via Peal",
@@ -424,8 +425,12 @@
         "providerRefused": "Le fournisseur d’images de votre espace de travail a refusé ses réglages : sa clé, son compte, son modèle ou son adresse. Rien n’a été décompté. Un propriétaire ou un administrateur les corrige dans les réglages de l’assistant.",
         "providerAddress": "Le fournisseur d’images de votre espace de travail est à une adresse à laquelle Peal n’envoie rien. Rien n’a été décompté. Un propriétaire ou un administrateur la corrige dans les réglages de l’assistant.",
         "providerKey": "La clé du fournisseur d’images de votre espace de travail ne peut plus être lue. Rien n’a été décompté. Un propriétaire ou un administrateur la saisit à nouveau dans les réglages de l’assistant.",
-        "generic": "Une erreur est survenue. Réessayez."
-      }
+        "generic": "Une erreur est survenue. Réessayez.",
+        "paymentMethod": "Les images de Peal demandent un moyen de paiement sur le compte de facturation. Un fournisseur d’images à vous les crée sans.",
+        "allowance": "Votre compte de facturation a utilisé les images qu’il peut créer ce mois-ci. Vous pourrez demander à nouveau le mois prochain.",
+        "paymentFailed": "Le dernier paiement du compte de facturation a échoué : pas plus d’images que l’inclus tant qu’il n’est pas passé. Mettez à jour le moyen de paiement depuis la page de facturation."
+      },
+      "costMonth": "{remaining, plural, =0 {Plus aucune image ce mois-ci.} one {# image restante ce mois-ci.} other {# images restantes ce mois-ci.}}"
     },
     "provider": {
       "title": "Fournisseur d’images",
@@ -545,8 +550,12 @@
       "providerRedirected": "Le fournisseur de texte de votre espace de travail a répondu par une redirection, que Peal ne suit jamais : son adresse n’est pas celle de l’API. Rien n’a été dépensé. Un propriétaire ou un administrateur corrige l’adresse dans les réglages de l’assistant.",
       "providerAddress": "Le fournisseur de texte de votre espace de travail se trouve à une adresse à laquelle Peal n’envoie rien. Rien n’a été dépensé. Un propriétaire ou un administrateur la corrige dans les réglages de l’assistant.",
       "providerKey": "La clé du fournisseur de texte de votre espace de travail ne peut plus être lue. Rien n’a été dépensé. Un propriétaire ou un administrateur la saisit de nouveau dans les réglages de l’assistant.",
-      "generic": "Une erreur est survenue. Réessayez."
-    }
+      "generic": "Une erreur est survenue. Réessayez.",
+      "paymentMethod": "L’assistant de rédaction de Peal demande un moyen de paiement sur le compte de facturation. Un fournisseur de texte à vous fonctionne sans.",
+      "monthUsed": "Votre compte de facturation a utilisé les {allowed, number} demandes à l’assistant qu’il peut envoyer ce mois-ci. Vous pourrez demander à nouveau à partir du {resetsAt}.",
+      "paymentFailed": "Le dernier paiement du compte de facturation a échoué : l’assistant de Peal ne dépasse pas l’inclus tant qu’il n’est pas passé. Mettez à jour le moyen de paiement depuis la page de facturation."
+    },
+    "remainingMonth": "{remaining, plural, =0 {Plus aucune demande ce mois-ci} one {# demande restante ce mois-ci} other {# demandes restantes ce mois-ci}}"
   },
   "AppShell": {
     "productName": "Peal",
@@ -2064,7 +2073,8 @@
       "AdBoostChanged": "{change, select, started {Une mise en avant a démarré dans {workspace} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement du compte publicitaire, jusqu’au {endsAt, date, long}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.} ended {Une mise en avant dans {workspace}, d’un budget de {budget}, a atteint sa date de fin ({endsAt, date, long}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication.} failed {Une mise en avant dans {workspace}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.} budgetReached {Une mise en avant dans {workspace} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.} unconfirmed {Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspace}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée.} other {Une mise en avant de {workspace} a changé.}}",
       "AdConnectionReconnectRequired": "{network} a refusé la connexion qui relie des comptes publicitaires à {workspace}. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau.",
       "RecyclingEnded": "Une publication de {workspace} ne se répète plus : {reason, select, sourceGone {la publication qu’elle répète a été supprimée.} sourceWithdrawn {la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’a plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}",
-      "FeedStopped": "Un flux de {workspace} ne crée plus de publications : {reason, select, gone {son site indique qu’il n’existe plus.} notAFeed {depuis sept jours, son adresse donne autre chose qu’un flux.} queueGone {la file d’attente où il programme ses publications a été supprimée.} starterGone {la personne qui l’a ajouté ne peut plus y créer de publications. La personne qui le reprend en devient responsable.} other {il n’a pas pu être lu pendant sept jours.}}"
+      "FeedStopped": "Un flux de {workspace} ne crée plus de publications : {reason, select, gone {son site indique qu’il n’existe plus.} notAFeed {depuis sept jours, son adresse donne autre chose qu’un flux.} queueGone {la file d’attente où il programme ses publications a été supprimée.} starterGone {la personne qui l’a ajouté ne peut plus y créer de publications. La personne qui le reprend en devient responsable.} other {il n’a pas pu être lu pendant sept jours.}}",
+      "AllowanceReached": "Le compte de facturation de {workspace} a utilisé les {allowed, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant} assistantImages {images de l’assistant} other {unités}} que son mois inclut sans moyen de paiement. Plus aucun ne part jusqu’au {resetsAt}, sauf si un moyen de paiement est ajouté ; la lecture et la publication continuent."
     },
     "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez le canal, sur la page Canaux, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de la plateforme est restée épuisée (ses mises en ligne, ou sur YouTube le quota que dépense aussi un premier commentaire), pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} recycling {Ouvrir les répétitions} feeds {Ouvrir les flux} other {Ouvrir les canaux}}",
@@ -2279,6 +2289,42 @@
       "ordering": "Ouverture du paiement…",
       "needed": "Cochez la case ci-dessus pour ajouter un moyen de paiement.",
       "card": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page."
+    },
+    "meters": {
+      "title": "Utilisation ce mois-ci",
+      "description": "Ce que le compte de facturation a utilisé ce mois civil (UTC), sur tous ses espaces de travail. Sans moyen de paiement, chaque compteur s’arrête à ce qui est inclus jusqu’au premier du mois suivant ; la lecture et la publication continuent.",
+      "caption": "Chaque compteur du compte de facturation ce mois-ci",
+      "meter": "Compteur",
+      "used": "Utilisé",
+      "allowance": "Inclus",
+      "price": "Au-delà, HT",
+      "priceIncluded": "Avec la TVA française de {rate} %",
+      "soFar": "À ce jour",
+      "resets": "Repart le",
+      "names": {
+        "assistantImages": "Images de l’assistant de rédaction",
+        "assistantRequests": "Demandes à l’assistant de rédaction",
+        "managedAds": "Publicités gérées actives",
+        "outboundMessages": "Messages envoyés depuis la boîte de réception",
+        "xApi": "Utilisation de l’API de X"
+      },
+      "usedOf": "{used, number} sur {most, number}",
+      "usedOpen": "{used, number}",
+      "included": "{allowance, number}",
+      "unitPrice": "{per, plural, =1 {{price} l’unité} other {{price} les {per, number}}}",
+      "coming": "À venir",
+      "estimate": "{estimate} HT, {included} avec la TVA française de {rate} %",
+      "billedThere": "Indiqué sur l’espace de facturation",
+      "withCard": "Avec un moyen de paiement, ce qui dépasse l’inclus est facturé chaque mois pour le mois écoulé.",
+      "withoutCard": "L’assistant de rédaction de Peal demande un moyen de paiement ; un fournisseur propre à l’espace de travail fonctionne sans.",
+      "ceiling": {
+        "assistant": "Le plafond mensuel de l’assistant de rédaction au-delà de l’inclus, en dollars américains HT",
+        "x": "Le plafond mensuel de X, en dollars américains HT",
+        "now": "Actuellement {ceiling} HT, {included} avec la TVA française de {rate} %.",
+        "save": "Enregistrer le plafond",
+        "failed": "Le plafond n’a pas été enregistré. Réessayez."
+      },
+      "assistantComing": "La quantité incluse et le prix de l’assistant de rédaction sont à venir : d’ici là, rien n’est facturé au-delà de l’inclus."
     }
   },
   "BillingAccount": {
@@ -2421,7 +2467,12 @@
     "nextAccountAdds": "Le {position, selectordinal, one {#er} other {#e}} ajoute par mois : {price} HT · {included} avec la TVA française de {rate} %.",
     "nextAccountFree": "Le {position, selectordinal, one {#er} other {#e}} est gratuit : les {free, number} premiers le sont.",
     "noRoomCeiling": "Pour davantage d’ici là, écrivez-nous.",
-    "noRoomCeilingOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur."
+    "noRoomCeilingOperator": "Pour davantage d’ici là, écrivez aux personnes qui gèrent ce serveur.",
+    "titleMeter": "Ajoutez un moyen de paiement pour continuer : {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}}",
+    "reachedMeter": "Le compte de facturation de {workspace} a utilisé les {allowed, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} qu’il peut utiliser ce mois-ci sans moyen de paiement. Le compte repart le {resetsAt}.",
+    "givesMeter": "Avec un moyen de paiement, {included, number} {meter, select, outboundMessages {messages de la boîte de réception} managedAds {publicités gérées} assistantRequests {demandes à l’assistant de rédaction} assistantImages {images de l’assistant de rédaction} other {unités}} sont inclus chaque mois, et ceux au-delà sont facturés au prix de la grille tarifaire, HT, chaque mois pour le mois écoulé.",
+    "givesMeterComing": "Avec un moyen de paiement, l’assistant de rédaction sur les modèles de Peal a une quantité incluse chaque mois ; son prix au-delà est à venir.",
+    "orWait": "Ou attendez le mois prochain : la lecture et la publication continuent en attendant."
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",
@@ -4007,7 +4058,8 @@
       "unavailable": "{standing, select, reconnect {L’autorisation du compte ne le permet pas. Connectez à nouveau le compte depuis la page Canaux, sans le déconnecter : le canal reste, avec son historique.} other {Ce n’est pas possible sur ce canal : sa plateforme ne le propose pas au compte, ou Peal ne le fait pas encore là-bas.}}",
       "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
-      "unknown": "Une erreur est survenue. Réessayez."
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain."
     }
   },
   "TwoStep": {

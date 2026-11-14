@@ -17,6 +17,7 @@ import { AdNetworksLive } from "#ads/infrastructure/ad-networks-live.ts";
 import { AnalyticsOrganicCounts } from "#ads/infrastructure/analytics-organic-counts.ts";
 import { CipherGrantSecrets } from "#ads/infrastructure/cipher-grant-secrets.ts";
 import { DrizzleAccountStore } from "#ads/infrastructure/drizzle-account-store.ts";
+import { DrizzleActiveAdMonths } from "#ads/infrastructure/drizzle-active-ad-months.ts";
 import { DrizzleAdRecords } from "#ads/infrastructure/drizzle-ad-records.ts";
 import { DrizzleBoostStore } from "#ads/infrastructure/drizzle-boost-store.ts";
 import { DrizzleGrantStore } from "#ads/infrastructure/drizzle-grant-store.ts";
@@ -67,6 +68,7 @@ const NetworksLive = AdNetworksLive.pipe(
 );
 
 const AdaptersLive = Layer.mergeAll(
+  DrizzleActiveAdMonths,
   DrizzleGrantStore,
   DrizzleAccountStore,
   DrizzleBoostStore,

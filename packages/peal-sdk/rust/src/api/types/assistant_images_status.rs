@@ -16,6 +16,10 @@ pub struct AssistantImagesStatus {
     #[serde(default)]
     pub request_cost: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub month: Option<AssistantMonth>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<AssistantOffReason>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<AssistantImageSource>,
 }
 
@@ -33,6 +37,8 @@ pub struct AssistantImagesStatusBuilder {
     daily_limit: Option<i64>,
     max_prompt_length: Option<i64>,
     request_cost: Option<i64>,
+    month: Option<AssistantMonth>,
+    reason: Option<AssistantOffReason>,
     source: Option<AssistantImageSource>,
 }
 
@@ -59,6 +65,16 @@ impl AssistantImagesStatusBuilder {
 
     pub fn request_cost(mut self, value: i64) -> Self {
         self.request_cost = Some(value);
+        self
+    }
+
+    pub fn month(mut self, value: AssistantMonth) -> Self {
+        self.month = Some(value);
+        self
+    }
+
+    pub fn reason(mut self, value: AssistantOffReason) -> Self {
+        self.reason = Some(value);
         self
     }
 
@@ -91,6 +107,8 @@ impl AssistantImagesStatusBuilder {
             request_cost: self
                 .request_cost
                 .ok_or_else(|| BuildError::missing_field("request_cost"))?,
+            month: self.month,
+            reason: self.reason,
             source: self.source,
         })
     }

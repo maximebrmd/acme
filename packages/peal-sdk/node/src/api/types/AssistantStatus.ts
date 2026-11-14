@@ -7,6 +7,8 @@ export interface AssistantStatus {
     dailyLimit: number;
     images: Peal.AssistantImagesStatus;
     maxTextLength: number;
+    month: Peal.AssistantMonth | null;
+    reason: Peal.AssistantOffReason | null;
     remaining: number;
     resetsAt: string;
     source: Peal.AssistantTextSource | null;

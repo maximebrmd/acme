@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface UsageDay {
+    assistantImages: number;
     assistantRequests: number | null;
     billableAccounts: number | null;
     byPlatform: Peal.PlatformPosts[];
@@ -10,5 +11,6 @@ export interface UsageDay {
     day: Peal.CalendarDay;
     mediaStorage: number | null;
     members: number | null;
+    outboundMessages: number;
     publishedPosts: number;
 }

@@ -26,6 +26,12 @@ public record AssistantImagesStatus : IJsonOnDeserialized
     [JsonPropertyName("requestCost")]
     public required int RequestCost { get; set; }
 
+    [JsonPropertyName("month")]
+    public AssistantMonth? Month { get; set; }
+
+    [JsonPropertyName("reason")]
+    public AssistantOffReason? Reason { get; set; }
+
     [JsonPropertyName("source")]
     public AssistantImageSource? Source { get; set; }
 

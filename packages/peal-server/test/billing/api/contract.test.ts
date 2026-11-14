@@ -27,6 +27,7 @@ import {
   RateCardSchema,
   stripeTiersOf as contractStripeTiersOf,
   stripeUnitAmountOf as contractStripeUnitAmountOf,
+  unconfirmedMeters as contractUnconfirmedMeters,
 } from "peal-contract/rate-card";
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
@@ -48,6 +49,7 @@ import {
   rateCard,
   stripeTiersOf,
   stripeUnitAmountOf,
+  unconfirmedMeters,
 } from "#billing/domain/rate-card.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import {
@@ -146,6 +148,7 @@ describe("the contract", () => {
   it("publishes the rate card the server bills with", () => {
     expect(contractRateCard).toStrictEqual(rateCard);
     expect(ContractMeterSchema.literals).toStrictEqual(MeterSchema.literals);
+    expect(contractUnconfirmedMeters).toStrictEqual(unconfirmedMeters);
     expect(Schema.decodeUnknownSync(RateCardSchema)(rateCard)).toStrictEqual(
       rateCard
     );

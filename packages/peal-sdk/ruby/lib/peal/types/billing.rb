@@ -17,6 +17,8 @@ module Peal
 
       field :estimate, -> { Peal::Types::Money }, optional: false, nullable: true
 
+      field :meters, -> { Internal::Types::Array[Peal::Types::BillingMeter] }, optional: false, nullable: true
+
       field :payment_failed, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "paymentFailed"
 
       field :payment_method, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "paymentMethod"

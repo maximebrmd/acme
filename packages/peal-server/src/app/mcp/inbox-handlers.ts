@@ -2,7 +2,7 @@ import { Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultInboxPageSize } from "peal-contract";
 
 import { InboxTools } from "#app/mcp/inbox-tools.ts";
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, refuse, usageRefusal } from "#app/mcp/refusals.ts";
 import {
   cursorOf,
   toCommentView,
@@ -95,6 +95,7 @@ export const InboxToolsLive = InboxTools.toLayer(
   Effect.gen(function* inboxTools() {
     const inbox = yield* EngagementInbox;
     const replies = yield* EngagementReplies;
+    const refusedByMeter = yield* usageRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -184,18 +185,18 @@ export const InboxToolsLive = InboxTools.toLayer(
       reply_to_comment: ({ commentId, idempotencyKey, text }) =>
         Effect.gen(function* reply() {
           const id = yield* idOr(decodeCommentId(commentId), noComment);
+          const replier = yield* actor;
 
           return yield* replies
-            .reply(
-              yield* actor,
-              id,
-              text,
-              Option.fromUndefinedOr(idempotencyKey)
-            )
+            .reply(replier, id, text, Option.fromUndefinedOr(idempotencyKey))
             .pipe(
               Effect.map(toReplyView),
               Effect.catchTags({
                 AbilityUnavailable: unavailable,
+                AllowanceReached: refusedByMeter(
+                  replier.workspaceId,
+                  "Nothing was sent."
+                ),
                 CommentGone: gone,
                 CommentNotFound: noComment,
                 DatabaseError: Effect.die,

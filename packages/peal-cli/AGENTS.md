@@ -22,7 +22,10 @@
   through a link or over a file made meanwhile). `runWith` and `run` print
   through `printableConsole` (`src/print.ts`), which shows control
   characters as U+FFFD, since what the server holds was written by others. Turn a request's failure into
-  what the user reads with `explain` (`src/explain.ts`). Positional
+  what the user reads with `explain` (`src/explain.ts`); a meter's
+  refusal (`UsageAllowanceReached`) with `usageLimitReason`
+  (`src/plan-limit.ts`), never an unconfirmed price
+  (`unconfirmedMeters`). Positional
   arguments are read in the order of their config's keys, which the linters
   sort: name the keys so the order reads right. Commands that act as the
   user take a token from `accessToken` (`src/session.ts`), which renews it

@@ -106,6 +106,15 @@ and no socket, for tests.
 - Domain transitions are pure functions that take `now` and return a
   `Result`. `Effect.gen` cannot yield a `Result`, so use cases bridge with
   `yield* Effect.fromResult(…)`.
+- What Peal pays for by use (`Meter`, `#shared/domain/meter.ts`) is
+  claimed through `MeteredUsage` (`#shared/application/metered-usage.ts`,
+  backed by billing): `claim` before anything is spent, in the caller's
+  transaction when the fact it counts has one, `giveBack` when nothing
+  came of it, `pausedOf(state)` to refuse before reserving what a later
+  step claims. Its refusal is `AllowanceReached`, answered through
+  `allowanceRefusal` (`#shared/api/allowance-reached.ts`, built with the
+  group). Tests use `MeteredUsage.layerUnmetered` or `fakeMeters`
+  (`#test/shared/support.ts`).
 - Errors are `Schema.TaggedError`. Platform failures are typed (rate limited,
   token expired, media rejected, unavailable, bad request) so workflows handle
   each one.

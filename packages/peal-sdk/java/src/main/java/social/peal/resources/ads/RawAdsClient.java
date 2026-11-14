@@ -29,6 +29,7 @@ import social.peal.errors.BadRequestError;
 import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.PaymentRequiredError;
 import social.peal.errors.ServiceUnavailableError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
@@ -1741,14 +1742,14 @@ public class RawAdsClient {
     }
 
     /**
-     * <strong>Spends money.</strong> Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until <code>endsAt</code>. The <code>Idempotency-Key</code> header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as <code>requested</code>, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.
+     * <strong>Spends money.</strong> Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until <code>endsAt</code>. The <code>Idempotency-Key</code> header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as <code>requested</code>, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached <code>paymentMethodRequired</code>); running boosts are never touched. Needs ads:spend; never staff acting as a member.
      */
     public PealClientHttpResponse<Boost> createBoost(String workspaceId, CreateBoostAdsRequest request) {
         return createBoost(workspaceId, request, null);
     }
 
     /**
-     * <strong>Spends money.</strong> Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until <code>endsAt</code>. The <code>Idempotency-Key</code> header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as <code>requested</code>, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.
+     * <strong>Spends money.</strong> Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until <code>endsAt</code>. The <code>Idempotency-Key</code> header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as <code>requested</code>, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached <code>paymentMethodRequired</code>); running boosts are never touched. Needs ads:spend; never staff acting as a member.
      */
     public PealClientHttpResponse<Boost> createBoost(
             String workspaceId, CreateBoostAdsRequest request, RequestOptions requestOptions) {
@@ -1801,6 +1802,9 @@ public class RawAdsClient {
                         throw new UnauthorizedError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
                                 response);
+                    case 402:
+                        throw new PaymentRequiredError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

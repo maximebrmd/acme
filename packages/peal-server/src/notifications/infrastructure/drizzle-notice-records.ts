@@ -154,6 +154,12 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       allowed,
       graceUntil,
     }),
+    AllowanceReached: ({ allowed, meter, resetsAt }): NoticeEventRecord => ({
+      _tag: "AllowanceReached",
+      allowed,
+      meter,
+      resetsAt,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
       endsAt,

@@ -14,6 +14,7 @@ export const InboxErrorKeySchema = Schema.Literals([
   "commentGone",
   "commentNotFound",
   "forbidden",
+  "messagesUsed",
   "replyEmpty",
   "replyNotFound",
   "replyPending",
@@ -48,6 +49,9 @@ const reasons = new Map<string, InboxErrorKey>([
   ["InboxReplyNotFound", "replyNotFound"],
   ["InboxThreadNotFound", "threadNotFound"],
   ["ReplyPending", "replyPending"],
+  // The billing account's messages of the month: the upgrade dialog
+  // opens beside.
+  ["UsageAllowanceReached", "messagesUsed"],
 ]);
 
 const isInvalid = Schema.is(ReplyInvalid);

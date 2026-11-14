@@ -15,6 +15,10 @@ module Peal
 
       field :request_cost, -> { Integer }, optional: false, nullable: false, api_name: "requestCost"
 
+      field :month, -> { Peal::Types::AssistantMonth }, optional: false, nullable: true
+
+      field :reason, -> { Peal::Types::AssistantOffReason }, optional: false, nullable: true
+
       field :source, -> { Peal::Types::AssistantImageSource }, optional: false, nullable: true
     end
   end

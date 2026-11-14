@@ -409,6 +409,20 @@ export const english: EmailCatalog = {
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Add a payment method to {workspaceName} before {graceUntil}",
   },
+  allowanceReached: {
+    action: "Add a payment method",
+    body: "{workspaceName} used the {allowed} {meter} its billing account includes this month without a payment method. Until {resetsAt}, the meter pauses: no more messages are sent and no new ads are recorded; reading, publishing and everything else go on. Add a payment method on the billing page to go on now: what is used past the allowance is then billed at the rate card's price.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "{workspaceName} used this month's {meter}",
+  },
+  meters: {
+    assistantImages: "writing assistant images",
+    assistantRequests: "writing assistant requests",
+    managedAds: "managed ads",
+    outboundMessages: "inbox messages sent",
+    xApi: "X API usage",
+  },
   trialStarted: {
     action: "Open billing",
     body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page, or with Cancel your contract, at the foot of every page.",

@@ -160,6 +160,16 @@ export const AdAccountView = ({
           <AlertDescription>{t("accounts.reconnect")}</AlertDescription>
         </Alert>
       ) : null}
+      {account.newAdsUntrackedUntil === undefined ||
+      account.newAdsUntrackedUntil === null ? null : (
+        <Alert>
+          <AlertDescription>
+            {t("accounts.untracked", {
+              date: DateTime.toDate(account.newAdsUntrackedUntil),
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Fact label={t("accounts.currency")}>{currency}</Fact>
         <Fact label={t("accounts.timeZone")}>

@@ -55,6 +55,9 @@ class AdAccount(UniversalBaseModel):
 
     name: str
     network: AdNetwork
+    new_ads_untracked_until: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="newAdsUntrackedUntil"), pydantic.Field(alias="newAdsUntrackedUntil")
+    ] = None
     spend_cap: typing_extensions.Annotated[
         typing.Optional[int],
         FieldMetadata(alias="spendCap"),

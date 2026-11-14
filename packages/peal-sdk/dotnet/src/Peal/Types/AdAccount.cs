@@ -53,6 +53,9 @@ public record AdAccount : IJsonOnDeserialized
     [JsonPropertyName("network")]
     public required AdNetwork Network { get; set; }
 
+    [JsonPropertyName("newAdsUntrackedUntil")]
+    public string? NewAdsUntrackedUntil { get; set; }
+
     /// <summary>
     /// An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it.
     /// </summary>

@@ -35,7 +35,7 @@ import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { livePostRefusalWords } from "#live-post-refusals.ts";
-import { planLimitReason } from "#plan-limit.ts";
+import { planLimitReason, usageLimitReason } from "#plan-limit.ts";
 import { Refused } from "#refused.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
 
@@ -701,6 +701,7 @@ const reasonOf =
           "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
         ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
+      UsageAllowanceReached: (reached) => refused(usageLimitReason(reached)),
       PlatformRateLimited: ({ retryAfterSeconds }) =>
         refused(
           retryAfterSeconds === null

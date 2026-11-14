@@ -42,6 +42,10 @@ export type PlatformPosts = typeof PlatformPostsSchema.Type;
  * day.
  */
 export const UsageDaySchema = Schema.Struct({
+  // The images the writing assistant made with the server's model that
+  // day, counted on a server that bills (0 elsewhere); a workspace's own
+  // image provider is not counted.
+  assistantImages: Schema.Int,
   // The requests sent to the writing assistant that day, as the daily
   // snapshot copied them; null for a day without a snapshot, today's
   // included.
@@ -60,6 +64,10 @@ export const UsageDaySchema = Schema.Struct({
   // Bytes of media stored when the day's snapshot ran.
   mediaStorage: Schema.NullOr(ByteCountSchema),
   members: Schema.NullOr(Schema.Int),
+  // The inbox messages the workspace sent that day, comment replies
+  // included, counted on a server that bills (0 elsewhere); a message
+  // that never went out is not counted.
+  outboundMessages: Schema.Int,
   // The posts that went out that day, one per channel; a thread is one.
   publishedPosts: Schema.Int,
 }).annotate({ identifier: "UsageDay" });
@@ -82,6 +90,8 @@ export type MeteredPosts = typeof MeteredPostsSchema.Type;
 
 /** A period's usage, added up. */
 export const UsageTotalsSchema = Schema.Struct({
+  // The days' `assistantImages` added up.
+  assistantImages: Schema.Int,
   // The days' `billableAccounts` added up: the account-days per-account
   // pricing bills over the period; null when no day has them.
   billableAccountDays: Schema.NullOr(Int64Schema),
@@ -91,9 +101,15 @@ export const UsageTotalsSchema = Schema.Struct({
   channelDays: Int64Schema,
   // How many days `channelDays` counts.
   daysCounted: Schema.Int,
+  // The managed ads counted active over the period, on a server that
+  // bills (0 elsewhere): each ad counts once in a calendar month, on the
+  // day a sync first saw it delivering or in review.
+  managedAds: Schema.Int,
   // Each calendar month (UTC) the period touches, whole, on each platform
   // that bills the server per post.
   meteredPosts: Schema.Array(MeteredPostsSchema),
+  // The days' `outboundMessages` added up.
+  outboundMessages: Schema.Int,
   publishedPosts: Schema.Int,
 }).annotate({ identifier: "UsageTotals" });
 
@@ -143,6 +159,9 @@ export type WorkspaceUsageReport = typeof WorkspaceUsageReportSchema.Type;
  * period.
  */
 export const TenantUsageSchema = Schema.Struct({
+  // The images the writing assistant made with the server's model over
+  // the period, on a server that bills (0 elsewhere).
+  assistantImages: Schema.Int,
   // The requests sent to the writing assistant over the period, as the
   // daily snapshots copied them.
   assistantRequests: Schema.Int,
@@ -154,6 +173,10 @@ export const TenantUsageSchema = Schema.Struct({
   channels: Schema.Int,
   // How many days `channelDays` counts.
   daysCounted: Schema.Int,
+  // The managed ads counted active over the period, on a server that
+  // bills (0 elsewhere): each ad counts once in a calendar month, on the
+  // day a sync first saw it delivering or in review.
+  managedAds: Schema.Int,
   // The partner's own id for its customer; null for the home workspace
   // and a workspace given none.
   externalId: Schema.NullOr(Schema.String),
@@ -167,6 +190,9 @@ export const TenantUsageSchema = Schema.Struct({
   // that bills the server per post.
   meteredPosts: Schema.Array(MeteredPostsSchema),
   name: Schema.String,
+  // The inbox messages sent over the period, comment replies included,
+  // on a server that bills (0 elsewhere).
+  outboundMessages: Schema.Int,
   // The posts that went out over the period, one per channel.
   publishedPosts: Schema.Int,
   workspaceId: Schema.String,

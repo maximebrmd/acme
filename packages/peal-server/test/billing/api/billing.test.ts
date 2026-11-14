@@ -30,6 +30,7 @@ import {
   PlainPseudonymsTest,
   subscriptionOf,
   subscriptionsHolding,
+  NoMetersTest,
 } from "#test/billing/support.ts";
 import {
   anonymousSecurityTest,
@@ -123,6 +124,7 @@ const overviewWith = (
 ) =>
   Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
+    Layer.provide(NoMetersTest),
     Layer.provide(WorkspaceEntitlements.layerShared),
     Layer.provide(Layer.mergeAll(holders, OwnChannelsTest, billed)),
     Layer.provide(subscriptions),
@@ -429,6 +431,20 @@ layer(
         });
         assert.isNull(billing.estimate);
         assert.isNull(billing.upcomingInvoice);
+        // Its meters' counts and allowances, never what they bill.
+        assert.isAbove(billing.meters?.length ?? 0, 0);
+        assert.deepStrictEqual(
+          billing.meters?.map(({ billable, ceiling, estimate }) => ({
+            billable,
+            ceiling,
+            estimate,
+          })),
+          billing.meters?.map(() => ({
+            billable: null,
+            ceiling: null,
+            estimate: null,
+          }))
+        );
       })
   );
 

@@ -5,20 +5,19 @@ package social.peal.errors;
 
 import okhttp3.Response;
 import social.peal.core.PealClientApiException;
-import social.peal.types.PlanLimitReachedEncoded;
 
 public final class PaymentRequiredError extends PealClientApiException {
     /**
      * The body of the response that triggered the exception.
      */
-    private final PlanLimitReachedEncoded body;
+    private final Object body;
 
-    public PaymentRequiredError(PlanLimitReachedEncoded body) {
+    public PaymentRequiredError(Object body) {
         super("PaymentRequiredError", 402, body);
         this.body = body;
     }
 
-    public PaymentRequiredError(PlanLimitReachedEncoded body, Response rawResponse) {
+    public PaymentRequiredError(Object body, Response rawResponse) {
         super("PaymentRequiredError", 402, body, rawResponse);
         this.body = body;
     }
@@ -27,7 +26,7 @@ public final class PaymentRequiredError extends PealClientApiException {
      * @return the body
      */
     @java.lang.Override
-    public PlanLimitReachedEncoded body() {
+    public Object body() {
         return this.body;
     }
 }

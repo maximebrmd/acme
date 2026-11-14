@@ -70,7 +70,6 @@ import social.peal.types.DraftPage;
 import social.peal.types.ImportResult;
 import social.peal.types.LivePostChange;
 import social.peal.types.LivePostChanges;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Post;
 import social.peal.types.PostPage;
 import social.peal.types.PostUnpublish;
@@ -710,8 +709,7 @@ public class AsyncRawPostsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:
@@ -2067,8 +2065,7 @@ public class AsyncRawPostsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:
@@ -2196,8 +2193,7 @@ public class AsyncRawPostsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:
@@ -2340,8 +2336,7 @@ public class AsyncRawPostsClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:

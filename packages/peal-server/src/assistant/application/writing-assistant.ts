@@ -65,13 +65,16 @@ import type { DraftRejected } from "#assistant/domain/draft-rejected.ts";
 import type { ProviderAddressRejected } from "#assistant/domain/provider-address-rejected.ts";
 import type { ProviderSettingRejected } from "#assistant/domain/provider-setting-rejected.ts";
 import type { Suggestion } from "#assistant/domain/suggestion.ts";
+import type { MeteredUsage } from "#shared/application/metered-usage.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { AllowanceReached } from "#shared/domain/allowance-reached.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 type AssistantPorts =
   | AssistantAllowance
+  | MeteredUsage
   | AssistantUsage
   | GeneratedImages
   | ImageModel
@@ -94,6 +97,7 @@ export type AssistantRequest = Omit<SuggestionRequest, "actor">;
 export type ImageAsked = Omit<ImageGenerationRequest, "actor">;
 
 export type GenerateImageFailure =
+  | AllowanceReached
   | AssistantQuotaExceeded
   | AssistantUnavailable
   | DraftRejected
@@ -122,6 +126,7 @@ export type SaveTextProviderFailure =
   | TextProviderKeyRequired;
 
 export type SuggestFailure =
+  | AllowanceReached
   | AnswerRejected
   | AssistantQuotaExceeded
   | AssistantUnavailable

@@ -12,6 +12,7 @@ from .billing_interval import BillingInterval
 from .excess import Excess
 from .failure_reason import FailureReason
 from .feed_stop_reason import FeedStopReason
+from .meter import Meter
 from .money import Money
 from .notice_channel import NoticeChannel
 from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
@@ -258,6 +259,24 @@ class NoticeEvent_PaymentMethodNeeded(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_AllowanceReached(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["AllowanceReached"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "AllowanceReached"
+    allowed: int
+    meter: Meter
+    resets_at: typing_extensions.Annotated[str, FieldMetadata(alias="resetsAt"), pydantic.Field(alias="resetsAt")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_SubscriptionRenewing(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["SubscriptionRenewing"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -440,6 +459,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionStarted,
         NoticeEvent_TrialEnding,
         NoticeEvent_PaymentMethodNeeded,
+        NoticeEvent_AllowanceReached,
         NoticeEvent_SubscriptionRenewing,
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,
