@@ -573,4 +573,50 @@ describe("an attempt at sending an article", () => {
         })
       )
   );
+
+  it.effect("goes to the site when a failed article is scheduled again", () =>
+    onArticles(
+      Effect.gen(function* rescheduled() {
+        let refusals = 0;
+
+        // The site refuses the first post, then takes it.
+        const { actor, sent, site } = yield* sentTo({
+          intercept: (request) => {
+            const refused =
+              request.route === "/wp/v2/posts" &&
+              request.method === "POST" &&
+              request.query.get("search") === null &&
+              refusals === 0;
+
+            refusals += refused ? 1 : 0;
+
+            return refused
+              ? {
+                  body: {
+                    code: "rest_cannot_create",
+                    data: { status: 400 },
+                    message: "Sorry, you are not allowed to create posts.",
+                  },
+                  status: 400,
+                }
+              : undefined;
+          },
+        });
+
+        assert.strictEqual(sent.state._tag, "failed");
+
+        yield* (yield* Articles).schedule(actor, sent.id, {
+          at: Option.none(),
+          timeZone: zone,
+        });
+
+        yield* eventually(
+          "the article is published",
+          stateOf(sent.id).pipe(Effect.map((state) => state === "published"))
+        );
+
+        assert.lengthOf(site.posts(), 1);
+      })
+    )
+  );
 });

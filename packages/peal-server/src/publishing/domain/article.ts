@@ -308,7 +308,10 @@ export const scheduled = (
     ? Result.succeed(
         withState(article, { _tag: "scheduled", schedule }, now, {
           revision: article.revision + 1,
-          round: 0,
+          // A round is never used twice: the journal keeps what each of its
+          // attempts did, which a failed article's next try must not read
+          // as its own.
+          round: _tag === "failed" ? article.round + 1 : article.round,
         })
       )
     : refused(article, "schedule");
