@@ -3,4 +3,6 @@
 export interface MediaUsage {
     drafts: string[];
     scheduled: string[];
+    draftArticles: string[];
+    scheduledArticles: string[];
 }

@@ -721,7 +721,7 @@
     "retry": "Try again",
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} wordpress {WordPress} x {X} youtube {YouTube} other {{platform}}}",
     "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} linkedinProfile {profile} linkedinPage {company page} other {{connection}}})",
     "status": {
       "active": "Connected",
@@ -798,8 +798,24 @@
       "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page.",
       "xPaymentMethod": "An X account needs a payment method on the billing account, as X’s API is billed at X’s own rates. Add one on the billing page, then connect it.",
       "xPaymentFailed": "An X account needs a billing account that can be billed, as X’s API is billed at X’s own rates, and its last payment failed. Update the payment method from the billing page, then connect it.",
-      "xPerAccountPricing": "An X account needs per-account pricing, as X’s API is billed at X’s own rates, and this workspace’s plan is one from before it. Move to per-account pricing on the billing page, then connect it."
-    }
+      "xPerAccountPricing": "An X account needs per-account pricing, as X’s API is billed at X’s own rates, and this workspace’s plan is one from before it. Move to per-account pricing on the billing page, then connect it.",
+      "tooManyTries": "The workspace tried to connect websites too many times in the last hour. Try again later.",
+      "notWordPress": "This address leads to no WordPress site. Give the site’s home page, such as https://blog.example.com.",
+      "addressNotAllowed": "Peal reaches websites over HTTPS, at public addresses only.",
+      "credentialsRefused": "The site refused the user name and the application password. Check both, and that your host lets the Authorization header through.",
+      "cannotPublish": "This user may not publish posts or upload files on the site: use an Author, an Editor or an Administrator."
+    },
+    "websiteTitle": "WordPress website",
+    "websiteDescription": "Publish articles to a WordPress site of your own. On your user’s profile page in WordPress, under Application Passwords, make a password for Peal and paste it here: Peal keeps it encrypted and never shows it again.",
+    "websiteAddress": "Site address",
+    "websiteAddressHint": "The site’s home page, on HTTPS, such as https://blog.example.com.",
+    "websiteUser": "User name",
+    "websiteUserHint": "The login of an Author, an Editor or an Administrator of the site.",
+    "websitePassword": "Application password",
+    "websitePasswordHint": "Made for Peal on the user’s profile page; not the user’s own password.",
+    "connectWebsite": "Connect the website",
+    "websiteConnected": "{site} is connected.",
+    "reconnectWebsite": "Reconnect {handle} with a new application password"
   },
   "PlatformConnect": {
     "connecting": "Opening…",
@@ -1896,6 +1912,8 @@
       "usageFailed": "Peal could not check which posts show it. Try again.",
       "inUse": "{count, plural, one {A scheduled post shows it.} other {# scheduled posts show it.}} Take {count, plural, one {it} other {them}} back to draft and remove it first, or wait until {count, plural, one {it has} other {they have}} gone out.",
       "inUsePost": "Open scheduled post {number}",
+      "inUseArticles": "{count, plural, one {A scheduled article shows it.} other {# scheduled articles show it.}} Take {count, plural, one {it} other {them}} back to draft and remove it first, or wait until {count, plural, one {it has} other {they have}} gone out.",
+      "draftArticlesKeep": "{count, plural, one {An article not yet on its site shows it, and will lose it.} other {# articles not yet on their site show it, and will lose it.}}",
       "draftsLose": "{count, plural, one {A draft shows it, and will lose it.} other {# drafts show it, and will lose it.}}",
       "inUseFailed": "Scheduled posts show it now: take them back to draft first.",
       "deleteConfirm": "Delete",
@@ -2824,7 +2842,10 @@
       "post": "Post",
       "thread": "Conversation",
       "home": "Home",
-      "platforms": "Platforms"
+      "platforms": "Platforms",
+      "articles": "Articles",
+      "article": "Article",
+      "newArticle": "New article"
     }
   },
   "WorkspaceHome": {
@@ -2989,6 +3010,10 @@
       },
       "webhook": {
         "test": "Test event"
+      },
+      "article": {
+        "published": "An article went to its website",
+        "failed": "An article did not go to its website"
       }
     },
     "edit": "Edit",
@@ -4567,5 +4592,110 @@
     },
     "analytics": "Analytics",
     "unpublish": "Unpublish"
+  },
+  "Articles": {
+    "title": "Articles",
+    "description": "Articles for {workspace}’s websites: written here, sent to each site at their time.",
+    "newTitle": "New article",
+    "editTitle": "Article",
+    "notFound": "This article is not in the workspace.",
+    "list": {
+      "untitled": "Untitled",
+      "meta": "{site} · updated {updated}",
+      "removed": "In the site’s trash",
+      "state": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "publishing": "Sending",
+        "published": "On the site",
+        "failed": "Failed",
+        "unconfirmed": "To check"
+      },
+      "noSite": "Connect a WordPress website on the Channels page to write articles for it.",
+      "sites": "{count, plural, one {# website} other {# websites}} connected.",
+      "new": "New article",
+      "connect": "Connect a website",
+      "loadFailed": "The articles could not be loaded.",
+      "retry": "Try again",
+      "empty": "No article yet."
+    },
+    "editor": {
+      "toolbar": "Formatting",
+      "heading2": "Heading",
+      "heading3": "Subheading",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "link": "Link",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "blockquote": "Quote",
+      "rule": "Separator",
+      "site": "Website",
+      "title": "Title",
+      "body": "Body",
+      "excerpt": "Excerpt",
+      "tags": "Tags",
+      "categories": "Categories",
+      "termsHint": "Separated by commas, as the site shows them: Peal uses those the site has, whatever their case, and makes the others.",
+      "cover": "Featured image",
+      "noCover": "None",
+      "removeCover": "Remove",
+      "siteStatus": "On the site",
+      "status": {
+        "publish": "Published at once",
+        "draft": "A draft there, to finish on the site",
+        "future": "Scheduled there: the site publishes it at the time"
+      },
+      "at": "Time",
+      "atHint": "In {zone}. Empty sends it now; with “Scheduled there”, the site publishes it then and Peal sends it at once.",
+      "save": "Save",
+      "sendNow": "Send now",
+      "schedule": "Schedule",
+      "unschedule": "Back to draft",
+      "retry": "Send again",
+      "updateOnSite": "Update on the site",
+      "unpublish": "Unpublish",
+      "unpublishTitle": "Unpublish this article?",
+      "unpublishDescription": "Its post moves to the site’s trash: readers no longer see it, and the site deletes it later.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "permalink": "On the site at",
+      "saved": "Saved.",
+      "scheduled": "Scheduled: what goes out is public.",
+      "unscheduled": "Back to draft.",
+      "updatedOnSite": "Updated on the site.",
+      "unpublished": "Moved to the site’s trash.",
+      "deleted": "Deleted from Peal.",
+      "violations": {
+        "titleMissing": "Give it a title.",
+        "titleTooLong": "The title is too long.",
+        "bodyMissing": "Write its body.",
+        "bodyInvalid": "The body holds something the site cannot take.",
+        "excerptTooLong": "The excerpt is too long.",
+        "tooManyTerms": "Too many tags or categories: 20 at most.",
+        "termInvalid": "A tag or a category is empty, or too long.",
+        "siteTimeInPast": "For the site to publish it at a time, the time must be ahead.",
+        "timeInPast": "That time has passed.",
+        "approvalRequired": "Your posts need an approval here, and articles cannot be approved yet: someone whose posts go out without one sends it.",
+        "coverNotImage": "The featured image must be an image."
+      },
+      "errors": {
+        "ArticleChangeRefused": "The site refused the change ({code}): nothing changed.",
+        "ArticleNotFound": "This article is no longer in the workspace.",
+        "ArticleStateConflict": "The article changed meanwhile: reload the page.",
+        "ChannelNotFound": "This website is no longer connected.",
+        "Forbidden": "You may not do this in this workspace.",
+        "InvalidTimeZone": "Your browser’s time zone is not one Peal knows.",
+        "PlanLimitReached": "The workspace holds more channels or members than its plan allows: nothing goes out until it is back within it.",
+        "PlatformUnreachable": "The site did not answer. Try again in a moment.",
+        "UnknownMedia": "An image is no longer in the library, or not ready.",
+        "unknown": "Something went wrong. Try again."
+      },
+      "linkAddress": "The link’s address",
+      "linkHint": "Empty removes the link.",
+      "linkApply": "Apply"
+    }
   }
 }

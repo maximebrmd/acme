@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -43,7 +43,7 @@ interface ComposerActionsProps {
    */
   readonly blocked?: string | undefined;
   /** The channels the post goes to, which "Publish now" lists. */
-  readonly channels?: readonly Channel[];
+  readonly channels?: readonly SocialChannel[];
   /** Another action shown with these, such as copying the post. */
   readonly extra?: ReactNode;
   readonly onAction: (action: ComposerAction) => void;
@@ -102,7 +102,7 @@ const DiscardDraft = ({
 
 const notOffered: PublishNow = { _tag: "none" };
 
-const noChannels: readonly Channel[] = [];
+const noChannels: readonly SocialChannel[] = [];
 
 // Save, schedule, publish now, move, take back to draft, discard or cancel,
 // as the post's status and the member's role allow. Buttons stay focusable while

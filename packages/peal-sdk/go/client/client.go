@@ -7,6 +7,7 @@ import (
 	ads "github.com/peal-social/peal/packages/peal-sdk/go/ads"
 	analytics "github.com/peal-social/peal/packages/peal-sdk/go/analytics"
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
+	articles "github.com/peal-social/peal/packages/peal-sdk/go/articles"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
 	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
@@ -53,6 +54,7 @@ type Client struct {
 	APIKeys                 *apikeys.Client
 	Channels                *channels.Client
 	Posts                   *posts.Client
+	Articles                *articles.Client
 	Media                   *media.Client
 	Notices                 *notices.Client
 	NotificationPreferences *notificationpreferences.Client
@@ -100,6 +102,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		APIKeys:                 apikeys.NewClient(options),
 		Channels:                channels.NewClient(options),
 		Posts:                   posts.NewClient(options),
+		Articles:                articles.NewClient(options),
 		Media:                   media.NewClient(options),
 		Notices:                 notices.NewClient(options),
 		NotificationPreferences: notificationpreferences.NewClient(options),

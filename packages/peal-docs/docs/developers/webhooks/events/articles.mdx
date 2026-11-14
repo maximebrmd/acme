@@ -1,0 +1,66 @@
+---
+title: Article events
+description: "The events of an article, sent to one of the workspace's websites."
+sidebar:
+  icon: newspaper
+  label: "Articles"
+---
+
+## Article events [#article-events]
+
+An [article](/guides/channels/websites#articles) goes to one website, through its channel. Its events name the article and the channel, never what the article says: read it through the API for that, with `GET /api/workspaces/{workspaceId}/articles/{articleId}`.
+
+An article whose site's answer was lost, and which Peal could not find there, ends `unconfirmed`, and no event tells of it: an integrator that waits for an article's ending reads its state from the API.
+
+| Field       | Type           | What it holds                                                                   |
+| ----------- | -------------- | ------------------------------------------------------------------------------- |
+| `articleId` | string         | The article                                                                     |
+| `channelId` | string         | The website's channel                                                           |
+| `platform`  | string or null | What the site runs, such as `wordpress`; null once the channel was disconnected |
+
+## article.published [#article-published]
+
+The site took the article: `platformPostId` is its post's id there, `permalink` its address (a preview address for a draft), and `siteStatus` what the site made of it: `publish`, `draft`, or `future`, scheduled on the site, which publishes it at its time.
+
+```json title="article.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e31",
+  "type": "article.published",
+  "version": 1,
+  "timestamp": "2026-11-17T09:00:03.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "articleId": "019a7b20-4e1d-7c30-8a52-1f3e5d7c9b01",
+    "channelId": "019a7b10-2c3d-7e40-9b61-3a5c7e9f1d02",
+    "platform": "wordpress",
+    "platformPostId": "1042",
+    "permalink": "https://blog.example.com/2026/11/spring-sowing/",
+    "publishedAt": "2026-11-17T09:00:03.000Z",
+    "siteStatus": "publish"
+  }
+}
+```
+
+## article.failed [#article-failed]
+
+The article did not go to its site, and nothing is there: `reason` says why, as the API's failure reasons do (`tokenExpired` when the website must be reconnected), and `code` is the site's own when it gave one.
+
+```json title="article.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e32",
+  "type": "article.failed",
+  "version": 1,
+  "timestamp": "2026-11-17T09:00:03.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "articleId": "019a7b20-4e1d-7c30-8a52-1f3e5d7c9b01",
+    "channelId": "019a7b10-2c3d-7e40-9b61-3a5c7e9f1d02",
+    "platform": "wordpress",
+    "code": "rest_cannot_create",
+    "failedAt": "2026-11-17T09:00:03.000Z",
+    "reason": "contentRejected"
+  }
+}
+```

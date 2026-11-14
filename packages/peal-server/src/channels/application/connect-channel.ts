@@ -14,14 +14,14 @@ import {
 } from "#channels/domain/connect-attempt.ts";
 import { choosableBy, offerChoice } from "#channels/domain/connect-choice.ts";
 import { InvalidConnectState } from "#channels/domain/invalid-connect-state.ts";
-import { platforms } from "#channels/domain/platform.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import { isSocialPlatform, platforms } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { AllowanceReached } from "#shared/domain/allowance-reached.ts";
-import { roomFor, roomForOneMore } from "#shared/domain/allowance.ts";
+import { roomFor } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import {
   connectionOf,
@@ -42,6 +42,7 @@ import { ChannelEvents } from "./channel-events.ts";
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
+import { channelRoomOf } from "./channel-room.ts";
 import { encryptTokens } from "./channel-tokens.ts";
 import { ConnectAttempts } from "./connect-attempts.ts";
 import { ConnectChoices } from "./connect-choices.ts";
@@ -279,7 +280,7 @@ export class ConnectChannel extends Context.Service<
       // The platform's authorizer, for Instagram the connection's: one the
       // server lacks the settings for is not configured.
       const authorizerFor = (
-        platform: Platform,
+        platform: ChannelPlatform,
         connection: Option.Option<ChannelConnection> = Option.none()
       ): Effect.Effect<PlatformAuthorizer, PlatformNotConnectable> =>
         Option.match(authorizers.for(platform, connection), {
@@ -288,8 +289,9 @@ export class ConnectChannel extends Context.Service<
               new PlatformNotConnectable({
                 platform,
                 reason:
-                  authorizers.unconfigured.has(platform) ||
-                  (hasConnections(platform) && Option.isSome(connection))
+                  isSocialPlatform(platform) &&
+                  (authorizers.unconfigured.has(platform) ||
+                    (hasConnections(platform) && Option.isSome(connection)))
                     ? "notConfigured"
                     : "notSupported",
               })
@@ -297,52 +299,9 @@ export class ConnectChannel extends Context.Service<
           onSome: Effect.succeed,
         });
 
-      // The channels the workspaces sharing the workspace's plan hold,
-      // which count against its allowance with its own: a partner's
-      // workspaces hold theirs together. Read inside `addingTo`, the
-      // workspaces stay held until the channel is added.
-      const heldElsewhere = Effect.fn("ConnectChannel.heldElsewhere")(
-        function* heldElsewhere(workspaceId: WorkspaceId) {
-          const shared = yield* allowance.sharedWith(workspaceId);
-
-          if (shared.length === 0) {
-            return 0;
-          }
-
-          const held = yield* channels.countIn(shared);
-
-          return [...held.values()].reduce((sum, count) => sum + count, 0);
-        }
-      );
-
-      // The channels the workspace's pool holds: its own and those that
-      // count with them.
-      const pooledCount = Effect.fn("ConnectChannel.pooledCount")(
-        function* pooledCount(workspaceId: WorkspaceId) {
-          const own = yield* channels.countIn([workspaceId]);
-
-          return (
-            (own.get(workspaceId) ?? 0) + (yield* heldElsewhere(workspaceId))
-          );
-        }
-      );
-
-      // Room for one more channel in the workspace's plan.
-      const roomForChannel = Effect.fn("ConnectChannel.roomForChannel")(
-        function* roomForChannel(workspaceId: WorkspaceId) {
-          const allowed = yield* allowance.channels(workspaceId);
-
-          if (Option.isNone(allowed)) {
-            return;
-          }
-
-          const connected = yield* channels.list(workspaceId);
-          const elsewhere = yield* heldElsewhere(workspaceId);
-
-          yield* Effect.fromResult(
-            roomForOneMore("channels", allowed, connected.length + elsewhere)
-          );
-        }
+      const { heldElsewhere, insertCounted, roomForChannel } = channelRoomOf(
+        channels,
+        allowance
       );
 
       // A platform whose calls the billing account pays at the platform's
@@ -632,18 +591,10 @@ export class ConnectChannel extends Context.Service<
           // counted for billing, still under the pool's hold.
           yield* paidFor(actor.workspaceId, platform);
 
-          yield* channels.addingTo(
-            actor.workspaceId,
-            roomForChannel(actor.workspaceId).pipe(
-              Effect.andThen(channels.insert(channel, credentials)),
-              Effect.andThen(
-                allowance.counted(
-                  actor.workspaceId,
-                  pooledCount(actor.workspaceId)
-                )
-              ),
-              Effect.andThen(events.connected(channel, false))
-            )
+          yield* insertCounted(
+            channel,
+            credentials,
+            events.connected(channel, false)
           );
 
           return channel;

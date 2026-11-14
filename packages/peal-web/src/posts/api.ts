@@ -1,6 +1,8 @@
 import type { DateTime } from "effect";
 import { Effect, Option } from "effect";
 import { Atom } from "effect/reactivity";
+import { isSocialChannel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -13,12 +15,19 @@ import type { PostListFilters } from "./post-list-filter.ts";
 
 export const postsKeys = ["posts"];
 
-/** The channels connected to the workspace. */
-export const workspaceChannels = (workspaceId: string) =>
-  PealApi.query("channels", "list", {
-    params: { workspaceId },
-    reactivityKeys: ["channels"],
-  });
+/**
+ * The channels connected to the workspace that take posts: a website's
+ * takes articles, and is left out.
+ */
+export const workspaceChannels = Atom.family((workspaceId: string) =>
+  Atom.mapResult(
+    PealApi.query("channels", "list", {
+      params: { workspaceId },
+      reactivityKeys: ["channels"],
+    }),
+    (channels): readonly SocialChannel[] => channels.filter(isSocialChannel)
+  )
+);
 
 /**
  * A TikTok channel's creator, read from TikTok each time the composer

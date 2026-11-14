@@ -3,8 +3,8 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import { inboxPlatforms } from "peal-contract";
-import type { Channel } from "peal-contract";
+import { inboxPlatforms, isSocialChannel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
@@ -67,7 +67,7 @@ const ThreadPages = ({
   onMore,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly cursor: string | null;
   readonly filter: ThreadFilter;
   // How many pages to show after this one.
@@ -147,7 +147,7 @@ const FilteredThreads = ({
   filter,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly filter: ThreadFilter;
   readonly workspaceId: string;
 }) => {
@@ -191,7 +191,10 @@ export const ThreadsList = ({
     return <Loading />;
   }
 
-  const known = AsyncResult.isSuccess(channels) ? channels.value : [];
+  // The inbox reads social channels only, never a website.
+  const known = AsyncResult.isSuccess(channels)
+    ? channels.value.filter(isSocialChannel)
+    : [];
 
   // Only the channels whose platform Peal reads comments on.
   const readable = known.filter(({ platform }) =>

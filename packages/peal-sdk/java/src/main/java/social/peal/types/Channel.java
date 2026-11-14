@@ -36,7 +36,7 @@ public final class Channel {
 
     private final Optional<String> label;
 
-    private final Platform platform;
+    private final ChannelPlatform platform;
 
     private final ChannelStatus status;
 
@@ -51,7 +51,7 @@ public final class Channel {
             String handle,
             String id,
             Optional<String> label,
-            Platform platform,
+            ChannelPlatform platform,
             ChannelStatus status,
             Optional<String> tokenExpiresAt,
             Map<String, Object> additionalProperties) {
@@ -110,7 +110,7 @@ public final class Channel {
     }
 
     @JsonProperty("platform")
-    public Platform getPlatform() {
+    public ChannelPlatform getPlatform() {
         return platform;
     }
 
@@ -214,7 +214,7 @@ public final class Channel {
     }
 
     public interface PlatformStage {
-        StatusStage platform(@NotNull Platform platform);
+        StatusStage platform(@NotNull ChannelPlatform platform);
     }
 
     public interface StatusStage {
@@ -265,7 +265,7 @@ public final class Channel {
 
         private String id;
 
-        private Platform platform;
+        private ChannelPlatform platform;
 
         private ChannelStatus status;
 
@@ -313,7 +313,7 @@ public final class Channel {
 
         @java.lang.Override
         @JsonSetter("platform")
-        public StatusStage platform(@NotNull Platform platform) {
+        public StatusStage platform(@NotNull ChannelPlatform platform) {
             this.platform = Objects.requireNonNull(platform, "platform must not be null");
             return this;
         }

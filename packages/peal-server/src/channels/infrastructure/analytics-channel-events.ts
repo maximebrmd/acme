@@ -1,15 +1,24 @@
-import { DateTime, Effect, Layer } from "effect";
+import { DateTime, Effect, Layer, Option } from "effect";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import type { DisconnectedChannel } from "#channels/application/channel-events.ts";
+import { isSocialPlatform } from "#shared/domain/platform.ts";
 
-const followedOf = (channel: DisconnectedChannel) => ({
-  accountId: channel.accountId,
-  channelId: channel.id,
-  platform: channel.platform,
-  workspaceId: channel.workspaceId,
-});
+// What analytics follows of a channel: a social network's only, as it
+// counts nothing of a website.
+const followedOf = (channel: DisconnectedChannel) => {
+  const { platform } = channel;
+
+  return isSocialPlatform(platform)
+    ? Option.some({
+        accountId: channel.accountId,
+        channelId: channel.id,
+        platform,
+        workspaceId: channel.workspaceId,
+      })
+    : Option.none();
+};
 
 /**
  * ChannelEvents that also tell the analytics context (AnalyticsRecords),
@@ -31,28 +40,37 @@ export const analyticsChannelEvents = <E, R>(
 
       return ChannelEvents.of({
         connected: (channel, reconnected) =>
-          events
-            .connected(channel, reconnected)
-            .pipe(
-              Effect.andThen(
-                reconnected
-                  ? Effect.void
-                  : DateTime.now.pipe(
-                      Effect.flatMap((now) =>
-                        analytics.channelBack(followedOf(channel), now)
-                      )
-                    )
-              )
-            ),
+          events.connected(channel, reconnected).pipe(
+            Effect.andThen(
+              reconnected
+                ? Effect.void
+                : Option.match(followedOf(channel), {
+                    onNone: () => Effect.void,
+                    onSome: (followed) =>
+                      DateTime.now.pipe(
+                        Effect.flatMap((now) =>
+                          analytics.channelBack(followed, now)
+                        )
+                      ),
+                  })
+            )
+          ),
         // Off is not gone: analytics keeps reading what it followed.
         disabled: events.disabled,
         disconnected: (channel, cause) =>
           events.disconnected(channel, cause).pipe(
-            Effect.andThen(DateTime.now),
-            Effect.flatMap((at) =>
-              analytics.channelGone(followedOf(channel), {
-                at,
-                erase: cause === "dataDeletion",
+            Effect.andThen(
+              Option.match(followedOf(channel), {
+                onNone: () => Effect.void,
+                onSome: (followed) =>
+                  DateTime.now.pipe(
+                    Effect.flatMap((at) =>
+                      analytics.channelGone(followed, {
+                        at,
+                        erase: cause === "dataDeletion",
+                      })
+                    )
+                  ),
               })
             )
           ),

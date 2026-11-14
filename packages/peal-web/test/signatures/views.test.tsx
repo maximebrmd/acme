@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import { maxSignatureLength } from "peal-contract";
-import type { Channel, Signature } from "peal-contract";
+import type { SocialChannel, Signature } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -35,7 +35,7 @@ const noop = () => {
   // Nothing changes while rendering to markup.
 };
 
-const mastodon: Channel = {
+const mastodon: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

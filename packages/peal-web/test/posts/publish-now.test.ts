@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
-import type { Channel, PostSchedule, PostStatus } from "peal-contract";
+import type { SocialChannel, PostSchedule, PostStatus } from "peal-contract";
 
 import { isDue, publishNowOf, whereItGoes } from "#posts/publish-now.ts";
 import type { PublishNowState } from "#posts/publish-now.ts";
@@ -120,7 +120,10 @@ describe(isDue, () => {
   });
 });
 
-const channel = (handle: string, status: Channel["status"]): Channel => ({
+const channel = (
+  handle: string,
+  status: SocialChannel["status"]
+): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,

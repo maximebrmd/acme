@@ -22,6 +22,37 @@
   the insert: `ChannelAllowance.counted` with the pool's count, which only
   a server that bills reads (billing's account-days). A new path that adds
   a channel calls it too; moving or reconnecting one adds none.
+- A channel connects a social network (`Platform`), whose channels take
+  posts, or a website (`SitePlatform`: `wordpress`), whose channels take
+  articles (`ChannelPlatform`, `#shared/domain/platform.ts`; the contract
+  copies all three). Only social channels reach posts, analytics, the
+  inbox, connect links and the channel directory: filter with
+  `isSocialPlatform` or `isSocialChannel` (`application/social-channels.ts`)
+  where a channel is read for them, in the query when it pages
+  (`DrizzleChannelDirectory`), so a website's row is never decoded as a
+  `Platform`. `ChannelAccess.withToken` and `account` answer a website's
+  channel `notFound`, `withSiteToken` a social one.
+- A website connects without a sign-in page (`ConnectSite`,
+  `POST …/channels/websites`): its address, a user and an application
+  password, checked on the site by `SiteVerifier`
+  (`platforms/wordpress/wordpress-site-verifier.ts`: discovery by the
+  home page's `Link` header of relation `https://api.w.org/`, HEAD,
+  redirects followed one guarded request at a time, `/wp-json/`
+  otherwise; the index's `wp/v2` namespace; `/wp/v2/users/me?context=edit`
+  with `publish_posts` and `upload_files`), every request through
+  `publicHttpClient` and the outbound guard. Refusals are `SiteRefused`
+  (`SiteNotConnected` in the contract). The channel's account id is the
+  API's root, its handle the home page without scheme, its token
+  `user:password` sealed by `TokenCipher` as any token (`nonExpiring`,
+  never renewed: a refused one marks the channel to reconnect), and it is
+  added through `channelRoomOf` (`application/channel-room.ts`), as every
+  channel is. The password goes only to an API root on the home page's
+  own origin, of 2048 characters at most. A new site needs room in the
+  plan before the site is called (none is checked when the workspace has
+  a website on that host already), and a workspace tries 30 times an
+  hour (`SiteConnectPace`, `SiteConnectLimited`). Connecting the same site
+  again reconnects its channel, and one at the same home page under a new
+  API root follows it (`siteMovedTo`).
 - On a server that bills, an account of a platform whose calls are passed
   through at the platform's rates (X, on the `xApi` meter) is connected
   only on per-account pricing that pays: `ChannelAllowance.passedThrough`
@@ -287,8 +318,9 @@
   authorizer may renew nothing (LinkedIn's profiles) while another does
   (its pages).
 - Refresh a channel's tokens only inside `ChannelLocks.withLock` (Postgres
-  advisory locks). A process holds at most four at once, each on a pool
-  connection, so never nest `withLock`. Bluesky and X refresh tokens work
+  advisory locks, `#shared/infrastructure/advisory-locks.ts`). A process
+  holds at most four at once, each on a pool connection, beside the two
+  article turns of the publishing context, so never nest `withLock`. Bluesky and X refresh tokens work
   once.
 - Other contexts get a working token only from `ChannelAccess`
   (`channels/application/channel-access.ts`). `withToken` decrypts it,

@@ -16,7 +16,7 @@ pub struct Channel {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
-    pub platform: Platform,
+    pub platform: ChannelPlatform,
     pub status: ChannelStatus,
     #[serde(rename = "tokenExpiresAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,7 +38,7 @@ pub struct ChannelBuilder {
     handle: Option<String>,
     id: Option<String>,
     label: Option<String>,
-    platform: Option<Platform>,
+    platform: Option<ChannelPlatform>,
     status: Option<ChannelStatus>,
     token_expires_at: Option<String>,
 }
@@ -74,7 +74,7 @@ impl ChannelBuilder {
         self
     }
 
-    pub fn platform(mut self, value: Platform) -> Self {
+    pub fn platform(mut self, value: ChannelPlatform) -> Self {
         self.platform = Some(value);
         self
     }

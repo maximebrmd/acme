@@ -6,6 +6,8 @@ export * as analytics from "./analytics/index.js";
 export * from "./analytics/client/requests/index.js";
 export * as apiKeys from "./apiKeys/index.js";
 export * from "./apiKeys/client/requests/index.js";
+export * as articles from "./articles/index.js";
+export * from "./articles/client/requests/index.js";
 export * as assistant from "./assistant/index.js";
 export * from "./assistant/client/requests/index.js";
 export * as billing from "./billing/index.js";

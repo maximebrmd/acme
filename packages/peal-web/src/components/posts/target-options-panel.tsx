@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type {
   AccountStanding,
-  Channel,
+  SocialChannel,
   ContentViolation,
   Media,
   TikTokAccount,
@@ -773,7 +773,7 @@ const FieldInput = (props: FieldProps<OptionField>) =>
   );
 
 interface ChannelOptionsProps {
-  readonly channel: Channel;
+  readonly channel: SocialChannel;
   readonly disabled: boolean;
   /** The kinds of the post's media, which some fields follow. */
   readonly media?: PostMediaKinds;
@@ -1190,7 +1190,7 @@ const loadingLookup: LookupSource = { choices: { _tag: "loading" } };
 
 interface TargetOptionsPanelProps {
   /** The channels the post goes to; those whose platform takes options show. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   /**
    * The kinds of the post's media, which some fields follow (a reel's on
@@ -1206,13 +1206,16 @@ interface TargetOptionsPanelProps {
   readonly workspaceId?: string;
   readonly onChange: (channelId: string, values: OptionValues) => void;
   /** What each channel's fields hold, by channel. */
-  readonly valuesOf: (channel: Channel) => OptionValues;
+  readonly valuesOf: (channel: SocialChannel) => OptionValues;
   /** What the last schedule refused, which each field shows. */
   readonly violations: readonly ContentViolation[];
 }
 
 // Whether the platform has fields for a post of these media.
-const hasFieldsFor = ({ platform }: Channel, media: PostMediaKinds): boolean =>
+const hasFieldsFor = (
+  { platform }: SocialChannel,
+  media: PostMediaKinds
+): boolean =>
   fieldsOf(platform).some(
     ({ shownFor }) =>
       shownFor === undefined ||
@@ -1225,7 +1228,7 @@ const hasFieldsFor = ({ platform }: Channel, media: PostMediaKinds): boolean =>
  * media (any, while they are unknown).
  */
 export const takesOptions = (
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   media?: PostMediaKinds
 ): boolean => channels.some((channel) => hasFieldsFor(channel, media));
 

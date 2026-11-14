@@ -21,6 +21,14 @@ public class UsageTest : BaseMockServerTest
               "scheduled": [
                 "scheduled",
                 "scheduled"
+              ],
+              "draftArticles": [
+                "draftArticles",
+                "draftArticles"
+              ],
+              "scheduledArticles": [
+                "scheduledArticles",
+                "scheduledArticles"
               ]
             }
             """;
@@ -55,6 +63,12 @@ public class UsageTest : BaseMockServerTest
               ],
               "scheduled": [
                 "scheduled"
+              ],
+              "draftArticles": [
+                "draftArticles"
+              ],
+              "scheduledArticles": [
+                "scheduledArticles"
               ]
             }
             """;

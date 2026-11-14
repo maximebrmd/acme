@@ -5,7 +5,7 @@ import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { FileUpIcon, PlusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Channel, Post, Tag } from "peal-contract";
+import type { SocialChannel, Post, Tag } from "peal-contract";
 import { Button, buttonVariants } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useState } from "react";
@@ -27,7 +27,7 @@ import {
   usePostTitle,
 } from "./post-list-views.tsx";
 
-const noChannels: readonly Channel[] = [];
+const noChannels: readonly SocialChannel[] = [];
 
 const noTags: readonly Tag[] = [];
 
@@ -38,7 +38,7 @@ const PostItem = ({
   tags,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly post: Post;
   readonly tags: readonly Tag[];
   readonly workspaceId: string;
@@ -71,7 +71,7 @@ const LoadingList = () => {
 };
 
 interface PagesProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly cursor: Option.Option<string>;
   readonly filters: PostListFilters;
   // How many pages to show after this one.

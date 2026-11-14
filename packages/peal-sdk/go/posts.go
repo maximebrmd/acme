@@ -16958,37 +16958,6 @@ func (t *TextCount) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
-type UnconfirmedReason string
-
-const (
-	UnconfirmedReasonNoResponse         UnconfirmedReason = "noResponse"
-	UnconfirmedReasonUnreadableResponse UnconfirmedReason = "unreadableResponse"
-	UnconfirmedReasonInterrupted        UnconfirmedReason = "interrupted"
-	UnconfirmedReasonAdapterFailure     UnconfirmedReason = "adapterFailure"
-	UnconfirmedReasonStillProcessing    UnconfirmedReason = "stillProcessing"
-)
-
-func NewUnconfirmedReasonFromString(s string) (UnconfirmedReason, error) {
-	switch s {
-	case "noResponse":
-		return UnconfirmedReasonNoResponse, nil
-	case "unreadableResponse":
-		return UnconfirmedReasonUnreadableResponse, nil
-	case "interrupted":
-		return UnconfirmedReasonInterrupted, nil
-	case "adapterFailure":
-		return UnconfirmedReasonAdapterFailure, nil
-	case "stillProcessing":
-		return UnconfirmedReasonStillProcessing, nil
-	}
-	var t UnconfirmedReason
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (u UnconfirmedReason) Ptr() *UnconfirmedReason {
-	return &u
-}
-
 var (
 	unknownChannelsEncodedFieldTag        = big.NewInt(1 << 0)
 	unknownChannelsEncodedFieldCode       = big.NewInt(1 << 1)

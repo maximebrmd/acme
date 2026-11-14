@@ -15,7 +15,7 @@ public record NoticeChannel : IJsonOnDeserialized
     public required string Handle { get; set; }
 
     [JsonPropertyName("platform")]
-    public required Platform Platform { get; set; }
+    public required ChannelPlatform Platform { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

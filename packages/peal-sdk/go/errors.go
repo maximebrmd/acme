@@ -317,7 +317,7 @@ func (u *UnauthorizedError) GetBody() *UnauthenticatedEncoded {
 	return u.Body
 }
 
-// The account was not connected; `reason` says why. Nothing was saved.
+// The account was not connected; `reason` says why. Nothing was saved. | The website was not connected; `reason` says why. Nothing was saved.
 type UnprocessableEntityError struct {
 	*core.APIError
 	Body any

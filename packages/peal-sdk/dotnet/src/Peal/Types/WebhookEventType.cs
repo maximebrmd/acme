@@ -84,6 +84,10 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType BoostBudgetReached = new(Values.BoostBudgetReached);
 
+    public static readonly WebhookEventType ArticlePublished = new(Values.ArticlePublished);
+
+    public static readonly WebhookEventType ArticleFailed = new(Values.ArticleFailed);
+
     public static readonly WebhookEventType WebhookTest = new(Values.WebhookTest);
 
     public WebhookEventType(string value)
@@ -253,6 +257,10 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string BoostUnconfirmed = "boost.unconfirmed";
 
         public const string BoostBudgetReached = "boost.budget_reached";
+
+        public const string ArticlePublished = "article.published";
+
+        public const string ArticleFailed = "article.failed";
 
         public const string WebhookTest = "webhook.test";
     }

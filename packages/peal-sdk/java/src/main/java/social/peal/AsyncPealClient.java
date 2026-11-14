@@ -10,6 +10,7 @@ import social.peal.resources.activity.AsyncActivityClient;
 import social.peal.resources.ads.AsyncAdsClient;
 import social.peal.resources.analytics.AsyncAnalyticsClient;
 import social.peal.resources.apikeys.AsyncApiKeysClient;
+import social.peal.resources.articles.AsyncArticlesClient;
 import social.peal.resources.assistant.AsyncAssistantClient;
 import social.peal.resources.billing.AsyncBillingClient;
 import social.peal.resources.capabilities.AsyncCapabilitiesClient;
@@ -59,6 +60,8 @@ public class AsyncPealClient implements AutoCloseable {
     protected final Supplier<AsyncChannelsClient> channelsClient;
 
     protected final Supplier<AsyncPostsClient> postsClient;
+
+    protected final Supplier<AsyncArticlesClient> articlesClient;
 
     protected final Supplier<AsyncMediaClient> mediaClient;
 
@@ -132,6 +135,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.apiKeysClient = Suppliers.memoize(() -> new AsyncApiKeysClient(clientOptions));
         this.channelsClient = Suppliers.memoize(() -> new AsyncChannelsClient(clientOptions));
         this.postsClient = Suppliers.memoize(() -> new AsyncPostsClient(clientOptions));
+        this.articlesClient = Suppliers.memoize(() -> new AsyncArticlesClient(clientOptions));
         this.mediaClient = Suppliers.memoize(() -> new AsyncMediaClient(clientOptions));
         this.noticesClient = Suppliers.memoize(() -> new AsyncNoticesClient(clientOptions));
         this.notificationPreferencesClient =
@@ -189,6 +193,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncPostsClient posts() {
         return this.postsClient.get();
+    }
+
+    public AsyncArticlesClient articles() {
+        return this.articlesClient.get();
     }
 
     public AsyncMediaClient media() {

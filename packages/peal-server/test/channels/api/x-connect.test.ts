@@ -17,6 +17,7 @@ import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   connectChannelWith,
+  WordPressSitesTest,
 } from "#test/channels/connect-support.ts";
 import { freshWorkspace, memberOf } from "#test/channels/support.ts";
 import { TransactionsTest } from "#test/notifications/support.ts";
@@ -35,7 +36,8 @@ const untouchedX: PlatformAuthorizer = {
 const FreeTierTest = Layer.mergeAll(
   ListChannels.layer,
   ChannelSettings.layer,
-  DisconnectChannel.layer
+  DisconnectChannel.layer,
+  WordPressSitesTest
 ).pipe(
   Layer.provideMerge(TransactionsTest),
   Layer.provideMerge(

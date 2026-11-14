@@ -3,6 +3,7 @@ import { Effect, Layer, Option } from "effect";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { isSocialChannel } from "#channels/application/social-channels.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
@@ -54,7 +55,10 @@ export const meteredOutcomes = <E, R>(
         }
 
         const found = yield* posts.find(target.postId);
-        const channel = yield* channels.get(target.channelId);
+
+        const channel = (yield* channels.get(target.channelId)).pipe(
+          Option.filter(isSocialChannel)
+        );
 
         if (Option.isNone(found) || Option.isNone(channel)) {
           return;

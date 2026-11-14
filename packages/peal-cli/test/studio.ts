@@ -2,6 +2,7 @@ import { DateTime, Effect, Layer, Option, Ref, Result, Stream } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
+  SiteNotConnected,
   AlreadyMember,
   Api,
   ApprovalChanged,
@@ -77,6 +78,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  Channel,
   Credential,
   CustomerHealth,
   ImageProvider,
@@ -91,7 +93,7 @@ import type {
   Billing,
   BillingAccount,
   WorkspaceUsageReport,
-  Channel,
+  SocialChannel,
   ChannelOptions,
   ChannelPreview,
   ChannelSet,
@@ -148,6 +150,8 @@ import { rateCard } from "peal-contract/rate-card";
 
 import { adsGroupLive, adsWorld } from "./studio-ads.ts";
 import type { AdsWorld } from "./studio-ads.ts";
+import { makeArticles, studioArticlesLive } from "./studio-articles.ts";
+import type { ArticlesState } from "./studio-articles.ts";
 import {
   capabilitiesOn,
   describedPlatforms,
@@ -279,7 +283,7 @@ export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
 
 export const pinterestId = "0190f3a0-0000-7000-8000-00000000c006";
 
-const channels: readonly Channel[] = [
+const channels: readonly SocialChannel[] = [
   {
     avatarUrl: null,
     connection: null,
@@ -1317,7 +1321,7 @@ export interface StudioState {
   readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
   /** The studio's channels as they are now: named, turned off or on. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** The workspace's channel sets, oldest first. */
   readonly channelSets: readonly StudioSet[];
   readonly comments: readonly ReviewComment[];
@@ -1420,6 +1424,7 @@ const inPerson = CurrentPrincipal.pipe(
 
 export interface Studio {
   readonly inbox: Ref.Ref<InboxState>;
+  readonly articles: Ref.Ref<ArticlesState>;
   readonly reviews: Ref.Ref<ReviewsState>;
   readonly messages: Ref.Ref<MessagesState>;
   /** The API keys the server takes, beside the user's access token. */
@@ -1435,6 +1440,7 @@ export const makeStudio = (
   keys: readonly StudioKey[] = []
 ) =>
   Effect.all({
+    articles: makeArticles,
     inbox: makeInbox,
     messages: makeMessages,
     reviews: makeReviews,
@@ -1506,7 +1512,7 @@ const channelsNow = (studio: Studio, workspaceId: string) =>
   );
 
 // How many of these channels are in each status.
-const countsOf = (found: readonly Channel[]) => ({
+const countsOf = (found: readonly SocialChannel[]) => ({
   active: found.filter(({ status }) => status._tag === "active").length,
   disabled: found.filter(({ status }) => status._tag === "disabled").length,
   refreshNeeded: found.filter(({ status }) => status._tag === "refreshNeeded")
@@ -1515,14 +1521,14 @@ const countsOf = (found: readonly Channel[]) => ({
 
 // Whether a channel's handle or one of its names holds the text, whatever
 // its case.
-const holds = (channel: Channel, text: string): boolean =>
+const holds = (channel: SocialChannel, text: string): boolean =>
   [channel.handle, channel.displayName ?? "", channel.label ?? ""].some(
     (written) => written.toLowerCase().includes(text.toLowerCase())
   );
 
 // A channel turned off keeps whether it must be reconnected, and has it
 // again once turned back on.
-const turnedOff = (channel: Channel): Channel =>
+const turnedOff = (channel: SocialChannel): SocialChannel =>
   channel.status._tag === "disabled"
     ? channel
     : {
@@ -1533,7 +1539,7 @@ const turnedOff = (channel: Channel): Channel =>
         },
       };
 
-const turnedOn = (channel: Channel): Channel =>
+const turnedOn = (channel: SocialChannel): SocialChannel =>
   channel.status._tag === "disabled"
     ? {
         ...channel,
@@ -1566,7 +1572,7 @@ const allowed = (permission: Permission) =>
 const changingChannel = (
   studio: Studio,
   params: { readonly channelId: string; readonly workspaceId: string },
-  change: (channel: Channel) => Channel,
+  change: (channel: SocialChannel) => SocialChannel,
   what: string
 ) =>
   Effect.gen(function* changing() {
@@ -2742,7 +2748,7 @@ const scheduleCheck = (payload: Pick<NewPost, "when">) => {
 // A part's text on a channel and what it holds, counted as its platform
 // counts it.
 const countsOn = (
-  channel: Channel,
+  channel: SocialChannel,
   part: Pick<PostContent, "media" | "overrides" | "text">
 ) => {
   const rules = platformRules[channel.platform];
@@ -2773,7 +2779,7 @@ const countsOn = (
 
 // What a post would be on one channel: its first part, then the others.
 const previewOn = (
-  channel: Channel,
+  channel: SocialChannel,
   postContent: PostContent,
   options: readonly ChannelOptions[]
 ): ChannelPreview => ({
@@ -3209,6 +3215,41 @@ export const studioGroupsLive = (studio: Studio) =>
         chooseAccounts: () => refusing,
         completeConnect: () => refusing,
         connect: () => refusing,
+        // A website connects at once: a password with "refused" in it
+        // stands for one the site refuses.
+        connectSite: ({ params, payload }) =>
+          Effect.gen(function* connectSite() {
+            yield* allowed("channel:connect");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            if (payload.applicationPassword.includes("refused")) {
+              return yield* new SiteNotConnected({
+                reason: "credentialsRefused",
+              });
+            }
+
+            yield* record(
+              studio,
+              `website:connect:${payload.address}:${payload.userName}:${payload.applicationPassword}`
+            );
+
+            const site: Channel = {
+              avatarUrl: null,
+              connection: null,
+              displayName: "Synthetic Garden Journal",
+              handle: payload.address.replace(/^https?:\/\//u, ""),
+              id: "0199a000-0000-7000-8000-000000005173",
+              label: null,
+              platform: payload.platform,
+              status: { _tag: "active" },
+              tokenExpiresAt: null,
+            };
+
+            return site;
+          }),
         disable: ({ params }) =>
           changingChannel(studio, params, turnedOff, "disable"),
         disconnect: () => refusing,
@@ -4683,12 +4724,14 @@ export const studioGroupsLive = (studio: Studio) =>
             );
 
             return {
+              draftArticles: [],
               drafts: showing
                 .filter(({ status }) => status === "draft")
                 .map(({ id }) => id),
               scheduled: showing
                 .filter(({ status }) => status !== "draft")
                 .map(({ id }) => id),
+              scheduledArticles: [],
             };
           }),
       })
@@ -5996,6 +6039,7 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     studioInboxLive(studio.inbox),
     studioReviewsLive(studio.reviews),
+    studioArticlesLive(studio.articles),
     studioMessagesLive(studio.messages),
     HttpApiBuilder.group(Api, "tags", (handlers) =>
       handlers.handleAll({

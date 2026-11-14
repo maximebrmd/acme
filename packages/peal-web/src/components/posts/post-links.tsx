@@ -3,7 +3,7 @@
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, ShortLink } from "peal-contract";
+import type { SocialChannel, ShortLink } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 import {
   Card,
@@ -29,7 +29,7 @@ export const PostLinksView = ({
   channels,
   links,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly links: readonly ShortLink[];
 }) => {
   const t = useTranslations("ShortLinks.post");
@@ -89,7 +89,7 @@ export const PostLinks = ({
   postId,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly postId: string;
   readonly workspaceId: string;
 }) => {

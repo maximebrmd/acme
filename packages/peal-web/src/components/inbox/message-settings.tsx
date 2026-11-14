@@ -4,7 +4,8 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, InboxMessageSettings } from "peal-contract";
+import { isSocialChannel } from "peal-contract";
+import type { InboxMessageSettings, SocialChannel } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
 import { Input } from "peal-ui/components/input";
@@ -52,7 +53,7 @@ export const ChannelMessagesView = ({
   onGrant,
   onSwitch,
 }: {
-  readonly channel: Channel;
+  readonly channel: SocialChannel;
   readonly disabled: boolean;
   readonly on: boolean;
   readonly onGrant?: () => void;
@@ -201,9 +202,9 @@ export const MessageSettingsPanel = ({
 
   const reactivityKeys = messageSettingsChanged(workspaceId);
 
-  const eligible = channels.value.filter(({ platform }) =>
-    messagePlatforms.has(platform)
-  );
+  const eligible = channels.value
+    .filter(isSocialChannel)
+    .filter(({ platform }) => messagePlatforms.has(platform));
 
   const on = new Set(settings.value.channels.map(({ channelId }) => channelId));
 
@@ -213,7 +214,7 @@ export const MessageSettingsPanel = ({
     }
   };
 
-  const grant = (channel: Channel) => {
+  const grant = (channel: SocialChannel) => {
     start(async () => {
       const exit = await reconnect({
         params: { channelId: channel.id, workspaceId },

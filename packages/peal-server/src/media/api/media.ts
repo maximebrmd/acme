@@ -126,8 +126,8 @@ export const MediaHandlers = HttpApiBuilder.group(
           yield* library.deleteMedia(actor, assetId).pipe(
             Effect.catchTags({
               MediaAssetNotFound: notFound,
-              MediaInUse: ({ postIds }) =>
-                Effect.fail(new MediaInUse({ postIds })),
+              MediaInUse: ({ articleIds, postIds }) =>
+                Effect.fail(new MediaInUse({ articleIds, postIds })),
               MediaStorageFailed: storeUnavailable,
               MissingPermission: forbidden,
             })

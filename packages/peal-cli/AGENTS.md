@@ -61,6 +61,16 @@
   text assistant stays without a command, as an agent writes its own text.
   Its answer says the file is marked as made by AI and that the post's
   options carry the platforms' AI labels.
+- `peal channels connect-website <address> --user <login>` connects a
+  WordPress site (`channels.connectSite`): the application password is
+  read with `readSecret` (typed without echo, or piped in), never an
+  argument.
+- `peal articles` (list, show, create, schedule, unschedule, retry,
+  unpublish, delete) follows the articles group; `create` writes the
+  body from plain text (`--text`, a paragraph a block), as rich text is
+  the web app editor's, so `update` and `updateOnSite` are exempt from
+  parity; `unpublish` and `delete` ask through `confirmed`, and `--json`
+  needs `--yes`. The studio answers from `test/studio-articles.ts`.
 - `peal inbox reviews` (`commands/inbox-reviews.ts`: list, show,
   answered) reads the inbox's reviews; answering one or deleting its reply
   is a person's, in the web app (Google's policies), and has no command; the studio answers it

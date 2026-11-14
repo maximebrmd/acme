@@ -5,13 +5,14 @@ import { Uuid7Schema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { MeterSchema } from "#shared/domain/meter.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
-import { PlatformSchema } from "#shared/domain/platform.ts";
+import { ChannelPlatformSchema } from "#shared/domain/platform.ts";
 
 /** The account a notice is about, as it was when the notice was made. */
 export const NoticeChannelSchema = Schema.Struct({
   // The name people mention the account by, such as "@peal_example".
   handle: Schema.NonEmptyString,
-  platform: PlatformSchema,
+  // A social network's, or a website's for its reconnect notices.
+  platform: ChannelPlatformSchema,
 });
 
 export type NoticeChannel = typeof NoticeChannelSchema.Type;

@@ -1,0 +1,90 @@
+---
+title: Sites web et articles
+description: "Connectez un site WordPress, et publiez-y des articles depuis Peal : un titre, un corps mis en forme, une image mise en avant, des étiquettes et des catégories, aussitôt, en brouillon ou à une heure."
+sidebar:
+  icon: newspaper
+---
+
+Un site web est aussi un canal : un site WordPress à vous, qui prend des **articles** plutôt que des publications. Un article a un titre, un corps mis en forme, un extrait, des étiquettes, des catégories et une image mise en avant, et Peal l’envoie au site comme un article du site.
+
+Un site web compte pour un canal, comme tout compte connecté : sur une offre au compte, c’est un compte.
+
+## Connecter un site WordPress [#connect]
+
+Peal publie en tant que l’un des utilisateurs du site, avec un **mot de passe d’application** : un mot de passe que WordPress crée pour une seule application, que l’utilisateur peut révoquer à tout moment, jamais son propre mot de passe. Peal demande WordPress 5.7 ou plus récent, sur un site servi en HTTPS : les mots de passe d’application arrivent avec la 5.6, et la 5.7 permet à Peal de retrouver un article par le moment où il a changé.
+
+<Steps>
+  <Step title="Créez un mot de passe d’application">
+    Dans WordPress, ouvrez **Utilisateurs**, puis le profil de l’utilisateur
+    avec lequel Peal publie : un auteur, un éditeur ou un administrateur. Sous
+    **Mots de passe d’application**, nommez-le Peal et choisissez **Ajouter un
+    mot de passe d’application**. Copiez le mot de passe, qu’il ne montre qu’une
+    fois.
+  </Step>
+  <Step title="Connectez le site dans Peal">
+    Dans **Canaux**, sous **Site WordPress**, donnez l’adresse du site (sa page
+    d’accueil, comme `https://blog.example.com`), l’identifiant de l’utilisateur
+    et le mot de passe d’application, puis **Connecter le site**.
+  </Step>
+</Steps>
+
+Peal trouve l’API REST du site depuis sa page d’accueil, vérifie que l’utilisateur peut publier des articles et téléverser des fichiers, puis garde le mot de passe chiffré : il n’est plus jamais montré. Il n’envoie le mot de passe qu’à l’API REST du site lui-même, jamais à une que la page d’accueil désigne ailleurs. Connecter le même site de nouveau, à la même page d’accueil, remplace le mot de passe, même quand son API REST a changé d’adresse, comme quand ses permaliens changent.
+
+Un nouveau site web demande de la place dans l’offre de l’espace de travail, que Peal vérifie avant d’appeler le site. Un espace de travail essaie 30 fois par heure au plus.
+
+Peal joint les sites web en HTTPS, à des adresses publiques seulement. Un site sur un réseau privé demande que l’opérateur de son serveur l’autorise ([PEAL_OUTBOUND_ALLOWED_HOSTS](/self-hosting/environment-variables#channels)) ; le service de Peal ne le fait jamais.
+
+### Quand la connexion échoue [#errors]
+
+| Message                                                                  | Que faire                                                                                                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| L’adresse ne mène à aucun site WordPress                                 | Donnez la page d’accueil du site. Un site dont une extension coupe l’API REST ne peut pas être connecté.                              |
+| Peal joint les sites web en HTTPS, à des adresses publiques seulement    | Servez le site en HTTPS, à une adresse publique, avec son API REST sur le même site.                                                  |
+| Le site a refusé l’identifiant et le mot de passe d’application          | Vérifiez-les. Certains hébergeurs retirent l’en-tête `Authorization` qui les porte : demandez à votre hébergeur de le laisser passer. |
+| Cet utilisateur ne peut pas publier d’articles ni téléverser de fichiers | Prenez un auteur, un éditeur ou un administrateur.                                                                                    |
+
+Quand le site refuse plus tard le mot de passe, par exemple une fois révoqué, le canal passe à **Reconnecter** : reconnectez-le avec un nouveau mot de passe d’application.
+
+## Écrire un article [#articles]
+
+Ouvrez **Publications**, puis **Articles**, et **Nouvel article**. Choisissez le site web, puis écrivez :
+
+- le **titre**, que le site montre au-dessus de l’article ;
+- le **corps**, dans l’éditeur : titres, paragraphes, gras, italique, texte barré et code, liens, listes, citations, séparateurs, blocs de code et images de la [médiathèque](/guides/media) de l’espace de travail. Ce que vous collez n’en garde que cela ;
+- un **extrait**, le résumé que le site montre dans ses listes ;
+- des **étiquettes** et des **catégories**, séparées par des virgules, comme le site les montre : Peal prend celles que le site a, quelle que soit leur casse, et crée les autres (créer une catégorie demande un éditeur ou un administrateur) ;
+- une **image mise en avant** de la médiathèque.
+
+Peal écrit lui-même le HTML que le site reçoit à partir du corps, et envoie d’abord chaque image à la médiathèque du site.
+
+## L’envoyer [#send]
+
+Choisissez ce que le site fait de l’article, puis quand Peal l’envoie :
+
+| Sur le site         | Ce que fait le site                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Publié aussitôt     | Le publie dès que Peal l’envoie.                                                       |
+| Un brouillon là-bas | Le garde en brouillon, à finir et publier sur le site.                                 |
+| Programmé là-bas    | Le publie lui-même à l’heure de l’article : Peal l’envoie aussitôt, et le site attend. |
+
+Laissez l’heure vide pour l’envoyer maintenant, ou donnez-en une : Peal l’envoie alors. Peal vérifie l’article avant de le programmer, tout à la fois : un titre, un corps, 20 étiquettes et 20 catégories au plus, une heure à venir, et que la médiathèque a toujours ses images. Le titre et l’extrait partent sur le site en texte brut, tels que vous les avez tapés.
+
+Un espace de travail au-delà de son offre, comme après son essai, n’envoie aucun article avant d’y revenir, comme pour ses publications. Une image qu’un article programmé montre ne peut pas être supprimée de la médiathèque avant que l’article repasse en brouillon ou soit parti ; supprimer une image qu’un brouillon, un article en échec ou à vérifier montre la retire de cet article.
+
+Ce qui part est public. Peal n’envoie jamais un article deux fois : quand la réponse du site se perd, Peal cherche l’article parmi ceux de l’utilisateur, par son titre, et le prend quand un seul correspond ; quand il ne peut pas le dire, l’article est **À vérifier** : regardez sur le site, puis renvoyez-le seulement s’il n’y est pas. Renvoyé, Peal cherche d’abord cet article une fois de plus, et le prend quand il le trouve.
+
+## Une fois sur le site [#on-site]
+
+- **Mettre à jour sur le site** renvoie le titre, le corps, l’extrait, les étiquettes, les catégories et l’image mise en avant sur l’article du site, aussitôt : une image mise en avant ou un extrait retirés dans Peal le sont là-bas. Le site garde son état et sa date. Les images que le site a déjà ne sont pas renvoyées.
+- **Dépublier** met l’article dans la corbeille du site, que WordPress vide après 30 jours par défaut. L’article reste dans Peal, montré dans la corbeille du site. Un site dont la corbeille est désactivée le refuse : supprimez l’article là-bas.
+- **Renvoyer** renvoie un article en échec, aussitôt.
+
+Supprimer un article dans Peal laisse son article sur le site.
+
+## Approbations [#approvals]
+
+Les articles ne peuvent pas encore être approuvés. Dans un espace de travail dont les publications attendent une approbation (voir [Quelles publications attendent](/guides/posts/review#policy)), tout ce qui mettrait un article sur son site, ou l’y changerait, est refusé à qui ses publications attendraient : l’envoyer, le programmer, le renvoyer, le modifier pendant qu’il est programmé, et le mettre à jour sur le site. Les brouillons peuvent toujours être écrits, et un article peut toujours quitter son site. Un membre dont les publications partent sans approbation l’envoie.
+
+## Dans l’API [#api]
+
+Les [points d’accès des articles](/reference) font de même : `POST /api/workspaces/{workspaceId}/channels/websites` connecte un site, et `/api/workspaces/{workspaceId}/articles` écrit, programme, renvoie, met à jour et dépublie les articles. Les événements webhook [`article.published` et `article.failed`](/developers/webhooks/events/articles) disent comment chacun a fini. La ligne de commande a `peal channels connect-website` et `peal articles`.

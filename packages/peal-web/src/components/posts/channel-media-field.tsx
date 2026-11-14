@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel, MediaAttachment, Platform } from "peal-contract";
+import type { SocialChannel, MediaAttachment, Platform } from "peal-contract";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
 import { useId } from "react";
@@ -13,7 +13,7 @@ interface ChannelMediaFieldProps {
   readonly canBrowse: boolean;
   readonly canGenerate: boolean;
   readonly canUpload: boolean;
-  readonly channel: Channel;
+  readonly channel: SocialChannel;
   readonly disabled: boolean;
   readonly editable: boolean;
   /**

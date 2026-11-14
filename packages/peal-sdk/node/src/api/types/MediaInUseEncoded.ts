@@ -6,6 +6,7 @@ export interface MediaInUseEncoded {
     message?: string | undefined;
     requestId?: string | undefined;
     postIds: string[];
+    articleIds: string[];
 }
 
 export namespace MediaInUseEncoded {

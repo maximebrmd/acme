@@ -7,8 +7,8 @@ import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AvatarUrlSchema } from "./avatar-url.ts";
 import type { AvatarUrl } from "./avatar-url.ts";
-import { PlatformSchema } from "./platform.ts";
-import type { Platform } from "./platform.ts";
+import { ChannelPlatformSchema } from "./platform.ts";
+import type { ChannelPlatform } from "./platform.ts";
 
 /**
  * - `active`: posts go out.
@@ -57,12 +57,13 @@ export const ChannelLabelSchema = Schema.String.check(
   })
 );
 
-/** A social account connected to a workspace. */
+/** A social account, or a website, connected to a workspace. */
 export class Channel extends Schema.Class<Channel>(
   "peal-server/channels/domain/Channel"
 )({
   // The account's own id on the platform, which never changes: a workspace
-  // connects each account once.
+  // connects each account once. A website's is its API's root, which moves
+  // only with the site (`siteMovedTo`).
   accountId: Schema.NonEmptyString,
   avatarUrl: Schema.Option(AvatarUrlSchema),
   // How an Instagram channel reaches its account (Instagram Login, or
@@ -80,7 +81,7 @@ export class Channel extends Schema.Class<Channel>(
   label: Schema.Option(ChannelLabelSchema).pipe(
     Schema.withConstructorDefault(Effect.succeed(Option.none()))
   ),
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
   // What the account allowed Peal to do, in the platform's own words.
   scopes: Schema.Array(Schema.NonEmptyString),
   status: ChannelStatusSchema,
@@ -111,7 +112,7 @@ export interface ConnectedAccount {
 export interface NewChannel extends ConnectedAccount {
   readonly accountId: string;
   readonly id: ChannelId;
-  readonly platform: Platform;
+  readonly platform: ChannelPlatform;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -158,6 +159,28 @@ const withChange = (
     status,
     token: account.token,
     updatedAt: now,
+    workspaceId: channel.workspaceId,
+  });
+
+/**
+ * A website whose API moved under the same home page, as when its
+ * permalinks change: the channel's account is the API's new root.
+ */
+export const siteMovedTo = (channel: Channel, accountId: string): Channel =>
+  new Channel({
+    accountId,
+    avatarUrl: channel.avatarUrl,
+    connection: channel.connection,
+    createdAt: channel.createdAt,
+    displayName: channel.displayName,
+    handle: channel.handle,
+    id: channel.id,
+    label: channel.label,
+    platform: channel.platform,
+    scopes: channel.scopes,
+    status: channel.status,
+    token: channel.token,
+    updatedAt: channel.updatedAt,
     workspaceId: channel.workspaceId,
   });
 

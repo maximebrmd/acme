@@ -26,6 +26,7 @@ import {
   ListChannels,
   maxChannelPageSize,
 } from "#channels/application/list-channels.ts";
+import { isSocialChannel } from "#channels/application/social-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -169,7 +170,10 @@ const BasicToolsLive = BasicTools.toLayer(
               .list(actor)
               .pipe(Effect.catchTags(readingFailures));
 
-            return { channels: found.map(toChannelView) };
+            // Websites take articles, which no tool writes yet.
+            return {
+              channels: found.filter(isSocialChannel).map(toChannelView),
+            };
           }
 
           // Every page of those that match: a tool's answer has no cursor.
@@ -197,7 +201,32 @@ const BasicToolsLive = BasicTools.toLayer(
 
           const { counts, items } = yield* matching(Option.none());
 
-          return { channels: items.map(toChannelView), counts };
+          // Without a platform asked, the counts leave the websites out,
+          // as the list does.
+          const websites =
+            platform === undefined
+              ? yield* listChannels
+                  .search(actor, {
+                    after: Option.none(),
+                    limit: 1,
+                    platform: Option.some("wordpress"),
+                    query: Option.fromUndefinedOr(search),
+                    status: Option.fromUndefinedOr(status),
+                  })
+                  .pipe(
+                    Effect.map((page) => page.counts),
+                    Effect.catchTags(readingFailures)
+                  )
+              : { active: 0, disabled: 0, refreshNeeded: 0 };
+
+          return {
+            channels: items.filter(isSocialChannel).map(toChannelView),
+            counts: {
+              active: counts.active - websites.active,
+              disabled: counts.disabled - websites.disabled,
+              refreshNeeded: counts.refreshNeeded - websites.refreshNeeded,
+            },
+          };
         }),
       list_workspaces: () =>
         Effect.gen(function* workspaces() {

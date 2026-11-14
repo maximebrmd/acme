@@ -646,6 +646,102 @@ _, err := client.Channels.Platforms(
 </dl>
 </details>
 
+<details><summary><code>client.Channels.ConnectSite(WorkspaceID, request) -> *peal.Channel</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.ConnectSite{
+    WorkspaceID: "workspaceId",
+    Address: "address",
+    ApplicationPassword: "applicationPassword",
+    Platform: peal.SitePlatformWordpress,
+    UserName: "userName",
+}
+_, err := client.Channels.ConnectSite(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**address:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**applicationPassword:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**platform:** `peal.SitePlatform` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userName:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Channels.Connect(WorkspaceID, Platform, request) -> *peal.Authorization</code></summary>
 <dl>
 <dd>
@@ -3798,6 +3894,822 @@ _, err := client.Posts.Cancel(
 <dd>
 
 **postID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## articles
+<details><summary><code>client.Articles.List(WorkspaceID) -> *peal.ArticlePage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's articles, newest first, 50 a page unless `limit` (at most 100) says otherwise, those in one `status` when it is given. Pass the page's `nextCursor` as `cursor` for the next. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.ListArticlesRequest{
+    WorkspaceID: "workspaceId",
+}
+_, err := client.Articles.List(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `*peal.ArticleStateName` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Create(WorkspaceID, request) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Writes an article for one of the workspace's websites (a channel connected with connectSite): a draft, or scheduled at once with `schedule`. A scheduled article is checked as the site would take it (ArticleRejected lists every violation); its images are files of the workspace's library, ready (UnknownMedia otherwise), the cover an image. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:create, and post:schedule with `schedule`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.NewArticle{
+    WorkspaceID: "workspaceId",
+    Body: &peal.ArticleBody{
+        Content: []any{},
+        Type: peal.ArticleBodyTypeDoc,
+    },
+    Title: "title",
+    ChannelID: "channelId",
+}
+_, err := client.Articles.Create(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**body:** `*peal.ArticleBody` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**categories:** `[]string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**coverMediaID:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**excerpt:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**siteStatus:** `*peal.ArticleSiteStatus` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**tags:** `[]string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**title:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channelID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule:** `*peal.ArticleTime` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Get(WorkspaceID, ArticleID) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Reads an article. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.GetArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+}
+_, err := client.Articles.Get(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Delete(WorkspaceID, ArticleID) -> error</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the article from Peal, and its job when it waits to go out; never while it is being sent. A post already on the site stays there: unpublish it first. Needs post:delete.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.DeleteArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+}
+err := client.Articles.Delete(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Update(WorkspaceID, ArticleID, request) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces what a draft, a scheduled article or one that failed says. A scheduled article is checked again and keeps its time; it is refused (ArticleRejected `approvalRequired`) while your posts need an approval. Once on the site, use updateOnSite. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.UpdateArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+    Body: &peal.ArticleInput{
+        Body: &peal.ArticleBody{
+            Content: []any{},
+            Type: peal.ArticleBodyTypeDoc,
+        },
+        Title: "title",
+    },
+}
+_, err := client.Articles.Update(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `*peal.ArticleInput` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Schedule(WorkspaceID, ArticleID, request) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Schedules a draft, moves a scheduled article, or schedules one that failed again: Peal sends it at `at`, or now without it, and the site makes it what `siteStatus` says. With `future`, the site publishes it at `at`, which must be ahead, and Peal sends it at once. Everything is checked as the site would take it. What goes out is public, and cannot be taken back from Peal but by unpublishing it. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.ScheduleArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+    Body: &peal.ArticleTime{
+        TimeZone: "timeZone",
+    },
+}
+_, err := client.Articles.Schedule(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `*peal.ArticleTime` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Unschedule(WorkspaceID, ArticleID) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes a scheduled article back to draft: nothing is sent. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.UnscheduleArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+}
+_, err := client.Articles.Unschedule(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Retry(WorkspaceID, ArticleID) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends a failed article again now, or one that was unconfirmed once a member checked it is not on the site: Peal never sends an unconfirmed article again on its own. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.RetryArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+}
+_, err := client.Articles.Retry(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.Unpublish(WorkspaceID, ArticleID) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves the article's post to the site's trash, where the site keeps it for a while (30 days by default on WordPress) before deleting it; it stays published in Peal, with `removedAt`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.UnpublishArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+}
+_, err := client.Articles.Unpublish(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Articles.UpdateOnSite(WorkspaceID, ArticleID, request) -> *peal.Article</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces what the article's post says on the site (title, body, excerpt, tags, categories, cover), at once: the site keeps its status and its date, and files it has already are not sent again; a cover or an excerpt removed is removed there. Refused (ArticleRejected `approvalRequired`) while your posts need an approval, which articles cannot have yet, and (PlanLimitReached) while the workspace holds more channels or members than its plan allows. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.UpdateOnSiteArticlesRequest{
+    WorkspaceID: "workspaceId",
+    ArticleID: "articleId",
+    Body: &peal.ArticleInput{
+        Body: &peal.ArticleBody{
+            Content: []any{},
+            Type: peal.ArticleBodyTypeDoc,
+        },
+        Title: "title",
+    },
+}
+_, err := client.Articles.UpdateOnSite(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**articleID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `*peal.ArticleInput` 
     
 </dd>
 </dl>

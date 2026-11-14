@@ -14,7 +14,13 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import type { Channel, Permission, Post, Queue, Tag } from "peal-contract";
+import type {
+  SocialChannel,
+  Permission,
+  Post,
+  Queue,
+  Tag,
+} from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import {
@@ -651,7 +657,7 @@ const CalendarView = ({
 
   const channels = Option.getOrElse(
     AsyncResult.value(useAtomValue(workspaceChannels(workspaceId))),
-    (): readonly Channel[] => []
+    (): readonly SocialChannel[] => []
   );
 
   const queues = Option.getOrElse(

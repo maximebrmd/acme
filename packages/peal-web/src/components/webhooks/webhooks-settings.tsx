@@ -11,7 +11,7 @@ import {
   webhookSecretOverlapHours,
 } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   SubscribableWebhookEventType,
   WebhookDelivery,
   WebhookEndpoint,
@@ -91,7 +91,7 @@ import type { ChannelChoice } from "./webhook-views.tsx";
 const useChannelChoices = (workspaceId: string): readonly ChannelChoice[] =>
   Option.getOrElse(
     AsyncResult.value(useAtomValue(workspaceChannels(workspaceId))),
-    (): readonly Channel[] => []
+    (): readonly SocialChannel[] => []
   ).map((channel) => ({ id: channel.id, label: channelName(channel) }));
 
 const failedOnly: LogFilter = {

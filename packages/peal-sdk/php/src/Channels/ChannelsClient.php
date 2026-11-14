@@ -16,6 +16,7 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Peal\Channels\Requests\FindChannelsRequest;
 use Peal\Types\ChannelPage;
 use Peal\Types\ConnectablePlatforms;
+use Peal\Channels\Requests\ConnectSite;
 use Peal\Types\Platform;
 use Peal\Channels\Requests\ConnectChannel;
 use Peal\Types\Authorization;
@@ -232,6 +233,70 @@ class ChannelsClient
                     return null;
                 }
                 return ConnectablePlatforms::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.
+     *
+     * Example:
+     * ```php
+     * $client->channels->connectSite(
+     *     'workspaceId',
+     *     new ConnectSite([
+     *         'address' => 'address',
+     *         'applicationPassword' => 'applicationPassword',
+     *         'platform' => SitePlatform::Wordpress->value,
+     *         'userName' => 'userName',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param ConnectSite $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Channel
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function connectSite(string $workspaceId, ConnectSite $request, ?array $options = null): ?Channel
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/channels/websites",
+                    method: HttpMethod::POST,
+                    body: $request,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Channel::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);

@@ -40,5 +40,7 @@ enum WebhookEventType: string
     case BoostFailed = "boost.failed";
     case BoostUnconfirmed = "boost.unconfirmed";
     case BoostBudgetReached = "boost.budget_reached";
+    case ArticlePublished = "article.published";
+    case ArticleFailed = "article.failed";
     case WebhookTest = "webhook.test";
 }

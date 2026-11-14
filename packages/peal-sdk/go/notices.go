@@ -292,8 +292,8 @@ var (
 )
 
 type NoticeChannel struct {
-	Handle   string   `json:"handle" url:"handle"`
-	Platform Platform `json:"platform" url:"platform"`
+	Handle   string          `json:"handle" url:"handle"`
+	Platform ChannelPlatform `json:"platform" url:"platform"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -309,7 +309,7 @@ func (n *NoticeChannel) GetHandle() string {
 	return n.Handle
 }
 
-func (n *NoticeChannel) GetPlatform() Platform {
+func (n *NoticeChannel) GetPlatform() ChannelPlatform {
 	if n == nil {
 		return ""
 	}
@@ -341,7 +341,7 @@ func (n *NoticeChannel) SetHandle(handle string) {
 
 // SetPlatform sets the Platform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NoticeChannel) SetPlatform(platform Platform) {
+func (n *NoticeChannel) SetPlatform(platform ChannelPlatform) {
 	n.Platform = platform
 	n.require(noticeChannelFieldPlatform)
 }

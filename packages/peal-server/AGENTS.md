@@ -361,7 +361,11 @@ and no socket, for tests.
   Facebook Pages, Instagram, LinkedIn or YouTube (the release before's
   router refuses it as a part too many, after the post went live): roll
   back past them only once no post still to go out has either, with the
-  drafts and recycling sources asking a poll dealt with.
+  drafts and recycling sources asking a poll dealt with. Websites did too: a
+  channel of `wordpress`, which the release before cannot decode where it
+  reads channels (every workspace's collection jobs included), and the
+  events and notices that name one: never roll back past them while any
+  is stored; articles and their jobs it ignores (the runbook's checks).
 
 ### Metrics and alerts
 

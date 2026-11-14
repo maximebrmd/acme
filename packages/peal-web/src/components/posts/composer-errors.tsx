@@ -3,7 +3,7 @@
 import { Match, Option } from "effect";
 import { useTranslations } from "next-intl";
 import { queueHorizonDays } from "peal-contract";
-import type { Channel, ContentViolation, Platform } from "peal-contract";
+import type { SocialChannel, ContentViolation, Platform } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 
 import { channelName as nameOfChannel } from "#channels/channel-name.ts";
@@ -35,7 +35,7 @@ export const violationKey = (violation: ContentViolation): string => {
 };
 
 interface ComposerErrorsProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly failure: ComposerFailure | null;
   /** The post's images and videos, to tell which one a violation is about. */
   readonly media?: readonly AttachedMedia[];
@@ -49,7 +49,7 @@ const noMedia: readonly AttachedMedia[] = [];
  * shows them under a refused save; the CSV import under a refused row.
  */
 export const useViolationText = (
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   media: readonly AttachedMedia[] = noMedia
 ): ((violation: ContentViolation) => string) => {
   const t = useTranslations("Posts.Composer");

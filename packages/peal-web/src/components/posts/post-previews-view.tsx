@@ -4,7 +4,7 @@ import { Option } from "effect";
 import { useTranslations } from "next-intl";
 import type {
   AllowanceReason,
-  Channel,
+  SocialChannel,
   ChannelPreview,
   PostWarning,
   TextCount,
@@ -89,7 +89,7 @@ const ChannelPanel = ({
   parts,
   preview,
 }: {
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly media: readonly AttachedMedia[];
   readonly parts: readonly (readonly AttachedMedia[])[];
   readonly preview: ChannelPreview;
@@ -163,7 +163,7 @@ export const PostPreviewsView = ({
   state,
   waitingForOptions,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** The post's images and videos, in order. */
   readonly media: readonly AttachedMedia[];
   readonly onRetry: () => void;

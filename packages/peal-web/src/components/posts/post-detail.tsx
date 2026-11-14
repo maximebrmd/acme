@@ -5,7 +5,7 @@ import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   Permission,
   Post,
   PostTarget,
@@ -89,7 +89,7 @@ interface TargetViewProps {
   readonly attempts: readonly PublicationAttempt[] | undefined;
   /** Whether the member may repost and confirm (post:schedule). */
   readonly canAct: boolean;
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   /** Whether a request for this channel runs. */
   readonly busy: boolean;
   /** What else the member may do on the channel, such as boosting. */
@@ -468,7 +468,7 @@ const LeaveOut = ({
   target,
 }: {
   readonly busy: boolean;
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly onRequest: (request: TargetRequest) => void;
   readonly target: PostTarget;
 }) => {
@@ -635,12 +635,12 @@ interface PostDetailViewProps {
    */
   readonly actionsFor?: (
     target: PostTarget,
-    channel: Channel | undefined
+    channel: SocialChannel | undefined
   ) => ReactNode;
   /** The channel whose request runs, if any. */
   readonly busy: string | null;
   readonly canAct: boolean;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onRequest: (request: TargetRequest) => void;
   /** The post's boosts and paid numbers, for members who read ads. */
   readonly paid?: ReactNode;
@@ -831,7 +831,7 @@ export const PostDetail = ({
    * no ad account may spend yet.
    */
   readonly adsLink: ReactNode;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
   /** The signed-in user. */
@@ -880,7 +880,7 @@ export const PostDetail = ({
   // Peal boosts posts published on Facebook Pages and Instagram, for
   // members who may spend on ads; the dialog shows only on a server that
   // offers spending.
-  const boostFor = (target: PostTarget, channel: Channel | undefined) =>
+  const boostFor = (target: PostTarget, channel: SocialChannel | undefined) =>
     maySpend &&
     target.status === "published" &&
     channel !== undefined &&
@@ -897,7 +897,10 @@ export const PostDetail = ({
 
   // Unpublishing, for members who may publish, on every channel the post
   // is live on: the action, or why the platform does not let Peal.
-  const unpublishFor = (target: PostTarget, channel: Channel | undefined) =>
+  const unpublishFor = (
+    target: PostTarget,
+    channel: SocialChannel | undefined
+  ) =>
     permissions.includes("post:publish") && target.status === "published" ? (
       <LivePostActions
         channel={channel}
@@ -909,7 +912,10 @@ export const PostDetail = ({
       />
     ) : null;
 
-  const actionsOn = (target: PostTarget, channel: Channel | undefined) => {
+  const actionsOn = (
+    target: PostTarget,
+    channel: SocialChannel | undefined
+  ) => {
     const boost = boostFor(target, channel);
     const unpublishing = unpublishFor(target, channel);
 

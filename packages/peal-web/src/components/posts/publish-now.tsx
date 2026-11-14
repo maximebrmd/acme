@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -67,7 +67,7 @@ export const PublishNowButton = ({
   /** Whether this action runs now. */
   readonly busy: boolean;
   /** The channels the post goes to. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly enabled: boolean;
   readonly onConfirm: () => void;
 }) => {

@@ -3,6 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { DateTime, Option } from "effect";
 import { useTranslations } from "next-intl";
+import { isSocialChannel } from "peal-contract";
 import type { Channel, ChannelStatus } from "peal-contract";
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ import {
 } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
 import { ChannelPower } from "#components/channels/channel-power.tsx";
+import { ReconnectWebsite } from "#components/channels/connect-website.tsx";
 import { RenameChannel } from "#components/channels/rename-channel.tsx";
 
 const badgeVariant = {
@@ -42,6 +44,69 @@ const badgeVariant = {
   disabled: "secondary",
   refreshNeeded: "destructive",
 } as const satisfies Record<ChannelStatus["_tag"], string>;
+
+// Connecting the channel's account again: a platform's sign-in, or a
+// website's form for a new application password.
+const ReconnectControl = ({
+  channel,
+  handle,
+  needsReconnect,
+  workspaceId,
+}: {
+  readonly channel: Channel;
+  readonly handle: string;
+  readonly needsReconnect: boolean;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("ChannelsPage");
+  const errorText = useChannelErrorText();
+  const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
+  const [isReconnecting, startReconnect] = useTransition();
+  const params = { channelId: channel.id, workspaceId };
+
+  const handleReconnect = () => {
+    startReconnect(async () => {
+      const exit = await reconnect({ params, query: {} });
+
+      Option.match(failureOf(exit), {
+        onNone: () => {
+          if (exit._tag === "Success" && isSocialChannel(channel)) {
+            rememberConnection({ platform: channel.platform, workspaceId });
+            globalThis.location.assign(exit.value.authorizationUrl);
+          }
+        },
+        onSome: (key) => {
+          toast.error(errorText(key));
+        },
+      });
+    });
+  };
+
+  if (!isSocialChannel(channel)) {
+    return (
+      <ReconnectWebsite
+        handle={channel.handle}
+        needsReconnect={needsReconnect}
+        workspaceId={workspaceId}
+      />
+    );
+  }
+
+  return (
+    <Button
+      variant={needsReconnect ? "default" : "outline"}
+      size="sm"
+      disabled={isReconnecting}
+      focusableWhenDisabled
+      onClick={handleReconnect}
+      aria-label={
+        isReconnecting ? undefined : t("reconnectAccount", { handle })
+      }
+    >
+      {isReconnecting ? t("reconnecting") : t("reconnect")}
+    </Button>
+  );
+};
 
 interface ChannelRowProps {
   readonly canConnect: boolean;
@@ -61,9 +126,7 @@ export const ChannelRow = ({
 }: ChannelRowProps) => {
   const t = useTranslations("ChannelsPage");
   const errorText = useChannelErrorText();
-  const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
   const disconnect = useAtomSet(disconnectChannel, { mode: "promiseExit" });
-  const [isReconnecting, startReconnect] = useTransition();
   const [isDisconnecting, startDisconnect] = useTransition();
   const params = { channelId: channel.id, workspaceId };
   const name = channelTitle(channel);
@@ -85,24 +148,6 @@ export const ChannelRow = ({
           connection: channel.connection,
           platform: channel.platform,
         });
-
-  const handleReconnect = () => {
-    startReconnect(async () => {
-      const exit = await reconnect({ params, query: {} });
-
-      Option.match(failureOf(exit), {
-        onNone: () => {
-          if (exit._tag === "Success") {
-            rememberConnection({ platform: channel.platform, workspaceId });
-            globalThis.location.assign(exit.value.authorizationUrl);
-          }
-        },
-        onSome: (key) => {
-          toast.error(errorText(key));
-        },
-      });
-    });
-  };
 
   const handleDisconnect = () => {
     startDisconnect(async () => {
@@ -164,18 +209,12 @@ export const ChannelRow = ({
           <RenameChannel channel={channel} workspaceId={workspaceId} />
         ) : null}
         {canConnect ? (
-          <Button
-            variant={needsReconnect ? "default" : "outline"}
-            size="sm"
-            disabled={isReconnecting}
-            focusableWhenDisabled
-            onClick={handleReconnect}
-            aria-label={
-              isReconnecting ? undefined : t("reconnectAccount", { handle })
-            }
-          >
-            {isReconnecting ? t("reconnecting") : t("reconnect")}
-          </Button>
+          <ReconnectControl
+            channel={channel}
+            handle={handle}
+            needsReconnect={needsReconnect}
+            workspaceId={workspaceId}
+          />
         ) : null}
         {canDisconnect ? (
           <AlertDialog>

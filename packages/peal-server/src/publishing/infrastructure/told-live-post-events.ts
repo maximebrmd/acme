@@ -2,6 +2,7 @@ import { Effect, Layer, Option } from "effect";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { isSocialChannel } from "#channels/application/social-channels.ts";
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { LivePostEvents } from "#publishing/application/live-post-events.ts";
 import type { LivePostChange } from "#publishing/domain/live-post-change.ts";
@@ -43,7 +44,9 @@ export const ToldLivePostEvents = Layer.effect(
       change: LivePostChange,
       target: PostTarget
     ) {
-      const channel = yield* channels.get(target.channelId);
+      const channel = (yield* channels.get(target.channelId)).pipe(
+        Option.filter(isSocialChannel)
+      );
 
       return {
         channelId: target.channelId,

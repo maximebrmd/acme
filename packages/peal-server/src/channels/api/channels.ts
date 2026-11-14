@@ -1,4 +1,4 @@
-import { Effect, Match, Option, Schema } from "effect";
+import { Effect, Match, Option, Redacted, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
@@ -8,6 +8,8 @@ import {
   defaultChannelPageSize,
   OAuthClientNotPublished,
   PlatformUnreachable,
+  SiteConnectLimited,
+  SiteNotConnected,
 } from "peal-contract";
 import type {
   PlanLimitReached,
@@ -27,6 +29,8 @@ import type {
   ReconnectFailure,
   StartFailure,
 } from "#channels/application/connect-channel.ts";
+import { ConnectSite } from "#channels/application/connect-site.ts";
+import type { ConnectSiteFailure } from "#channels/application/connect-site.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
@@ -195,6 +199,26 @@ const settingFailures = {
   MissingPermission: forbidden,
 } as const;
 
+// How connecting a website fails, as the contract tells clients.
+const siteFailureWith =
+  (limitReached: LimitRefusal) => (failure: ConnectSiteFailure) =>
+    Match.valueTags(failure, {
+      DatabaseError: Effect.die,
+      MissingPermission: forbidden,
+      MissingTokenKey: () =>
+        Effect.logError(
+          "A website was not connected: PEAL_TOKEN_KEYS is not set"
+        ).pipe(Effect.andThen(refused("notConfigured"))),
+      PlanLimitReached: limitReached,
+      PlatformUnavailable: () =>
+        Effect.logWarning("A website did not answer while connecting").pipe(
+          Effect.andThen(Effect.fail(new PlatformUnreachable()))
+        ),
+      SiteConnectLimited: () => Effect.fail(new SiteConnectLimited()),
+      SiteRefused: ({ reason }) =>
+        Effect.fail(new SiteNotConnected({ reason })),
+    });
+
 export const ChannelsHandlers = HttpApiBuilder.group(
   Api,
   "channels",
@@ -203,12 +227,14 @@ export const ChannelsHandlers = HttpApiBuilder.group(
     const disconnectChannel = yield* DisconnectChannel;
     const settings = yield* ChannelSettings;
     const connectChannel = yield* ConnectChannel;
+    const connectSite = yield* ConnectSite;
 
     const startFailure = startFailureWith(
       yield* limitRefusal,
       yield* allowanceRefusal
     );
 
+    const siteFailure = siteFailureWith(yield* limitRefusal);
     const completeFailure = completeFailureWith(startFailure);
     const chooseFailure = chooseFailureWith(startFailure);
 
@@ -251,6 +277,21 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             .pipe(Effect.catch(startFailure));
 
           return { authorizationUrl };
+        }),
+      connectSite: ({ payload }) =>
+        Effect.gen(function* connectSiteHandler() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const channel = yield* connectSite
+            .connect(actor, {
+              address: payload.address,
+              applicationPassword: Redacted.make(payload.applicationPassword),
+              platform: payload.platform,
+              userName: payload.userName,
+            })
+            .pipe(Effect.catch(siteFailure));
+
+          return toChannelView(channel);
         }),
       disable: ({ params }) =>
         Effect.gen(function* disable() {

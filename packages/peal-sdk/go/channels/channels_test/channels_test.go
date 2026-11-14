@@ -155,6 +155,36 @@ func TestChannelsPlatformsWithWireMock(
 	VerifyRequestCount(t, "TestChannelsPlatformsWithWireMock", "GET", "/api/workspaces/workspaceId/channels/platforms", nil, 1)
 }
 
+func TestChannelsConnectSiteWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ConnectSite{
+		WorkspaceID:         "workspaceId",
+		Address:             "address",
+		ApplicationPassword: "applicationPassword",
+		Platform:            peal.SitePlatformWordpress,
+		UserName:            "userName",
+	}
+	_, invocationErr := client.Channels.ConnectSite(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestChannelsConnectSiteWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestChannelsConnectSiteWithWireMock", "POST", "/api/workspaces/workspaceId/channels/websites", nil, 1)
+}
+
 func TestChannelsConnectWithWireMock(
 	t *testing.T,
 ) {

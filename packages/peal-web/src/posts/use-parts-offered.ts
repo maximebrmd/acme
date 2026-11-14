@@ -2,7 +2,7 @@
 
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 
 import { platformCapabilities } from "#analytics/api.ts";
 
@@ -16,7 +16,7 @@ import { platformCapabilities } from "#analytics/api.ts";
  */
 export const usePartsOffered = (
   workspaceId: string
-): ((channel: Pick<Channel, "connection" | "platform">) => boolean) => {
+): ((channel: Pick<SocialChannel, "connection" | "platform">) => boolean) => {
   const capabilities = useAtomValue(platformCapabilities(workspaceId));
 
   return ({ connection, platform }) =>

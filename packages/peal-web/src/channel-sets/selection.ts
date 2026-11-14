@@ -2,7 +2,7 @@ import { Schema } from "effect";
 import type { Option } from "effect";
 import { ChannelSetDetailsSchema } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   ChannelOptions,
   ChannelSet,
   ChannelSetDetails,
@@ -17,8 +17,8 @@ import type { ValuesByChannel } from "#posts/target-options.ts";
 /** A set's channels that are still connected, in the workspace's order. */
 export const connectedChannels = (
   set: Pick<ChannelSet, "channelIds" | "unavailableChannelIds">,
-  channels: readonly Channel[]
-): readonly Channel[] =>
+  channels: readonly SocialChannel[]
+): readonly SocialChannel[] =>
   channels.filter(
     ({ id }) =>
       set.channelIds.includes(id) && !set.unavailableChannelIds.includes(id)
@@ -27,7 +27,7 @@ export const connectedChannels = (
 /** A set's channels that are no longer connected. */
 export const missingChannels = (
   set: Pick<ChannelSet, "channelIds" | "unavailableChannelIds">,
-  channels: readonly Channel[]
+  channels: readonly SocialChannel[]
 ): readonly string[] => {
   const connected = new Set(
     connectedChannels(set, channels).map(({ id }) => id)
@@ -53,7 +53,7 @@ export interface AppliedSet {
  */
 export const appliedSet = (
   set: ChannelSet,
-  channels: readonly Channel[]
+  channels: readonly SocialChannel[]
 ): AppliedSet => {
   const connected = connectedChannels(set, channels);
 
@@ -92,13 +92,13 @@ export const channelSetDetailsOf = (
 /** The channels a set's form starts with: those still connected. */
 export const editableChannelIds = (
   set: ChannelSet,
-  channels: readonly Channel[]
+  channels: readonly SocialChannel[]
 ): readonly string[] => connectedChannels(set, channels).map(({ id }) => id);
 
 /** The ids with one channel chosen or not, in the workspace's order. */
 export const withChannel = (
   channelIds: readonly string[],
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   channelId: string,
   chosen: boolean
 ): readonly string[] =>

@@ -15,7 +15,12 @@ import {
   renewToken,
 } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import { isSitePlatform, isSocialPlatform } from "#channels/domain/platform.ts";
+import type {
+  ChannelPlatform,
+  Platform,
+  SitePlatform,
+} from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -39,8 +44,11 @@ import type {
 } from "./platform-authorizer.ts";
 import { TokenCipher } from "./token-cipher.ts";
 
-/** Who a channel posts as, on which platform. */
-export interface ChannelAccount {
+/**
+ * Who a channel posts as, on which platform: a social network's for posts,
+ * or a website's (`SitePlatform`) for articles.
+ */
+export interface ChannelAccount<P extends ChannelPlatform = Platform> {
   /** The account's id on the platform, as the channel stores it. */
   readonly accountId: string;
   readonly channelId: ChannelId;
@@ -49,7 +57,7 @@ export interface ChannelAccount {
    * its calls go to; none on other platforms.
    */
   readonly connection: Option.Option<ChannelConnection>;
-  readonly platform: Platform;
+  readonly platform: P;
   /**
    * What the account allowed Peal to do, in the platform's own words: a
    * call that needs more is better made without the token.
@@ -58,11 +66,14 @@ export interface ChannelAccount {
 }
 
 /** A channel's token, decrypted for the platform calls about to be made. */
-export interface ChannelToken extends ChannelAccount {
+export interface ChannelToken<
+  P extends ChannelPlatform = Platform,
+> extends ChannelAccount<P> {
   /**
    * The credential calls are made with: the access token, or for Bluesky
    * the OAuth client's saved session, as JSON, whose access token and DPoP
-   * key sign each call.
+   * key sign each call; for a website, the user name and the application
+   * password, as `user:password`.
    */
   readonly accessToken: Redacted.Redacted;
   /**
@@ -114,8 +125,10 @@ const isDue = (channel: Channel, now: DateTime.Utc): boolean =>
 const sameToken = (left: Redacted.Redacted, right: Redacted.Redacted) =>
   Redacted.value(left) === Redacted.value(right);
 
-const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => {
-  const token: ChannelToken = {
+type AnyChannelToken = ChannelToken<ChannelPlatform>;
+
+const tokenOf = (channel: Channel, tokens: StoredTokens): AnyChannelToken => {
+  const token: AnyChannelToken = {
     accessToken: tokens.accessToken,
     accountId: channel.accountId,
     channelId: channel.id,
@@ -128,6 +141,10 @@ const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => {
     ? token
     : { ...token, tokenOwner: tokens.tokenOwner };
 };
+
+// Another kind of channel than the caller's is none of its own.
+const otherKind = (channelId: ChannelId) =>
+  new ChannelUnusable({ channelId, reason: "notFound" });
 
 /**
  * Hands publishing and analytics a token that works: decrypted, renewed through the
@@ -163,6 +180,18 @@ export class ChannelAccess extends Context.Service<
     readonly withToken: <A, E, R>(
       channelId: ChannelId,
       use: (token: ChannelToken) => Effect.Effect<A, E | TokenRejected, R>
+    ) => Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R>;
+    /**
+     * The same for a website's channel, to publish articles: its stored
+     * credentials, which nothing renews, so a refused one marks the channel
+     * to reconnect at once. A channel of a social network is `notFound`
+     * here, as a website's is to `withToken` and `account`.
+     */
+    readonly withSiteToken: <A, E, R>(
+      channelId: ChannelId,
+      use: (
+        token: ChannelToken<SitePlatform>
+      ) => Effect.Effect<A, E | TokenRejected, R>
     ) => Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R>;
   }
 >()("peal-server/channels/application/ChannelAccess") {
@@ -462,9 +491,9 @@ export class ChannelAccess extends Context.Service<
         return tokenOf(channel, tokens.value);
       });
 
-      const withToken = <A, E, R>(
+      const withAnyToken = <A, E, R>(
         channelId: ChannelId,
-        use: (token: ChannelToken) => Effect.Effect<A, E | TokenRejected, R>
+        use: (token: AnyChannelToken) => Effect.Effect<A, E | TokenRejected, R>
       ): Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R> =>
         current(channelId).pipe(
           Effect.flatMap((token) =>
@@ -494,16 +523,53 @@ export class ChannelAccess extends Context.Service<
           })
         );
 
+      const withToken = <A, E, R>(
+        channelId: ChannelId,
+        use: (token: ChannelToken) => Effect.Effect<A, E | TokenRejected, R>
+      ): Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R> =>
+        withAnyToken(
+          channelId,
+          (token): Effect.Effect<A, ChannelUnusable | E | TokenRejected, R> => {
+            const { platform } = token;
+
+            return isSocialPlatform(platform)
+              ? use({ ...token, platform })
+              : Effect.fail(otherKind(channelId));
+          }
+        );
+
+      const withSiteToken = <A, E, R>(
+        channelId: ChannelId,
+        use: (
+          token: ChannelToken<SitePlatform>
+        ) => Effect.Effect<A, E | TokenRejected, R>
+      ): Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R> =>
+        withAnyToken(
+          channelId,
+          (token): Effect.Effect<A, ChannelUnusable | E | TokenRejected, R> => {
+            const { platform } = token;
+
+            return isSitePlatform(platform)
+              ? use({ ...token, platform })
+              : Effect.fail(otherKind(channelId));
+          }
+        );
+
       const account = Effect.fn("ChannelAccess.account")(function* account(
         channelId: ChannelId
       ) {
         const channel = yield* usable(channelId);
+        const { platform } = channel;
+
+        if (!isSocialPlatform(platform)) {
+          return yield* otherKind(channelId);
+        }
 
         const found: ChannelAccount = {
           accountId: channel.accountId,
           channelId: channel.id,
           connection: channel.connection,
-          platform: channel.platform,
+          platform,
           scopes: channel.scopes,
         };
 
@@ -515,7 +581,12 @@ export class ChannelAccess extends Context.Service<
           .get(channelId)
           .pipe(Effect.map(Option.map(({ workspaceId }) => workspaceId)));
 
-      return ChannelAccess.of({ account, withToken, workspaceOf });
+      return ChannelAccess.of({
+        account,
+        withSiteToken,
+        withToken,
+        workspaceOf,
+      });
     })
   );
 }

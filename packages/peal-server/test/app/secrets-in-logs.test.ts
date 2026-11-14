@@ -1,5 +1,6 @@
 // What the server writes about a request never holds a credential: a
-// connect link's token, a review link's, a partner key, the token of a
+// connect link's token, a review link's, a partner key, a website's
+// application password, the token of a
 // link that applies a request to cancel, the value of a header a webhook
 // endpoint's deliveries carry, two-step verification's key, codes and
 // recovery codes, the image provider's key, or the key of a provider a
@@ -18,14 +19,18 @@ import {
   Layer,
   Logger,
   Option,
+  Redacted,
   References,
   Schema,
   Tracer,
 } from "effect";
+import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 import sharp from "sharp";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { SiteVerifier } from "#channels/application/site-verifier.ts";
+import { WordPressSiteVerifierLive } from "#channels/infrastructure/platforms/wordpress/wordpress-site-verifier.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
@@ -42,7 +47,12 @@ import {
   DatabaseTest as AssistantDatabaseTest,
   imagesTest,
 } from "#test/assistant/support.ts";
-import { DatabaseTest, syntheticKeyring } from "#test/channels/support.ts";
+import { editor, fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
+import {
+  OpenOutboundGuard,
+  DatabaseTest,
+  syntheticKeyring,
+} from "#test/channels/support.ts";
 import { storageSettings } from "#test/media/support.ts";
 import {
   facebookPageId,
@@ -201,6 +211,25 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             body: { token: requestToken, workspaceId: customer.id },
           });
 
+          // A website's application password, refused before it leaves:
+          // the site is on a loopback address.
+          const sitePassword = "synthetic-site-password-that-opens-nothing";
+
+          const site = yield* app.request(
+            `/api/workspaces/${customer.id}/channels/websites`,
+            {
+              body: {
+                address: "127.0.0.1",
+                applicationPassword: sitePassword,
+                platform: "wordpress",
+                userName: "synthetic-editor",
+              },
+              headers: bearer(key),
+            }
+          );
+
+          assert.strictEqual(site.status, 422);
+
           // What an address holds is written, which is why no token goes
           // in one: this search would find it.
           const inAddress = "synthetic-marker-in-an-address";
@@ -221,6 +250,7 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             ["a partner key", key],
             ["a review link's token", reviewToken],
             ["a contract request's token", requestToken],
+            ["a website's application password", sitePassword],
           ] as const) {
             assert.notInclude(all, secret, name);
           }
@@ -408,6 +438,54 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
         // The upload was written about, with its address.
         assert.include(written(), "/video-upload/");
         assert.notInclude(written(), token);
+      }).pipe(Effect.scoped)
+  );
+});
+
+// The site's password goes on the wire, to a fake site on loopback with
+// the guard open: what is written about those calls never holds it.
+layer(
+  Layer.mergeAll(
+    capture,
+    Layer.succeed(Tracer.Tracer, tracer),
+    WordPressSiteVerifierLive.pipe(
+      Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+    )
+  ),
+  { excludeTestServices: true, timeout: "60 seconds" }
+)("what the server writes about checking a website", (it) => {
+  it.effect(
+    "holds no application password, which every call carries in its Authorization header",
+    () =>
+      Effect.gen(function* searched() {
+        const onTheWire = "synthetic site password on the wire";
+
+        const site = yield* fakeWordPress({
+          users: [{ ...editor, password: onTheWire }],
+        });
+
+        const verified = yield* SiteVerifier.use((verifier) =>
+          verifier.verify({
+            address: site.home,
+            applicationPassword: Redacted.make(onTheWire),
+            platform: "wordpress",
+            userName: editor.login,
+          })
+        ).pipe(Effect.withSpan("test.website"));
+
+        assert.strictEqual(verified.accountId, site.root);
+        // It went on the wire.
+        assert.isTrue(
+          site
+            .requests()
+            .some(
+              ({ authorization }) =>
+                authorization?.startsWith("Basic ") === true
+            )
+        );
+        assert.include(written(), "/wp/v2/users/me");
+        assert.notInclude(written(), onTheWire);
+        assert.notInclude(written(), onTheWire.replaceAll(" ", ""));
       }).pipe(Effect.scoped)
   );
 });

@@ -16,9 +16,14 @@ import { PlatformUnreachable } from "./platform-unreachable.ts";
 import {
   ChannelConnectionSchema,
   InstagramConnectionSchema,
+  ChannelPlatformSchema,
   LinkedInConnectionSchema,
   PlatformSchema,
+  SitePlatformSchema,
 } from "./platform.ts";
+import type { Platform } from "./platform.ts";
+import { SiteConnectLimited } from "./site-connect-limited.ts";
+import { SiteNotConnected } from "./site-not-connected.ts";
 import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -51,7 +56,7 @@ export const defaultChannelPageSize = 50;
 /** The longest text a search for channels takes. */
 export const maxChannelQueryLength = 100;
 
-/** A social account connected to the workspace, without its tokens. */
+/** An account or a website connected to the workspace, without its tokens. */
 export const ChannelSchema = Schema.Struct({
   // The account's picture, as the platform serves it.
   avatarUrl: Schema.NullOr(Schema.String),
@@ -66,7 +71,9 @@ export const ChannelSchema = Schema.Struct({
   // The name the workspace gave the channel, shown in Peal beside the
   // platform's handle and name, and sent nowhere; null when it gave none.
   label: Schema.NullOr(Schema.String),
-  platform: PlatformSchema,
+  // A social network, whose channels take posts, or a website, whose
+  // channels take articles.
+  platform: ChannelPlatformSchema,
   status: ChannelStatusSchema,
   // When the account's token stops working, for a token the platform does
   // not let Peal renew: the user must reconnect the account before then.
@@ -75,6 +82,18 @@ export const ChannelSchema = Schema.Struct({
 }).annotate({ identifier: "Channel" });
 
 export type Channel = typeof ChannelSchema.Type;
+
+/**
+ * A channel of a social network, which takes posts; a website's takes
+ * articles instead.
+ */
+export type SocialChannel = Channel & { readonly platform: Platform };
+
+/** Whether the channel takes posts: a social network's, not a website's. */
+const isPlatform = Schema.is(PlatformSchema);
+
+export const isSocialChannel = (channel: Channel): channel is SocialChannel =>
+  isPlatform(channel.platform);
 
 /** What a workspace changes of a channel it keeps: its name there. */
 export const ChannelUpdateSchema = Schema.Struct({
@@ -226,6 +245,25 @@ export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
+/** The longest website address Peal takes. */
+export const maxSiteAddressLength = 2048;
+
+/**
+ * A website to connect, with the user Peal publishes as: for WordPress,
+ * the user's login name and an application password made for Peal on the
+ * user's profile page (WordPress 5.6 and later, over HTTPS).
+ */
+export const ConnectSiteSchema = Schema.Struct({
+  // The site's address, as a visitor types it: its home page.
+  address: Schema.String.check(Schema.isBetweenLength(1, maxSiteAddressLength)),
+  // Kept encrypted, and never shown again.
+  applicationPassword: Schema.String.check(Schema.isBetweenLength(1, 200)),
+  platform: SitePlatformSchema,
+  userName: Schema.String.check(Schema.isBetweenLength(1, 200)),
+}).annotate({ identifier: "ConnectSite" });
+
+export type ConnectSite = typeof ConnectSiteSchema.Type;
+
 // Reconnecting adds no channel, so no plan limit refuses it.
 const reconnectErrors = [
   Forbidden,
@@ -288,6 +326,18 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         description:
           "Lists the platforms this server can connect accounts of, in Peal's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.",
         summary: "List connectable platforms",
+      })
+    ),
+    HttpApiEndpoint.post("connectSite", "/websites", {
+      error: [...connectErrors, SiteNotConnected, SiteConnectLimited],
+      params: workspace,
+      payload: ConnectSiteSchema,
+      success: ChannelSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. The REST API must be on the same site as the home page (`addressNotAllowed`). A site the workspace has already, at the same home page, is reconnected with the new password, even where its API's address changed. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached), checked before the site is called. A workspace tries 30 times an hour at most (SiteConnectLimited). Needs channel:connect.",
+        summary: "Connect a website",
       })
     ),
     HttpApiEndpoint.post("connect", "/connect/:platform", {

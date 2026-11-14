@@ -1,5 +1,9 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
+import { contentWithout } from "#publishing/domain/article-content.ts";
+import type { ArticleId } from "#publishing/domain/article-id.ts";
+import { fileDeleted, mayStillBeSent } from "#publishing/domain/article.ts";
+import type { Article } from "#publishing/domain/article.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { keepingMedia, namesMedia } from "#publishing/domain/named-media.ts";
 import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
@@ -17,6 +21,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { ArticleStore } from "./article-store.ts";
 import { PostRepository } from "./post-repository.ts";
 
 /** The posts that show a media asset, by where they are in their life. */
@@ -28,12 +33,25 @@ export interface MediaUse {
    * deleted.
    */
   readonly scheduled: readonly PostId[];
+  /**
+   * Articles that show it: those scheduled or publishing keep it from
+   * being deleted; drafts, failed ones and those to check lose it when it
+   * is, and one already on its site keeps the id it went out with.
+   */
+  readonly articles: {
+    readonly drafts: readonly ArticleId[];
+    readonly scheduled: readonly ArticleId[];
+  };
 }
 
 /** What releasing the media came to. */
 export type MediaRelease =
-  // Posts about to go out show it: nothing changed.
-  | { readonly _tag: "inUse"; readonly scheduled: readonly PostId[] }
+  // Posts or articles about to go out show it: nothing changed.
+  | {
+      readonly _tag: "inUse";
+      readonly articles: readonly ArticleId[];
+      readonly scheduled: readonly PostId[];
+    }
   // These drafts no longer show it.
   | { readonly _tag: "released"; readonly drafts: readonly PostId[] }
   // No post that may still go out shows it.
@@ -49,6 +67,19 @@ const scheduledStatuses: readonly PostStatusName[] = [
 ];
 
 const ids = (posts: readonly Post[]) => posts.map(({ id }) => id);
+
+// An article that still goes out, so needs its files.
+const goesOut = (article: Article) =>
+  article.state._tag === "scheduled" || article.state._tag === "publishing";
+
+// The articles that show the media, by where they are: those on their
+// site, which keep the id they went out with, are in neither.
+const articleUse = (shown: readonly Article[]) => ({
+  drafts: shown.flatMap((article) =>
+    mayStillBeSent(article) ? [article.id] : []
+  ),
+  scheduled: shown.flatMap((article) => (goesOut(article) ? [article.id] : [])),
+});
 
 // A post with its targets, whose options may name files.
 interface Locked {
@@ -116,8 +147,10 @@ const without = (post: Post, mediaId: MediaAssetId) =>
  * thumbnail, a cover), for the media context, which asks before deleting
  * one: a post scheduled or publishing keeps it from being deleted, and
  * drafts let go of it. Finished and cancelled posts keep their media ids
- * as they were. It acts for the workspace, as the media context checked who
- * deletes.
+ * as they were. Articles count too: one scheduled or publishing keeps the
+ * media, drafts and failed ones lose it, and those on their site keep the
+ * id they went out with. It acts for the workspace, as the media context
+ * checked who deletes.
  */
 export class MediaInPosts extends Context.Service<
   MediaInPosts,
@@ -141,6 +174,7 @@ export class MediaInPosts extends Context.Service<
     MediaInPosts,
     Effect.gen(function* MediaInPostsLive() {
       const posts = yield* PostRepository;
+      const articles = yield* ArticleStore;
       const { transaction } = yield* TransactionRunner;
 
       const usage = Effect.fn("MediaInPosts.usage")(function* usage(
@@ -160,6 +194,7 @@ export class MediaInPosts extends Context.Service<
         );
 
         const use: MediaUse = {
+          articles: articleUse(yield* articles.showing(workspaceId, mediaId)),
           drafts: ids(drafts),
           scheduled: ids(scheduled),
         };
@@ -239,15 +274,69 @@ export class MediaInPosts extends Context.Service<
           )
         );
 
+      // An article that may still be sent without the media, under its
+      // row lock.
+      const detachArticle = (article: Article, mediaId: MediaAssetId) =>
+        DateTime.now.pipe(
+          Effect.flatMap((now) =>
+            Option.match(
+              fileDeleted(
+                article,
+                contentWithout(article.content, mediaId),
+                now
+              ),
+              {
+                onNone: () => Effect.void,
+                onSome: (detached) =>
+                  articles
+                    .update(detached, article)
+                    .pipe(
+                      Effect.flatMap((written) =>
+                        written
+                          ? Effect.void
+                          : Effect.die("An article changed under its row lock")
+                      )
+                    ),
+              }
+            )
+          )
+        );
+
       const release = Effect.fn("MediaInPosts.release")(function* release(
         workspaceId: WorkspaceId,
         mediaId: MediaAssetId
       ) {
         return yield* transaction(
           Effect.gen(function* releasing() {
+            // The articles first, held: one scheduled meanwhile waits for
+            // this, and then finds the file gone from it.
+            const showing = yield* articles.lockShowing(workspaceId, mediaId);
+            const shown = articleUse(showing);
+
             const listed = yield* usage(workspaceId, mediaId);
 
+            if (shown.scheduled.length > 0) {
+              const inUse: MediaRelease = {
+                _tag: "inUse",
+                articles: shown.scheduled,
+                scheduled: listed.scheduled,
+              };
+
+              return inUse;
+            }
+
+            // Once the media goes, the articles that may still be sent
+            // lose it, as drafts do; one already on its site keeps the id
+            // it went out with.
+            const detachArticles = Effect.forEach(
+              showing,
+              (article) => detachArticle(article, mediaId),
+              { discard: true }
+            );
+
             if (listed.drafts.length === 0 && listed.scheduled.length === 0) {
+              yield* detachArticles;
+
               const unused: MediaRelease = { _tag: "unused" };
 
               return unused;
@@ -261,6 +350,7 @@ export class MediaInPosts extends Context.Service<
             if (listed.scheduled.length > 0 || scheduled.length > 0) {
               const inUse: MediaRelease = {
                 _tag: "inUse",
+                articles: [],
                 scheduled: [...listed.scheduled, ...ids(scheduled)],
               };
 
@@ -270,6 +360,8 @@ export class MediaInPosts extends Context.Service<
             yield* Effect.forEach(drafts, (draft) => detach(draft, mediaId), {
               discard: true,
             });
+
+            yield* detachArticles;
 
             const released: MediaRelease = {
               _tag: "released",

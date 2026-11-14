@@ -7,11 +7,13 @@ import type { WorkspaceEntitlements } from "#billing/application/workspace-entit
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
+import { ConnectSite } from "#channels/application/connect-site.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
+import { MemorySiteConnectPace } from "#channels/infrastructure/memory-site-connect-pace.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { googleBusinessAuthorizer } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import type { GoogleBusinessEndpoints } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
@@ -23,6 +25,7 @@ import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/
 import { pinterestAuthorizer } from "#channels/infrastructure/platforms/pinterest/pinterest-authorizer.ts";
 import { registryOf } from "#channels/infrastructure/platforms/platform-authorizers.ts";
 import { tiktokAuthorizer } from "#channels/infrastructure/platforms/tiktok/tiktok-authorizer.ts";
+import { WordPressSiteVerifierLive } from "#channels/infrastructure/platforms/wordpress/wordpress-site-verifier.ts";
 import { xAuthorizer } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
 import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
 import { youtubeAuthorizer } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
@@ -327,3 +330,18 @@ export const pinterestAuthorizerOn = (hosts: PinterestHosts) =>
     ),
     Effect.provide(AuthorizerServicesTest)
   );
+
+/**
+ * ConnectSite with the WordPress verifier, whose requests all go through:
+ * over the adapters a `connectChannelWith` layer gives.
+ */
+export const WordPressSitesTest = ConnectSite.layer.pipe(
+  Layer.provide(
+    Layer.merge(
+      WordPressSiteVerifierLive.pipe(
+        Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+      ),
+      MemorySiteConnectPace
+    )
+  )
+);

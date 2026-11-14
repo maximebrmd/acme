@@ -196,12 +196,20 @@ export const MediaPageSchema = Schema.Struct({
 
 export type MediaPage = typeof MediaPageSchema.Type;
 
-/** The posts that show a media, by what deleting it would do to them. */
+/**
+ * The posts and articles that show a media, by what deleting it would do
+ * to them.
+ */
 export const MediaUsageSchema = Schema.Struct({
   // Drafts, which lose the media when it is deleted.
   drafts: Schema.Array(Schema.String),
   // Posts scheduled or publishing, which keep it from being deleted.
   scheduled: Schema.Array(Schema.String),
+  // Articles not yet on their site, nor on their way: drafts, failed ones
+  // and those to check, which lose it when it is deleted.
+  draftArticles: Schema.Array(Schema.String),
+  // Articles scheduled or publishing, which keep it from being deleted.
+  scheduledArticles: Schema.Array(Schema.String),
 }).annotate({ identifier: "MediaUsage" });
 
 export type MediaUsage = typeof MediaUsageSchema.Type;

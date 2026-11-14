@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel, Queue, Tag } from "peal-contract";
+import type { SocialChannel, Queue, Tag } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
@@ -30,7 +30,7 @@ export const CalendarFilters = ({
   queues,
   tags,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly filter: CalendarFilter;
   /** How many of the posts on screen the filter hides. */
   readonly hidden: number;

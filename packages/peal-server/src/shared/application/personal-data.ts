@@ -975,3 +975,22 @@ export interface LegalRemainsRecord {
   readonly connectionYears: number;
   readonly identityYears: number | null;
 }
+
+/** An article of a workspace, as its export holds it. */
+export interface ArticleRecord {
+  /** The editor's document of its body. */
+  readonly body: unknown;
+  readonly categories: readonly string[];
+  readonly channelId: string;
+  readonly coverMediaId: string | null;
+  readonly createdAt: DateTime.Utc;
+  readonly excerpt: string | null;
+  readonly id: string;
+  /** What the site made of it: publish, draft or future. */
+  readonly siteStatus: string;
+  /** Where it stands, and its id and address on the site once there. */
+  readonly state: unknown;
+  readonly tags: readonly string[];
+  readonly title: string;
+  readonly updatedAt: DateTime.Utc;
+}

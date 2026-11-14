@@ -15,7 +15,8 @@ export interface ListedChannel {
 /**
  * Every connected channel of every workspace, in the order of their ids, a
  * page at a time, for the contexts that follow channels as a whole, such
- * as analytics: ids and platforms, never a token, a handle or a name. It
+ * as analytics: ids and platforms, never a token, a handle or a name, and
+ * of social networks only, as none of them follows a website. It
  * checks no permission: jobs call it, never a request.
  */
 export class ChannelDirectory extends Context.Service<

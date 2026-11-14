@@ -51,6 +51,7 @@ const refusingAccess = (failure: AccessFailure) =>
             failure._tag === "PlatformUnavailable"
               ? Effect.die("Reading an account never calls the platform")
               : Effect.fail(failure),
+          withSiteToken: () => Effect.die("No website here"),
           withToken: () => Effect.fail(failure),
           workspaceOf: () => Effect.succeed(Option.none()),
         })
@@ -86,6 +87,7 @@ const grantingAccess = ChannelAccessCredentials.pipe(
       ChannelAccess,
       ChannelAccess.of({
         account: () => Effect.succeed(account),
+        withSiteToken: () => Effect.die("No website here"),
         withToken: withOneToken,
         workspaceOf: () => Effect.succeed(Option.none()),
       })

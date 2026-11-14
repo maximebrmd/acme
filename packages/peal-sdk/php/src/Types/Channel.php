@@ -44,7 +44,7 @@ class Channel extends JsonSerializableType
     public ?string $label;
 
     /**
-     * @var value-of<Platform> $platform
+     * @var value-of<ChannelPlatform> $platform
      */
     #[JsonProperty('platform')]
     public string $platform;
@@ -65,7 +65,7 @@ class Channel extends JsonSerializableType
      * @param array{
      *   handle: string,
      *   id: string,
-     *   platform: value-of<Platform>,
+     *   platform: value-of<ChannelPlatform>,
      *   status: ChannelStatus,
      *   avatarUrl?: ?string,
      *   connection?: ?value-of<ChannelConnection>,

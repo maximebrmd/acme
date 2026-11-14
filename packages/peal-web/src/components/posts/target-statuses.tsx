@@ -1,13 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 
 import { channelName } from "#channels/channel-name.ts";
 
 interface TargetStatusesProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly post: Post;
 }
 

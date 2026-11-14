@@ -1,4 +1,4 @@
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 
 /**
  * The channels a post goes to that are still connected to the workspace, in
@@ -10,7 +10,7 @@ import type { Channel, Post } from "peal-contract";
  */
 export const connectedTargets = (
   post: Post | undefined,
-  channels: readonly Channel[]
+  channels: readonly SocialChannel[]
 ): readonly string[] =>
   (post?.targets ?? []).flatMap(({ channelId, dropped }) =>
     dropped !== true && channels.some(({ id }) => id === channelId)
@@ -25,7 +25,7 @@ export const connectedTargets = (
  * never added by this.
  */
 export const everyChannel = (
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   selected: readonly string[]
 ): readonly string[] =>
   channels.flatMap(({ id, status }) =>
@@ -36,5 +36,6 @@ export const everyChannel = (
 const everyChannelFrom = 3;
 
 /** Whether the picker offers "Select all" and "Clear". */
-export const offersEveryChannel = (channels: readonly Channel[]): boolean =>
-  channels.length >= everyChannelFrom;
+export const offersEveryChannel = (
+  channels: readonly SocialChannel[]
+): boolean => channels.length >= everyChannelFrom;

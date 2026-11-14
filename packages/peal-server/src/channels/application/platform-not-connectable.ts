@@ -1,16 +1,17 @@
 import { Schema } from "effect";
 
-import { PlatformSchema } from "#channels/domain/platform.ts";
+import { ChannelPlatformSchema } from "#channels/domain/platform.ts";
 
 /**
  * This server cannot connect accounts of the platform: Peal has no sign-in
  * flow for it yet (`notSupported`), or the server lacks the settings it needs
  * (`notConfigured`), such as the token keyring or a platform's client keys.
+ * A website connects without a sign-in, so it has none to start.
  */
 export class PlatformNotConnectable extends Schema.TaggedError<PlatformNotConnectable>()(
   "PlatformNotConnectable",
   {
-    platform: PlatformSchema,
+    platform: ChannelPlatformSchema,
     reason: Schema.Literals(["notSupported", "notConfigured"]),
   }
 ) {

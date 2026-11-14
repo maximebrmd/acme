@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  ArticleRecord,
   AccountSnapshotRecord,
   AdsRecord,
   ActivityRecord,
@@ -62,6 +63,8 @@ export interface WorkspaceContent {
   /** Its ad accounts, sign-ins without their tokens, boosts and audit trail. */
   readonly ads: AdsRecord;
   readonly analytics: readonly AnalyticsRecord[];
+  /** Its articles, for its websites. */
+  readonly articles: readonly ArticleRecord[];
   /** The image provider it brought, without its key; null when none. */
   readonly assistantImageProvider: ImageProviderRecord | null;
   /** How many images it asked that provider for, by day. */

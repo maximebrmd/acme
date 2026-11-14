@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import type { AnalyticsDashboard, Channel } from "peal-contract";
+import type { AnalyticsDashboard, SocialChannel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   ChartContainer,
@@ -35,7 +35,7 @@ export interface ExportLinks {
 }
 
 interface AccountNumbersProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly dashboard: AnalyticsDashboard;
   readonly exports: ExportLinks;
 }

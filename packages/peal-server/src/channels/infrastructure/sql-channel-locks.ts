@@ -1,28 +1,7 @@
-import { Effect, Layer, Schedule, Schema, Semaphore } from "effect";
-import { SqlClient } from "effect/sql";
+import { Effect, Layer } from "effect";
 
 import { ChannelLocks } from "#channels/application/channel-locks.ts";
-import { DatabaseError } from "#shared/application/database-error.ts";
-
-// Postgres advisory locks, in their two-key form: the first key names the
-// channels' token locks, the second the channel. The two-key space never
-// overlaps the one-key locks the cluster and the migrations take. Two
-// channels whose ids hash alike only wait for each other.
-const tryLock =
-  "SELECT pg_try_advisory_lock(hashtext('peal-server/channels/tokens'), hashtext($1)) AS locked";
-
-const unlock =
-  "SELECT pg_advisory_unlock(hashtext('peal-server/channels/tokens'), hashtext($1))";
-
-const decodeLocked = Schema.decodeUnknownEffect(
-  Schema.Tuple([Schema.Struct({ locked: Schema.Boolean })])
-);
-
-// How long a refresh waits for the one holding the channel: longer than a
-// platform call takes, which its HTTP client bounds.
-const waitSchedule = Schedule.spaced("100 millis");
-
-const waitAttempts = 600;
+import { advisoryLocks } from "#shared/infrastructure/advisory-locks.ts";
 
 // How many locks a process holds, or waits for, at once. Each takes a
 // connection from the pool for as long as it is held, and the work under it
@@ -31,58 +10,19 @@ const waitAttempts = 600;
 const defaultHeldAtOnce = 4;
 
 /**
- * Channel locks held on a connection reserved for the work, which writes
- * through the pool as usual: its writes commit as they go, before the lock is
- * released, and a process that dies releases its locks with its connections.
- * At most `heldAtOnce` are held at a time in the process, so the pool always
- * has connections left for the work under them; the others wait their turn
- * without a connection.
+ * Channel locks on Postgres advisory locks (`advisoryLocks`), named for
+ * the channels' tokens: at most `heldAtOnce` held at a time in the process.
  */
 export const sqlChannelLocks = (heldAtOnce: number) =>
   Layer.effect(
     ChannelLocks,
-    Effect.gen(function* SqlChannelLocks() {
-      const sql = yield* SqlClient.SqlClient;
-      const turns = yield* Semaphore.make(heldAtOnce);
-
-      return ChannelLocks.of({
-        withLock: (channelId, effect) =>
-          Effect.scoped(
-            Effect.gen(function* locked() {
-              const connection = yield* sql.reserve.pipe(
-                Effect.mapError((cause) => new DatabaseError({ cause }))
-              );
-
-              const acquired = yield* connection
-                .execute(tryLock, [channelId], undefined)
-                .pipe(
-                  Effect.flatMap(decodeLocked),
-                  Effect.map(([row]) => row.locked),
-                  Effect.repeat({
-                    schedule: waitSchedule,
-                    times: waitAttempts,
-                    until: (held) => held,
-                  }),
-                  Effect.mapError((cause) => new DatabaseError({ cause }))
-                );
-
-              if (!acquired) {
-                return yield* new DatabaseError({
-                  cause: new Error(`Channel ${channelId} stayed locked`),
-                });
-              }
-
-              return yield* effect.pipe(
-                Effect.ensuring(
-                  connection
-                    .execute(unlock, [channelId], undefined)
-                    .pipe(Effect.ignore)
-                )
-              );
-            })
-          ).pipe(Semaphore.withPermit(turns)),
-      });
-    })
+    advisoryLocks("peal-server/channels/tokens", heldAtOnce).pipe(
+      Effect.map(({ withLock }) =>
+        ChannelLocks.of({
+          withLock: (channelId, effect) => withLock(channelId, effect),
+        })
+      )
+    )
   );
 
 /** The channel locks, with the default share of the pool. */

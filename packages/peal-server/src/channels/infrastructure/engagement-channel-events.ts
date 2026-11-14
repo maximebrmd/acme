@@ -2,6 +2,7 @@ import { DateTime, Effect, Layer } from "effect";
 
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
+import { isSocialPlatform } from "#shared/domain/platform.ts";
 
 /**
  * ChannelEvents that also tell the engagement context (EngagementRecords),
@@ -27,10 +28,18 @@ export const engagementChannelEvents = <E, R>(
         disabled: events.disabled,
         disconnected: (channel, cause) =>
           events.disconnected(channel, cause).pipe(
-            Effect.andThen(DateTime.now),
-            Effect.flatMap((at) =>
-              engagement.channelGone(channel.id, channel.platform, at)
-            )
+            Effect.andThen(() => {
+              const { platform } = channel;
+
+              // The inbox reads nothing of a website.
+              return isSocialPlatform(platform)
+                ? DateTime.now.pipe(
+                    Effect.flatMap((at) =>
+                      engagement.channelGone(channel.id, platform, at)
+                    )
+                  )
+                : Effect.void;
+            })
           ),
         enabled: events.enabled,
       });

@@ -3,7 +3,7 @@
 import { DateTime } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   InboxConversation,
   InboxDirectMessage,
   InboxOutgoingMessage,
@@ -47,7 +47,7 @@ export const ConversationRowView = ({
   workspaceId,
 }: {
   /** The conversation's channel, unless it was disconnected since. */
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly conversation: InboxConversation;
   readonly link: InboxLink;
   readonly workspaceId: string;

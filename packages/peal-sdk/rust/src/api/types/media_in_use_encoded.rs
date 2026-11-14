@@ -14,6 +14,9 @@ pub struct MediaInUseEncoded {
     #[serde(rename = "postIds")]
     #[serde(default)]
     pub post_ids: Vec<String>,
+    #[serde(rename = "articleIds")]
+    #[serde(default)]
+    pub article_ids: Vec<String>,
 }
 
 impl MediaInUseEncoded {
@@ -30,6 +33,7 @@ pub struct MediaInUseEncodedBuilder {
     message: Option<String>,
     request_id: Option<String>,
     post_ids: Option<Vec<String>>,
+    article_ids: Option<Vec<String>>,
 }
 
 impl MediaInUseEncodedBuilder {
@@ -58,10 +62,16 @@ impl MediaInUseEncodedBuilder {
         self
     }
 
+    pub fn article_ids(mut self, value: Vec<String>) -> Self {
+        self.article_ids = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`MediaInUseEncoded`].
     /// This method will fail if any of the following fields are not set:
     /// - [`tag`](MediaInUseEncodedBuilder::tag)
     /// - [`post_ids`](MediaInUseEncodedBuilder::post_ids)
+    /// - [`article_ids`](MediaInUseEncodedBuilder::article_ids)
     pub fn build(self) -> Result<MediaInUseEncoded, BuildError> {
         Ok(MediaInUseEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
@@ -71,6 +81,9 @@ impl MediaInUseEncodedBuilder {
             post_ids: self
                 .post_ids
                 .ok_or_else(|| BuildError::missing_field("post_ids"))?,
+            article_ids: self
+                .article_ids
+                .ok_or_else(|| BuildError::missing_field("article_ids"))?,
         })
     }
 }

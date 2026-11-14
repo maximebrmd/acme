@@ -25,11 +25,22 @@ public final class MediaUsage {
 
     private final List<String> scheduled;
 
+    private final List<String> draftArticles;
+
+    private final List<String> scheduledArticles;
+
     private final Map<String, Object> additionalProperties;
 
-    private MediaUsage(List<String> drafts, List<String> scheduled, Map<String, Object> additionalProperties) {
+    private MediaUsage(
+            List<String> drafts,
+            List<String> scheduled,
+            List<String> draftArticles,
+            List<String> scheduledArticles,
+            Map<String, Object> additionalProperties) {
         this.drafts = drafts;
         this.scheduled = scheduled;
+        this.draftArticles = draftArticles;
+        this.scheduledArticles = scheduledArticles;
         this.additionalProperties = additionalProperties;
     }
 
@@ -41,6 +52,16 @@ public final class MediaUsage {
     @JsonProperty("scheduled")
     public List<String> getScheduled() {
         return scheduled;
+    }
+
+    @JsonProperty("draftArticles")
+    public List<String> getDraftArticles() {
+        return draftArticles;
+    }
+
+    @JsonProperty("scheduledArticles")
+    public List<String> getScheduledArticles() {
+        return scheduledArticles;
     }
 
     @java.lang.Override
@@ -55,12 +76,15 @@ public final class MediaUsage {
     }
 
     private boolean equalTo(MediaUsage other) {
-        return drafts.equals(other.drafts) && scheduled.equals(other.scheduled);
+        return drafts.equals(other.drafts)
+                && scheduled.equals(other.scheduled)
+                && draftArticles.equals(other.draftArticles)
+                && scheduledArticles.equals(other.scheduledArticles);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.drafts, this.scheduled);
+        return Objects.hash(this.drafts, this.scheduled, this.draftArticles, this.scheduledArticles);
     }
 
     @java.lang.Override
@@ -78,6 +102,10 @@ public final class MediaUsage {
 
         private List<String> scheduled = new ArrayList<>();
 
+        private List<String> draftArticles = new ArrayList<>();
+
+        private List<String> scheduledArticles = new ArrayList<>();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -85,6 +113,8 @@ public final class MediaUsage {
         public Builder from(MediaUsage other) {
             drafts(other.getDrafts());
             scheduled(other.getScheduled());
+            draftArticles(other.getDraftArticles());
+            scheduledArticles(other.getScheduledArticles());
             return this;
         }
 
@@ -130,13 +160,58 @@ public final class MediaUsage {
             return this;
         }
 
+        @JsonSetter(value = "draftArticles", nulls = Nulls.SKIP)
+        public Builder draftArticles(List<String> draftArticles) {
+            this.draftArticles.clear();
+            if (draftArticles != null) {
+                this.draftArticles.addAll(draftArticles);
+            }
+            return this;
+        }
+
+        public Builder addDraftArticles(String draftArticles) {
+            this.draftArticles.add(draftArticles);
+            return this;
+        }
+
+        public Builder addAllDraftArticles(List<String> draftArticles) {
+            if (draftArticles != null) {
+                this.draftArticles.addAll(draftArticles);
+            }
+            return this;
+        }
+
+        @JsonSetter(value = "scheduledArticles", nulls = Nulls.SKIP)
+        public Builder scheduledArticles(List<String> scheduledArticles) {
+            this.scheduledArticles.clear();
+            if (scheduledArticles != null) {
+                this.scheduledArticles.addAll(scheduledArticles);
+            }
+            return this;
+        }
+
+        public Builder addScheduledArticles(String scheduledArticles) {
+            this.scheduledArticles.add(scheduledArticles);
+            return this;
+        }
+
+        public Builder addAllScheduledArticles(List<String> scheduledArticles) {
+            if (scheduledArticles != null) {
+                this.scheduledArticles.addAll(scheduledArticles);
+            }
+            return this;
+        }
+
         public MediaUsage build() {
-            return new MediaUsage(drafts, scheduled, additionalProperties);
+            return new MediaUsage(drafts, scheduled, draftArticles, scheduledArticles, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("drafts") || key.equalsIgnoreCase("scheduled")) {
+            if (key.equalsIgnoreCase("drafts")
+                    || key.equalsIgnoreCase("scheduled")
+                    || key.equalsIgnoreCase("draftArticles")
+                    || key.equalsIgnoreCase("scheduledArticles")) {
                 return;
             }
             this.additionalProperties.put(key, value);

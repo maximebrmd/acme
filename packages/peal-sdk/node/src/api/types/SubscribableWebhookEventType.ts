@@ -37,6 +37,8 @@ export const SubscribableWebhookEventType = {
         BoostEnded: "boost.ended",
         BoostFailed: "boost.failed",
         BoostUnconfirmed: "boost.unconfirmed",
-        BoostBudgetReached: "boost.budget_reached"
+        BoostBudgetReached: "boost.budget_reached",
+        ArticlePublished: "article.published",
+        ArticleFailed: "article.failed"
     } as const;
 export type SubscribableWebhookEventType = typeof SubscribableWebhookEventType[keyof typeof SubscribableWebhookEventType];

@@ -4,7 +4,7 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { SharedPlatformAccounts } from "#channels/application/shared-platform-accounts.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { PlatformSchema } from "#shared/domain/platform.ts";
+import { ChannelPlatformSchema } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { channels } from "./schema.ts";
@@ -15,7 +15,7 @@ const decodeRows = Schema.decodeUnknownEffect(
   Schema.Array(
     Schema.Struct({
       accountId: Schema.String,
-      platform: PlatformSchema,
+      platform: ChannelPlatformSchema,
       workspaceIds: Schema.Array(WorkspaceIdSchema),
     })
   )

@@ -3,7 +3,7 @@ import type { DateTime, Duration, Effect } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";
 import type { SignedInChannels } from "#channels/domain/data-deletion.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -59,7 +59,7 @@ export interface ChannelPageRequest {
   /** The last channel of the page before, if this is not the first. */
   readonly after: Option.Option<ChannelId>;
   readonly limit: number;
-  readonly platform: Option.Option<Platform>;
+  readonly platform: Option.Option<ChannelPlatform>;
   /**
    * Text the channel's handle, the name its platform shows or the name the
    * workspace gave it holds, whatever its case.
@@ -115,7 +115,7 @@ export class ChannelRepository extends Context.Service<
     /** The workspace's channel for a platform account, if it has one. */
     readonly findByAccount: (
       workspaceId: WorkspaceId,
-      platform: Platform,
+      platform: ChannelPlatform,
       accountId: string
     ) => Effect.Effect<Option.Option<Channel>, DatabaseError>;
     /**
@@ -123,7 +123,7 @@ export class ChannelRepository extends Context.Service<
      * before revoking the grant its channels share.
      */
     readonly accountInUse: (
-      platform: Platform,
+      platform: ChannelPlatform,
       accountId: string
     ) => Effect.Effect<boolean, DatabaseError>;
     /**

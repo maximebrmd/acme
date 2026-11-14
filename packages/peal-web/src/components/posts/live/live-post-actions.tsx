@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { LivePostRefusalSchema } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   LivePostChange,
   PostContent,
   PostTarget,
@@ -88,7 +88,7 @@ export const LivePostActions = ({
   target,
   workspaceId,
 }: {
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly channelName: string;
   /** What the post says, whose text on the channel an edit starts from. */
   readonly content: PostContent;

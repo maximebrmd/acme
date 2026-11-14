@@ -35,6 +35,8 @@ const summaries = {
   "message.received": "Someone sent a direct message to a channel's account",
   "message.sent": "A direct message went out from Peal",
   "media.failed": "A file was refused, or could not be read",
+  "article.failed": "An article did not go to its website",
+  "article.published": "An article went to its website",
   "media.ready": "A file was read, and can go in posts",
   "post.approval_requested": "A post waits for an approval",
   "post.approved": "A post that waited was approved",

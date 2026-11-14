@@ -3,7 +3,7 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import { inboxMessageRetentionDays } from "peal-contract";
+import { inboxMessageRetentionDays, isSocialChannel } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { useId } from "react";
@@ -50,7 +50,9 @@ export const MessagesList = ({
     return null;
   }
 
-  const known = AsyncResult.isSuccess(channels) ? channels.value : [];
+  const known = AsyncResult.isSuccess(channels)
+    ? channels.value.filter(isSocialChannel)
+    : [];
 
   return AsyncResult.match(result, {
     onFailure: () => (

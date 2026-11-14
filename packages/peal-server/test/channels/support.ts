@@ -19,7 +19,6 @@ import { EncryptedTokenSchema } from "#channels/application/token-cipher.ts";
 import { AvatarUrlSchema } from "#channels/domain/avatar-url.ts";
 import { connectChannel } from "#channels/domain/channel.ts";
 import type { Channel, TokenLifetime } from "#channels/domain/channel.ts";
-import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
@@ -33,6 +32,8 @@ import {
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { isSocialPlatform } from "#shared/domain/platform.ts";
+import type { ChannelPlatform } from "#shared/domain/platform.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -75,7 +76,7 @@ export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
   options: {
     readonly accountId?: string | undefined;
     readonly connection?: ChannelConnection | undefined;
-    readonly platform?: Platform;
+    readonly platform?: ChannelPlatform;
     readonly token?: TokenLifetime;
   } = {}
 ) {
@@ -89,10 +90,9 @@ export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
         AvatarUrlSchema.make(`https://social.example/avatars/${id}.png`)
       ),
       // An Instagram account comes through Facebook Login unless said.
-      connection: connectionOf(
-        platform,
-        Option.fromUndefinedOr(options.connection)
-      ),
+      connection: isSocialPlatform(platform)
+        ? connectionOf(platform, Option.fromUndefinedOr(options.connection))
+        : Option.none(),
       displayName: Option.some("Peal Example"),
       handle: "@peal_example",
       id,

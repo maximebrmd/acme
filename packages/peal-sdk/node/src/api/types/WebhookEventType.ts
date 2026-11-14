@@ -38,6 +38,8 @@ export const WebhookEventType = {
         BoostFailed: "boost.failed",
         BoostUnconfirmed: "boost.unconfirmed",
         BoostBudgetReached: "boost.budget_reached",
+        ArticlePublished: "article.published",
+        ArticleFailed: "article.failed",
         WebhookTest: "webhook.test"
     } as const;
 export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];

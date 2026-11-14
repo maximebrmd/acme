@@ -9,7 +9,7 @@ export interface Channel {
     handle: string;
     id: string;
     label: string | null;
-    platform: Peal.Platform;
+    platform: Peal.ChannelPlatform;
     status: Peal.ChannelStatus;
     tokenExpiresAt: string | null;
 }

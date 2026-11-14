@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, Signature } from "peal-contract";
+import type { SocialChannel, Signature } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
@@ -37,7 +37,7 @@ import { SignatureFieldsView, SignatureItemView } from "./signature-views.tsx";
 
 // The workspace's connected channels, which a signature may be for; none
 // while they load, or for a member who may not read them.
-const useChannels = (workspaceId: string): readonly Channel[] => {
+const useChannels = (workspaceId: string): readonly SocialChannel[] => {
   const channels = useAtomValue(workspaceChannels(workspaceId));
 
   return AsyncResult.isSuccess(channels) ? channels.value : [];
@@ -50,7 +50,7 @@ const EditForm = ({
   signature,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onClose: () => void;
   readonly signature: Signature;
   readonly workspaceId: string;
@@ -124,7 +124,7 @@ const SignatureRow = ({
   signature,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly mayManage: boolean;
   readonly signature: Signature;
   readonly workspaceId: string;
@@ -191,7 +191,7 @@ const LoadedSignatures = ({
   mayManage,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly mayManage: boolean;
   readonly workspaceId: string;
 }) => {
@@ -227,7 +227,7 @@ const CreateForm = ({
   channels,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Signatures");

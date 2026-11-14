@@ -264,13 +264,15 @@ layer(UseCasesTest)("the media endpoints", (it) => {
         const scheduled = yield* postShowing(workspaceId, mediaId, true);
 
         assert.deepStrictEqual(yield* client.media.usage({ params }), {
+          draftArticles: [],
           drafts: [draft.id],
           scheduled: [scheduled.id],
+          scheduledArticles: [],
         });
 
         assert.deepStrictEqual(
           yield* Effect.flip(client.media.delete({ params })),
-          new MediaInUse({ postIds: [scheduled.id] })
+          new MediaInUse({ articleIds: [], postIds: [scheduled.id] })
         );
 
         // Refused, it changed nothing: the draft still shows it.

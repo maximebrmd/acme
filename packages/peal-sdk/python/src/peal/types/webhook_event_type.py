@@ -40,6 +40,8 @@ WebhookEventType = typing.Union[
         "boost.failed",
         "boost.unconfirmed",
         "boost.budget_reached",
+        "article.published",
+        "article.failed",
         "webhook.test",
     ],
     typing.Any,

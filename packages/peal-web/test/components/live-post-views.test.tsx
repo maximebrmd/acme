@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { LivePostView } from "#components/posts/live/live-post-views.tsx";
@@ -33,7 +33,7 @@ const renderState = async (locale: "en" | "fr", state: LiveState) =>
     </NextIntlClientProvider>
   );
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

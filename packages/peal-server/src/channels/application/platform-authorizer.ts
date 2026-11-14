@@ -5,7 +5,7 @@ import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { ConnectAttempt } from "#channels/domain/connect-attempt.ts";
 import type { InvalidInstance } from "#channels/domain/invalid-instance.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
@@ -240,7 +240,7 @@ export class PlatformAuthorizers extends Context.Service<
      * one the server's first (`instagramConnections`, `linkedinConnections`).
      */
     readonly for: (
-      platform: Platform,
+      platform: ChannelPlatform,
       connection?: Option.Option<ChannelConnection>
     ) => Option.Option<PlatformAuthorizer>;
     /**
@@ -248,7 +248,9 @@ export class PlatformAuthorizers extends Context.Service<
      * in: the token jobs read each one's policy, as a platform's ways in
      * renew their tokens differently (LinkedIn's pages, not its profiles).
      */
-    readonly every: (platform: Platform) => readonly PlatformAuthorizer[];
+    readonly every: (
+      platform: ChannelPlatform
+    ) => readonly PlatformAuthorizer[];
     /**
      * The ways this server connects Instagram accounts, the one it prefers
      * first: Instagram Login, then Facebook Login.

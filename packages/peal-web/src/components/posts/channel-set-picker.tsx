@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { maxChannelSetNameLength } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   ChannelOptions,
   ChannelSet,
   Permission,
@@ -70,7 +70,7 @@ export const ChannelSetPickerView = ({
   sets,
 }: {
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly chosen: Chosen | null;
   readonly disabled: boolean;
   readonly onChoose: (set: ChannelSet) => void;
@@ -265,7 +265,7 @@ export const ChannelSetPicker = ({
   /** The channels ticked now. */
   readonly channelIds: readonly string[];
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   /** Whether the post is still written; otherwise nothing shows. */
   readonly editable: boolean;

@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, ChannelSet } from "peal-contract";
+import type { SocialChannel, ChannelSet } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
@@ -46,7 +46,7 @@ const EditForm = ({
   set,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onClose: () => void;
   readonly set: ChannelSet;
   readonly workspaceId: string;
@@ -126,7 +126,7 @@ const SetRow = ({
   set,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly mayManage: boolean;
   readonly set: ChannelSet;
   readonly workspaceId: string;
@@ -193,7 +193,7 @@ const CreateForm = ({
   channels,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("ChannelSets");

@@ -11,7 +11,7 @@ import { PlanSchema } from "./billing-plans.ts";
 import { BillingSubscriptionSchema } from "./billing.ts";
 import { ChannelStatusSchema } from "./channels.ts";
 import { Int64Schema } from "./int64.ts";
-import { ChannelConnectionSchema, PlatformSchema } from "./platform.ts";
+import { ChannelConnectionSchema, ChannelPlatformSchema } from "./platform.ts";
 import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { ShortLinkNotFound } from "./short-link-not-found.ts";
 import { StaffAccess } from "./staff-access.ts";
@@ -212,7 +212,7 @@ export const StaffChannelSchema = Schema.Struct({
   connection: Schema.NullOr(ChannelConnectionSchema),
   handle: Schema.String,
   id: Schema.String,
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
   status: ChannelStatusSchema,
   // When a token that cannot be renewed stops working.
   tokenExpiresAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -259,7 +259,7 @@ export const StaffFailureSchema = Schema.Struct({
   channelId: Schema.String,
   // The platform's own code, for support.
   code: Schema.NullOr(Schema.String),
-  platform: Schema.NullOr(PlatformSchema),
+  platform: Schema.NullOr(ChannelPlatformSchema),
   postId: Schema.String,
   reason: Schema.Union([FailureReasonSchema, UnconfirmedReasonSchema]),
   status: Schema.Literals(["failed", "unconfirmed"]),

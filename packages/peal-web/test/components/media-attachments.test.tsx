@@ -5,7 +5,7 @@ import { AsyncResult } from "effect/reactivity";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
-import type { Channel, Media, Platform } from "peal-contract";
+import type { SocialChannel, Media, Platform } from "peal-contract";
 import { maxMediaPerPost } from "peal-contract/post-text";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -63,7 +63,7 @@ const attached: readonly AttachedMedia[] = [
   { altText: "", media: Option.some(clip), mediaId: clip.id },
 ];
 
-const channel = (platform: Platform): Channel => ({
+const channel = (platform: Platform): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,

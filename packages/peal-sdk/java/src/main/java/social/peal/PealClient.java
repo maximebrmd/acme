@@ -10,6 +10,7 @@ import social.peal.resources.activity.ActivityClient;
 import social.peal.resources.ads.AdsClient;
 import social.peal.resources.analytics.AnalyticsClient;
 import social.peal.resources.apikeys.ApiKeysClient;
+import social.peal.resources.articles.ArticlesClient;
 import social.peal.resources.assistant.AssistantClient;
 import social.peal.resources.billing.BillingClient;
 import social.peal.resources.capabilities.CapabilitiesClient;
@@ -59,6 +60,8 @@ public class PealClient implements AutoCloseable {
     protected final Supplier<ChannelsClient> channelsClient;
 
     protected final Supplier<PostsClient> postsClient;
+
+    protected final Supplier<ArticlesClient> articlesClient;
 
     protected final Supplier<MediaClient> mediaClient;
 
@@ -132,6 +135,7 @@ public class PealClient implements AutoCloseable {
         this.apiKeysClient = Suppliers.memoize(() -> new ApiKeysClient(clientOptions));
         this.channelsClient = Suppliers.memoize(() -> new ChannelsClient(clientOptions));
         this.postsClient = Suppliers.memoize(() -> new PostsClient(clientOptions));
+        this.articlesClient = Suppliers.memoize(() -> new ArticlesClient(clientOptions));
         this.mediaClient = Suppliers.memoize(() -> new MediaClient(clientOptions));
         this.noticesClient = Suppliers.memoize(() -> new NoticesClient(clientOptions));
         this.notificationPreferencesClient = Suppliers.memoize(() -> new NotificationPreferencesClient(clientOptions));
@@ -188,6 +192,10 @@ public class PealClient implements AutoCloseable {
 
     public PostsClient posts() {
         return this.postsClient.get();
+    }
+
+    public ArticlesClient articles() {
+        return this.articlesClient.get();
     }
 
     public MediaClient media() {

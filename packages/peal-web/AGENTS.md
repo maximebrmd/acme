@@ -759,3 +759,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   read once, in the API client (`#two-step/refusals.ts`), and
   `TwoStepRefusalWatch` reads the page again. The owners' switch is
   `settings/security`.
+- Articles (`#articles/*`, `components/articles/`, the `Articles`
+  catalogue, under Posts in the sidebar at `/articles`) go to a website's
+  channel. The composer's posts read social channels only
+  (`workspaceChannels` filters with `isSocialChannel`, and the posts area
+  types its channels `SocialChannel`); a website's are `workspaceSites`.
+  The body's editor (`rich-text-editor.tsx`) is StarterKit with only
+  what the server's allow-list takes (headings 2 to 4, no underline,
+  links on http, https or mailto) and `ArticleImage`, a library file by
+  `mediaId` shown through the media API's address, never one kept in the
+  article: add a node or a mark to the server's `article-body.ts` first.
+  A website connects with `WebsiteFields` (`connect-website.tsx`): the
+  application password goes to the server once, and a site's channel
+  reconnects through the same form, as it has no sign-in.

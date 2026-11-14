@@ -513,13 +513,17 @@ func (m *MediaPage) String() string {
 type MediaQuery = string
 
 var (
-	mediaUsageFieldDrafts    = big.NewInt(1 << 0)
-	mediaUsageFieldScheduled = big.NewInt(1 << 1)
+	mediaUsageFieldDrafts            = big.NewInt(1 << 0)
+	mediaUsageFieldScheduled         = big.NewInt(1 << 1)
+	mediaUsageFieldDraftArticles     = big.NewInt(1 << 2)
+	mediaUsageFieldScheduledArticles = big.NewInt(1 << 3)
 )
 
 type MediaUsage struct {
-	Drafts    []string `json:"drafts" url:"drafts"`
-	Scheduled []string `json:"scheduled" url:"scheduled"`
+	Drafts            []string `json:"drafts" url:"drafts"`
+	Scheduled         []string `json:"scheduled" url:"scheduled"`
+	DraftArticles     []string `json:"draftArticles" url:"draftArticles"`
+	ScheduledArticles []string `json:"scheduledArticles" url:"scheduledArticles"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -540,6 +544,20 @@ func (m *MediaUsage) GetScheduled() []string {
 		return nil
 	}
 	return m.Scheduled
+}
+
+func (m *MediaUsage) GetDraftArticles() []string {
+	if m == nil {
+		return nil
+	}
+	return m.DraftArticles
+}
+
+func (m *MediaUsage) GetScheduledArticles() []string {
+	if m == nil {
+		return nil
+	}
+	return m.ScheduledArticles
 }
 
 func (m *MediaUsage) GetExtraProperties() map[string]interface{} {
@@ -570,6 +588,20 @@ func (m *MediaUsage) SetDrafts(drafts []string) {
 func (m *MediaUsage) SetScheduled(scheduled []string) {
 	m.Scheduled = scheduled
 	m.require(mediaUsageFieldScheduled)
+}
+
+// SetDraftArticles sets the DraftArticles field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaUsage) SetDraftArticles(draftArticles []string) {
+	m.DraftArticles = draftArticles
+	m.require(mediaUsageFieldDraftArticles)
+}
+
+// SetScheduledArticles sets the ScheduledArticles field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaUsage) SetScheduledArticles(scheduledArticles []string) {
+	m.ScheduledArticles = scheduledArticles
+	m.require(mediaUsageFieldScheduledArticles)
 }
 
 func (m *MediaUsage) UnmarshalJSON(data []byte) error {

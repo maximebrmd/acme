@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { DateTime } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, Permission } from "peal-contract";
+import type { SocialChannel, Permission } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useCallback } from "react";
@@ -87,7 +87,7 @@ const ExistingPost = ({
   userId,
   workspaceId,
 }: ComposerScreenProps & {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly postId: string;
 }) => {
   const t = useTranslations("Posts.Composer");

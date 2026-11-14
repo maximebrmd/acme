@@ -3,12 +3,20 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
 
 
 class MediaUsage(UniversalBaseModel):
     drafts: typing.List[str]
     scheduled: typing.List[str]
+    draft_articles: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="draftArticles"), pydantic.Field(alias="draftArticles")
+    ]
+    scheduled_articles: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="scheduledArticles"), pydantic.Field(alias="scheduledArticles")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

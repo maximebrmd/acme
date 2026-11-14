@@ -432,6 +432,22 @@ const reasonOf =
         refused(
           "Ads are off on this server, or the ad network is not set up on it: its operator turns them on (PEAL_ADS)."
         ),
+      ArticleChangeRefused: ({ code }) =>
+        refused(
+          code === "tokenExpired"
+            ? "The website refused Peal's application password: reconnect it with peal channels connect-website. Nothing changed."
+            : `The website refused the change (${code}): nothing changed.`
+        ),
+      ArticleNotFound: () =>
+        refused(
+          "The workspace has no such article: peal articles list shows them."
+        ),
+      ArticleRejected: ({ violations }) =>
+        refused(
+          `The article was refused: ${violations.map(({ _tag }) => _tag).join(", ")}. Nothing was saved.`
+        ),
+      ArticleStateConflict: ({ state }) =>
+        refused(`The article is ${state}, which does not allow this.`),
       AlreadyMember: () => refused("That address belongs to a member already."),
       AltTextTooLong: ({ maxLength }) =>
         refused(
@@ -683,9 +699,9 @@ const reasonOf =
         refused(
           "The workspace already imports two files at once, or has two images being made, or the server runs as many as it takes together: nothing was fetched or made. Try again in a moment."
         ),
-      MediaInUse: ({ postIds }) =>
+      MediaInUse: ({ articleIds, postIds }) =>
         refused(
-          `The media was not deleted: posts that are scheduled or being published show it (${postIds.join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
+          `The media was not deleted: posts or articles that are scheduled or being published show it (${[...postIds, ...articleIds].join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
         ),
       MediaNotFound: () => refused("The workspace has no such media."),
       MediaSourceNotPublic: () =>
@@ -820,6 +836,25 @@ const reasonOf =
       ShortLinkNotFound: () =>
         refused(
           "The workspace has no short link with that id: peal short-links list shows them."
+        ),
+      SiteConnectLimited: () =>
+        refused(
+          "The workspace tried to connect websites too many times in the last hour: try again later. Nothing was saved."
+        ),
+      SiteNotConnected: ({ reason }) =>
+        refused(
+          `The website was not connected: ${
+            {
+              addressNotAllowed:
+                "Peal reaches websites over HTTPS, on the default port, at public addresses only, and sends the password to the REST API of the site itself",
+              cannotPublish:
+                "the user may not publish posts or upload files there: use an Author, an Editor or an Administrator",
+              credentialsRefused:
+                "the site refused the user name and the application password: check both, and that the site lets application passwords through (some hosts strip the Authorization header)",
+              notWordPress:
+                "the address leads to no WordPress REST API: give the site's home page",
+            }[reason]
+          }. Nothing was saved.`
         ),
       SignatureNameTaken: () =>
         refused(

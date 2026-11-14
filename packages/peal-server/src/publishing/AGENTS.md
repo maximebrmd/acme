@@ -182,6 +182,98 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   erased, and its jobs are stopped with it (`PublicationScheduler.cancel`
   and `cancelRound`); one that wakes all the same finds its target gone
   and ends `superseded`, sending nothing.
+- An article (`domain/article.ts`, `Articles`, `publishing.articles`) is
+  a sibling of a post, never one: a title, a body, an excerpt, tags,
+  categories, a cover, for one website's channel (`SiteChannels`,
+  `isSitePlatform`), and how it lands there (`siteStatus`: `publish`,
+  `draft`, or `future`, which the site publishes itself at the article's
+  time, Peal sending it at once: `sendAt`). Its body is the composer's
+  editor document kept to an allow-list (`domain/article-body.ts`: what
+  does not decode is refused, `bodyInvalid` in the contract), and its
+  HTML is written by `domain/article-html.ts` alone, every text and
+  attribute escaped. It takes the posts' permissions (`post:create`,
+  `post:update`, `post:delete`, `post:schedule`, `post:publish` for a
+  change on the site, `post:read`) and counts in no month's posts. Articles
+  have no approval yet: wherever `ApprovalGate.holds` the actor, what
+  would put one on its site or change it there (create with a time,
+  schedule, retry, edit while scheduled, update on the site) is refused
+  (`ArticleRejected` `approvalRequired`); unpublishing is not. A workspace
+  over its plan (`withinPlan`) schedules and sends none. Every write
+  re-reads the article under its row lock (`ArticleStore.lock`) and
+  decides again on what it finds, and `ArticleStore.update` writes only
+  over the state, revision and round it was read with, so a member and a
+  job never change it at once. `articleViolations` checks it when it is
+  scheduled, all at once (`ArticleRejected`), never while a draft, and
+  its files are looked up in the library again then. Its title and
+  excerpt reach the site escaped: plain text, as a member typed it.
+  `media_ids` lists the library's files it shows: a scheduled or
+  publishing article keeps one from deletion (`MediaInPosts`).
+- `PublishArticleV1` (`workflows/publish-article.ts`, persisted contract:
+  payload `{ articleId, revision, round, at }`, key
+  `<articleId>:<revision>:<round>`, activities `claim`, `send/<n>`,
+  `settle`, clocks `send-at`, `retry/<n>`) sleeps until `at`, claims the
+  article for its revision and round (`claimed`: missed past an hour),
+  decides each attempt with the posts' `decide`, and settles it, telling
+  `ArticleEvents` (the webhooks' `article.published`, `article.failed`)
+  in that transaction. Each attempt's row (`publishing.article_calls`) is
+  written and committed before the site is called, and marked
+  (`committed_at`, `SitePublishRequest.committing`) just before the call
+  that makes the post: a row found without it is made again, one with it
+  resumed (`SitePublisher.resume`), never sent blindly. A schedule raises
+  `revision`, a retry `round`, so a job of an earlier one is superseded.
+  It calls the site directly, not through a channel's gate, but in the
+  channel's turn (`ArticleSendTurns`, an advisory lock): the attempt and
+  the journal's record of the post it made end before another attempt of
+  the channel looks for its own. An attempt waits for its turn (one
+  taken, or none of the process's two left) by asking again every two to
+  five seconds, holding no connection, for 30 minutes, longer than an
+  attempt holds one; then it writes nothing and answers a retry a minute
+  later, and gives up a day past the article's time. Each attempt, once
+  in its turn, first takes up what an earlier attempt of the round left
+  unfinished: a call that never reached the site is dropped, and the post
+  of one that may have is looked for, never made again. An attempt the
+  journal says ended answers what it recorded, outside any turn; one
+  whose call may have reached the site is looked for before the plan is
+  checked. A call that may have reached the site ends only published or
+  unconfirmed (to check): a search that fails, or cannot start, and the
+  day's deadline both settle it to check, never failed. Each try of an
+  article opens a new round, a failed article scheduled again included,
+  and a new round's attempt first looks once more for the post of an
+  earlier round's call left to check (`ArticleJournal.toCheckBefore`,
+  `SitePublisher.find`), adopting it when found. A turn that cannot be
+  asked, the database failing, counts as taken: the attempt keeps
+  waiting. `drop` forgets only a call that never left, and `committing`
+  fails, so the post's call is not made, when its row is gone. WordPress
+  drops a featured image its library lost and answers `featured_media`
+  0: the cover alone is then sent once more, over that post, and one the
+  site drops again is not offered any more
+  (`article_files.featured_refused`).
+- WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
+  sends each file the article shows to `/wp/v2/media` (the bytes as the
+  body, `Content-Disposition` naming the file, streamed), finds tags and
+  categories by name whatever their case (WordPress answers names with
+  `&`, `<` and `>` encoded, and a name it has answers `term_exists` with
+  its id) or makes them, then makes the
+  post with one `POST /wp/v2/posts`, the commit. WordPress keeps no
+  idempotency key: an answer lost (no answer, or a 5xx) is looked for
+  among the user's posts changed since the attempt began a minute early,
+  by title, and adopted only when exactly one matches that no other
+  article of the channel holds or its call answered
+  (`ArticleStore.recordedOn`), else unconfirmed. A request the guard
+  refused never left: a name that did not resolve for now is the site
+  unavailable, any other refusal a failure. Only a 401 with WordPress's
+  own error is a refused
+  credential; nothing renews one, so the channel is marked to reconnect.
+  Unpublishing is `DELETE` without `force` (the site's trash; gone
+  already is done), an update `POST /wp/v2/posts/{id}` without status or
+  date, but with an empty excerpt and `featured_media` 0 when Peal has
+  none: both run in the request, the article saved after. A file the site
+  took for the article (`publishing.article_files`, `ArticleJournal`) is
+  never sent again, across attempts and updates. Only an http or https
+  `link` is kept as the permalink.
+- Erasing a workspace erases its articles (`ArticleRecords`, refused
+  while a call to a site is in flight, `PostsPublishing`), the export
+  holds them, and a member who leaves is forgotten as their author.
 - A post keeps how it was created and last scheduled (`PostAttribution`,
   `#publishing/domain/post-origin.ts`): in the web app, with an API key or
   through an OAuth application (`Actor.subject.clientId`), with the key's or

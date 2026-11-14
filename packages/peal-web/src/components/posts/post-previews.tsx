@@ -3,7 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import type {
-  Channel,
+  SocialChannel,
   MediaAttachment,
   PostDraft,
   PostValidation,
@@ -126,7 +126,7 @@ export const PostPreviews = ({
   workspaceId,
   writable,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** The composer's text, which the previews sit beside. */
   readonly children: ReactNode;
   /** What a save of the post sends now. */

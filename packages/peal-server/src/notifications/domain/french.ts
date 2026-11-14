@@ -270,6 +270,7 @@ export const french: EmailCatalog = {
     pinterest: "Pinterest",
     threads: "Threads",
     tiktok: "TikTok",
+    wordpress: "WordPress",
     x: "X",
     youtube: "YouTube",
   },

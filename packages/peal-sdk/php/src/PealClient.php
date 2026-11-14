@@ -8,6 +8,7 @@ use Peal\Credential\CredentialClient;
 use Peal\ApiKeys\ApiKeysClient;
 use Peal\Channels\ChannelsClient;
 use Peal\Posts\PostsClient;
+use Peal\Articles\ArticlesClient;
 use Peal\Media\MediaClient;
 use Peal\Notices\NoticesClient;
 use Peal\NotificationPreferences\NotificationPreferencesClient;
@@ -74,6 +75,11 @@ class PealClient
      * @var PostsClient $posts
      */
     public PostsClient $posts;
+
+    /**
+     * @var ArticlesClient $articles
+     */
+    public ArticlesClient $articles;
 
     /**
      * @var MediaClient $media
@@ -292,6 +298,7 @@ class PealClient
         $this->apiKeys = new ApiKeysClient($this->client, $this->options);
         $this->channels = new ChannelsClient($this->client, $this->options);
         $this->posts = new PostsClient($this->client, $this->options);
+        $this->articles = new ArticlesClient($this->client, $this->options);
         $this->media = new MediaClient($this->client, $this->options);
         $this->notices = new NoticesClient($this->client, $this->options);
         $this->notificationPreferences = new NotificationPreferencesClient($this->client, $this->options);

@@ -1,4 +1,13 @@
-import { Context, Effect, Layer, Option, Result } from "effect";
+import {
+  Config,
+  Context,
+  Effect,
+  Layer,
+  Option,
+  Result,
+  Schema,
+  SchemaTransformation,
+} from "effect";
 import { Dns, IpNetwork, NetAddress } from "effect/net";
 
 import { OutboundRequestRefused } from "./outbound-request-refused.ts";
@@ -81,6 +90,46 @@ const lookupFailure = (host: string, error: Dns.DnsError) =>
       : "lookupFailed"
   );
 
+// A host name or an address as URL writes it, lowercase: no scheme, port,
+// path or wildcard.
+const hostPattern =
+  /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$|^\[[0-9a-f:.]+\]$/u;
+
+const AllowedHostsSchema = Schema.String.pipe(
+  Schema.decodeTo(
+    Schema.Array(
+      Schema.String.check(
+        Schema.isPattern(hostPattern, {
+          expected: "a host name, without a scheme, a port or a wildcard",
+        })
+      )
+    ),
+    SchemaTransformation.transform({
+      decode: (value: string): readonly string[] =>
+        value
+          .split(",")
+          .map((host) => host.trim().toLowerCase())
+          .filter((host) => host !== ""),
+      encode: (hosts: readonly string[]) => hosts.join(","),
+    })
+  )
+);
+
+/**
+ * `PEAL_OUTBOUND_ALLOWED_HOSTS`: the hosts, by name or address, that a
+ * self-hoster lets Peal reach although they are not public (a site on
+ * their own network), comma-separated. Empty by default, and on Peal's own
+ * service, where nothing a user names may lead inside. Anything but host
+ * names stops the server.
+ */
+export const allowedHostsConfig = Config.schema(
+  AllowedHostsSchema,
+  "PEAL_OUTBOUND_ALLOWED_HOSTS"
+).pipe(
+  Config.withDefault<readonly string[]>([]),
+  Config.map((hosts): ReadonlySet<string> => new Set(hosts))
+);
+
 /**
  * Checks URLs that users chose (a Mastodon instance, a Bluesky server named
  * in a DID document) before Peal sends anything there: HTTPS on the default
@@ -90,6 +139,9 @@ const lookupFailure = (host: string, error: Dns.DnsError) =>
  * The check resolves the name itself, so a name that changes its answer
  * between this lookup and the connection could still lead elsewhere; the
  * guard narrows server-side request forgery to that window.
+ *
+ * A host the operator allows (`PEAL_OUTBOUND_ALLOWED_HOSTS`) is reached
+ * whatever its addresses, still over HTTPS on the default port.
  */
 export class OutboundGuard extends Context.Service<
   OutboundGuard,
@@ -102,6 +154,7 @@ export class OutboundGuard extends Context.Service<
     OutboundGuard,
     Effect.gen(function* OutboundGuardLive() {
       const dns = yield* Dns.Dns;
+      const allowed = yield* allowedHostsConfig;
 
       const addressesOf = (
         hostname: string
@@ -121,17 +174,24 @@ export class OutboundGuard extends Context.Service<
           })
         );
 
-      const check = (url: URL) =>
-        url.protocol === "https:" && url.port === ""
-          ? addressesOf(url.hostname).pipe(
-              Effect.flatMap((addresses) =>
-                addresses.every(isPublicAddress)
-                  ? Effect.void
-                  : Effect.fail(refused(url.host, "notPublic"))
-              ),
-              Effect.withSpan("OutboundGuard.check")
-            )
-          : Effect.fail(refused(url.host, "notHttps"));
+      const publicOnly = (url: URL) =>
+        addressesOf(url.hostname).pipe(
+          Effect.flatMap((addresses) =>
+            addresses.every(isPublicAddress)
+              ? Effect.void
+              : Effect.fail(refused(url.host, "notPublic"))
+          )
+        );
+
+      const check = (url: URL) => {
+        if (url.protocol !== "https:" || url.port !== "") {
+          return Effect.fail(refused(url.host, "notHttps"));
+        }
+
+        return allowed.has(url.hostname.toLowerCase())
+          ? Effect.void
+          : publicOnly(url).pipe(Effect.withSpan("OutboundGuard.check"));
+      };
 
       return OutboundGuard.of({ check });
     })

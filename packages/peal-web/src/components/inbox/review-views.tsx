@@ -3,7 +3,7 @@
 import { DateTime } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   InboxReview,
   InboxReviewReply,
   InboxReviewThread,
@@ -42,7 +42,7 @@ export const ReviewThreadRowView = ({
   workspaceId,
 }: {
   /** The location's channel, unless it was disconnected since. */
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly link: InboxLink;
   readonly thread: InboxReviewThread;
   readonly workspaceId: string;

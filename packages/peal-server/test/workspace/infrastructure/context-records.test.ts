@@ -16,6 +16,7 @@ import { EngagementRecords } from "#engagement/application/engagement-records.ts
 import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
+import { ArticleRecords } from "#publishing/application/article-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostsPublishing } from "#publishing/application/posts-publishing.ts";
 import { ReviewRecords } from "#review/application/review-records.ts";
@@ -59,6 +60,10 @@ const RecordsTest = Layer.unwrap(
                 ? Effect.fail(new PostsPublishing({ workspaceId }))
                 : Effect.void,
             eraseWorkspace: (workspaceId) => call(`posts:${workspaceId}`),
+          }),
+          Layer.mock(ArticleRecords, {
+            ensureErasable: () => Effect.void,
+            eraseWorkspace: (workspaceId) => call(`articles:${workspaceId}`),
           }),
           Layer.mock(BillingRecords, {
             billedBy: (workspaceId) =>
@@ -160,6 +165,7 @@ layer(RecordsTest)("settling deletions at Stripe", (it) => {
 
       assert.deepStrictEqual(yield* made, [
         `posts:${harbour}`,
+        `articles:${harbour}`,
         `billing:${harbour}`,
       ]);
     })

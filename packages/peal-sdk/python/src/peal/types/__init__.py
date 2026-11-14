@@ -102,6 +102,61 @@ if typing.TYPE_CHECKING:
     from .approval_request import ApprovalRequest
     from .approval_request_decision import ApprovalRequestDecision
     from .approval_status import ApprovalStatus
+    from .article import Article
+    from .article_body import ArticleBody
+    from .article_body_type import ArticleBodyType
+    from .article_change_refused_encoded import ArticleChangeRefusedEncoded
+    from .article_input import ArticleInput
+    from .article_not_found_encoded import ArticleNotFoundEncoded
+    from .article_page import ArticlePage
+    from .article_rejected_encoded import ArticleRejectedEncoded
+    from .article_site_status import ArticleSiteStatus
+    from .article_state import (
+        ArticleState,
+        ArticleState_Draft,
+        ArticleState_Failed,
+        ArticleState_Published,
+        ArticleState_Publishing,
+        ArticleState_Scheduled,
+        ArticleState_Unconfirmed,
+    )
+    from .article_state_conflict_encoded import ArticleStateConflictEncoded
+    from .article_state_conflict_encoded_tag import ArticleStateConflictEncodedTag
+    from .article_state_draft import ArticleStateDraft
+    from .article_state_failed import ArticleStateFailed
+    from .article_state_name import ArticleStateName
+    from .article_state_published import ArticleStatePublished
+    from .article_state_publishing import ArticleStatePublishing
+    from .article_state_scheduled import ArticleStateScheduled
+    from .article_state_unconfirmed import ArticleStateUnconfirmed
+    from .article_time import ArticleTime
+    from .article_violation import (
+        ArticleViolation,
+        ArticleViolation_ApprovalRequired,
+        ArticleViolation_BodyInvalid,
+        ArticleViolation_BodyMissing,
+        ArticleViolation_CoverNotImage,
+        ArticleViolation_ExcerptTooLong,
+        ArticleViolation_SiteTimeInPast,
+        ArticleViolation_TermInvalid,
+        ArticleViolation_TimeInPast,
+        ArticleViolation_TitleMissing,
+        ArticleViolation_TitleTooLong,
+        ArticleViolation_TooManyTerms,
+    )
+    from .article_violation_approval_required import ArticleViolationApprovalRequired
+    from .article_violation_body_invalid import ArticleViolationBodyInvalid
+    from .article_violation_body_missing import ArticleViolationBodyMissing
+    from .article_violation_cover_not_image import ArticleViolationCoverNotImage
+    from .article_violation_excerpt_too_long import ArticleViolationExcerptTooLong
+    from .article_violation_site_time_in_past import ArticleViolationSiteTimeInPast
+    from .article_violation_term_invalid import ArticleViolationTermInvalid
+    from .article_violation_term_invalid_field import ArticleViolationTermInvalidField
+    from .article_violation_time_in_past import ArticleViolationTimeInPast
+    from .article_violation_title_missing import ArticleViolationTitleMissing
+    from .article_violation_title_too_long import ArticleViolationTitleTooLong
+    from .article_violation_too_many_terms import ArticleViolationTooManyTerms
+    from .article_violation_too_many_terms_field import ArticleViolationTooManyTermsField
     from .assistant_action import (
         AssistantAction,
         AssistantAction_Hashtags,
@@ -202,6 +257,7 @@ if typing.TYPE_CHECKING:
     from .channel_options import ChannelOptions
     from .channel_page import ChannelPage
     from .channel_page_counts import ChannelPageCounts
+    from .channel_platform import ChannelPlatform
     from .channel_preview import ChannelPreview
     from .channel_series import ChannelSeries
     from .channel_set import ChannelSet
@@ -886,6 +942,10 @@ if typing.TYPE_CHECKING:
     from .signature_scope_workspace import SignatureScopeWorkspace
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
+    from .site_connect_limited_encoded import SiteConnectLimitedEncoded
+    from .site_not_connected_encoded import SiteNotConnectedEncoded
+    from .site_not_connected_reason import SiteNotConnectedReason
+    from .site_platform import SitePlatform
     from .slot_time import SlotTime
     from .special_ad_category import SpecialAdCategory
     from .spend_ceiling_exceeded_encoded import SpendCeilingExceededEncoded
@@ -1149,6 +1209,57 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ApprovalRequest": ".approval_request",
     "ApprovalRequestDecision": ".approval_request_decision",
     "ApprovalStatus": ".approval_status",
+    "Article": ".article",
+    "ArticleBody": ".article_body",
+    "ArticleBodyType": ".article_body_type",
+    "ArticleChangeRefusedEncoded": ".article_change_refused_encoded",
+    "ArticleInput": ".article_input",
+    "ArticleNotFoundEncoded": ".article_not_found_encoded",
+    "ArticlePage": ".article_page",
+    "ArticleRejectedEncoded": ".article_rejected_encoded",
+    "ArticleSiteStatus": ".article_site_status",
+    "ArticleState": ".article_state",
+    "ArticleStateConflictEncoded": ".article_state_conflict_encoded",
+    "ArticleStateConflictEncodedTag": ".article_state_conflict_encoded_tag",
+    "ArticleStateDraft": ".article_state_draft",
+    "ArticleStateFailed": ".article_state_failed",
+    "ArticleStateName": ".article_state_name",
+    "ArticleStatePublished": ".article_state_published",
+    "ArticleStatePublishing": ".article_state_publishing",
+    "ArticleStateScheduled": ".article_state_scheduled",
+    "ArticleStateUnconfirmed": ".article_state_unconfirmed",
+    "ArticleState_Draft": ".article_state",
+    "ArticleState_Failed": ".article_state",
+    "ArticleState_Published": ".article_state",
+    "ArticleState_Publishing": ".article_state",
+    "ArticleState_Scheduled": ".article_state",
+    "ArticleState_Unconfirmed": ".article_state",
+    "ArticleTime": ".article_time",
+    "ArticleViolation": ".article_violation",
+    "ArticleViolationApprovalRequired": ".article_violation_approval_required",
+    "ArticleViolationBodyInvalid": ".article_violation_body_invalid",
+    "ArticleViolationBodyMissing": ".article_violation_body_missing",
+    "ArticleViolationCoverNotImage": ".article_violation_cover_not_image",
+    "ArticleViolationExcerptTooLong": ".article_violation_excerpt_too_long",
+    "ArticleViolationSiteTimeInPast": ".article_violation_site_time_in_past",
+    "ArticleViolationTermInvalid": ".article_violation_term_invalid",
+    "ArticleViolationTermInvalidField": ".article_violation_term_invalid_field",
+    "ArticleViolationTimeInPast": ".article_violation_time_in_past",
+    "ArticleViolationTitleMissing": ".article_violation_title_missing",
+    "ArticleViolationTitleTooLong": ".article_violation_title_too_long",
+    "ArticleViolationTooManyTerms": ".article_violation_too_many_terms",
+    "ArticleViolationTooManyTermsField": ".article_violation_too_many_terms_field",
+    "ArticleViolation_ApprovalRequired": ".article_violation",
+    "ArticleViolation_BodyInvalid": ".article_violation",
+    "ArticleViolation_BodyMissing": ".article_violation",
+    "ArticleViolation_CoverNotImage": ".article_violation",
+    "ArticleViolation_ExcerptTooLong": ".article_violation",
+    "ArticleViolation_SiteTimeInPast": ".article_violation",
+    "ArticleViolation_TermInvalid": ".article_violation",
+    "ArticleViolation_TimeInPast": ".article_violation",
+    "ArticleViolation_TitleMissing": ".article_violation",
+    "ArticleViolation_TitleTooLong": ".article_violation",
+    "ArticleViolation_TooManyTerms": ".article_violation",
     "AssistantAction": ".assistant_action",
     "AssistantActionHashtags": ".assistant_action_hashtags",
     "AssistantActionRewrite": ".assistant_action_rewrite",
@@ -1245,6 +1356,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelOptions": ".channel_options",
     "ChannelPage": ".channel_page",
     "ChannelPageCounts": ".channel_page_counts",
+    "ChannelPlatform": ".channel_platform",
     "ChannelPreview": ".channel_preview",
     "ChannelSeries": ".channel_series",
     "ChannelSet": ".channel_set",
@@ -1910,6 +2022,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "SignatureScope_Workspace": ".signature_scope",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
+    "SiteConnectLimitedEncoded": ".site_connect_limited_encoded",
+    "SiteNotConnectedEncoded": ".site_not_connected_encoded",
+    "SiteNotConnectedReason": ".site_not_connected_reason",
+    "SitePlatform": ".site_platform",
     "SlotTime": ".slot_time",
     "SpecialAdCategory": ".special_ad_category",
     "SpendCeilingExceededEncoded": ".spend_ceiling_exceeded_encoded",
@@ -2199,6 +2315,57 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalRequestDecision",
     "ApprovalStatus",
+    "Article",
+    "ArticleBody",
+    "ArticleBodyType",
+    "ArticleChangeRefusedEncoded",
+    "ArticleInput",
+    "ArticleNotFoundEncoded",
+    "ArticlePage",
+    "ArticleRejectedEncoded",
+    "ArticleSiteStatus",
+    "ArticleState",
+    "ArticleStateConflictEncoded",
+    "ArticleStateConflictEncodedTag",
+    "ArticleStateDraft",
+    "ArticleStateFailed",
+    "ArticleStateName",
+    "ArticleStatePublished",
+    "ArticleStatePublishing",
+    "ArticleStateScheduled",
+    "ArticleStateUnconfirmed",
+    "ArticleState_Draft",
+    "ArticleState_Failed",
+    "ArticleState_Published",
+    "ArticleState_Publishing",
+    "ArticleState_Scheduled",
+    "ArticleState_Unconfirmed",
+    "ArticleTime",
+    "ArticleViolation",
+    "ArticleViolationApprovalRequired",
+    "ArticleViolationBodyInvalid",
+    "ArticleViolationBodyMissing",
+    "ArticleViolationCoverNotImage",
+    "ArticleViolationExcerptTooLong",
+    "ArticleViolationSiteTimeInPast",
+    "ArticleViolationTermInvalid",
+    "ArticleViolationTermInvalidField",
+    "ArticleViolationTimeInPast",
+    "ArticleViolationTitleMissing",
+    "ArticleViolationTitleTooLong",
+    "ArticleViolationTooManyTerms",
+    "ArticleViolationTooManyTermsField",
+    "ArticleViolation_ApprovalRequired",
+    "ArticleViolation_BodyInvalid",
+    "ArticleViolation_BodyMissing",
+    "ArticleViolation_CoverNotImage",
+    "ArticleViolation_ExcerptTooLong",
+    "ArticleViolation_SiteTimeInPast",
+    "ArticleViolation_TermInvalid",
+    "ArticleViolation_TimeInPast",
+    "ArticleViolation_TitleMissing",
+    "ArticleViolation_TitleTooLong",
+    "ArticleViolation_TooManyTerms",
     "AssistantAction",
     "AssistantActionHashtags",
     "AssistantActionRewrite",
@@ -2295,6 +2462,7 @@ __all__ = [
     "ChannelOptions",
     "ChannelPage",
     "ChannelPageCounts",
+    "ChannelPlatform",
     "ChannelPreview",
     "ChannelSeries",
     "ChannelSet",
@@ -2960,6 +3128,10 @@ __all__ = [
     "SignatureScope_Workspace",
     "SignedRequest",
     "SignedRequestMethod",
+    "SiteConnectLimitedEncoded",
+    "SiteNotConnectedEncoded",
+    "SiteNotConnectedReason",
+    "SitePlatform",
     "SlotTime",
     "SpecialAdCategory",
     "SpendCeilingExceededEncoded",

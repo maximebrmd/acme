@@ -4,7 +4,7 @@ import { DateTime } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 import { maxFeedTemplateLength } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   Feed,
   FeedItem,
   FeedMode,
@@ -184,7 +184,7 @@ export const FeedFieldsView = ({
   onChange,
   queues,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   readonly draft: FeedDraft;
   /** Whether the member may schedule, as a queue needs. */

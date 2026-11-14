@@ -3,7 +3,7 @@ import { DateTime } from "effect";
 import { constVoid } from "effect/Function";
 import { NextIntlClientProvider } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   InboxConversation,
   InboxDirectMessage,
 } from "peal-contract";
@@ -35,7 +35,7 @@ const link = (href: string, label: string) => <a href={href}>{label}</a>;
 
 const workspaceId = "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f";
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: "Synthetic studio",

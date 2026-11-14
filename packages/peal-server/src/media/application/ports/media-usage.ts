@@ -5,12 +5,19 @@ import type { MediaInUse } from "#media/application/media-in-use.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
-/** The posts that show an asset. */
+/** The posts and the articles that show an asset. */
 export interface AssetUse {
   /** Drafts, which lose the asset when it is deleted. */
   readonly drafts: readonly PostId[];
   /** Posts scheduled or publishing, which keep it from being deleted. */
   readonly scheduled: readonly PostId[];
+  /**
+   * Articles not yet on their site nor on their way (drafts, failed, to
+   * check), which lose it when it is deleted.
+   */
+  readonly draftArticles: readonly string[];
+  /** Articles scheduled or publishing, which keep it from being deleted. */
+  readonly scheduledArticles: readonly string[];
 }
 
 /**
