@@ -867,8 +867,10 @@ module Peal
       # made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or
       # sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in
       # cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within 90 days is
-      # required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff
-      # acting as a member.
+      # required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is
+      # refused the same way while the billing account, without a payment method, used the managed ads its month
+      # includes (UsageAllowanceReached `paymentMethodRequired`); running boosts are never touched. Needs ads:spend;
+      # never staff acting as a member.
       #
       # @param request_options [Hash]
       # @param params [Peal::Types::NewBoost]

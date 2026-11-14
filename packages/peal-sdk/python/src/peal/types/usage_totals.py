@@ -11,6 +11,9 @@ from .platform_posts import PlatformPosts
 
 
 class UsageTotals(UniversalBaseModel):
+    assistant_images: typing_extensions.Annotated[
+        int, FieldMetadata(alias="assistantImages"), pydantic.Field(alias="assistantImages")
+    ]
     billable_account_days: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="billableAccountDays"), pydantic.Field(alias="billableAccountDays")
     ] = None
@@ -23,8 +26,12 @@ class UsageTotals(UniversalBaseModel):
     days_counted: typing_extensions.Annotated[
         int, FieldMetadata(alias="daysCounted"), pydantic.Field(alias="daysCounted")
     ]
+    managed_ads: typing_extensions.Annotated[int, FieldMetadata(alias="managedAds"), pydantic.Field(alias="managedAds")]
     metered_posts: typing_extensions.Annotated[
         typing.List[MeteredPosts], FieldMetadata(alias="meteredPosts"), pydantic.Field(alias="meteredPosts")
+    ]
+    outbound_messages: typing_extensions.Annotated[
+        int, FieldMetadata(alias="outboundMessages"), pydantic.Field(alias="outboundMessages")
     ]
     published_posts: typing_extensions.Annotated[
         int, FieldMetadata(alias="publishedPosts"), pydantic.Field(alias="publishedPosts")

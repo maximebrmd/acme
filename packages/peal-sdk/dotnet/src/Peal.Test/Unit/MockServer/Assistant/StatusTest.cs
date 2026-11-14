@@ -25,9 +25,41 @@ public class StatusTest : BaseMockServerTest
                 "dailyLimit": 1,
                 "maxPromptLength": 1,
                 "requestCost": 1,
+                "month": {
+                  "allowance": 1,
+                  "ceiling": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "most": 1,
+                  "price": {
+                    "cents": 1,
+                    "per": 1
+                  },
+                  "priceConfirmed": true,
+                  "resetsAt": "resetsAt",
+                  "used": 1
+                },
+                "reason": "paymentMethod",
                 "source": "workspace"
               },
               "maxTextLength": 1,
+              "month": {
+                "allowance": 1,
+                "ceiling": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "most": 1,
+                "price": {
+                  "cents": 1,
+                  "per": 1
+                },
+                "priceConfirmed": true,
+                "resetsAt": "resetsAt",
+                "used": 1
+              },
+              "reason": "paymentMethod",
               "remaining": 1,
               "resetsAt": "resetsAt",
               "source": "workspace"
@@ -69,9 +101,41 @@ public class StatusTest : BaseMockServerTest
                 "dailyLimit": 1,
                 "maxPromptLength": 1,
                 "requestCost": 1,
+                "month": {
+                  "allowance": 1,
+                  "ceiling": {
+                    "amount": 1,
+                    "currency": "currency"
+                  },
+                  "most": 1,
+                  "price": {
+                    "cents": 1,
+                    "per": 1
+                  },
+                  "priceConfirmed": true,
+                  "resetsAt": "resetsAt",
+                  "used": 1
+                },
+                "reason": "paymentMethod",
                 "source": "workspace"
               },
               "maxTextLength": 1,
+              "month": {
+                "allowance": 1,
+                "ceiling": {
+                  "amount": 1,
+                  "currency": "currency"
+                },
+                "most": 1,
+                "price": {
+                  "cents": 1,
+                  "per": 1
+                },
+                "priceConfirmed": true,
+                "resetsAt": "resetsAt",
+                "used": 1
+              },
+              "reason": "paymentMethod",
               "remaining": 1,
               "resetsAt": "resetsAt",
               "source": "workspace"

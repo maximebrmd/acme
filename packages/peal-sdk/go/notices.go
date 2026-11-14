@@ -403,6 +403,7 @@ type NoticeEvent struct {
 	SubscriptionStarted           *NoticeEventSubscriptionStarted
 	TrialEnding                   *NoticeEventTrialEnding
 	PaymentMethodNeeded           *NoticeEventPaymentMethodNeeded
+	AllowanceReached              *NoticeEventAllowanceReached
 	SubscriptionRenewing          *NoticeEventSubscriptionRenewing
 	SubscriptionCancelled         *NoticeEventSubscriptionCancelled
 	SubscriptionWithdrawn         *NoticeEventSubscriptionWithdrawn
@@ -512,6 +513,13 @@ func (n *NoticeEvent) GetPaymentMethodNeeded() *NoticeEventPaymentMethodNeeded {
 		return nil
 	}
 	return n.PaymentMethodNeeded
+}
+
+func (n *NoticeEvent) GetAllowanceReached() *NoticeEventAllowanceReached {
+	if n == nil {
+		return nil
+	}
+	return n.AllowanceReached
 }
 
 func (n *NoticeEvent) GetSubscriptionRenewing() *NoticeEventSubscriptionRenewing {
@@ -667,6 +675,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.PaymentMethodNeeded = value
+	case "AllowanceReached":
+		value := new(NoticeEventAllowanceReached)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.AllowanceReached = value
 	case "SubscriptionRenewing":
 		value := new(NoticeEventSubscriptionRenewing)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -769,6 +783,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.PaymentMethodNeeded != nil {
 		return internal.MarshalJSONWithExtraProperty(n.PaymentMethodNeeded, "_tag", "PaymentMethodNeeded")
 	}
+	if n.AllowanceReached != nil {
+		return internal.MarshalJSONWithExtraProperty(n.AllowanceReached, "_tag", "AllowanceReached")
+	}
 	if n.SubscriptionRenewing != nil {
 		return internal.MarshalJSONWithExtraProperty(n.SubscriptionRenewing, "_tag", "SubscriptionRenewing")
 	}
@@ -816,6 +833,7 @@ type NoticeEventVisitor interface {
 	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
 	VisitTrialEnding(*NoticeEventTrialEnding) error
 	VisitPaymentMethodNeeded(*NoticeEventPaymentMethodNeeded) error
+	VisitAllowanceReached(*NoticeEventAllowanceReached) error
 	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
@@ -866,6 +884,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.PaymentMethodNeeded != nil {
 		return visitor.VisitPaymentMethodNeeded(n.PaymentMethodNeeded)
+	}
+	if n.AllowanceReached != nil {
+		return visitor.VisitAllowanceReached(n.AllowanceReached)
 	}
 	if n.SubscriptionRenewing != nil {
 		return visitor.VisitSubscriptionRenewing(n.SubscriptionRenewing)
@@ -940,6 +961,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.PaymentMethodNeeded != nil {
 		fields = append(fields, "PaymentMethodNeeded")
+	}
+	if n.AllowanceReached != nil {
+		fields = append(fields, "AllowanceReached")
 	}
 	if n.SubscriptionRenewing != nil {
 		fields = append(fields, "SubscriptionRenewing")
@@ -1291,6 +1315,124 @@ func (n *NoticeEventAdConnectionReconnectRequired) MarshalJSON() ([]byte, error)
 }
 
 func (n *NoticeEventAdConnectionReconnectRequired) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventAllowanceReachedFieldAllowed  = big.NewInt(1 << 0)
+	noticeEventAllowanceReachedFieldMeter    = big.NewInt(1 << 1)
+	noticeEventAllowanceReachedFieldResetsAt = big.NewInt(1 << 2)
+)
+
+type NoticeEventAllowanceReached struct {
+	Allowed  int    `json:"allowed" url:"allowed"`
+	Meter    Meter  `json:"meter" url:"meter"`
+	ResetsAt string `json:"resetsAt" url:"resetsAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventAllowanceReached) GetAllowed() int {
+	if n == nil {
+		return 0
+	}
+	return n.Allowed
+}
+
+func (n *NoticeEventAllowanceReached) GetMeter() Meter {
+	if n == nil {
+		return ""
+	}
+	return n.Meter
+}
+
+func (n *NoticeEventAllowanceReached) GetResetsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.ResetsAt
+}
+
+func (n *NoticeEventAllowanceReached) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventAllowanceReached) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAllowanceReached) SetAllowed(allowed int) {
+	n.Allowed = allowed
+	n.require(noticeEventAllowanceReachedFieldAllowed)
+}
+
+// SetMeter sets the Meter field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAllowanceReached) SetMeter(meter Meter) {
+	n.Meter = meter
+	n.require(noticeEventAllowanceReachedFieldMeter)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAllowanceReached) SetResetsAt(resetsAt string) {
+	n.ResetsAt = resetsAt
+	n.require(noticeEventAllowanceReachedFieldResetsAt)
+}
+
+func (n *NoticeEventAllowanceReached) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventAllowanceReached
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventAllowanceReached(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventAllowanceReached) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventAllowanceReached
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventAllowanceReached) String() string {
 	if n == nil {
 		return "<nil>"
 	}

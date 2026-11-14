@@ -50,7 +50,6 @@ import social.peal.types.ApprovalOutcome;
 import social.peal.types.ApprovalRequest;
 import social.peal.types.ChangesOutcome;
 import social.peal.types.CreatedReviewLink;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.PostReview;
 import social.peal.types.ReviewComment;
 import social.peal.types.ReviewLink;
@@ -866,8 +865,7 @@ public class AsyncRawReviewClient {
                                 return;
                             case 402:
                                 future.completeExceptionally(new PaymentRequiredError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, PlanLimitReachedEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 403:

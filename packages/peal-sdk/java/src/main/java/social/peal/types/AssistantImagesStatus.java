@@ -35,6 +35,10 @@ public final class AssistantImagesStatus {
 
     private final int requestCost;
 
+    private final Optional<AssistantMonth> month;
+
+    private final Optional<AssistantOffReason> reason;
+
     private final Optional<AssistantImageSource> source;
 
     private final Map<String, Object> additionalProperties;
@@ -45,6 +49,8 @@ public final class AssistantImagesStatus {
             int dailyLimit,
             int maxPromptLength,
             int requestCost,
+            Optional<AssistantMonth> month,
+            Optional<AssistantOffReason> reason,
             Optional<AssistantImageSource> source,
             Map<String, Object> additionalProperties) {
         this.aspects = aspects;
@@ -52,6 +58,8 @@ public final class AssistantImagesStatus {
         this.dailyLimit = dailyLimit;
         this.maxPromptLength = maxPromptLength;
         this.requestCost = requestCost;
+        this.month = month;
+        this.reason = reason;
         this.source = source;
         this.additionalProperties = additionalProperties;
     }
@@ -82,11 +90,39 @@ public final class AssistantImagesStatus {
     }
 
     @JsonIgnore
+    public Optional<AssistantMonth> getMonth() {
+        if (month == null) {
+            return Optional.empty();
+        }
+        return month;
+    }
+
+    @JsonIgnore
+    public Optional<AssistantOffReason> getReason() {
+        if (reason == null) {
+            return Optional.empty();
+        }
+        return reason;
+    }
+
+    @JsonIgnore
     public Optional<AssistantImageSource> getSource() {
         if (source == null) {
             return Optional.empty();
         }
         return source;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("month")
+    private Optional<AssistantMonth> _getMonth() {
+        return month;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("reason")
+    private Optional<AssistantOffReason> _getReason() {
+        return reason;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -112,13 +148,22 @@ public final class AssistantImagesStatus {
                 && dailyLimit == other.dailyLimit
                 && maxPromptLength == other.maxPromptLength
                 && requestCost == other.requestCost
+                && month.equals(other.month)
+                && reason.equals(other.reason)
                 && source.equals(other.source);
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.aspects, this.available, this.dailyLimit, this.maxPromptLength, this.requestCost, this.source);
+                this.aspects,
+                this.available,
+                this.dailyLimit,
+                this.maxPromptLength,
+                this.requestCost,
+                this.month,
+                this.reason,
+                this.source);
     }
 
     @java.lang.Override
@@ -161,6 +206,18 @@ public final class AssistantImagesStatus {
 
         _FinalStage addAllAspects(List<ImageAspect> aspects);
 
+        _FinalStage month(Optional<AssistantMonth> month);
+
+        _FinalStage month(AssistantMonth month);
+
+        _FinalStage month(Nullable<AssistantMonth> month);
+
+        _FinalStage reason(Optional<AssistantOffReason> reason);
+
+        _FinalStage reason(AssistantOffReason reason);
+
+        _FinalStage reason(Nullable<AssistantOffReason> reason);
+
         _FinalStage source(Optional<AssistantImageSource> source);
 
         _FinalStage source(AssistantImageSource source);
@@ -181,6 +238,10 @@ public final class AssistantImagesStatus {
 
         private Optional<AssistantImageSource> source = Optional.empty();
 
+        private Optional<AssistantOffReason> reason = Optional.empty();
+
+        private Optional<AssistantMonth> month = Optional.empty();
+
         private List<ImageAspect> aspects = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -194,6 +255,8 @@ public final class AssistantImagesStatus {
             dailyLimit(other.getDailyLimit());
             maxPromptLength(other.getMaxPromptLength());
             requestCost(other.getRequestCost());
+            month(other.getMonth());
+            reason(other.getReason());
             source(other.getSource());
             return this;
         }
@@ -252,6 +315,56 @@ public final class AssistantImagesStatus {
         }
 
         @java.lang.Override
+        public _FinalStage reason(Nullable<AssistantOffReason> reason) {
+            if (reason.isNull()) {
+                this.reason = null;
+            } else if (reason.isEmpty()) {
+                this.reason = Optional.empty();
+            } else {
+                this.reason = Optional.of(reason.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage reason(AssistantOffReason reason) {
+            this.reason = Optional.ofNullable(reason);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "reason", nulls = Nulls.SKIP)
+        public _FinalStage reason(Optional<AssistantOffReason> reason) {
+            this.reason = reason;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage month(Nullable<AssistantMonth> month) {
+            if (month.isNull()) {
+                this.month = null;
+            } else if (month.isEmpty()) {
+                this.month = Optional.empty();
+            } else {
+                this.month = Optional.of(month.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage month(AssistantMonth month) {
+            this.month = Optional.ofNullable(month);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "month", nulls = Nulls.SKIP)
+        public _FinalStage month(Optional<AssistantMonth> month) {
+            this.month = month;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllAspects(List<ImageAspect> aspects) {
             if (aspects != null) {
                 this.aspects.addAll(aspects);
@@ -278,7 +391,15 @@ public final class AssistantImagesStatus {
         @java.lang.Override
         public AssistantImagesStatus build() {
             return new AssistantImagesStatus(
-                    aspects, available, dailyLimit, maxPromptLength, requestCost, source, additionalProperties);
+                    aspects,
+                    available,
+                    dailyLimit,
+                    maxPromptLength,
+                    requestCost,
+                    month,
+                    reason,
+                    source,
+                    additionalProperties);
         }
 
         @JsonAnySetter
@@ -288,6 +409,8 @@ public final class AssistantImagesStatus {
                     || key.equalsIgnoreCase("dailyLimit")
                     || key.equalsIgnoreCase("maxPromptLength")
                     || key.equalsIgnoreCase("requestCost")
+                    || key.equalsIgnoreCase("month")
+                    || key.equalsIgnoreCase("reason")
                     || key.equalsIgnoreCase("source")) {
                 return;
             }

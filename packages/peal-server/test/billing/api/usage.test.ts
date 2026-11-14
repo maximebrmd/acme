@@ -211,6 +211,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
           });
           assert.deepStrictEqual(report.days, [
             {
+              assistantImages: 0,
               assistantRequests: 0,
               billableAccounts: null,
               byPlatform: [{ platform: "x", posts: 1 }],
@@ -218,9 +219,11 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
               day: "2026-10-31",
               mediaStorage: 2_500_000_000,
               members: 2,
+              outboundMessages: 0,
               publishedPosts: 1,
             },
             {
+              assistantImages: 0,
               assistantRequests: 6,
               billableAccounts: 3,
               byPlatform: [{ platform: "bluesky", posts: 2 }],
@@ -228,10 +231,12 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
               day: "2026-11-01",
               mediaStorage: null,
               members: null,
+              outboundMessages: 0,
               publishedPosts: 2,
             },
             {
               // No snapshot yet: nothing counted, not zero.
+              assistantImages: 0,
               assistantRequests: null,
               billableAccounts: null,
               byPlatform: [],
@@ -239,10 +244,12 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
               day: "2026-11-02",
               mediaStorage: null,
               members: null,
+              outboundMessages: 0,
               publishedPosts: 0,
             },
           ]);
           assert.deepStrictEqual(report.totals, {
+            assistantImages: 0,
             billableAccountDays: 3,
             byPlatform: [
               { platform: "bluesky", posts: 2 },
@@ -250,6 +257,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
             ],
             channelDays: 5,
             daysCounted: 2,
+            managedAds: 0,
             // The months the period touches, whole.
             meteredPosts: [
               {
@@ -265,6 +273,7 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
                 postsWithLinks: 0,
               },
             ],
+            outboundMessages: 0,
             publishedPosts: 3,
           });
         })

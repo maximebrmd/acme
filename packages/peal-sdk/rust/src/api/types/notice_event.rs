@@ -129,6 +129,16 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    AllowanceReached {
+        #[serde(default)]
+        allowed: i64,
+        meter: Meter,
+        #[serde(rename = "resetsAt")]
+        #[serde(default)]
+        resets_at: String,
+    },
+
+    #[non_exhaustive]
     SubscriptionRenewing {
         plan: PaidPlan,
         #[serde(default)]
@@ -319,6 +329,14 @@ impl NoticeEvent {
             accounts,
             allowed,
             grace_until,
+        }
+    }
+
+    pub fn allowance_reached(allowed: i64, meter: Meter, resets_at: String) -> Self {
+        Self::AllowanceReached {
+            allowed,
+            meter,
+            resets_at,
         }
     }
 

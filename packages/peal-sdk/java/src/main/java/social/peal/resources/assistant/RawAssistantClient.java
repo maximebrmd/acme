@@ -44,7 +44,6 @@ import social.peal.types.AssistantStatus;
 import social.peal.types.ImageProvider;
 import social.peal.types.ImageProviderSetting;
 import social.peal.types.Media;
-import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Suggestion;
 import social.peal.types.TextProvider;
 import social.peal.types.TextProviderSetting;
@@ -58,28 +57,28 @@ public class RawAssistantClient {
     }
 
     /**
-     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. On a server that bills, <code>month</code> and <code>images.month</code> tell the billing account's month of the server's models (included, used, price and ceiling), and <code>reason</code> <code>paymentMethod</code> why they are off without a payment method. Needs assistant:use.
      */
     public PealClientHttpResponse<AssistantStatus> status(String workspaceId) {
         return status(workspaceId, StatusAssistantRequest.builder().build());
     }
 
     /**
-     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. On a server that bills, <code>month</code> and <code>images.month</code> tell the billing account's month of the server's models (included, used, price and ceiling), and <code>reason</code> <code>paymentMethod</code> why they are off without a payment method. Needs assistant:use.
      */
     public PealClientHttpResponse<AssistantStatus> status(String workspaceId, RequestOptions requestOptions) {
         return status(workspaceId, StatusAssistantRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. On a server that bills, <code>month</code> and <code>images.month</code> tell the billing account's month of the server's models (included, used, price and ceiling), and <code>reason</code> <code>paymentMethod</code> why they are off without a payment method. Needs assistant:use.
      */
     public PealClientHttpResponse<AssistantStatus> status(String workspaceId, StatusAssistantRequest request) {
         return status(workspaceId, request, null);
     }
 
     /**
-     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the assistant writes for the workspace, so clients show it or hide it, and who writes (<code>source</code>: the workspace's own text provider, the server's language model, or nobody), who makes the workspace's images (<code>images.source</code>: the workspace's own provider, the server's image model, or nobody) and what one costs, and how many requests the workspace has left today. On a server that bills, <code>month</code> and <code>images.month</code> tell the billing account's month of the server's models (included, used, price and ceiling), and <code>reason</code> <code>paymentMethod</code> why they are off without a payment method. Needs assistant:use.
      */
     public PealClientHttpResponse<AssistantStatus> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -149,14 +148,14 @@ public class RawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise, on a server that does not bill, each request counts toward the workspace's daily quota, unless the model's provider could not be reached (AssistantQuotaExceeded past it). On a server that bills, the server's model needs a payment method on the billing account (UsageAllowanceReached <code>paymentMethodRequired</code> without one, before anything is asked): each request counts toward the month's allowance across the account's workspaces (the status's <code>month</code>), then is billed at its price up to the ceiling the account set (UsageAllowanceReached <code>ceilingReached</code>); a request that brings no suggestion, a timeout included, is not counted. Needs assistant:use.
      */
     public PealClientHttpResponse<Suggestion> suggest(String workspaceId, SuggestionRequest request) {
         return suggest(workspaceId, request, null);
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. When the workspace brought its own text provider (<code>source</code> <code>workspace</code> in the status), the text goes there, with the workspace's key, and the request costs none of the workspace's daily requests, on any plan, within a number of such requests a day (OwnTextLimitReached past it) and a few at once (TextProviderBusy past them); if that provider refuses, the answer is TextProviderRefused and the server's model is never asked instead. Otherwise, on a server that does not bill, each request counts toward the workspace's daily quota, unless the model's provider could not be reached (AssistantQuotaExceeded past it). On a server that bills, the server's model needs a payment method on the billing account (UsageAllowanceReached <code>paymentMethodRequired</code> without one, before anything is asked): each request counts toward the month's allowance across the account's workspaces (the status's <code>month</code>), then is billed at its price up to the ceiling the account set (UsageAllowanceReached <code>ceilingReached</code>); a request that brings no suggestion, a timeout included, is not counted. Needs assistant:use.
      */
     public PealClientHttpResponse<Suggestion> suggest(
             String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
@@ -208,6 +207,9 @@ public class RawAssistantClient {
                         throw new UnauthorizedError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
                                 response);
+                    case 402:
+                        throw new PaymentRequiredError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -241,14 +243,14 @@ public class RawAssistantClient {
     }
 
     /**
-     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
+     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose. On a server that does not bill, an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. On a server that bills, it needs a payment method on the billing account (UsageAllowanceReached <code>paymentMethodRequired</code> without one, before anything is asked) and counts one of the month's images (<code>images.month</code>), billed past the allowance up to the account's ceiling (UsageAllowanceReached <code>ceilingReached</code>); an image that is not stored, whatever the reason, is not counted. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
      */
     public PealClientHttpResponse<Media> generateImage(String workspaceId, ImageRequest request) {
         return generateImage(workspaceId, request, null);
     }
 
     /**
-     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose, and an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
+     * Asks for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. When the workspace brought its own image provider, the prompt goes there, with the workspace's key, and the image costs none of the workspace's daily requests, on any plan, a trial and the free plan included, within a number of such images a day (OwnImageLimitReached past it); if that provider refuses, the answer is ImageProviderRefused and the server's model is never asked instead. Otherwise the prompt goes to the image provider the server's operator chose. On a server that does not bill, an image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached. On a server that bills, it needs a payment method on the billing account (UsageAllowanceReached <code>paymentMethodRequired</code> without one, before anything is asked) and counts one of the month's images (<code>images.month</code>), billed past the allowance up to the account's ceiling (UsageAllowanceReached <code>ceilingReached</code>); an image that is not stored, whatever the reason, is not counted. Neither the prompt nor the image is logged. Either way the image takes room in the plan's media storage, which must hold the largest image before anything is asked. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the workspace brought a provider or the server has an image model (<code>images.source</code>).
      */
     public PealClientHttpResponse<Media> generateImage(
             String workspaceId, ImageRequest request, RequestOptions requestOptions) {
@@ -302,8 +304,7 @@ public class RawAssistantClient {
                                 response);
                     case 402:
                         throw new PaymentRequiredError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

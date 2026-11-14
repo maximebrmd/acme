@@ -39,6 +39,18 @@ class AssistantImagesStatus extends JsonSerializableType
     public int $requestCost;
 
     /**
+     * @var ?AssistantMonth $month
+     */
+    #[JsonProperty('month')]
+    public ?AssistantMonth $month;
+
+    /**
+     * @var ?value-of<AssistantOffReason> $reason
+     */
+    #[JsonProperty('reason')]
+    public ?string $reason;
+
+    /**
      * @var ?value-of<AssistantImageSource> $source
      */
     #[JsonProperty('source')]
@@ -51,6 +63,8 @@ class AssistantImagesStatus extends JsonSerializableType
      *   dailyLimit: int,
      *   maxPromptLength: int,
      *   requestCost: int,
+     *   month?: ?AssistantMonth,
+     *   reason?: ?value-of<AssistantOffReason>,
      *   source?: ?value-of<AssistantImageSource>,
      * } $values
      */
@@ -62,6 +76,8 @@ class AssistantImagesStatus extends JsonSerializableType
         $this->dailyLimit = $values['dailyLimit'];
         $this->maxPromptLength = $values['maxPromptLength'];
         $this->requestCost = $values['requestCost'];
+        $this->month = $values['month'] ?? null;
+        $this->reason = $values['reason'] ?? null;
         $this->source = $values['source'] ?? null;
     }
 

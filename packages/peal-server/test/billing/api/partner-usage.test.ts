@@ -342,6 +342,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
           ]);
           // The stranger's counts are in none of the sums.
           assert.deepStrictEqual(report.totals, {
+            assistantImages: 0,
             billableAccountDays: null,
             byPlatform: [
               { platform: "bluesky", posts: 2 },
@@ -349,6 +350,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
             ],
             channelDays: 11,
             daysCounted: 2,
+            managedAds: 0,
             meteredPosts: [
               {
                 month: "2026-10-01",
@@ -363,6 +365,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                 postsWithLinks: 1,
               },
             ],
+            outboundMessages: 0,
             publishedPosts: 8,
           });
           assert.deepStrictEqual(report.workspaces, {
@@ -370,6 +373,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
             total: 2,
             workspaces: [
               {
+                assistantImages: 0,
                 assistantRequests: 0,
                 byPlatform: [{ platform: "bluesky", posts: 1 }],
                 channelDays: 4,
@@ -377,6 +381,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                 daysCounted: 2,
                 externalId: null,
                 home: true,
+                managedAds: 0,
                 mediaStorage: null,
                 meteredPosts: [
                   {
@@ -387,10 +392,12 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                   },
                 ],
                 name: "Synthetic home",
+                outboundMessages: 0,
                 publishedPosts: 1,
                 workspaceId: home,
               },
               {
+                assistantImages: 0,
                 assistantRequests: 7,
                 byPlatform: [
                   { platform: "bluesky", posts: 1 },
@@ -401,6 +408,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                 daysCounted: 2,
                 externalId: "customer-1",
                 home: false,
+                managedAds: 0,
                 mediaStorage: 1500,
                 meteredPosts: [
                   {
@@ -417,6 +425,7 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                   },
                 ],
                 name: "First customer",
+                outboundMessages: 0,
                 publishedPosts: 3,
                 workspaceId: first,
               },

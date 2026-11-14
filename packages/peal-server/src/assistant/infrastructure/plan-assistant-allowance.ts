@@ -48,6 +48,20 @@ export const PlanAssistantAllowanceLive = Layer.effect(
             trial ? Math.min(daily, imageRequestsOnTrial) : daily
           )
         ),
+      // A server that bills meters the server's models by month, but for
+      // a legacy plan, which keeps its day until it moves.
+      metered: (workspaceId) =>
+        enabled
+          ? entitlements.of(workspaceId).pipe(
+              Effect.map(({ plan }) =>
+                Option.exists(
+                  plan,
+                  (named) => named === "free" || named === "payAsYouGo"
+                )
+              ),
+              Effect.orDie
+            )
+          : Effect.succeed(false),
       // A server that does not bill counts each workspace alone, and
       // reads or holds no pool.
       pooled: enabled,

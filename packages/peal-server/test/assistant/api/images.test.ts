@@ -119,6 +119,8 @@ layer(StoreTest, { timeout: "60 seconds" })("the image endpoint", (it) => {
         available: true,
         dailyLimit: 10,
         maxPromptLength: 1000,
+        month: null,
+        reason: null,
         requestCost: 5,
         source: "server",
       });

@@ -25,6 +25,7 @@ import {
 import { ReplyInvalid } from "./reply-invalid.ts";
 import { ReplyPending } from "./reply-pending.ts";
 import { ReplyStatusConflict } from "./reply-status-conflict.ts";
+import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 // The inbox: the comments people leave under a workspace's published
@@ -418,6 +419,7 @@ export class InboxApi extends HttpApiGroup.make("inbox")
         ReplyInvalid,
         ReplyPending,
         IdempotencyKeyReused,
+        UsageAllowanceReached,
       ],
       headers: {
         "idempotency-key": Schema.optionalKey(
@@ -431,7 +433,7 @@ export class InboxApi extends HttpApiGroup.make("inbox")
       success: InboxReplySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply \`sending\`, and the thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 \`ReplyPending\`), whichever request came first when two are sent together. With an \`Idempotency-Key\` header (any text of your choosing, ${maxIdempotencyKeyLength} characters at most, new for each reply), the request is safe to send again after a lost answer: within ${idempotencyKeyLifetimeHours} hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 \`IdempotencyKeyReused\`). ${acting}`,
+        description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply \`sending\`, and the thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 \`ReplyPending\`), whichever request came first when two are sent together. With an \`Idempotency-Key\` header (any text of your choosing, ${maxIdempotencyKeyLength} characters at most, new for each reply), the request is safe to send again after a lost answer: within ${idempotencyKeyLifetimeHours} hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 \`IdempotencyKeyReused\`). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 \`UsageAllowanceReached\`) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. ${acting}`,
         summary: "Reply to a comment",
       })
     ),

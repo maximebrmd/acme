@@ -17,6 +17,7 @@ export interface AdAccount {
     monthlyCeiling: number | null;
     name: string;
     network: Peal.AdNetwork;
+    newAdsUntrackedUntil?: (string | null) | undefined;
     /** An amount in the currency's minor units, as the ad network counts them: cents for EUR and USD, yen for JPY. Divide by 10 to the power of the account's `minorUnitDigits` to show it. */
     spendCap: number | null;
     spendingEnabled: boolean;

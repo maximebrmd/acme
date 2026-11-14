@@ -27,6 +27,8 @@ module Peal
 
       field :network, -> { Peal::Types::AdNetwork }, optional: false, nullable: false
 
+      field :new_ads_untracked_until, -> { String }, optional: true, nullable: true, api_name: "newAdsUntrackedUntil"
+
       field :spend_cap, -> { Integer }, optional: false, nullable: true, api_name: "spendCap"
 
       field :spending_enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "spendingEnabled"

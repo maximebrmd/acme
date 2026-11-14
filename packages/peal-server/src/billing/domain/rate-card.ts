@@ -1,23 +1,13 @@
 import { DateTime, Schema } from "effect";
 
+import type { Meter } from "#shared/domain/meter.ts";
+
 import { displayVatRate } from "./prices.ts";
 
-/**
- * What a billing account pays for by use, each with a monthly allowance
- * across every workspace it pays for: writing assistant requests and images
- * on the server's provider (never with a workspace's own), inbox messages
- * sent (comment replies included), managed ads active in the month, and
- * calls to X's API at X's rates.
- */
-export const MeterSchema = Schema.Literals([
-  "assistantRequests",
-  "assistantImages",
-  "outboundMessages",
-  "managedAds",
-  "xApi",
-]);
+// The meters, in the kernel since every context claims them.
+export { MeterSchema } from "#shared/domain/meter.ts";
 
-export type Meter = typeof MeterSchema.Type;
+export type { Meter } from "#shared/domain/meter.ts";
 
 /**
  * The currencies prices are listed in: US dollars only. Customers elsewhere
@@ -132,6 +122,16 @@ const awaitingDecision = {
   unverifiedCeiling: 100,
   xCeiling: 2500,
 } as const;
+
+/**
+ * The meters whose allowance and price are placeholders until the owner
+ * confirms them (`awaitingDecision`): pages show them as coming, never as
+ * a price.
+ */
+export const unconfirmedMeters: readonly Meter[] = [
+  "assistantImages",
+  "assistantRequests",
+];
 
 /**
  * Peal Cloud's rate card. Keep the contract's copy

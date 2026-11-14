@@ -105,9 +105,35 @@ describe(imageAllowanceHint, () => {
     available: true,
     dailyLimit: 20,
     maxPromptLength: 1000,
+    month: null,
+    reason: null,
     requestCost: 5,
     source: "server" as const,
   };
+
+  it("reads the month's images on a server that bills", () => {
+    const month = {
+      allowance: 10,
+      ceiling: { amount: 0, currency: "usd" },
+      most: 10,
+      price: { cents: 5, per: 1 },
+      priceConfirmed: false,
+      resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+      used: 10,
+    };
+
+    expect([
+      imageAllowanceHint({
+        images: { ...images, month: { ...month, used: 3 } },
+        remaining: 0,
+      }),
+      imageAllowanceHint({ images: { ...images, month }, remaining: 50 }),
+      imageAllowanceHint({
+        images: { ...images, month: { ...month, most: 0, used: 0 } },
+        remaining: 50,
+      }),
+    ]).toStrictEqual([null, "notEnoughToday", "noImagesOnPlan"]);
+  });
 
   it("says when the plan makes no image, and when today is spent", () => {
     expect([

@@ -253,7 +253,9 @@ const Controls = ({
             <DropdownMenuLabel>
               {status.source === "workspace"
                 ? t("ownProvider")
-                : t("remaining", { remaining: status.remaining })}
+                : t(status.month === null ? "remaining" : "remainingMonth", {
+                    remaining: status.remaining,
+                  })}
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

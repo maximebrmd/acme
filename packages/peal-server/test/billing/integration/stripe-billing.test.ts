@@ -1179,6 +1179,70 @@ layer(BillingIntegration, {
   );
 
   it.effect(
+    "sets a spending ceiling only for a member who manages billing, in person, on the workspace that bills, and for a group whose price is confirmed",
+    () =>
+      Effect.gen(function* ceilings() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("ceiling-owner");
+        const workspaceId = yield* workspaceOf(owner, "Ceilings");
+        const second = yield* workspaceOf(owner, "Ceilings, again");
+
+        const put = (person: Person, workspace: string, group: string) =>
+          app.request(
+            `/api/workspaces/${workspace}/billing/ceilings/${group}`,
+            {
+              body: { cents: 500 },
+              headers: { cookie: person.cookies },
+              method: "PUT",
+            }
+          );
+
+        const set = yield* put(owner, workspaceId, "x");
+
+        assert.strictEqual(set.status, 200);
+        assert.deepInclude(set.body, { group: "x" });
+
+        // The assistant's price is not confirmed: no ceiling is taken.
+        const assistant = yield* put(owner, workspaceId, "assistant");
+
+        assert.strictEqual(assistant.status, 409);
+        assert.deepInclude(assistant.body, {
+          _tag: "SpendCeilingNotOffered",
+          group: "assistant",
+        });
+
+        // The person's other workspace is billed on the first.
+        const elsewhere = yield* put(owner, second, "x");
+
+        assert.strictEqual(elsewhere.status, 409);
+        assert.deepInclude(elsewhere.body, { _tag: "BilledElsewhere" });
+
+        const editor = yield* signedUp("ceiling-editor");
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+        assert.strictEqual((yield* put(editor, workspaceId, "x")).status, 403);
+
+        const { key } = yield* apiKeyOf(owner, workspaceId, [
+          "billing:read",
+          "billing:manage",
+        ]);
+
+        const byKey = yield* app.request(
+          `/api/workspaces/${workspaceId}/billing/ceilings/x`,
+          {
+            body: { cents: 500 },
+            headers: { authorization: `Bearer ${key}` },
+            method: "PUT",
+          }
+        );
+
+        assert.strictEqual(byKey.status, 403);
+      })
+  );
+
+  it.effect(
     "starts no trial, and keeps one already running until it ends, then the free tier",
     () =>
       Effect.gen(function* trial() {

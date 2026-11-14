@@ -12,9 +12,11 @@ import { CurrencySchema, Money } from "#ads/domain/money.ts";
 import { CipherGrantSecrets } from "#ads/infrastructure/cipher-grant-secrets.ts";
 import { DirectAds } from "#ads/infrastructure/direct-ads.ts";
 import { DrizzleAccountStore } from "#ads/infrastructure/drizzle-account-store.ts";
+import { DrizzleActiveAdMonths } from "#ads/infrastructure/drizzle-active-ad-months.ts";
 import { DrizzleBoostStore } from "#ads/infrastructure/drizzle-boost-store.ts";
 import { DrizzleGrantStore } from "#ads/infrastructure/drizzle-grant-store.ts";
 import { DrizzleReadModel } from "#ads/infrastructure/drizzle-read-model.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
@@ -117,20 +119,30 @@ export class TestNetworks extends Context.Service<
 /**
  * The ads use cases on Postgres, with grants' tokens really encrypted
  * (the synthetic keyring), the network a test starts (`onMeta`), and what
- * the workspace is told recorded (`TestNetworks.told`).
+ * the workspace is told recorded (`TestNetworks.told`), on the meters
+ * given.
  */
-export const AdsTest = adsWith(
-  Layer.mergeAll(
-    DrizzleGrantStore,
-    DrizzleAccountStore,
-    DrizzleBoostStore,
-    DrizzleReadModel,
-    CipherGrantSecrets.pipe(Layer.provide(TokenCipherTest)),
-    TestNetworks.layer,
-    TestPosts.layer
-  ),
-  DirectAds
-).pipe(Layer.provideMerge(TransactionsTest), Layer.provideMerge(DatabaseTest));
+export const adsTestWith = <M extends MeteredUsage>(meters: Layer.Layer<M>) =>
+  adsWith(
+    Layer.mergeAll(
+      DrizzleGrantStore,
+      DrizzleAccountStore,
+      DrizzleBoostStore,
+      DrizzleReadModel,
+      DrizzleActiveAdMonths,
+      meters,
+      CipherGrantSecrets.pipe(Layer.provide(TokenCipherTest)),
+      TestNetworks.layer,
+      TestPosts.layer
+    ),
+    DirectAds
+  ).pipe(
+    Layer.provideMerge(TransactionsTest),
+    Layer.provideMerge(DatabaseTest)
+  );
+
+/** The same, on a server that does not bill: no meter refuses. */
+export const AdsTest = adsTestWith(MeteredUsage.layerUnmetered);
 
 /**
  * Starts a fake of Meta's Marketing API for the test, and has the use

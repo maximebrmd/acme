@@ -11,6 +11,9 @@ public record UsageDay : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("assistantImages")]
+    public required int AssistantImages { get; set; }
+
     [JsonPropertyName("assistantRequests")]
     public int? AssistantRequests { get; set; }
 
@@ -31,6 +34,9 @@ public record UsageDay : IJsonOnDeserialized
 
     [JsonPropertyName("members")]
     public int? Members { get; set; }
+
+    [JsonPropertyName("outboundMessages")]
+    public required int OutboundMessages { get; set; }
 
     [JsonPropertyName("publishedPosts")]
     public required int PublishedPosts { get; set; }

@@ -28,6 +28,7 @@ import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-tr
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { allowanceRefusal } from "#shared/api/allowance-reached.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 
@@ -113,6 +114,7 @@ export const InboxHandlers = HttpApiBuilder.group(
   Effect.fn(function* inboxHandlers(handlers) {
     const inbox = yield* EngagementInbox;
     const replies = yield* EngagementReplies;
+    const allowanceReached = yield* allowanceRefusal;
 
     return handlers.handleAll({
       confirmReply: ({ params, payload }) =>
@@ -231,6 +233,7 @@ export const InboxHandlers = HttpApiBuilder.group(
               Effect.map(toReplyView),
               Effect.catchTags({
                 AbilityUnavailable: unavailable,
+                AllowanceReached: allowanceReached,
                 CommentGone: commentGone,
                 CommentNotFound: commentNotFound,
                 DatabaseError: Effect.die,

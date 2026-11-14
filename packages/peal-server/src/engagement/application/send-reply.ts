@@ -19,12 +19,14 @@ import {
 } from "#engagement/domain/reply.ts";
 import type { SendOutcome } from "#engagement/domain/reply.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
 import { EngagementOutcomes } from "./ports/engagement-outcomes.ts";
 import { EngagementStore } from "./ports/engagement-store.ts";
 import { ReplyJobs } from "./ports/reply-jobs.ts";
 import { ReplySender } from "./ports/reply-sender.ts";
+import { messageOf } from "./reply-message.ts";
 
 /** Replies that ended, by how. */
 export const repliesSettled = Metric.counter("peal.engagement.replies", {
@@ -48,8 +50,9 @@ export type SendResult = "settled" | "superseded";
  * and only then calls. A run that finds the call already set out (the
  * server stopped in between) does not send: it asks the platform whether
  * the reply is there, and leaves it `unconfirmed` when the platform cannot
- * say. The outcome, the comment's answer and what the workspace is told
- * are saved in one transaction.
+ * say. The outcome, the comment's answer, what the workspace is told and,
+ * for a reply that never went out, its outbound message given back are
+ * saved in one transaction.
  */
 export class SendReply extends Context.Service<
   SendReply,
@@ -77,6 +80,7 @@ export class SendReply extends Context.Service<
       const jobs = yield* ReplyJobs;
       const outcomes = yield* EngagementOutcomes;
       const { transaction } = yield* TransactionRunner;
+      const meters = yield* MeteredUsage;
 
       // Saves how sending ended, unless the reply ended meanwhile.
       const settle = Effect.fn("SendReply.settle")(function* settle(
@@ -107,6 +111,11 @@ export class SendReply extends Context.Service<
         // left it.
         if (!(yield* store.advanceReply(settled.success, reply.value))) {
           return "superseded" as const;
+        }
+
+        // A reply that never went out gives its outbound message back.
+        if (outcome._tag === "failed") {
+          yield* meters.giveBack(messageOf(settled.success));
         }
 
         // A reply that went out, or may have, answers its comment.

@@ -3,10 +3,13 @@
 import * as Peal from "../index.js";
 
 export interface UsageTotals {
+    assistantImages: number;
     billableAccountDays: number | null;
     byPlatform: Peal.PlatformPosts[];
     channelDays: number;
     daysCounted: number;
+    managedAds: number;
     meteredPosts: Peal.MeteredPosts[];
+    outboundMessages: number;
     publishedPosts: number;
 }

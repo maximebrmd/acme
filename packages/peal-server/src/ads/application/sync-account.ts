@@ -8,20 +8,24 @@ import {
   Result,
 } from "effect";
 
+import type { AccountSnapshot } from "#ads/domain/account-snapshot.ts";
 import type { AdAccount } from "#ads/domain/ad-account.ts";
 import type { AdAccountId } from "#ads/domain/ids.ts";
 import { firstSyncDays, resyncDays } from "#ads/domain/insight-retention.ts";
 import type { Ids } from "#shared/application/ids.ts";
+import { MeteredUsage } from "#shared/application/metered-usage.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { addDays, localDateOf } from "#shared/domain/wall-clock.ts";
 
 import { BoostFollowUp } from "./boost-follow-up.ts";
 import { AccountStore } from "./ports/account-store.ts";
 import type { SyncOutcome } from "./ports/account-syncer.ts";
+import { ActiveAdMonths } from "./ports/active-ad-months.ts";
 import { AdNetworks } from "./ports/ad-network.ts";
 import type { ReadFailure } from "./ports/ad-network.ts";
 import { AdNotices } from "./ports/ad-notices.ts";
-import type { BoostStore } from "./ports/boost-store.ts";
+import { BoostStore } from "./ports/boost-store.ts";
 import { GrantSecrets } from "./ports/grant-secrets.ts";
 import { GrantStore } from "./ports/grant-store.ts";
 import { PromotablePosts } from "./ports/promotable-posts.ts";
@@ -67,6 +71,121 @@ export class SyncAccount extends Context.Service<
       const notices = yield* AdNotices;
       const followUp = yield* BoostFollowUp;
       const ports = yield* Effect.context<BoostStore | Ids>();
+      const activeMonths = yield* ActiveAdMonths;
+      const boostStore = yield* BoostStore;
+      const meters = yield* MeteredUsage;
+      const { transaction } = yield* TransactionRunner;
+
+      // Counts each ad seen delivering or in review once a month, as one
+      // of the billing account's managed ads, and answers the snapshot to
+      // keep: once the meter pauses (no payment method, the month's
+      // allowance used), the ads it could not count are not recorded and
+      // their numbers stop updating. Nothing a network runs is touched.
+      // Counts `ids` as managed ads of the month, as many as the meter
+      // grants, in one claim: answers how many, from the first.
+      const counted = Effect.fn("SyncAccount.counted")(function* counted(
+        workspaceId: AdAccount["workspaceId"],
+        month: DateTime.Utc,
+        ids: readonly string[]
+      ) {
+        const recordFirst = (units: number) =>
+          units === 0
+            ? Effect.succeed(0)
+            : transaction(
+                meters
+                  .claim(workspaceId, "managedAds", units)
+                  .pipe(
+                    Effect.andThen(
+                      Effect.forEach(
+                        ids.slice(0, units),
+                        (id) => activeMonths.record(workspaceId, month, id),
+                        { discard: true }
+                      )
+                    ),
+                    Effect.as(units)
+                  )
+              );
+
+        return yield* recordFirst(ids.length).pipe(
+          Effect.catchTag("AllowanceReached", ({ allowed, used }) =>
+            recordFirst(Math.max(0, Math.min(ids.length, allowed - used))).pipe(
+              Effect.catchTag("AllowanceReached", () => Effect.succeed(0))
+            )
+          )
+        );
+      });
+
+      // Counts each ad seen delivering or in review once a month, as one
+      // of the billing account's managed ads, and answers the snapshot to
+      // keep. The ads of the account's own boosts come first, and are
+      // tracked even past the allowance; once the meter refuses (no
+      // payment method, or a legacy plan, at the month's allowance) the
+      // other ads not counted yet are not tracked: their days are not
+      // saved, while those already counted keep updating. Nothing a
+      // network runs is touched. Where no billing counts (a server that
+      // does not bill), nothing is recorded.
+      const metered = Effect.fn("SyncAccount.metered")(function* metered<
+        S extends AccountSnapshot,
+      >(account: AdAccount, taken: S, now: DateTime.Utc) {
+        const { workspaceId } = account;
+
+        if (Option.isNone(yield* meters.state(workspaceId, "managedAds"))) {
+          return taken;
+        }
+
+        const month = DateTime.startOf(now, "month");
+
+        const running = taken.ads
+          .filter(({ status }) => status === "active" || status === "inReview")
+          .map(({ externalId }) => externalId);
+
+        const owned = new Set<string>(
+          (yield* boostStore.runningOn(account.id)).flatMap(({ objects }) =>
+            Option.toArray(objects.adId)
+          )
+        );
+
+        const unseen = yield* activeMonths.unseen(workspaceId, month, running);
+
+        const ordered = [
+          ...unseen.filter((id) => owned.has(id)),
+          ...unseen.filter((id) => !owned.has(id)),
+        ];
+
+        const granted = yield* counted(workspaceId, month, ordered);
+        const left = ordered.slice(granted);
+
+        // The ads of Peal's own boosts are always tracked.
+        yield* Effect.forEach(
+          left.filter((id) => owned.has(id)),
+          (id) => activeMonths.record(workspaceId, month, id),
+          { discard: true }
+        );
+
+        const untracked = new Set(left.filter((id) => !owned.has(id)));
+
+        if (untracked.size === 0) {
+          return taken;
+        }
+
+        yield* Effect.logInfo(
+          "A billing account's managed ads are paused: new ads past the month's allowance are not tracked"
+        ).pipe(
+          Effect.annotateLogs({
+            accountId: account.id,
+            untracked: untracked.size,
+          })
+        );
+
+        const kept: S = {
+          ...taken,
+          insights: taken.insights.filter(
+            ({ adExternalId }) => !untracked.has(adExternalId)
+          ),
+        };
+
+        return kept;
+      });
 
       const putOff = (account: AdAccount, wait: Duration.Duration) =>
         DateTime.now.pipe(
@@ -155,7 +274,7 @@ export class SyncAccount extends Context.Service<
           return yield* failedRead(account, snapshot.failure);
         }
 
-        const taken = snapshot.success;
+        const taken = yield* metered(account, snapshot.success, now);
 
         const promoted = taken.ads.flatMap((ad) => [
           ...Option.toArray(ad.promotedPagePostId),

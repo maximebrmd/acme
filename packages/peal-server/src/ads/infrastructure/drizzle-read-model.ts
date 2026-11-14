@@ -23,7 +23,13 @@ import type { LocalDate } from "#shared/domain/wall-clock.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { date, dateOrNull, failed } from "./rows.ts";
-import { adSets, ads, campaigns, insightDays } from "./schema.ts";
+import {
+  activeAdMonths,
+  adSets,
+  ads,
+  campaigns,
+  insightDays,
+} from "./schema.ts";
 
 /** A calendar day as Postgres writes a date: `2026-11-10`. */
 export const dayText = ({ day, month, year }: LocalDate) =>
@@ -292,15 +298,26 @@ export const DrizzleReadModel = Layer.effect(
             }))
           )
         ),
+      // The managed ads counted go with the days, by their month.
       purgeDaysBefore: (day) =>
-        db
-          .delete(insightDays)
-          .where(lt(insightDays.day, dayText(day)))
-          .returning({ day: insightDays.day })
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map((rows) => rows.length)
-          ),
+        Effect.all([
+          db
+            .delete(insightDays)
+            .where(lt(insightDays.day, dayText(day)))
+            .returning({ day: insightDays.day }),
+          db
+            .delete(activeAdMonths)
+            .where(
+              lt(
+                activeAdMonths.month,
+                sql`${dayText({ day: 1, month: day.month, year: day.year })}::date`
+              )
+            )
+            .returning({ month: activeAdMonths.month }),
+        ]).pipe(
+          Effect.mapError(failed),
+          Effect.map(([days, months]) => days.length + months.length)
+        ),
       save: ({ account, complete, matched, now, snapshot }) => {
         const common = {
           accountId: account.id,

@@ -3,16 +3,19 @@
 import * as Peal from "../index.js";
 
 export interface TenantUsage {
+    assistantImages: number;
     assistantRequests: number;
     byPlatform: Peal.PlatformPosts[];
     channelDays: number;
     channels: number;
     daysCounted: number;
+    managedAds: number;
     externalId: string | null;
     home: boolean;
     mediaStorage: number | null;
     meteredPosts: Peal.MeteredPosts[];
     name: string;
+    outboundMessages: number;
     publishedPosts: number;
     workspaceId: string;
 }

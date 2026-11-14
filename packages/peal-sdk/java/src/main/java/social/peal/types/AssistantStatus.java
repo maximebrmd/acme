@@ -32,6 +32,10 @@ public final class AssistantStatus {
 
     private final int maxTextLength;
 
+    private final Optional<AssistantMonth> month;
+
+    private final Optional<AssistantOffReason> reason;
+
     private final int remaining;
 
     private final String resetsAt;
@@ -45,6 +49,8 @@ public final class AssistantStatus {
             int dailyLimit,
             AssistantImagesStatus images,
             int maxTextLength,
+            Optional<AssistantMonth> month,
+            Optional<AssistantOffReason> reason,
             int remaining,
             String resetsAt,
             Optional<AssistantTextSource> source,
@@ -53,6 +59,8 @@ public final class AssistantStatus {
         this.dailyLimit = dailyLimit;
         this.images = images;
         this.maxTextLength = maxTextLength;
+        this.month = month;
+        this.reason = reason;
         this.remaining = remaining;
         this.resetsAt = resetsAt;
         this.source = source;
@@ -79,6 +87,22 @@ public final class AssistantStatus {
         return maxTextLength;
     }
 
+    @JsonIgnore
+    public Optional<AssistantMonth> getMonth() {
+        if (month == null) {
+            return Optional.empty();
+        }
+        return month;
+    }
+
+    @JsonIgnore
+    public Optional<AssistantOffReason> getReason() {
+        if (reason == null) {
+            return Optional.empty();
+        }
+        return reason;
+    }
+
     @JsonProperty("remaining")
     public int getRemaining() {
         return remaining;
@@ -95,6 +119,18 @@ public final class AssistantStatus {
             return Optional.empty();
         }
         return source;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("month")
+    private Optional<AssistantMonth> _getMonth() {
+        return month;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("reason")
+    private Optional<AssistantOffReason> _getReason() {
+        return reason;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -119,6 +155,8 @@ public final class AssistantStatus {
                 && dailyLimit == other.dailyLimit
                 && images.equals(other.images)
                 && maxTextLength == other.maxTextLength
+                && month.equals(other.month)
+                && reason.equals(other.reason)
                 && remaining == other.remaining
                 && resetsAt.equals(other.resetsAt)
                 && source.equals(other.source);
@@ -131,6 +169,8 @@ public final class AssistantStatus {
                 this.dailyLimit,
                 this.images,
                 this.maxTextLength,
+                this.month,
+                this.reason,
                 this.remaining,
                 this.resetsAt,
                 this.source);
@@ -178,6 +218,18 @@ public final class AssistantStatus {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage month(Optional<AssistantMonth> month);
+
+        _FinalStage month(AssistantMonth month);
+
+        _FinalStage month(Nullable<AssistantMonth> month);
+
+        _FinalStage reason(Optional<AssistantOffReason> reason);
+
+        _FinalStage reason(AssistantOffReason reason);
+
+        _FinalStage reason(Nullable<AssistantOffReason> reason);
+
         _FinalStage source(Optional<AssistantTextSource> source);
 
         _FinalStage source(AssistantTextSource source);
@@ -208,6 +260,10 @@ public final class AssistantStatus {
 
         private Optional<AssistantTextSource> source = Optional.empty();
 
+        private Optional<AssistantOffReason> reason = Optional.empty();
+
+        private Optional<AssistantMonth> month = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -218,6 +274,8 @@ public final class AssistantStatus {
             dailyLimit(other.getDailyLimit());
             images(other.getImages());
             maxTextLength(other.getMaxTextLength());
+            month(other.getMonth());
+            reason(other.getReason());
             remaining(other.getRemaining());
             resetsAt(other.getResetsAt());
             source(other.getSource());
@@ -292,9 +350,68 @@ public final class AssistantStatus {
         }
 
         @java.lang.Override
+        public _FinalStage reason(Nullable<AssistantOffReason> reason) {
+            if (reason.isNull()) {
+                this.reason = null;
+            } else if (reason.isEmpty()) {
+                this.reason = Optional.empty();
+            } else {
+                this.reason = Optional.of(reason.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage reason(AssistantOffReason reason) {
+            this.reason = Optional.ofNullable(reason);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "reason", nulls = Nulls.SKIP)
+        public _FinalStage reason(Optional<AssistantOffReason> reason) {
+            this.reason = reason;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage month(Nullable<AssistantMonth> month) {
+            if (month.isNull()) {
+                this.month = null;
+            } else if (month.isEmpty()) {
+                this.month = Optional.empty();
+            } else {
+                this.month = Optional.of(month.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage month(AssistantMonth month) {
+            this.month = Optional.ofNullable(month);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "month", nulls = Nulls.SKIP)
+        public _FinalStage month(Optional<AssistantMonth> month) {
+            this.month = month;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantStatus build() {
             return new AssistantStatus(
-                    available, dailyLimit, images, maxTextLength, remaining, resetsAt, source, additionalProperties);
+                    available,
+                    dailyLimit,
+                    images,
+                    maxTextLength,
+                    month,
+                    reason,
+                    remaining,
+                    resetsAt,
+                    source,
+                    additionalProperties);
         }
 
         @JsonAnySetter
@@ -303,6 +420,8 @@ public final class AssistantStatus {
                     || key.equalsIgnoreCase("dailyLimit")
                     || key.equalsIgnoreCase("images")
                     || key.equalsIgnoreCase("maxTextLength")
+                    || key.equalsIgnoreCase("month")
+                    || key.equalsIgnoreCase("reason")
                     || key.equalsIgnoreCase("remaining")
                     || key.equalsIgnoreCase("resetsAt")
                     || key.equalsIgnoreCase("source")) {

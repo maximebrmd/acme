@@ -43,7 +43,10 @@
   more personal data than the task needs. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`): `notAllowed` names
   the scope the client lacks and how the user grants it, or says the role
-  refuses; a refused post lists every violation as JSON. Tools that put
+  refuses; a refused post lists every violation as JSON; a meter's
+  refusal (`AllowanceReached`) goes through `usageRefusal` beside
+  `planRefusal` (`generate_image`, `reply_to_comment`, `boost_post`),
+  never quoting an unconfirmed price. Tools that put
   posts out (`schedule_post`, `publish_post`, `reschedule_post`,
   `create_post`, `repost_target`) are `openWorld`, say in their description
   that what goes out is public and cannot be taken back, and check

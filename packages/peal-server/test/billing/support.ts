@@ -18,6 +18,7 @@ import { ContractRecords } from "#billing/application/ports/contract-records.ts"
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
+import { MeterUsageStore } from "#billing/application/ports/meter-usage-store.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
@@ -490,6 +491,23 @@ export const UsageLedgerInMemory = Layer.effect(
         }),
       allOf: () => Effect.succeed([]),
       eraseWorkspace: () => Effect.void,
+      takeBack: (entry) =>
+        Ref.update(kept, (all) =>
+          all.map((other) =>
+            same(entry)(other)
+              ? {
+                  record: {
+                    ...other.record,
+                    quantity: Math.max(
+                      0,
+                      other.record.quantity - entry.record.quantity
+                    ),
+                  },
+                  workspaceId: other.workspaceId,
+                }
+              : other
+          )
+        ),
       ofWorkspace: (id, period) =>
         Ref.get(kept).pipe(
           Effect.map((all) =>
@@ -671,3 +689,18 @@ export const cleanUpAccounts = (workspaceIds: readonly WorkspaceId[]) =>
       yield* sql`DELETE FROM auth.organization WHERE id = ANY(string_to_array(${ids}, ',')::uuid[])`;
     }).pipe(Effect.orDie);
   });
+
+/** A billing account's meters that counted nothing this month, and no ceiling set. */
+export const NoMetersTest = Layer.succeed(
+  MeterUsageStore,
+  MeterUsageStore.of({
+    allOf: () => Effect.succeed({ ceilings: [], months: [] }),
+    ceilings: () => Effect.succeed([]),
+    eraseWorkspace: () => Effect.void,
+    hold: () => Effect.die("no meter is claimed in this test"),
+    ofMonth: () => Effect.succeed([]),
+    purgeBefore: () => Effect.succeed(0),
+    save: () => Effect.die("no meter is claimed in this test"),
+    setCeiling: () => Effect.void,
+  })
+);

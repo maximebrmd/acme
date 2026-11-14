@@ -28,6 +28,7 @@ import { Int64Schema } from "./int64.ts";
 import { InvalidDateRange } from "./invalid-date-range.ts";
 import { PostNotPromotable } from "./post-not-promotable.ts";
 import { SpendCeilingExceeded } from "./spend-ceiling-exceeded.ts";
+import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 // The server's ads context (src/ads/domain) is the source of the
@@ -194,6 +195,13 @@ export const AdAccountSchema = Schema.Struct({
   monthlyCeiling: Schema.NullOr(AmountSchema),
   name: Schema.String,
   network: AdNetworkSchema,
+  // On a server that bills, where the billing account used the managed
+  // ads its month allows: until when new ads of the account are not
+  // tracked (their numbers are not read; ads already counted, and those
+  // of boosts made through Peal, keep updating), the first of next month
+  // UTC; null while they are. Given where the workspace's accounts are
+  // listed or connected; older servers leave it out.
+  newAdsUntrackedUntil: Schema.optionalKey(Schema.NullOr(Schema.DateTimeUtc)),
   // The account's own cap at its network; null without one.
   spendCap: Schema.NullOr(AmountSchema),
   // Whether an owner allowed it to spend through Peal.
@@ -856,6 +864,7 @@ export class AdsApi extends HttpApiGroup.make("ads")
         SpendCeilingExceeded,
         AdAccountSpendCapExceeded,
         BoostKeyReused,
+        UsageAllowanceReached,
       ],
       headers: {
         "idempotency-key": Schema.String.check(Schema.isBetweenLength(1, 255)),
@@ -865,7 +874,7 @@ export class AdsApi extends HttpApiGroup.make("ads")
       success: BoostSchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `**Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until \`endsAt\`. The \`Idempotency-Key\` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as \`requested\`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within ${maxBoostRunDays} days is required), or the monthly ceiling or the account's own spend cap has no room. Needs ads:spend; never staff acting as a member.`,
+        description: `**Spends money.** Boosts a post the workspace published on a Facebook Page, or on an Instagram account connected through its Page, as an ad on Meta: it spends up to the budget, from the ad account's payment method, until \`endsAt\`. The \`Idempotency-Key\` header is required: the same key with the same request answers the boost it made, and never makes another. The boost is accepted as \`requested\`, its budget counted against the ceiling, and made in the background, paused, then run; read it to see how that ended. It is refused, with nothing reserved or sent, when the server offers no spending, no owner allowed the account to spend, the account or its sign-in cannot run ads, the post cannot be boosted, the boost breaks Peal's rules (an end date within ${maxBoostRunDays} days is required), or the monthly ceiling or the account's own spend cap has no room. On a server that bills, it is refused the same way while the billing account, without a payment method, used the managed ads its month includes (UsageAllowanceReached \`paymentMethodRequired\`); running boosts are never touched. Needs ads:spend; never staff acting as a member.`,
         summary: "Boost a published post",
       })
     ),

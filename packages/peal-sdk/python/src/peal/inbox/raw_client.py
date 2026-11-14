@@ -15,6 +15,7 @@ from ..errors.bad_request_error import BadRequestError
 from ..errors.conflict_error import ConflictError
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.not_found_error import NotFoundError
+from ..errors.payment_required_error import PaymentRequiredError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
@@ -344,7 +345,7 @@ class RawInboxClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[InboxReply]:
         """
-        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 `UsageAllowanceReached`) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -397,6 +398,17 @@ class RawInboxClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1242,7 +1254,7 @@ class AsyncRawInboxClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[InboxReply]:
         """
-        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). On a server that bills, each reply counts one of the billing account's inbox messages this calendar month (UTC), across its workspaces: without a payment method, the reply past the month's allowance is refused before anything is journalled (402 `UsageAllowanceReached`) until the first of next month; with one, it is billed past the allowance. A reply that never went out is not counted. Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -1295,6 +1307,17 @@ class AsyncRawInboxClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

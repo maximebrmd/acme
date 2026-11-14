@@ -148,6 +148,7 @@ describe("usage reports", () => {
     // A day without a snapshot, today's among them, has no count of
     // requests either: never a zero it did not count.
     expect(report.days[0]).toStrictEqual({
+      assistantImages: 0,
       assistantRequests: Option.none(),
       billableAccounts: Option.none(),
       byPlatform: [],
@@ -155,13 +156,17 @@ describe("usage reports", () => {
       day: day("2026-10-30"),
       mediaStorage: Option.none(),
       members: Option.none(),
+      outboundMessages: 0,
       publishedPosts: 0,
     });
     expect(report.totals).toStrictEqual({
+      assistantImages: 0,
       billableAccountDays: Option.none(),
       byPlatform: [],
       channelDays: 0,
       daysCounted: 0,
+      managedAds: 0,
+      outboundMessages: 0,
       publishedPosts: 0,
     });
   });
@@ -226,11 +231,63 @@ describe("usage reports", () => {
     );
 
     expect(report.totals).toStrictEqual({
+      assistantImages: 0,
       billableAccountDays: Option.none(),
       byPlatform: [],
       channelDays: 0,
       daysCounted: 0,
+      managedAds: 0,
+      outboundMessages: 0,
       publishedPosts: 0,
+    });
+  });
+
+  it("add up the billing meters' counters by day and over the period", () => {
+    const report = reportOf(
+      [
+        {
+          day: day("2026-10-31"),
+          dimension: "",
+          meter: "outboundMessages",
+          quantity: 4,
+        },
+        {
+          day: day("2026-11-01"),
+          dimension: "",
+          meter: "outboundMessages",
+          quantity: 2,
+        },
+        {
+          day: day("2026-11-01"),
+          dimension: "",
+          meter: "assistantImages",
+          quantity: 1,
+        },
+        {
+          day: day("2026-11-02"),
+          dimension: "",
+          meter: "managedAds",
+          quantity: 3,
+        },
+      ],
+      period
+    );
+
+    expect(
+      report.days.map(({ assistantImages, outboundMessages }) => [
+        outboundMessages,
+        assistantImages,
+      ])
+    ).toStrictEqual([
+      [0, 0],
+      [4, 0],
+      [2, 1],
+      [0, 0],
+    ]);
+    expect(report.totals).toMatchObject({
+      assistantImages: 1,
+      managedAds: 3,
+      outboundMessages: 6,
     });
   });
 

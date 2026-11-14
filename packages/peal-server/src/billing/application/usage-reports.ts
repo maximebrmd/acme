@@ -215,10 +215,13 @@ const partnerDaysOf = (
   const partnerDays: PartnerDays = {
     days,
     totals: {
+      assistantImages: posts.totals.assistantImages,
       billableAccountDays: billable,
       byPlatform: posts.totals.byPlatform,
       channelDays: withCounts.reduce((sum, channels) => sum + channels, 0),
       daysCounted: withCounts.length,
+      managedAds: posts.totals.managedAds,
+      outboundMessages: posts.totals.outboundMessages,
       publishedPosts: posts.totals.publishedPosts,
     },
   };

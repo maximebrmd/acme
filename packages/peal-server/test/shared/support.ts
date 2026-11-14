@@ -87,3 +87,7 @@ export const statementsOf = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
     return { result, statements };
   });
+
+export { FakeMetersLedger, fakeMeters } from "#test/shared/fake-meters.ts";
+
+export type { MetersLedger } from "#test/shared/fake-meters.ts";

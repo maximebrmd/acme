@@ -1471,6 +1471,37 @@ func (a *AdsUnavailableEncoded) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+type AllowanceReason string
+
+const (
+	AllowanceReasonPaymentMethodRequired AllowanceReason = "paymentMethodRequired"
+	AllowanceReasonCeilingReached        AllowanceReason = "ceilingReached"
+	AllowanceReasonNotEnabled            AllowanceReason = "notEnabled"
+	AllowanceReasonPlanAllowance         AllowanceReason = "planAllowance"
+	AllowanceReasonPaymentFailed         AllowanceReason = "paymentFailed"
+)
+
+func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
+	switch s {
+	case "paymentMethodRequired":
+		return AllowanceReasonPaymentMethodRequired, nil
+	case "ceilingReached":
+		return AllowanceReasonCeilingReached, nil
+	case "notEnabled":
+		return AllowanceReasonNotEnabled, nil
+	case "planAllowance":
+		return AllowanceReasonPlanAllowance, nil
+	case "paymentFailed":
+		return AllowanceReasonPaymentFailed, nil
+	}
+	var t AllowanceReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AllowanceReason) Ptr() *AllowanceReason {
+	return &a
+}
+
 var (
 	alreadyMemberEncodedFieldCode      = big.NewInt(1 << 0)
 	alreadyMemberEncodedFieldMessage   = big.NewInt(1 << 1)
@@ -14683,6 +14714,37 @@ func (m MediaTooLargeEncodedKind) Ptr() *MediaTooLargeEncodedKind {
 	return &m
 }
 
+type Meter string
+
+const (
+	MeterAssistantRequests Meter = "assistantRequests"
+	MeterAssistantImages   Meter = "assistantImages"
+	MeterOutboundMessages  Meter = "outboundMessages"
+	MeterManagedAds        Meter = "managedAds"
+	MeterXAPI              Meter = "xApi"
+)
+
+func NewMeterFromString(s string) (Meter, error) {
+	switch s {
+	case "assistantRequests":
+		return MeterAssistantRequests, nil
+	case "assistantImages":
+		return MeterAssistantImages, nil
+	case "outboundMessages":
+		return MeterOutboundMessages, nil
+	case "managedAds":
+		return MeterManagedAds, nil
+	case "xApi":
+		return MeterXAPI, nil
+	}
+	var t Meter
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m Meter) Ptr() *Meter {
+	return &m
+}
+
 var (
 	meteredPostsFieldMonth          = big.NewInt(1 << 0)
 	meteredPostsFieldPlatform       = big.NewInt(1 << 1)
@@ -17676,6 +17738,132 @@ func (p *PartnerUsageReportDay) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+type PaymentRequiredErrorBody struct {
+	Type                  string
+	UsageAllowanceReached *UsageAllowanceReachedEncoded
+	PlanLimitReached      *PlanLimitReachedEncoded
+
+	rawJSON json.RawMessage
+}
+
+func (p *PaymentRequiredErrorBody) GetType() string {
+	if p == nil {
+		return ""
+	}
+	return p.Type
+}
+
+func (p *PaymentRequiredErrorBody) GetUsageAllowanceReached() *UsageAllowanceReachedEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.UsageAllowanceReached
+}
+
+func (p *PaymentRequiredErrorBody) GetPlanLimitReached() *PlanLimitReachedEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.PlanLimitReached
+}
+
+func (p *PaymentRequiredErrorBody) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	p.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", p)
+	}
+	switch unmarshaler.Type {
+	case "UsageAllowanceReached":
+		value := new(UsageAllowanceReachedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.UsageAllowanceReached = value
+	case "PlanLimitReached":
+		value := new(PlanLimitReachedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.PlanLimitReached = value
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p PaymentRequiredErrorBody) MarshalJSON() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	if p.UsageAllowanceReached != nil {
+		return internal.MarshalJSONWithExtraProperty(p.UsageAllowanceReached, "_tag", "UsageAllowanceReached")
+	}
+	if p.PlanLimitReached != nil {
+		return internal.MarshalJSONWithExtraProperty(p.PlanLimitReached, "_tag", "PlanLimitReached")
+	}
+	if len(p.rawJSON) > 0 {
+		return p.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+type PaymentRequiredErrorBodyVisitor interface {
+	VisitUsageAllowanceReached(*UsageAllowanceReachedEncoded) error
+	VisitPlanLimitReached(*PlanLimitReachedEncoded) error
+}
+
+func (p *PaymentRequiredErrorBody) Accept(visitor PaymentRequiredErrorBodyVisitor) error {
+	if p.UsageAllowanceReached != nil {
+		return visitor.VisitUsageAllowanceReached(p.UsageAllowanceReached)
+	}
+	if p.PlanLimitReached != nil {
+		return visitor.VisitPlanLimitReached(p.PlanLimitReached)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+func (p *PaymentRequiredErrorBody) validate() error {
+	if p == nil {
+		return fmt.Errorf("type %T is nil", p)
+	}
+	var fields []string
+	if p.UsageAllowanceReached != nil {
+		fields = append(fields, "UsageAllowanceReached")
+	}
+	if p.PlanLimitReached != nil {
+		fields = append(fields, "PlanLimitReached")
+	}
+	if len(fields) == 0 {
+		if p.Type != "" {
+			if len(p.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", p, p.Type)
+		}
+		return fmt.Errorf("type %T is empty", p)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", p, fields)
+	}
+	if p.Type != "" {
+		field := fields[0]
+		if p.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				p,
+				p.Type,
+				p,
+			)
+		}
+	}
+	return nil
 }
 
 var (
@@ -22676,18 +22864,21 @@ func (t *TargetStatusConflictEncoded) String() string {
 }
 
 var (
-	tenantUsageFieldAssistantRequests = big.NewInt(1 << 0)
-	tenantUsageFieldByPlatform        = big.NewInt(1 << 1)
-	tenantUsageFieldChannelDays       = big.NewInt(1 << 2)
-	tenantUsageFieldChannels          = big.NewInt(1 << 3)
-	tenantUsageFieldDaysCounted       = big.NewInt(1 << 4)
-	tenantUsageFieldExternalID        = big.NewInt(1 << 5)
-	tenantUsageFieldHome              = big.NewInt(1 << 6)
-	tenantUsageFieldMediaStorage      = big.NewInt(1 << 7)
-	tenantUsageFieldMeteredPosts      = big.NewInt(1 << 8)
-	tenantUsageFieldName              = big.NewInt(1 << 9)
-	tenantUsageFieldPublishedPosts    = big.NewInt(1 << 10)
-	tenantUsageFieldWorkspaceID       = big.NewInt(1 << 11)
+	tenantUsageFieldAssistantImages   = big.NewInt(1 << 0)
+	tenantUsageFieldAssistantRequests = big.NewInt(1 << 1)
+	tenantUsageFieldByPlatform        = big.NewInt(1 << 2)
+	tenantUsageFieldChannelDays       = big.NewInt(1 << 3)
+	tenantUsageFieldChannels          = big.NewInt(1 << 4)
+	tenantUsageFieldDaysCounted       = big.NewInt(1 << 5)
+	tenantUsageFieldManagedAds        = big.NewInt(1 << 6)
+	tenantUsageFieldExternalID        = big.NewInt(1 << 7)
+	tenantUsageFieldHome              = big.NewInt(1 << 8)
+	tenantUsageFieldMediaStorage      = big.NewInt(1 << 9)
+	tenantUsageFieldMeteredPosts      = big.NewInt(1 << 10)
+	tenantUsageFieldName              = big.NewInt(1 << 11)
+	tenantUsageFieldOutboundMessages  = big.NewInt(1 << 12)
+	tenantUsageFieldPublishedPosts    = big.NewInt(1 << 13)
+	tenantUsageFieldWorkspaceID       = big.NewInt(1 << 14)
 )
 
 // tenantUsageNullableFields maps the wire names of TenantUsage's nullable fields (required or optional) to their field bits.
@@ -22697,16 +22888,19 @@ var tenantUsageNullableFields = map[string]*big.Int{
 }
 
 type TenantUsage struct {
+	AssistantImages   int              `json:"assistantImages" url:"assistantImages"`
 	AssistantRequests int              `json:"assistantRequests" url:"assistantRequests"`
 	ByPlatform        []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
 	ChannelDays       int64            `json:"channelDays" url:"channelDays"`
 	Channels          int              `json:"channels" url:"channels"`
 	DaysCounted       int              `json:"daysCounted" url:"daysCounted"`
+	ManagedAds        int              `json:"managedAds" url:"managedAds"`
 	ExternalID        *string          `json:"externalId,omitempty" url:"externalId,omitempty"`
 	Home              bool             `json:"home" url:"home"`
 	MediaStorage      *int64           `json:"mediaStorage,omitempty" url:"mediaStorage,omitempty"`
 	MeteredPosts      []*MeteredPosts  `json:"meteredPosts" url:"meteredPosts"`
 	Name              string           `json:"name" url:"name"`
+	OutboundMessages  int              `json:"outboundMessages" url:"outboundMessages"`
 	PublishedPosts    int              `json:"publishedPosts" url:"publishedPosts"`
 	WorkspaceID       string           `json:"workspaceId" url:"workspaceId"`
 
@@ -22715,6 +22909,13 @@ type TenantUsage struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (t *TenantUsage) GetAssistantImages() int {
+	if t == nil {
+		return 0
+	}
+	return t.AssistantImages
 }
 
 func (t *TenantUsage) GetAssistantRequests() int {
@@ -22752,6 +22953,13 @@ func (t *TenantUsage) GetDaysCounted() int {
 	return t.DaysCounted
 }
 
+func (t *TenantUsage) GetManagedAds() int {
+	if t == nil {
+		return 0
+	}
+	return t.ManagedAds
+}
+
 func (t *TenantUsage) GetExternalID() *string {
 	if t == nil {
 		return nil
@@ -22787,6 +22995,13 @@ func (t *TenantUsage) GetName() string {
 	return t.Name
 }
 
+func (t *TenantUsage) GetOutboundMessages() int {
+	if t == nil {
+		return 0
+	}
+	return t.OutboundMessages
+}
+
 func (t *TenantUsage) GetPublishedPosts() int {
 	if t == nil {
 		return 0
@@ -22815,6 +23030,13 @@ func (t *TenantUsage) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	t.explicitFields = next
+}
+
+// SetAssistantImages sets the AssistantImages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TenantUsage) SetAssistantImages(assistantImages int) {
+	t.AssistantImages = assistantImages
+	t.require(tenantUsageFieldAssistantImages)
 }
 
 // SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
@@ -22852,6 +23074,13 @@ func (t *TenantUsage) SetDaysCounted(daysCounted int) {
 	t.require(tenantUsageFieldDaysCounted)
 }
 
+// SetManagedAds sets the ManagedAds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TenantUsage) SetManagedAds(managedAds int) {
+	t.ManagedAds = managedAds
+	t.require(tenantUsageFieldManagedAds)
+}
+
 // SetExternalID sets the ExternalID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (t *TenantUsage) SetExternalID(externalID *string) {
@@ -22885,6 +23114,13 @@ func (t *TenantUsage) SetMeteredPosts(meteredPosts []*MeteredPosts) {
 func (t *TenantUsage) SetName(name string) {
 	t.Name = name
 	t.require(tenantUsageFieldName)
+}
+
+// SetOutboundMessages sets the OutboundMessages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TenantUsage) SetOutboundMessages(outboundMessages int) {
+	t.OutboundMessages = outboundMessages
+	t.require(tenantUsageFieldOutboundMessages)
 }
 
 // SetPublishedPosts sets the PublishedPosts field and marks it as non-optional;
@@ -27012,6 +27248,108 @@ func (u UnauthenticatedEncodedTag) Ptr() *UnauthenticatedEncodedTag {
 	return &u
 }
 
+var (
+	unitPriceFieldCents = big.NewInt(1 << 0)
+	unitPriceFieldPer   = big.NewInt(1 << 1)
+)
+
+type UnitPrice struct {
+	Cents int `json:"cents" url:"cents"`
+	Per   int `json:"per" url:"per"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UnitPrice) GetCents() int {
+	if u == nil {
+		return 0
+	}
+	return u.Cents
+}
+
+func (u *UnitPrice) GetPer() int {
+	if u == nil {
+		return 0
+	}
+	return u.Per
+}
+
+func (u *UnitPrice) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UnitPrice) require(field *big.Int) {
+	next := new(big.Int)
+	if u.explicitFields != nil {
+		next.Set(u.explicitFields)
+	}
+	next.Or(next, field)
+	u.explicitFields = next
+}
+
+// SetCents sets the Cents field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnitPrice) SetCents(cents int) {
+	u.Cents = cents
+	u.require(unitPriceFieldCents)
+}
+
+// SetPer sets the Per field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnitPrice) SetPer(per int) {
+	u.Per = per
+	u.require(unitPriceFieldPer)
+}
+
+func (u *UnitPrice) UnmarshalJSON(data []byte) error {
+	type unmarshaler UnitPrice
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UnitPrice(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UnitPrice) MarshalJSON() ([]byte, error) {
+	type embed UnitPrice
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UnitPrice) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
 type UnprocessableEntityErrorBody struct {
 	Type                string
 	FeedAddressRefused  *FeedAddressRefusedEncoded
@@ -27793,6 +28131,255 @@ func (u *Usage) String() string {
 }
 
 var (
+	usageAllowanceReachedEncodedFieldTag        = big.NewInt(1 << 0)
+	usageAllowanceReachedEncodedFieldCode       = big.NewInt(1 << 1)
+	usageAllowanceReachedEncodedFieldMessage    = big.NewInt(1 << 2)
+	usageAllowanceReachedEncodedFieldRequestID  = big.NewInt(1 << 3)
+	usageAllowanceReachedEncodedFieldAllowed    = big.NewInt(1 << 4)
+	usageAllowanceReachedEncodedFieldBillingURL = big.NewInt(1 << 5)
+	usageAllowanceReachedEncodedFieldMeter      = big.NewInt(1 << 6)
+	usageAllowanceReachedEncodedFieldReason     = big.NewInt(1 << 7)
+	usageAllowanceReachedEncodedFieldResetsAt   = big.NewInt(1 << 8)
+	usageAllowanceReachedEncodedFieldUsed       = big.NewInt(1 << 9)
+)
+
+type UsageAllowanceReachedEncoded struct {
+	Tag        UsageAllowanceReachedEncodedTag `json:"_tag" url:"_tag"`
+	Code       *string                         `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string                         `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string                         `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed    int                             `json:"allowed" url:"allowed"`
+	BillingURL string                          `json:"billingUrl" url:"billingUrl"`
+	Meter      Meter                           `json:"meter" url:"meter"`
+	Reason     AllowanceReason                 `json:"reason" url:"reason"`
+	ResetsAt   string                          `json:"resetsAt" url:"resetsAt"`
+	Used       int                             `json:"used" url:"used"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UsageAllowanceReachedEncoded) GetTag() UsageAllowanceReachedEncodedTag {
+	if u == nil {
+		return ""
+	}
+	return u.Tag
+}
+
+func (u *UsageAllowanceReachedEncoded) GetCode() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Code
+}
+
+func (u *UsageAllowanceReachedEncoded) GetMessage() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Message
+}
+
+func (u *UsageAllowanceReachedEncoded) GetRequestID() *string {
+	if u == nil {
+		return nil
+	}
+	return u.RequestID
+}
+
+func (u *UsageAllowanceReachedEncoded) GetAllowed() int {
+	if u == nil {
+		return 0
+	}
+	return u.Allowed
+}
+
+func (u *UsageAllowanceReachedEncoded) GetBillingURL() string {
+	if u == nil {
+		return ""
+	}
+	return u.BillingURL
+}
+
+func (u *UsageAllowanceReachedEncoded) GetMeter() Meter {
+	if u == nil {
+		return ""
+	}
+	return u.Meter
+}
+
+func (u *UsageAllowanceReachedEncoded) GetReason() AllowanceReason {
+	if u == nil {
+		return ""
+	}
+	return u.Reason
+}
+
+func (u *UsageAllowanceReachedEncoded) GetResetsAt() string {
+	if u == nil {
+		return ""
+	}
+	return u.ResetsAt
+}
+
+func (u *UsageAllowanceReachedEncoded) GetUsed() int {
+	if u == nil {
+		return 0
+	}
+	return u.Used
+}
+
+func (u *UsageAllowanceReachedEncoded) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UsageAllowanceReachedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if u.explicitFields != nil {
+		next.Set(u.explicitFields)
+	}
+	next.Or(next, field)
+	u.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetTag(tag UsageAllowanceReachedEncodedTag) {
+	u.Tag = tag
+	u.require(usageAllowanceReachedEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetCode(code *string) {
+	u.Code = code
+	u.require(usageAllowanceReachedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetMessage(message *string) {
+	u.Message = message
+	u.require(usageAllowanceReachedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetRequestID(requestID *string) {
+	u.RequestID = requestID
+	u.require(usageAllowanceReachedEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetAllowed(allowed int) {
+	u.Allowed = allowed
+	u.require(usageAllowanceReachedEncodedFieldAllowed)
+}
+
+// SetBillingURL sets the BillingURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetBillingURL(billingURL string) {
+	u.BillingURL = billingURL
+	u.require(usageAllowanceReachedEncodedFieldBillingURL)
+}
+
+// SetMeter sets the Meter field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetMeter(meter Meter) {
+	u.Meter = meter
+	u.require(usageAllowanceReachedEncodedFieldMeter)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetReason(reason AllowanceReason) {
+	u.Reason = reason
+	u.require(usageAllowanceReachedEncodedFieldReason)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetResetsAt(resetsAt string) {
+	u.ResetsAt = resetsAt
+	u.require(usageAllowanceReachedEncodedFieldResetsAt)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageAllowanceReachedEncoded) SetUsed(used int) {
+	u.Used = used
+	u.require(usageAllowanceReachedEncodedFieldUsed)
+}
+
+func (u *UsageAllowanceReachedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler UsageAllowanceReachedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UsageAllowanceReachedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UsageAllowanceReachedEncoded) MarshalJSON() ([]byte, error) {
+	type embed UsageAllowanceReachedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UsageAllowanceReachedEncoded) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UsageAllowanceReachedEncodedTag string
+
+const (
+	UsageAllowanceReachedEncodedTagUsageAllowanceReached UsageAllowanceReachedEncodedTag = "UsageAllowanceReached"
+)
+
+func NewUsageAllowanceReachedEncodedTagFromString(s string) (UsageAllowanceReachedEncodedTag, error) {
+	switch s {
+	case "UsageAllowanceReached":
+		return UsageAllowanceReachedEncodedTagUsageAllowanceReached, nil
+	}
+	var t UsageAllowanceReachedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UsageAllowanceReachedEncodedTag) Ptr() *UsageAllowanceReachedEncodedTag {
+	return &u
+}
+
+var (
 	usagePeriodFieldFrom = big.NewInt(1 << 0)
 	usagePeriodFieldTo   = big.NewInt(1 << 1)
 )
@@ -27895,12 +28482,15 @@ func (u *UsagePeriod) String() string {
 }
 
 var (
-	usageTotalsFieldBillableAccountDays = big.NewInt(1 << 0)
-	usageTotalsFieldByPlatform          = big.NewInt(1 << 1)
-	usageTotalsFieldChannelDays         = big.NewInt(1 << 2)
-	usageTotalsFieldDaysCounted         = big.NewInt(1 << 3)
-	usageTotalsFieldMeteredPosts        = big.NewInt(1 << 4)
-	usageTotalsFieldPublishedPosts      = big.NewInt(1 << 5)
+	usageTotalsFieldAssistantImages     = big.NewInt(1 << 0)
+	usageTotalsFieldBillableAccountDays = big.NewInt(1 << 1)
+	usageTotalsFieldByPlatform          = big.NewInt(1 << 2)
+	usageTotalsFieldChannelDays         = big.NewInt(1 << 3)
+	usageTotalsFieldDaysCounted         = big.NewInt(1 << 4)
+	usageTotalsFieldManagedAds          = big.NewInt(1 << 5)
+	usageTotalsFieldMeteredPosts        = big.NewInt(1 << 6)
+	usageTotalsFieldOutboundMessages    = big.NewInt(1 << 7)
+	usageTotalsFieldPublishedPosts      = big.NewInt(1 << 8)
 )
 
 // usageTotalsNullableFields maps the wire names of UsageTotals's nullable fields (required or optional) to their field bits.
@@ -27909,11 +28499,14 @@ var usageTotalsNullableFields = map[string]*big.Int{
 }
 
 type UsageTotals struct {
+	AssistantImages     int              `json:"assistantImages" url:"assistantImages"`
 	BillableAccountDays *int64           `json:"billableAccountDays,omitempty" url:"billableAccountDays,omitempty"`
 	ByPlatform          []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
 	ChannelDays         int64            `json:"channelDays" url:"channelDays"`
 	DaysCounted         int              `json:"daysCounted" url:"daysCounted"`
+	ManagedAds          int              `json:"managedAds" url:"managedAds"`
 	MeteredPosts        []*MeteredPosts  `json:"meteredPosts" url:"meteredPosts"`
+	OutboundMessages    int              `json:"outboundMessages" url:"outboundMessages"`
 	PublishedPosts      int              `json:"publishedPosts" url:"publishedPosts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -27921,6 +28514,13 @@ type UsageTotals struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UsageTotals) GetAssistantImages() int {
+	if u == nil {
+		return 0
+	}
+	return u.AssistantImages
 }
 
 func (u *UsageTotals) GetBillableAccountDays() *int64 {
@@ -27951,11 +28551,25 @@ func (u *UsageTotals) GetDaysCounted() int {
 	return u.DaysCounted
 }
 
+func (u *UsageTotals) GetManagedAds() int {
+	if u == nil {
+		return 0
+	}
+	return u.ManagedAds
+}
+
 func (u *UsageTotals) GetMeteredPosts() []*MeteredPosts {
 	if u == nil {
 		return nil
 	}
 	return u.MeteredPosts
+}
+
+func (u *UsageTotals) GetOutboundMessages() int {
+	if u == nil {
+		return 0
+	}
+	return u.OutboundMessages
 }
 
 func (u *UsageTotals) GetPublishedPosts() int {
@@ -27979,6 +28593,13 @@ func (u *UsageTotals) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	u.explicitFields = next
+}
+
+// SetAssistantImages sets the AssistantImages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageTotals) SetAssistantImages(assistantImages int) {
+	u.AssistantImages = assistantImages
+	u.require(usageTotalsFieldAssistantImages)
 }
 
 // SetBillableAccountDays sets the BillableAccountDays field and marks it as non-optional;
@@ -28009,11 +28630,25 @@ func (u *UsageTotals) SetDaysCounted(daysCounted int) {
 	u.require(usageTotalsFieldDaysCounted)
 }
 
+// SetManagedAds sets the ManagedAds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageTotals) SetManagedAds(managedAds int) {
+	u.ManagedAds = managedAds
+	u.require(usageTotalsFieldManagedAds)
+}
+
 // SetMeteredPosts sets the MeteredPosts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (u *UsageTotals) SetMeteredPosts(meteredPosts []*MeteredPosts) {
 	u.MeteredPosts = meteredPosts
 	u.require(usageTotalsFieldMeteredPosts)
+}
+
+// SetOutboundMessages sets the OutboundMessages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageTotals) SetOutboundMessages(outboundMessages int) {
+	u.OutboundMessages = outboundMessages
+	u.require(usageTotalsFieldOutboundMessages)
 }
 
 // SetPublishedPosts sets the PublishedPosts field and marks it as non-optional;

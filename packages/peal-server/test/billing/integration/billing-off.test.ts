@@ -43,6 +43,18 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
           scheduledPosts: null,
         });
 
+        // No ceiling to set where nothing bills.
+        const ceiling = yield* app.request(
+          `/api/workspaces/${workspaceId}/billing/ceilings/x`,
+          {
+            body: { cents: 500 },
+            headers: { cookie: owner.cookies },
+            method: "PUT",
+          }
+        );
+
+        assert.deepInclude(ceiling.body, { _tag: "BillingNotEnabled" });
+
         // Its usage, counted all the same, without a plan.
         const usage = yield* app.request(
           `/api/workspaces/${workspaceId}/usage?from=2026-11-01&to=2026-11-07`,
