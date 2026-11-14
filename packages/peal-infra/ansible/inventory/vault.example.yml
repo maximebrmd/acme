@@ -55,7 +55,8 @@ peal_credentials:
   # Google Business Profile locations' reviews, need none either:
   # PEAL_INBOX_PLATFORMS goes in peal_settings, beside META_APP_ID,
   # INSTAGRAM_APP_ID, YOUTUBE_CLIENT_ID, LINKEDIN_PAGES_CLIENT_ID or
-  # GOOGLE_BUSINESS_CLIENT_ID.
+  # GOOGLE_BUSINESS_CLIENT_ID; PEAL_INBOX_MESSAGES there too, which needs
+  # no secret.
   # A Stripe key needs write access to meters, products and prices
   # for the catalogue command (README.md, "Stripe catalogue").
   # PEAL_AI_API_KEY: REPLACE

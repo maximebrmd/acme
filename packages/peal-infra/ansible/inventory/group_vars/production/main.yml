@@ -141,6 +141,11 @@ peal_settings:
   # Google gave the project access to the Business Profile APIs and one
   # review was read, answered and its reply deleted on a test location.
   # PEAL_INBOX_PLATFORMS: facebook,instagram,youtube,linkedin,googleBusiness
+  # Mastodon's and Bluesky's direct messages in the inbox: no platform's
+  # review, but private correspondence, so on only once counsel approved
+  # the privacy policy's lines on them and one conversation was read and
+  # answered on a test account of each.
+  # PEAL_INBOX_MESSAGES: mastodon,bluesky
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"
