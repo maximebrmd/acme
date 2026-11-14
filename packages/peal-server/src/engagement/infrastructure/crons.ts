@@ -1,10 +1,13 @@
-import { Cron, Duration, Effect, Layer } from "effect";
+import { Cron, Duration, Effect, Layer, Metric } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { CollectReviews } from "#engagement/application/collect-reviews.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
-import { PurgeReviews } from "#engagement/application/purge-reviews.ts";
+import {
+  PurgeReviews,
+  reviewsRetentionFailures,
+} from "#engagement/application/purge-reviews.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 
 /**
@@ -144,7 +147,11 @@ const ReviewsRetentionCron = ClusterCron.make({
         : Effect.void
     ),
     Effect.catchCause((cause) =>
-      Effect.logWarning("Forgetting reviews past their time failed", cause)
+      Metric.update(reviewsRetentionFailures, 1).pipe(
+        Effect.andThen(
+          Effect.logWarning("Forgetting reviews past their time failed", cause)
+        )
+      )
     )
   ),
   name: "engagement.reviews-retention",

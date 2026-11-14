@@ -1,10 +1,22 @@
-import { Context, DateTime, Effect, Layer } from "effect";
+import { Context, DateTime, Effect, Layer, Metric } from "effect";
 
 import { keptSince } from "#engagement/domain/review.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { ReviewStore } from "./ports/review-store.ts";
 import type { ReviewsPurged } from "./ports/review-store.ts";
+
+/**
+ * Purges of reviews that failed: reviews past Google's bound then stay
+ * until one succeeds, and an alert says so (`peal-reviews-retention-failing`).
+ */
+export const reviewsRetentionFailures = Metric.counter(
+  "peal.engagement.reviews.retention_failures",
+  {
+    description: "Hourly purges of reviews past their time that failed",
+    incremental: true,
+  }
+);
 
 // What one pass deletes at most, of reviews and of threads: passes follow
 // until one deletes less.

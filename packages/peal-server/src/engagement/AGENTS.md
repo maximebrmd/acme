@@ -327,7 +327,7 @@
   read, the read is not `complete`), `reconcileReviews` decides, and only a
   complete read deletes a review it did not see. `PurgeReviews`
   (`engagement.reviews-retention`, hourly at 47) deletes reviews past the
-  bound and threads no read reached in that time; a channel gone
+  bound and threads no read reached in that time (a failed run is counted, `peal.engagement.reviews.retention_failures`, alert `peal-reviews-retention-failing`); a channel gone
   (`EngagementRecords.channelGone`, googleBusiness) or a workspace erased
   deletes them at once. The registry's `inboxReviews` and the privacy
   policy follow.

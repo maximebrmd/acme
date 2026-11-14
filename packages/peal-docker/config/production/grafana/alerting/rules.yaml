@@ -545,6 +545,38 @@ groups:
                     type: gt
                     params: [1.5]
 
+      - uid: peal-reviews-retention-failing
+        title: Reviews past their time are not being deleted
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more hourly purges of reviews failed in three hours (peal.engagement.reviews.retention_failures). Reviews last changed 29 days ago stay, and Google lets what its API gives be stored 30 days at most; a location no read reaches is deleted only by this purge. Read the server's warnings ("Forgetting reviews past their time failed").
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run every hour: three in the window.
+              expr: sum(increase(peal_engagement_reviews_retention_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-comments-thread-failing
         title: A thread's comments keep failing to be kept
         condition: B
