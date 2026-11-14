@@ -398,6 +398,7 @@ type NoticeEvent struct {
 	PostChangesRequested          *NoticeEventPostChangesRequested
 	PostCommented                 *NoticeEventPostCommented
 	CommentsReceived              *NoticeEventCommentsReceived
+	MessagesReceived              *NoticeEventMessagesReceived
 	ChannelReconnectRequired      *NoticeEventChannelReconnectRequired
 	ChannelReconnectSoon          *NoticeEventChannelReconnectSoon
 	SubscriptionStarted           *NoticeEventSubscriptionStarted
@@ -480,6 +481,13 @@ func (n *NoticeEvent) GetCommentsReceived() *NoticeEventCommentsReceived {
 		return nil
 	}
 	return n.CommentsReceived
+}
+
+func (n *NoticeEvent) GetMessagesReceived() *NoticeEventMessagesReceived {
+	if n == nil {
+		return nil
+	}
+	return n.MessagesReceived
 }
 
 func (n *NoticeEvent) GetChannelReconnectRequired() *NoticeEventChannelReconnectRequired {
@@ -661,6 +669,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.CommentsReceived = value
+	case "MessagesReceived":
+		value := new(NoticeEventMessagesReceived)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.MessagesReceived = value
 	case "ChannelReconnectRequired":
 		value := new(NoticeEventChannelReconnectRequired)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -796,6 +810,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.CommentsReceived != nil {
 		return internal.MarshalJSONWithExtraProperty(n.CommentsReceived, "_tag", "CommentsReceived")
 	}
+	if n.MessagesReceived != nil {
+		return internal.MarshalJSONWithExtraProperty(n.MessagesReceived, "_tag", "MessagesReceived")
+	}
 	if n.ChannelReconnectRequired != nil {
 		return internal.MarshalJSONWithExtraProperty(n.ChannelReconnectRequired, "_tag", "ChannelReconnectRequired")
 	}
@@ -862,6 +879,7 @@ type NoticeEventVisitor interface {
 	VisitPostChangesRequested(*NoticeEventPostChangesRequested) error
 	VisitPostCommented(*NoticeEventPostCommented) error
 	VisitCommentsReceived(*NoticeEventCommentsReceived) error
+	VisitMessagesReceived(*NoticeEventMessagesReceived) error
 	VisitChannelReconnectRequired(*NoticeEventChannelReconnectRequired) error
 	VisitChannelReconnectSoon(*NoticeEventChannelReconnectSoon) error
 	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
@@ -905,6 +923,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.CommentsReceived != nil {
 		return visitor.VisitCommentsReceived(n.CommentsReceived)
+	}
+	if n.MessagesReceived != nil {
+		return visitor.VisitMessagesReceived(n.MessagesReceived)
 	}
 	if n.ChannelReconnectRequired != nil {
 		return visitor.VisitChannelReconnectRequired(n.ChannelReconnectRequired)
@@ -988,6 +1009,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.CommentsReceived != nil {
 		fields = append(fields, "CommentsReceived")
+	}
+	if n.MessagesReceived != nil {
+		fields = append(fields, "MessagesReceived")
 	}
 	if n.ChannelReconnectRequired != nil {
 		fields = append(fields, "ChannelReconnectRequired")
@@ -1889,6 +1913,124 @@ func (n *NoticeEventFeedStopped) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventFeedStopped) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventMessagesReceivedFieldChannel        = big.NewInt(1 << 0)
+	noticeEventMessagesReceivedFieldConversationID = big.NewInt(1 << 1)
+	noticeEventMessagesReceivedFieldCount          = big.NewInt(1 << 2)
+)
+
+type NoticeEventMessagesReceived struct {
+	Channel        *NoticeChannel `json:"channel" url:"channel"`
+	ConversationID string         `json:"conversationId" url:"conversationId"`
+	Count          int            `json:"count" url:"count"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventMessagesReceived) GetChannel() *NoticeChannel {
+	if n == nil {
+		return nil
+	}
+	return n.Channel
+}
+
+func (n *NoticeEventMessagesReceived) GetConversationID() string {
+	if n == nil {
+		return ""
+	}
+	return n.ConversationID
+}
+
+func (n *NoticeEventMessagesReceived) GetCount() int {
+	if n == nil {
+		return 0
+	}
+	return n.Count
+}
+
+func (n *NoticeEventMessagesReceived) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventMessagesReceived) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetChannel sets the Channel field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventMessagesReceived) SetChannel(channel *NoticeChannel) {
+	n.Channel = channel
+	n.require(noticeEventMessagesReceivedFieldChannel)
+}
+
+// SetConversationID sets the ConversationID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventMessagesReceived) SetConversationID(conversationID string) {
+	n.ConversationID = conversationID
+	n.require(noticeEventMessagesReceivedFieldConversationID)
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventMessagesReceived) SetCount(count int) {
+	n.Count = count
+	n.require(noticeEventMessagesReceivedFieldCount)
+}
+
+func (n *NoticeEventMessagesReceived) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventMessagesReceived
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventMessagesReceived(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventMessagesReceived) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventMessagesReceived
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventMessagesReceived) String() string {
 	if n == nil {
 		return "<nil>"
 	}

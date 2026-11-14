@@ -25,6 +25,7 @@ import type {
   PreferencesRecord,
   ReviewRecord,
   SentReplyRecord,
+  SentMessageRecord,
   SentReviewReplyRecord,
   SavedItemsRecord,
   ShortLinkRecord,
@@ -101,6 +102,11 @@ export interface UserContent {
    * nothing for the law.
    */
   readonly legalHold: LegalHoldRecord | null;
+  /**
+   * The direct messages they sent from Peal, while their conversations
+   * are kept; never the messages they answered, which other people wrote.
+   */
+  readonly messages: readonly SentMessageRecord[];
   readonly notices: readonly NoticeRecord[];
   readonly preferences: PreferencesRecord;
   /**

@@ -262,90 +262,6 @@ func (c *ConnectChannel) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	connectSiteFieldWorkspaceID         = big.NewInt(1 << 0)
-	connectSiteFieldAddress             = big.NewInt(1 << 1)
-	connectSiteFieldApplicationPassword = big.NewInt(1 << 2)
-	connectSiteFieldPlatform            = big.NewInt(1 << 3)
-	connectSiteFieldUserName            = big.NewInt(1 << 4)
-)
-
-type ConnectSite struct {
-	WorkspaceID         string       `json:"-" url:"-"`
-	Address             string       `json:"address" url:"-"`
-	ApplicationPassword string       `json:"applicationPassword" url:"-"`
-	Platform            SitePlatform `json:"platform" url:"-"`
-	UserName            string       `json:"userName" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (c *ConnectSite) require(field *big.Int) {
-	next := new(big.Int)
-	if c.explicitFields != nil {
-		next.Set(c.explicitFields)
-	}
-	next.Or(next, field)
-	c.explicitFields = next
-}
-
-// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectSite) SetWorkspaceID(workspaceID string) {
-	c.WorkspaceID = workspaceID
-	c.require(connectSiteFieldWorkspaceID)
-}
-
-// SetAddress sets the Address field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectSite) SetAddress(address string) {
-	c.Address = address
-	c.require(connectSiteFieldAddress)
-}
-
-// SetApplicationPassword sets the ApplicationPassword field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectSite) SetApplicationPassword(applicationPassword string) {
-	c.ApplicationPassword = applicationPassword
-	c.require(connectSiteFieldApplicationPassword)
-}
-
-// SetPlatform sets the Platform field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectSite) SetPlatform(platform SitePlatform) {
-	c.Platform = platform
-	c.require(connectSiteFieldPlatform)
-}
-
-// SetUserName sets the UserName field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectSite) SetUserName(userName string) {
-	c.UserName = userName
-	c.require(connectSiteFieldUserName)
-}
-
-func (c *ConnectSite) UnmarshalJSON(data []byte) error {
-	type unmarshaler ConnectSite
-	var body unmarshaler
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	*c = ConnectSite(body)
-	return nil
-}
-
-func (c *ConnectSite) MarshalJSON() ([]byte, error) {
-	type embed ConnectSite
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-var (
 	disableChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	disableChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
 )
@@ -466,7 +382,7 @@ type FindChannelsRequest struct {
 	WorkspaceID string             `json:"-" url:"-"`
 	Cursor      *string            `json:"-" url:"cursor,omitempty"`
 	Limit       *string            `json:"-" url:"limit,omitempty"`
-	Platform    *ChannelPlatform   `json:"-" url:"platform,omitempty"`
+	Platform    *Platform          `json:"-" url:"platform,omitempty"`
 	Q           *string            `json:"-" url:"q,omitempty"`
 	Status      *ChannelStatusName `json:"-" url:"status,omitempty"`
 
@@ -506,7 +422,7 @@ func (f *FindChannelsRequest) SetLimit(limit *string) {
 
 // SetPlatform sets the Platform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FindChannelsRequest) SetPlatform(platform *ChannelPlatform) {
+func (f *FindChannelsRequest) SetPlatform(platform *Platform) {
 	f.Platform = platform
 	f.require(findChannelsRequestFieldPlatform)
 }
@@ -582,11 +498,13 @@ func (p *PlatformsChannelsRequest) SetWorkspaceID(workspaceID string) {
 var (
 	reconnectChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	reconnectChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
+	reconnectChannelsRequestFieldMessages    = big.NewInt(1 << 2)
 )
 
 type ReconnectChannelsRequest struct {
-	WorkspaceID string `json:"-" url:"-"`
-	ChannelID   string `json:"-" url:"-"`
+	WorkspaceID string                            `json:"-" url:"-"`
+	ChannelID   string                            `json:"-" url:"-"`
+	Messages    *ReconnectChannelsRequestMessages `json:"-" url:"messages,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -613,6 +531,13 @@ func (r *ReconnectChannelsRequest) SetWorkspaceID(workspaceID string) {
 func (r *ReconnectChannelsRequest) SetChannelID(channelID string) {
 	r.ChannelID = channelID
 	r.require(reconnectChannelsRequestFieldChannelID)
+}
+
+// SetMessages sets the Messages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReconnectChannelsRequest) SetMessages(messages *ReconnectChannelsRequestMessages) {
+	r.Messages = messages
+	r.require(reconnectChannelsRequestFieldMessages)
 }
 
 var (
@@ -729,7 +654,7 @@ type Channel struct {
 	Handle         string             `json:"handle" url:"handle"`
 	ID             string             `json:"id" url:"id"`
 	Label          *string            `json:"label,omitempty" url:"label,omitempty"`
-	Platform       ChannelPlatform    `json:"platform" url:"platform"`
+	Platform       Platform           `json:"platform" url:"platform"`
 	Status         *ChannelStatus     `json:"status" url:"status"`
 	TokenExpiresAt *string            `json:"tokenExpiresAt,omitempty" url:"tokenExpiresAt,omitempty"`
 
@@ -782,7 +707,7 @@ func (c *Channel) GetLabel() *string {
 	return c.Label
 }
 
-func (c *Channel) GetPlatform() ChannelPlatform {
+func (c *Channel) GetPlatform() Platform {
 	if c == nil {
 		return ""
 	}
@@ -863,7 +788,7 @@ func (c *Channel) SetLabel(label *string) {
 
 // SetPlatform sets the Platform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Channel) SetPlatform(platform ChannelPlatform) {
+func (c *Channel) SetPlatform(platform Platform) {
 	c.Platform = platform
 	c.require(channelFieldPlatform)
 }
@@ -2231,24 +2156,26 @@ func (l LinkedInConnection) Ptr() *LinkedInConnection {
 	return &l
 }
 
-// A kind of website a channel publishes articles to.
-type SitePlatform string
+type ReconnectChannelsRequestMessages string
 
 const (
-	SitePlatformWordpress SitePlatform = "wordpress"
+	ReconnectChannelsRequestMessagesTrue  ReconnectChannelsRequestMessages = "true"
+	ReconnectChannelsRequestMessagesFalse ReconnectChannelsRequestMessages = "false"
 )
 
-func NewSitePlatformFromString(s string) (SitePlatform, error) {
+func NewReconnectChannelsRequestMessagesFromString(s string) (ReconnectChannelsRequestMessages, error) {
 	switch s {
-	case "wordpress":
-		return SitePlatformWordpress, nil
+	case "true":
+		return ReconnectChannelsRequestMessagesTrue, nil
+	case "false":
+		return ReconnectChannelsRequestMessagesFalse, nil
 	}
-	var t SitePlatform
+	var t ReconnectChannelsRequestMessages
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (s SitePlatform) Ptr() *SitePlatform {
-	return &s
+func (r ReconnectChannelsRequestMessages) Ptr() *ReconnectChannelsRequestMessages {
+	return &r
 }
 
 var (

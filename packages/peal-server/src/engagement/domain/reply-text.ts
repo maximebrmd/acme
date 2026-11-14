@@ -26,7 +26,8 @@ const whole = (text: string, start: number, end: number): boolean => {
   );
 };
 
-const mentions = (text: string, handle: string): boolean => {
+/** Whether `text` mentions `handle` (`@handle`) as a whole mention. */
+export const mentions = (text: string, handle: string): boolean => {
   const within = text.toLowerCase();
   const mention = `@${handle.toLowerCase()}`;
 

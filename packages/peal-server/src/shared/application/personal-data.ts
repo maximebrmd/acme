@@ -405,6 +405,21 @@ export interface SentReviewReplyRecord {
   readonly workspaceId: string;
 }
 
+/**
+ * A direct message a member sent from Peal to a conversation, while Peal
+ * keeps the conversation. Never the messages they answered, which other
+ * people wrote.
+ */
+export interface SentMessageRecord {
+  readonly channelId: string;
+  readonly conversationId: string;
+  readonly createdAt: DateTime.Utc;
+  readonly id: string;
+  readonly status: string;
+  readonly text: string;
+  readonly workspaceId: string;
+}
+
 /** A comment on a post, as the review context keeps it. */
 export interface ReviewCommentRecord {
   /** member, apiKey or visitor. */
@@ -699,6 +714,12 @@ export type NoticeEventRecord =
       readonly count: number;
       readonly postId: string;
       readonly threadId: string;
+    }
+  | {
+      readonly _tag: "MessagesReceived";
+      readonly channel: NoticeChannelRecord;
+      readonly conversationId: string;
+      readonly count: number;
     }
   | {
       readonly _tag: "PostCommented";

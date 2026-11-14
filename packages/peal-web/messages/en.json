@@ -2083,6 +2083,7 @@
       "PostChangesRequested": "{by, select, visitor {A reviewer} application {An application} other {A member}} asked for changes to a post of {workspace}. It is a draft again.",
       "PostCommented": "{by, select, visitor {A reviewer} application {An application} other {A member}} commented on a post of {workspace}.",
       "CommentsReceived": "{count, plural, one {# new comment} other {# new comments}} under a post of {workspace}.",
+      "MessagesReceived": "{count, plural, one {A new message} other {# new messages}} on {channel}, in {workspace}.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "PaymentMethodNeeded": "{workspace} holds {accounts, number} connected accounts, more than the {allowed, number} the free tier includes. It still schedules and publishes on the accounts it had before billing began until {graceUntil} UTC; after that, nothing goes out until a payment method is added or {allowed, number} accounts are kept.",
@@ -2998,6 +2999,10 @@
       "review": {
         "received": "A review of a location is read",
         "replied": "A reply to a review goes out from Peal"
+      },
+      "message": {
+        "received": "A direct message to a channel is read",
+        "sent": "A direct message goes out from Peal"
       },
       "webhook": {
         "test": "Test event"
@@ -4160,7 +4165,10 @@
       "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
       "unknown": "Something went wrong. Try again.",
       "messagesUsed": "Your billing account sent the inbox messages it may send this month. A payment method, or moving a legacy plan to per-account pricing, on the billing page lets it go on; otherwise wait for the first of next month.",
-      "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one."
+      "reviewNotFound": "This review no longer exists: it may have gone from Google, or be older than Peal keeps one.",
+      "conversationNotFound": "This conversation no longer exists: it went with its channel, or past the time Peal keeps one.",
+      "messagePending": "A message to this conversation is on its way, or may have gone out. Wait until it is settled before writing another, so the same message never goes twice.",
+      "mentionsOutside": "The message mentions accounts outside the conversation ({mentions}), which a Mastodon direct message would reach too. Take the mentions out: nothing was sent."
     }
   },
   "InboxReviews": {
@@ -4205,6 +4213,67 @@
       "sending": "Sending…",
       "sent": "The reply is on its way.",
       "pending": "A reply to this review is on its way. Wait until it has gone out to write another."
+    }
+  },
+  "InboxMessages": {
+    "title": "Direct messages",
+    "description": "The private conversations people hold with your Mastodon and Bluesky accounts, for the channels whose messages your workspace turned on. Peal keeps each message {days, number} days after it was sent, and never starts a conversation.",
+    "loadFailed": "The conversations could not be loaded.",
+    "retry": "Try again",
+    "row": {
+      "with": "With {people}",
+      "unread": "Unread",
+      "read": "Read",
+      "lastMessage": "Latest message {at}",
+      "count": "{count, plural, one {# message} other {# messages}}"
+    },
+    "thread": {
+      "back": "Back to the inbox",
+      "title": "A conversation",
+      "readOnly": "Your role may read messages but not answer them.",
+      "private": "These messages are private: show them only to the people who need them.",
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "request": "This person has not been accepted yet: answering accepts the conversation.",
+      "older": "Older messages",
+      "latest": "Latest messages"
+    },
+    "message": {
+      "them": "Them",
+      "account": "The account",
+      "files": "{count, plural, one {# file, not shown} other {# files, not shown}}",
+      "noText": "Files only.",
+      "sent": "{status, select, sending {Message on its way} sent {Message sent} failed {Message not sent} unconfirmed {Message not confirmed yet: check the platform} other {}}",
+      "confirmSent": "It went out",
+      "confirmNotSent": "It never went out"
+    },
+    "box": {
+      "label": "Answer as the account",
+      "private": "The message goes to the people in this conversation only, and cannot be taken back.",
+      "count": "{length, number} of {maximum, number} characters",
+      "send": "Send",
+      "sending": "Sending…",
+      "sentToast": "The message is on its way.",
+      "pending": "A message to this conversation is on its way. Wait until it has gone out to write another.",
+      "closed": "Nobody else wrote in this conversation yet: Peal answers, and never writes first."
+    },
+    "settings": {
+      "title": "Direct messages: what Peal reads",
+      "description": "Nothing of a channel's private conversations is read until you turn them on for it. Turning them off deletes at once everything Peal kept of them.",
+      "on": "Messages read",
+      "off": "Not read",
+      "turnOn": "Read its messages",
+      "turnOff": "Stop, and delete what was kept",
+      "grantNeeded": "Bluesky asks the account to allow Peal its direct messages first.",
+      "grant": "Allow, on Bluesky",
+      "none": "No Mastodon or Bluesky channel in this workspace.",
+      "applications": "Applications that may read and answer them",
+      "applicationsDescription": "An application connected through OAuth, such as an AI assistant, lists conversations, and reads or answers them only once you let it. Give the client id it shows in its refusal.",
+      "clientId": "Client id",
+      "allow": "Allow",
+      "revoke": "Take back",
+      "noApplications": "No application may read them.",
+      "failed": "The settings could not be saved."
     }
   },
   "TwoStep": {

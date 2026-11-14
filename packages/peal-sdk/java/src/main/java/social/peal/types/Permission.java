@@ -62,6 +62,9 @@ public final class Permission {
 
     public static final Permission PARTNER_MANAGE = new Permission(Value.PARTNER_MANAGE, "partner:manage");
 
+    public static final Permission ENGAGEMENT_READ_MESSAGES =
+            new Permission(Value.ENGAGEMENT_READ_MESSAGES, "engagement:readMessages");
+
     public static final Permission POST_APPROVE = new Permission(Value.POST_APPROVE, "post:approve");
 
     public static final Permission PARTNER_READ = new Permission(Value.PARTNER_READ, "partner:read");
@@ -79,6 +82,8 @@ public final class Permission {
             new Permission(Value.ASSISTANT_CONFIGURE, "assistant:configure");
 
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
+
+    public static final Permission ENGAGEMENT_MESSAGE = new Permission(Value.ENGAGEMENT_MESSAGE, "engagement:message");
 
     public static final Permission ADS_MANAGE = new Permission(Value.ADS_MANAGE, "ads:manage");
 
@@ -178,6 +183,8 @@ public final class Permission {
                 return visitor.visitApiKeyUpdate();
             case PARTNER_MANAGE:
                 return visitor.visitPartnerManage();
+            case ENGAGEMENT_READ_MESSAGES:
+                return visitor.visitEngagementReadMessages();
             case POST_APPROVE:
                 return visitor.visitPostApprove();
             case PARTNER_READ:
@@ -194,6 +201,8 @@ public final class Permission {
                 return visitor.visitAssistantConfigure();
             case WEBHOOK_MANAGE:
                 return visitor.visitWebhookManage();
+            case ENGAGEMENT_MESSAGE:
+                return visitor.visitEngagementMessage();
             case ADS_MANAGE:
                 return visitor.visitAdsManage();
             case ENGAGEMENT_REPLY:
@@ -269,6 +278,8 @@ public final class Permission {
                 return API_KEY_UPDATE;
             case "partner:manage":
                 return PARTNER_MANAGE;
+            case "engagement:readMessages":
+                return ENGAGEMENT_READ_MESSAGES;
             case "post:approve":
                 return POST_APPROVE;
             case "partner:read":
@@ -285,6 +296,8 @@ public final class Permission {
                 return ASSISTANT_CONFIGURE;
             case "webhook:manage":
                 return WEBHOOK_MANAGE;
+            case "engagement:message":
+                return ENGAGEMENT_MESSAGE;
             case "ads:manage":
                 return ADS_MANAGE;
             case "engagement:reply":
@@ -340,6 +353,10 @@ public final class Permission {
         ENGAGEMENT_READ,
 
         ENGAGEMENT_REPLY,
+
+        ENGAGEMENT_MESSAGE,
+
+        ENGAGEMENT_READ_MESSAGES,
 
         INVITATION_CREATE,
 
@@ -426,6 +443,10 @@ public final class Permission {
         T visitEngagementRead();
 
         T visitEngagementReply();
+
+        T visitEngagementMessage();
+
+        T visitEngagementReadMessages();
 
         T visitInvitationCreate();
 

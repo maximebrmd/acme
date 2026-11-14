@@ -34,7 +34,10 @@ const replyId = Uuid7Schema.make(synthetic(9));
 const reviewId = Uuid7Schema.make(synthetic(11));
 const reviewThreadId = Uuid7Schema.make(synthetic(12));
 const reviewReplyId = Uuid7Schema.make(synthetic(13));
-const articleId = Uuid7Schema.make(synthetic(14));
+const conversationId = Uuid7Schema.make(synthetic(14));
+const directMessageId = Uuid7Schema.make(synthetic(15));
+const outgoingMessageId = Uuid7Schema.make(synthetic(16));
+const articleId = Uuid7Schema.make(synthetic(17));
 
 const at = DateTime.makeUnsafe("2026-01-01T09:00:00Z");
 
@@ -322,6 +325,26 @@ const samples: Samples = {
   "post.unscheduled": (workspaceId) => ({
     data: { postId, workspaceId },
     type: "post.unscheduled",
+  }),
+  "message.received": (workspaceId) => ({
+    data: {
+      channelId,
+      conversationId,
+      messageId: directMessageId,
+      receivedAt: at,
+      workspaceId,
+    },
+    type: "message.received",
+  }),
+  "message.sent": (workspaceId) => ({
+    data: {
+      channelId,
+      conversationId,
+      messageId: outgoingMessageId,
+      sentAt: at,
+      workspaceId,
+    },
+    type: "message.sent",
   }),
   "review.received": (workspaceId) => ({
     data: { ...review(workspaceId), receivedAt: at },

@@ -365,6 +365,16 @@
     "tag": "InboxCommentNotFound"
   },
   {
+    "code": "inbox_conversation_not_found",
+    "status": 404,
+    "tag": "InboxConversationNotFound"
+  },
+  {
+    "code": "inbox_message_not_found",
+    "status": 404,
+    "tag": "InboxMessageNotFound"
+  },
+  {
     "code": "inbox_reply_not_found",
     "status": 404,
     "tag": "InboxReplyNotFound"
@@ -478,6 +488,16 @@
     "code": "media_too_large",
     "status": 422,
     "tag": "MediaTooLarge"
+  },
+  {
+    "code": "message_mentions_outside",
+    "status": 422,
+    "tag": "MessageMentionsOutside"
+  },
+  {
+    "code": "message_pending",
+    "status": 409,
+    "tag": "MessagePending"
   },
   {
     "code": "meta_app_not_configured",

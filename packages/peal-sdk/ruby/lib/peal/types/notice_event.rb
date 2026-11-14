@@ -25,6 +25,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventCommentsReceived }, key: "COMMENTS_RECEIVED"
 
+      member -> { Peal::Types::NoticeEventMessagesReceived }, key: "MESSAGES_RECEIVED"
+
       member -> { Peal::Types::NoticeEventChannelReconnectRequired }, key: "CHANNEL_RECONNECT_REQUIRED"
 
       member -> { Peal::Types::NoticeEventChannelReconnectSoon }, key: "CHANNEL_RECONNECT_SOON"

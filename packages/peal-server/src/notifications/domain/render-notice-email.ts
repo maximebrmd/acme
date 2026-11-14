@@ -233,6 +233,14 @@ const contentOf = (
       messages: catalog.commentsReceived,
       values: [["count", String(count)]],
     }),
+    MessagesReceived: ({ channel, count }): Content => ({
+      messages: catalog.messagesReceived,
+      values: [
+        ["count", String(count)],
+        ["handle", channel.handle],
+        ["platform", platformName(catalog, channel)],
+      ],
+    }),
     FeedStopped: ({ reason }): Content => ({
       messages: catalog.feedStopped,
       values: [["reason", catalog.feedStopReasons[reason]]],

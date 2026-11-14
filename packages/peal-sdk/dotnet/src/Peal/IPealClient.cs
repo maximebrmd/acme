@@ -25,6 +25,7 @@ public partial interface IPealClient
     public IWebhooksClient Webhooks { get; }
     public IInboxClient Inbox { get; }
     public IInboxReviewsClient InboxReviews { get; }
+    public IInboxMessagesClient InboxMessages { get; }
     public IAdsClient Ads { get; }
     public IActivityClient Activity { get; }
     public IPartnerClient Partner { get; }

@@ -2083,6 +2083,7 @@
       "PostChangesRequested": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a demandé des modifications sur une publication de {workspace}. Elle est de nouveau un brouillon.",
       "PostCommented": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a commenté une publication de {workspace}.",
       "CommentsReceived": "{count, plural, one {# nouveau commentaire} other {# nouveaux commentaires}} sous une publication de {workspace}.",
+      "MessagesReceived": "{count, plural, one {Un nouveau message} other {# nouveaux messages}} sur {channel}, dans {workspace}.",
       "ChannelReconnectRequired": "{channel} dans {workspace} doit être reconnecté : rien n’y est publié d’ici là.",
       "ChannelReconnectSoon": "{channel} dans {workspace} doit être reconnecté avant le {expiresAt, date, long} : son autorisation ne peut pas être renouvelée.",
       "PaymentMethodNeeded": "{workspace} compte {accounts, number} comptes connectés, plus que les {allowed, number} de l’offre gratuite. Il continue de programmer et de publier sur les comptes qu’il avait avant le début de la facturation jusqu’au {graceUntil} UTC ; ensuite, rien n’est publié tant qu’un moyen de paiement n’est pas ajouté ou que {allowed, number} comptes seulement sont gardés.",
@@ -2998,6 +2999,10 @@
       "review": {
         "received": "Un avis sur un établissement est lu",
         "replied": "Une réponse à un avis part de Peal"
+      },
+      "message": {
+        "received": "Un message privé adressé à un canal est lu",
+        "sent": "Un message privé part de Peal"
       },
       "webhook": {
         "test": "Événement de test"
@@ -4160,7 +4165,10 @@
       "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
       "messagesUsed": "Votre compte de facturation a envoyé les messages qu’il peut envoyer ce mois-ci. Un moyen de paiement, ou le passage d’une ancienne offre à la tarification par compte, sur la page de facturation, lui permet de continuer ; sinon, attendez le premier du mois prochain.",
-      "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve."
+      "reviewNotFound": "Cet avis n’existe plus : il a pu disparaître de Google, ou dépasser la durée pendant laquelle Peal le conserve.",
+      "conversationNotFound": "Cette conversation n’existe plus : elle est partie avec son canal, ou a dépassé la durée pendant laquelle Peal la conserve.",
+      "messagePending": "Un message à cette conversation est en route, ou est peut-être parti. Attendez qu’il soit réglé avant d’en écrire un autre, pour que le même message ne parte jamais deux fois.",
+      "mentionsOutside": "Le message mentionne des comptes extérieurs à la conversation ({mentions}), qu’un message privé Mastodon atteindrait aussi. Retirez ces mentions : rien n’a été envoyé."
     }
   },
   "InboxReviews": {
@@ -4205,6 +4213,67 @@
       "sending": "Envoi…",
       "sent": "La réponse est en cours d’envoi.",
       "pending": "Une réponse à cet avis est en cours d’envoi. Attendez qu’elle soit partie pour en écrire une autre."
+    }
+  },
+  "InboxMessages": {
+    "title": "Messages privés",
+    "description": "Les conversations privées que des personnes tiennent avec vos comptes Mastodon et Bluesky, pour les canaux dont votre espace de travail a activé les messages. Peal conserve chaque message {days, number} jours après son envoi, et n’engage jamais de conversation.",
+    "loadFailed": "Les conversations n’ont pas pu être chargées.",
+    "retry": "Réessayer",
+    "row": {
+      "with": "Avec {people}",
+      "unread": "Non lue",
+      "read": "Lue",
+      "lastMessage": "Dernier message {at}",
+      "count": "{count, plural, one {# message} other {# messages}}"
+    },
+    "thread": {
+      "back": "Retour à la boîte de réception",
+      "title": "Une conversation",
+      "readOnly": "Votre rôle permet de lire les messages, pas d’y répondre.",
+      "private": "Ces messages sont privés : ne les montrez qu’aux personnes qui en ont besoin.",
+      "markRead": "Marquer comme lue",
+      "markUnread": "Marquer comme non lue",
+      "request": "Cette personne n’a pas encore été acceptée : répondre accepte la conversation.",
+      "older": "Messages plus anciens",
+      "latest": "Derniers messages"
+    },
+    "message": {
+      "them": "Eux",
+      "account": "Le compte",
+      "files": "{count, plural, one {# fichier, non affiché} other {# fichiers, non affichés}}",
+      "noText": "Des fichiers seulement.",
+      "sent": "{status, select, sending {Message en route} sent {Message envoyé} failed {Message non envoyé} unconfirmed {Message pas encore confirmé : vérifiez sur la plateforme} other {}}",
+      "confirmSent": "Il est parti",
+      "confirmNotSent": "Il n’est jamais parti"
+    },
+    "box": {
+      "label": "Répondre au nom du compte",
+      "private": "Le message ne va qu’aux personnes de cette conversation, et ne peut pas être repris.",
+      "count": "{length, number} sur {maximum, number} caractères",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "sentToast": "Le message est en route.",
+      "pending": "Un message à cette conversation est en route. Attendez qu’il soit parti pour en écrire un autre.",
+      "closed": "Personne d’autre n’a encore écrit dans cette conversation : Peal répond, et n’écrit jamais le premier."
+    },
+    "settings": {
+      "title": "Messages privés : ce que Peal lit",
+      "description": "Rien des conversations privées d’un canal n’est lu tant que vous ne les activez pas pour lui. Les désactiver supprime aussitôt tout ce que Peal en a conservé.",
+      "on": "Messages lus",
+      "off": "Non lus",
+      "turnOn": "Lire ses messages",
+      "turnOff": "Arrêter, et supprimer ce qui a été conservé",
+      "grantNeeded": "Bluesky demande d’abord au compte d’autoriser Peal à accéder à ses messages privés.",
+      "grant": "Autoriser, sur Bluesky",
+      "none": "Aucun canal Mastodon ou Bluesky dans cet espace de travail.",
+      "applications": "Applications qui peuvent les lire et y répondre",
+      "applicationsDescription": "Une application connectée par OAuth, comme un assistant IA, liste les conversations, et ne les lit ou n’y répond qu’une fois que vous l’y autorisez. Indiquez l’identifiant de client qu’elle affiche dans son refus.",
+      "clientId": "Identifiant de client",
+      "allow": "Autoriser",
+      "revoke": "Retirer",
+      "noApplications": "Aucune application ne peut les lire.",
+      "failed": "Les réglages n’ont pas pu être enregistrés."
     }
   },
   "TwoStep": {

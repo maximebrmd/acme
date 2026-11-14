@@ -385,12 +385,14 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             platforms: connectable.platforms,
           };
         }),
-      reconnect: ({ params }) =>
+      reconnect: ({ params, query }) =>
         Effect.gen(function* reconnect() {
           const actor = actorOf(yield* CurrentMember);
 
           const authorizationUrl = yield* connectChannel
-            .reconnect(actor, params.channelId)
+            .reconnect(actor, params.channelId, {
+              messages: query.messages === "true",
+            })
             .pipe(Effect.catch(reconnectFailure));
 
           return { authorizationUrl };

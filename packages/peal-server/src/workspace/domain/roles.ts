@@ -21,10 +21,13 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  *   within the ceiling an owner set.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
  *   asks the writing assistant, reads channels, analytics and ads, and
- *   reads and answers the comments under the workspace's posts.
+ *   reads and answers the comments under the workspace's posts and its
+ *   channels' direct messages.
  * - `contributor`: drafts posts, uploads media and asks the writing
- *   assistant, but publishes nothing: reads comments, and answers none.
- * - `viewer`: reads posts, media, channels, analytics and comments.
+ *   assistant, but publishes nothing: reads comments, and answers none;
+ *   never the direct messages.
+ * - `viewer`: reads posts, media, channels, analytics and comments; never
+ *   the direct messages.
  */
 export const RoleSchema = Schema.Literals([
   "owner",

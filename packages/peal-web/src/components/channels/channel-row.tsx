@@ -66,7 +66,7 @@ const ReconnectControl = ({
 
   const handleReconnect = () => {
     startReconnect(async () => {
-      const exit = await reconnect({ params });
+      const exit = await reconnect({ params, query: {} });
 
       Option.match(failureOf(exit), {
         onNone: () => {

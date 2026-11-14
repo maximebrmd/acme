@@ -75,6 +75,14 @@
   answered) reads the inbox's reviews; answering one or deleting its reply
   is a person's, in the web app (Google's policies), and has no command; the studio answers it
   from `test/studio-reviews.ts`.
+- `peal inbox messages` (`commands/inbox-messages.ts`: list, show, send,
+  read, confirm) reads the conversations of the workspace's Mastodon and
+  Bluesky channels and answers one privately; `send` takes
+  `--idempotency-key` as `peal inbox reply` does, and `show` `--cursor`
+  for older messages. The settings (which channels' messages are read,
+  which applications may read them) are a person's, in the web app, and
+  have no command (the parity test's exemptions). Its tests run against
+  `test/studio-messages.ts`.
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.

@@ -45,6 +45,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "comment.replied",
   "review.received",
   "review.replied",
+  "message.received",
+  "message.sent",
   "boost.started",
   "boost.paused",
   "boost.resumed",
@@ -201,6 +203,14 @@ const review = {
   channelId: Schema.String,
   reviewId: Schema.String,
   threadId: Schema.String,
+};
+
+// A direct message, by ids: never what it says, nor who sent it, which
+// the receiver reads through the API.
+const directMessage = {
+  ...workspace,
+  channelId: Schema.String,
+  conversationId: Schema.String,
 };
 
 // What every payload holds beside its type and data: the event's id (also
@@ -541,6 +551,27 @@ export const WebhookPayloadSchema = Schema.Union([
       replyId: Schema.String,
     }),
     type: Schema.Literal("review.replied"),
+  }),
+  // Peal read a direct message someone sent to a channel's account. Ids
+  // only: what it says and who sent it are read through the API.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...directMessage,
+      messageId: Schema.String,
+      receivedAt: Schema.String,
+    }),
+    type: Schema.Literal("message.received"),
+  }),
+  // A direct message went out from Peal, as the channel's account.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...directMessage,
+      messageId: Schema.String,
+      sentAt: Schema.String,
+    }),
+    type: Schema.Literal("message.sent"),
   }),
   // A boost of a published post changed: it started, was paused, resumed
   // or stopped by a member, ended, failed, could not be confirmed, or

@@ -11,6 +11,7 @@ const en = {
   footer: {
     cancel: "Cancel your contract",
     contract: "Your contract",
+    follow: "Follow Peal",
     language: "Language",
     legal: "Legal",
     license:
@@ -209,6 +210,7 @@ const fr: Messages = {
   footer: {
     cancel: "Résilier votre contrat",
     contract: "Votre contrat",
+    follow: "Suivre Peal",
     language: "Langue",
     legal: "Informations juridiques",
     license:

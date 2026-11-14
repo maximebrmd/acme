@@ -77,9 +77,13 @@ const reads = (permission: Permission): boolean => permission.endsWith(":read");
 /**
  * The permissions that decide what goes out to the platforms, and when:
  * only `workspace:publish` leaves them to an OAuth client. A reply to a
- * comment is a public message from the account, as a post is.
+ * comment is a public message from the account, as a post is, and a
+ * direct message goes from the account to a person; reading direct
+ * messages, private correspondence, is never a read-only client's.
  */
 export const publishingPermissions: ReadonlySet<Permission> = new Set([
+  "engagement:message",
+  "engagement:readMessages",
   "engagement:reply",
   "post:schedule",
   "post:approve",

@@ -3,6 +3,22 @@ import { DateTime, Option } from "effect";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import type { Comment, CommentReading } from "#engagement/domain/comment.ts";
+import { ConversationIdSchema } from "#engagement/domain/conversation-id.ts";
+import { startConversation } from "#engagement/domain/conversation.ts";
+import type {
+  Conversation,
+  ConversationReading,
+  Participant,
+} from "#engagement/domain/conversation.ts";
+import { DirectMessageIdSchema } from "#engagement/domain/direct-message-id.ts";
+import { receiveMessage } from "#engagement/domain/direct-message.ts";
+import type {
+  DirectMessage,
+  MessageReading,
+} from "#engagement/domain/direct-message.ts";
+import { followBox } from "#engagement/domain/message-box.ts";
+import type { MessageBox } from "#engagement/domain/message-box.ts";
+import { OutgoingMessageIdSchema } from "#engagement/domain/outgoing-message-id.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { ReviewIdSchema } from "#engagement/domain/review-id.ts";
 import { ReviewReplyIdSchema } from "#engagement/domain/review-reply-id.ts";
@@ -139,3 +155,78 @@ export const review = (
   on: ReviewThread = reviewThread()
 ): Review =>
   receiveReview(reviewId(n), on, reviewReading(n, changed), reviewedAt);
+
+// Direct messages: one channel's conversation with a reader, its messages
+// as the platform would give them.
+
+export const conversationId = (n: number) =>
+  ConversationIdSchema.make(uuid7(8000 + n));
+
+export const directMessageId = (n: number) =>
+  DirectMessageIdSchema.make(uuid7(8500 + n));
+
+export const outgoingMessageId = (n: number) =>
+  OutgoingMessageIdSchema.make(uuid7(9000 + n));
+
+export const messagedAt = DateTime.makeUnsafe("2026-11-12T10:00:00Z");
+
+export const messageBox = (on: ChannelId = channelId(1)): MessageBox =>
+  followBox({ channelId: on, workspaceId }, messagedAt);
+
+export const participant = (n: number): Participant => ({
+  displayName: Option.some(`Reader ${n}`),
+  handle: `reader${n}@social.example`,
+  platformId: `${7000 + n}`,
+});
+
+export const messageReading = (
+  n: number,
+  changed: Partial<MessageReading> = {}
+): MessageReading => ({
+  attachments: 0,
+  fromAccount: false,
+  platformMessageId: `m${n}`,
+  senderPlatformId: Option.some("7001"),
+  sentAt: DateTime.subtractDuration(messagedAt, "10 minutes"),
+  text: `Message ${n}`,
+  ...changed,
+});
+
+export const conversationReading = (
+  n: number,
+  changed: Partial<ConversationReading> = {}
+): ConversationReading => ({
+  complete: true,
+  deleted: [],
+  lastMessageAt: DateTime.subtractDuration(messagedAt, "10 minutes"),
+  messages: [messageReading(n)],
+  participants: [participant(1)],
+  platformConversationId: `c${n}`,
+  request: false,
+  revision: `r${n}`,
+  ...changed,
+});
+
+export const conversation = (
+  n: number,
+  changed: Partial<ConversationReading> = {},
+  box: MessageBox = messageBox()
+): Conversation =>
+  startConversation(
+    conversationId(n),
+    box,
+    conversationReading(n, changed),
+    messagedAt
+  );
+
+export const directMessage = (
+  n: number,
+  changed: Partial<MessageReading> = {},
+  on: Conversation = conversation(1)
+): DirectMessage =>
+  receiveMessage(
+    directMessageId(n),
+    on,
+    messageReading(n, changed),
+    messagedAt
+  );

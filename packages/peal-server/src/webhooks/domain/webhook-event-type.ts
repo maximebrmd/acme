@@ -31,6 +31,8 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "comment.replied",
   "review.received",
   "review.replied",
+  "message.received",
+  "message.sent",
   "boost.started",
   "boost.paused",
   "boost.resumed",

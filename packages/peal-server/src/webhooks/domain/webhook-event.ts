@@ -131,6 +131,14 @@ const review = {
   threadId: Uuid7Schema,
 };
 
+// A direct message, by ids: never what it says, nor who sent it, which
+// the receiver reads through the API.
+const directMessage = {
+  ...workspace,
+  channelId: ChannelIdSchema,
+  conversationId: Uuid7Schema,
+};
+
 /**
  * Something that happened in a workspace, as its webhook endpoints hear
  * it: `type` names it, and tells what `data` holds.
@@ -415,6 +423,25 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("review.replied"),
   }),
+  // Peal read a direct message someone sent to a channel's account: ids
+  // only.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...directMessage,
+      messageId: Uuid7Schema,
+      receivedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("message.received"),
+  }),
+  // A direct message went out from Peal, as the channel's account.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...directMessage,
+      messageId: Uuid7Schema,
+      sentAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("message.sent"),
+  }),
   // A boost of a published post changed: ids, amounts in the ad account's
   // minor units, and where it stands. Never who it is shown to. The
   // `webhook.test` event stays last, as the contract lists it.
@@ -526,6 +553,8 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "post.unpublish_failed": ofChannel,
       "post.unpublished": ofChannel,
       "post.unscheduled": () => ofPost,
+      "message.received": ofChannel,
+      "message.sent": ofChannel,
       "review.received": ofChannel,
       "review.replied": ofChannel,
       "webhook.test": noChannel,

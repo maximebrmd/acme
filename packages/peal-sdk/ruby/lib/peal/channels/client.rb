@@ -385,7 +385,11 @@ module Peal
 
       # Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in
       # page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so
-      # no plan limit refuses it. Needs channel:connect.
+      # no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where
+      # the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages
+      # on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A
+      # reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs
+      # channel:connect.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -396,6 +400,7 @@ module Peal
       # @option request_options [Integer] :timeout_in_seconds
       # @option params [String] :workspace_id
       # @option params [String] :channel_id
+      # @option params [Peal::Channels::Types::ReconnectChannelsRequestMessages, nil] :messages
       #
       # @example
       #   client.channels.reconnect(
@@ -406,10 +411,14 @@ module Peal
       # @return [Peal::Types::Authorization]
       def reconnect(request_options: {}, **params)
         params = Peal::Internal::Types::Utils.normalize_keys(params)
+        query_params = {}
+        query_params["messages"] = params[:messages] if params.key?(:messages)
+
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],
           method: "POST",
           path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/channels/#{URI.encode_uri_component(params[:channel_id].to_s)}/reconnect",
+          query: query_params,
           request_options: request_options,
           max_retries: 0
         )

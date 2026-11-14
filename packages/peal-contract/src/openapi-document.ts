@@ -32,6 +32,8 @@ const summaries = {
   "comment.replied": "A reply to a comment went out from Peal",
   "review.received": "Someone reviewed a location a channel posts as",
   "review.replied": "A reply to a review went out from Peal",
+  "message.received": "Someone sent a direct message to a channel's account",
+  "message.sent": "A direct message went out from Peal",
   "media.failed": "A file was refused, or could not be read",
   "article.failed": "An article did not go to its website",
   "article.published": "An article went to its website",

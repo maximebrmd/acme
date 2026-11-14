@@ -23,6 +23,7 @@ use Peal\Types\Authorization;
 use Peal\Channels\Requests\ConnectCallback;
 use Peal\Types\ConnectOutcome;
 use Peal\Channels\Requests\ChooseAccounts;
+use Peal\Channels\Requests\ReconnectChannelsRequest;
 use Peal\Channels\Requests\ChannelUpdate;
 
 class ChannelsClient
@@ -500,18 +501,20 @@ class ChannelsClient
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
      *
      * Example:
      * ```php
      * $client->channels->reconnect(
      *     'workspaceId',
      *     'channelId',
+     *     new ReconnectChannelsRequest([]),
      * );
      * ```
      *
      * @param string $workspaceId
      * @param string $channelId
+     * @param ReconnectChannelsRequest $request
      * @param ?array{
      *   baseUrl?: string,
      *   maxRetries?: int,
@@ -524,16 +527,21 @@ class ChannelsClient
      * @throws PealException
      * @throws PealApiException
      */
-    public function reconnect(string $workspaceId, string $channelId, ?array $options = null): ?Authorization
+    public function reconnect(string $workspaceId, string $channelId, ReconnectChannelsRequest $request = new ReconnectChannelsRequest(), ?array $options = null): ?Authorization
     {
         $options = array_merge($this->options, $options ?? []);
         $options['maxRetries'] = 0;
+        $query = [];
+        if ($request->messages != null) {
+            $query['messages'] = $request->messages;
+        }
         try {
             $response = $this->client->sendRequest(
                 new JsonApiRequest(
                     baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
                     path: "api/workspaces/{$workspaceId}/channels/{$channelId}/reconnect",
                     method: HttpMethod::POST,
+                    query: $query,
                 ),
                 $options,
             );

@@ -33,6 +33,8 @@ module Peal
       COMMENT_REPLIED = "comment.replied"
       REVIEW_RECEIVED = "review.received"
       REVIEW_REPLIED = "review.replied"
+      MESSAGE_RECEIVED = "message.received"
+      MESSAGE_SENT = "message.sent"
       BOOST_STARTED = "boost.started"
       BOOST_PAUSED = "boost.paused"
       BOOST_RESUMED = "boost.resumed"

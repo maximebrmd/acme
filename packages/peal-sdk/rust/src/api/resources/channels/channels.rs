@@ -401,7 +401,7 @@ impl ChannelsClient {
             .await
     }
 
-    /// Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+    /// Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
     ///
     /// # Arguments
     ///
@@ -425,7 +425,14 @@ impl ChannelsClient {
     ///     let client = PealClient::new(config).expect("Failed to build client");
     ///     client
     ///         .channels
-    ///         .reconnect(&"workspaceId".to_string(), &"channelId".to_string(), None)
+    ///         .reconnect(
+    ///             &"workspaceId".to_string(),
+    ///             &"channelId".to_string(),
+    ///             &ReconnectQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
     ///         .await;
     /// }
     /// ```
@@ -433,6 +440,7 @@ impl ChannelsClient {
         &self,
         workspace_id: &str,
         channel_id: &str,
+        request: &ReconnectQueryRequest,
         options: Option<RequestOptions>,
     ) -> Result<Authorization, ApiError> {
         let options = {
@@ -448,7 +456,9 @@ impl ChannelsClient {
                     workspace_id, channel_id
                 ),
                 None,
-                None,
+                QueryBuilder::new()
+                    .serialize("messages", request.messages.clone())
+                    .build(),
                 options,
             )
             .await
