@@ -17,6 +17,7 @@ export const HostedConnectFailure = {
         TooManyAttempts: "tooManyAttempts",
         PlanLimit: "planLimit",
         ChannelGone: "channelGone",
-        PlatformUnreachable: "platformUnreachable"
+        PlatformUnreachable: "platformUnreachable",
+        PlatformNotOffered: "platformNotOffered"
     } as const;
 export type HostedConnectFailure = typeof HostedConnectFailure[keyof typeof HostedConnectFailure];

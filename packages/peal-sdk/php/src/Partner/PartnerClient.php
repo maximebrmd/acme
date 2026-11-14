@@ -19,6 +19,8 @@ use Peal\Types\CustomerWorkspacePage;
 use Peal\Partner\Requests\NewCustomerWorkspace;
 use Peal\Types\CustomerWorkspace;
 use Peal\Partner\Requests\CustomerWorkspaceChange;
+use Peal\Partner\Requests\ChannelMove;
+use Peal\Types\Channel;
 
 class PartnerClient
 {
@@ -453,6 +455,69 @@ class PartnerClient
                     return null;
                 }
                 return CustomerWorkspace::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+     *
+     * Example:
+     * ```php
+     * $client->partner->moveChannel(
+     *     'workspaceId',
+     *     'channelId',
+     *     new ChannelMove([
+     *         'toWorkspaceId' => 'toWorkspaceId',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $channelId
+     * @param ChannelMove $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Channel
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function moveChannel(string $workspaceId, string $channelId, ChannelMove $request, ?array $options = null): ?Channel
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/partner/workspaces/{$workspaceId}/channels/{$channelId}/move",
+                    method: HttpMethod::POST,
+                    body: $request,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Channel::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);

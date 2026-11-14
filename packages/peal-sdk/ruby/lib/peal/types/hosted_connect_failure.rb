@@ -24,6 +24,7 @@ module Peal
       PLAN_LIMIT = "planLimit"
       CHANNEL_GONE = "channelGone"
       PLATFORM_UNREACHABLE = "platformUnreachable"
+      PLATFORM_NOT_OFFERED = "platformNotOffered"
     end
   end
 end

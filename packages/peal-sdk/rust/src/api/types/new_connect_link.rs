@@ -1,6 +1,6 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct NewConnectLink {
     #[serde(rename = "channelId")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -12,7 +12,10 @@ pub struct NewConnectLink {
     pub expires_in_hours: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<ConnectLinkLocale>,
-    pub platform: Platform,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platform: Option<Platform>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platforms: Option<Vec<Platform>>,
     #[serde(rename = "returnUrl")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub return_url: Option<String>,
@@ -32,6 +35,7 @@ pub struct NewConnectLinkBuilder {
     expires_in_hours: Option<i64>,
     locale: Option<ConnectLinkLocale>,
     platform: Option<Platform>,
+    platforms: Option<Vec<Platform>>,
     return_url: Option<String>,
 }
 
@@ -61,23 +65,25 @@ impl NewConnectLinkBuilder {
         self
     }
 
+    pub fn platforms(mut self, value: Vec<Platform>) -> Self {
+        self.platforms = Some(value);
+        self
+    }
+
     pub fn return_url(mut self, value: impl Into<String>) -> Self {
         self.return_url = Some(value.into());
         self
     }
 
     /// Consumes the builder and constructs a [`NewConnectLink`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`platform`](NewConnectLinkBuilder::platform)
     pub fn build(self) -> Result<NewConnectLink, BuildError> {
         Ok(NewConnectLink {
             channel_id: self.channel_id,
             connection: self.connection,
             expires_in_hours: self.expires_in_hours,
             locale: self.locale,
-            platform: self
-                .platform
-                .ok_or_else(|| BuildError::missing_field("platform"))?,
+            platform: self.platform,
+            platforms: self.platforms,
             return_url: self.return_url,
         })
     }

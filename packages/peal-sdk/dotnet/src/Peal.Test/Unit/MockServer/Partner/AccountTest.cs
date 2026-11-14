@@ -14,6 +14,7 @@ public class AccountTest : BaseMockServerTest
         const string mockResponse = """
             {
               "partner": {
+                "accentColor": "accentColor",
                 "createdAt": "createdAt",
                 "id": "id",
                 "logoUrl": "logoUrl",
@@ -62,6 +63,7 @@ public class AccountTest : BaseMockServerTest
         const string mockResponse = """
             {
               "partner": {
+                "accentColor": "accentColor",
                 "createdAt": "createdAt",
                 "id": "id",
                 "logoUrl": "logoUrl",

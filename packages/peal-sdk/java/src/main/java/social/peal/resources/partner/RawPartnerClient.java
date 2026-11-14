@@ -32,12 +32,14 @@ import social.peal.errors.ServiceUnavailableError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
+import social.peal.resources.partner.requests.ChannelMove;
 import social.peal.resources.partner.requests.CustomerWorkspaceChange;
 import social.peal.resources.partner.requests.DeleteWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.GetWorkspacePartnerRequest;
 import social.peal.resources.partner.requests.ListWorkspacesPartnerRequest;
 import social.peal.resources.partner.requests.NewCustomerWorkspace;
 import social.peal.resources.partner.requests.OverviewPartnerRequest;
+import social.peal.types.Channel;
 import social.peal.types.CustomerWorkspace;
 import social.peal.types.CustomerWorkspacePage;
 import social.peal.types.DeletionIncompleteEncoded;
@@ -696,6 +698,93 @@ public class RawPartnerClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 422:
                         throw new UnprocessableEntityError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Moves a channel from a workspace the partner owns to another one it owns (<code>toWorkspaceId</code>), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (<code>channel.disconnected</code> there, <code>channel.connected</code> in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 <code>ChannelAccountTaken</code>; while a post or a change of a live post is being sent through the channel, 409 <code>WorkspaceBusy</code>: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<Channel> moveChannel(String workspaceId, String channelId, ChannelMove request) {
+        return moveChannel(workspaceId, channelId, request, null);
+    }
+
+    /**
+     * Moves a channel from a workspace the partner owns to another one it owns (<code>toWorkspaceId</code>), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (<code>channel.disconnected</code> there, <code>channel.connected</code> in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 <code>ChannelAccountTaken</code>; while a post or a change of a live post is being sent through the channel, 409 <code>WorkspaceBusy</code>: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     */
+    public PealClientHttpResponse<Channel> moveChannel(
+            String workspaceId, String channelId, ChannelMove request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/partner/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("channels")
+                .addPathSegment(PathSegments.validate(channelId))
+                .addPathSegments("move");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
+                .url(httpUrl.build())
+                .method("POST", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Channel.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 404:
+                        throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 409:
+                        throw new ConflictError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 429:
                         throw new TooManyRequestsError(

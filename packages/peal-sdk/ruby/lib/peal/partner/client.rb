@@ -367,6 +367,70 @@ module Peal
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
         end
       end
+
+      # Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new
+      # sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the
+      # channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected
+      # (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays
+      # there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do
+      # unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should
+      # it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the
+      # workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share
+      # one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the
+      # workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being
+      # sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write,
+      # and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer
+      # peal_partner_…`): any other credential answers 403.
+      #
+      # @param request_options [Hash]
+      # @param params [Peal::Partner::Types::ChannelMove]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :channel_id
+      #
+      # @example
+      #   client.partner.move_channel(
+      #     workspace_id: "workspaceId",
+      #     channel_id: "channelId",
+      #     to_workspace_id: "toWorkspaceId"
+      #   )
+      #
+      # @return [Peal::Types::Channel]
+      def move_channel(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Partner::Types::ChannelMove.new(params).to_h
+        non_body_param_names = %w[workspaceId channelId]
+        body = request_data.except(*non_body_param_names)
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/partner/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/channels/#{URI.encode_uri_component(params[:channel_id].to_s)}/move",
+          body: body,
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Channel.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
     end
   end
 end

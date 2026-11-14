@@ -16,7 +16,8 @@ var (
 	newConnectLinkFieldExpiresInHours = big.NewInt(1 << 3)
 	newConnectLinkFieldLocale         = big.NewInt(1 << 4)
 	newConnectLinkFieldPlatform       = big.NewInt(1 << 5)
-	newConnectLinkFieldReturnURL      = big.NewInt(1 << 6)
+	newConnectLinkFieldPlatforms      = big.NewInt(1 << 6)
+	newConnectLinkFieldReturnURL      = big.NewInt(1 << 7)
 )
 
 type NewConnectLink struct {
@@ -25,7 +26,8 @@ type NewConnectLink struct {
 	Connection     *ChannelConnection `json:"connection,omitempty" url:"-"`
 	ExpiresInHours *int               `json:"expiresInHours,omitempty" url:"-"`
 	Locale         *ConnectLinkLocale `json:"locale,omitempty" url:"-"`
-	Platform       Platform           `json:"platform" url:"-"`
+	Platform       *Platform          `json:"platform,omitempty" url:"-"`
+	Platforms      []Platform         `json:"platforms,omitempty" url:"-"`
 	ReturnURL      *string            `json:"returnUrl,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -78,9 +80,16 @@ func (n *NewConnectLink) SetLocale(locale *ConnectLinkLocale) {
 
 // SetPlatform sets the Platform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NewConnectLink) SetPlatform(platform Platform) {
+func (n *NewConnectLink) SetPlatform(platform *Platform) {
 	n.Platform = platform
 	n.require(newConnectLinkFieldPlatform)
+}
+
+// SetPlatforms sets the Platforms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewConnectLink) SetPlatforms(platforms []Platform) {
+	n.Platforms = platforms
+	n.require(newConnectLinkFieldPlatforms)
 }
 
 // SetReturnURL sets the ReturnURL field and marks it as non-optional;
@@ -211,17 +220,19 @@ func (r *RevokeConnectLinksRequest) SetLinkID(linkID string) {
 }
 
 var (
-	connectLinkFieldChannelID   = big.NewInt(1 << 0)
-	connectLinkFieldChannelIDs  = big.NewInt(1 << 1)
-	connectLinkFieldCompletedAt = big.NewInt(1 << 2)
-	connectLinkFieldCreatedAt   = big.NewInt(1 << 3)
-	connectLinkFieldExpiresAt   = big.NewInt(1 << 4)
-	connectLinkFieldFailedAt    = big.NewInt(1 << 5)
-	connectLinkFieldFailure     = big.NewInt(1 << 6)
-	connectLinkFieldID          = big.NewInt(1 << 7)
-	connectLinkFieldPlatform    = big.NewInt(1 << 8)
-	connectLinkFieldReturnURL   = big.NewInt(1 << 9)
-	connectLinkFieldStatus      = big.NewInt(1 << 10)
+	connectLinkFieldChannelID          = big.NewInt(1 << 0)
+	connectLinkFieldChannelIDs         = big.NewInt(1 << 1)
+	connectLinkFieldConnectedPlatforms = big.NewInt(1 << 2)
+	connectLinkFieldCompletedAt        = big.NewInt(1 << 3)
+	connectLinkFieldCreatedAt          = big.NewInt(1 << 4)
+	connectLinkFieldExpiresAt          = big.NewInt(1 << 5)
+	connectLinkFieldFailedAt           = big.NewInt(1 << 6)
+	connectLinkFieldFailure            = big.NewInt(1 << 7)
+	connectLinkFieldID                 = big.NewInt(1 << 8)
+	connectLinkFieldPlatform           = big.NewInt(1 << 9)
+	connectLinkFieldPlatforms          = big.NewInt(1 << 10)
+	connectLinkFieldReturnURL          = big.NewInt(1 << 11)
+	connectLinkFieldStatus             = big.NewInt(1 << 12)
 )
 
 // connectLinkNullableFields maps the wire names of ConnectLink's nullable fields (required or optional) to their field bits.
@@ -234,17 +245,19 @@ var connectLinkNullableFields = map[string]*big.Int{
 }
 
 type ConnectLink struct {
-	ChannelID   *string               `json:"channelId,omitempty" url:"channelId,omitempty"`
-	ChannelIDs  []string              `json:"channelIds" url:"channelIds"`
-	CompletedAt *string               `json:"completedAt,omitempty" url:"completedAt,omitempty"`
-	CreatedAt   string                `json:"createdAt" url:"createdAt"`
-	ExpiresAt   string                `json:"expiresAt" url:"expiresAt"`
-	FailedAt    *string               `json:"failedAt,omitempty" url:"failedAt,omitempty"`
-	Failure     *HostedConnectFailure `json:"failure,omitempty" url:"failure,omitempty"`
-	ID          string                `json:"id" url:"id"`
-	Platform    Platform              `json:"platform" url:"platform"`
-	ReturnURL   *string               `json:"returnUrl,omitempty" url:"returnUrl,omitempty"`
-	Status      ConnectLinkStatus     `json:"status" url:"status"`
+	ChannelID          *string               `json:"channelId,omitempty" url:"channelId,omitempty"`
+	ChannelIDs         []string              `json:"channelIds" url:"channelIds"`
+	ConnectedPlatforms []Platform            `json:"connectedPlatforms" url:"connectedPlatforms"`
+	CompletedAt        *string               `json:"completedAt,omitempty" url:"completedAt,omitempty"`
+	CreatedAt          string                `json:"createdAt" url:"createdAt"`
+	ExpiresAt          string                `json:"expiresAt" url:"expiresAt"`
+	FailedAt           *string               `json:"failedAt,omitempty" url:"failedAt,omitempty"`
+	Failure            *HostedConnectFailure `json:"failure,omitempty" url:"failure,omitempty"`
+	ID                 string                `json:"id" url:"id"`
+	Platform           Platform              `json:"platform" url:"platform"`
+	Platforms          []Platform            `json:"platforms" url:"platforms"`
+	ReturnURL          *string               `json:"returnUrl,omitempty" url:"returnUrl,omitempty"`
+	Status             ConnectLinkStatus     `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -265,6 +278,13 @@ func (c *ConnectLink) GetChannelIDs() []string {
 		return nil
 	}
 	return c.ChannelIDs
+}
+
+func (c *ConnectLink) GetConnectedPlatforms() []Platform {
+	if c == nil {
+		return nil
+	}
+	return c.ConnectedPlatforms
 }
 
 func (c *ConnectLink) GetCompletedAt() *string {
@@ -316,6 +336,13 @@ func (c *ConnectLink) GetPlatform() Platform {
 	return c.Platform
 }
 
+func (c *ConnectLink) GetPlatforms() []Platform {
+	if c == nil {
+		return nil
+	}
+	return c.Platforms
+}
+
 func (c *ConnectLink) GetReturnURL() *string {
 	if c == nil {
 		return nil
@@ -358,6 +385,13 @@ func (c *ConnectLink) SetChannelID(channelID *string) {
 func (c *ConnectLink) SetChannelIDs(channelIDs []string) {
 	c.ChannelIDs = channelIDs
 	c.require(connectLinkFieldChannelIDs)
+}
+
+// SetConnectedPlatforms sets the ConnectedPlatforms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ConnectLink) SetConnectedPlatforms(connectedPlatforms []Platform) {
+	c.ConnectedPlatforms = connectedPlatforms
+	c.require(connectLinkFieldConnectedPlatforms)
 }
 
 // SetCompletedAt sets the CompletedAt field and marks it as non-optional;
@@ -407,6 +441,13 @@ func (c *ConnectLink) SetID(id string) {
 func (c *ConnectLink) SetPlatform(platform Platform) {
 	c.Platform = platform
 	c.require(connectLinkFieldPlatform)
+}
+
+// SetPlatforms sets the Platforms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ConnectLink) SetPlatforms(platforms []Platform) {
+	c.Platforms = platforms
+	c.require(connectLinkFieldPlatforms)
 }
 
 // SetReturnURL sets the ReturnURL field and marks it as non-optional;
@@ -644,6 +685,7 @@ const (
 	HostedConnectFailurePlanLimit            HostedConnectFailure = "planLimit"
 	HostedConnectFailureChannelGone          HostedConnectFailure = "channelGone"
 	HostedConnectFailurePlatformUnreachable  HostedConnectFailure = "platformUnreachable"
+	HostedConnectFailurePlatformNotOffered   HostedConnectFailure = "platformNotOffered"
 )
 
 func NewHostedConnectFailureFromString(s string) (HostedConnectFailure, error) {
@@ -682,6 +724,8 @@ func NewHostedConnectFailureFromString(s string) (HostedConnectFailure, error) {
 		return HostedConnectFailureChannelGone, nil
 	case "platformUnreachable":
 		return HostedConnectFailurePlatformUnreachable, nil
+	case "platformNotOffered":
+		return HostedConnectFailurePlatformNotOffered, nil
 	}
 	var t HostedConnectFailure
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

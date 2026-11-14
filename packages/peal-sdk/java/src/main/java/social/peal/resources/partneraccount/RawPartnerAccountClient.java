@@ -329,28 +329,28 @@ public class RawPartnerAccountClient {
     }
 
     /**
-     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (<code>#RRGGBB</code>, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background <code>#FAFAF9</code>, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
      */
     public PealClientHttpResponse<Partner> update(String workspaceId) {
         return update(workspaceId, PartnerChange.builder().build());
     }
 
     /**
-     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (<code>#RRGGBB</code>, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background <code>#FAFAF9</code>, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
      */
     public PealClientHttpResponse<Partner> update(String workspaceId, RequestOptions requestOptions) {
         return update(workspaceId, PartnerChange.builder().build(), requestOptions);
     }
 
     /**
-     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (<code>#RRGGBB</code>, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background <code>#FAFAF9</code>, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
      */
     public PealClientHttpResponse<Partner> update(String workspaceId, PartnerChange request) {
         return update(workspaceId, request, null);
     }
 
     /**
-     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+     * Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (<code>#RRGGBB</code>, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background <code>#FAFAF9</code>, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. <code>returnOrigins</code> replaces the whole list, 20 at most: each is an origin as browsers write it (<code>https://app.example.com</code>: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
      */
     public PealClientHttpResponse<Partner> update(
             String workspaceId, PartnerChange request, RequestOptions requestOptions) {

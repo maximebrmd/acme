@@ -30,6 +30,8 @@ public final class ConnectLink {
 
     private final List<String> channelIds;
 
+    private final List<Platform> connectedPlatforms;
+
     private final Optional<String> completedAt;
 
     private final String createdAt;
@@ -44,6 +46,8 @@ public final class ConnectLink {
 
     private final Platform platform;
 
+    private final List<Platform> platforms;
+
     private final Optional<String> returnUrl;
 
     private final ConnectLinkStatus status;
@@ -53,6 +57,7 @@ public final class ConnectLink {
     private ConnectLink(
             Optional<String> channelId,
             List<String> channelIds,
+            List<Platform> connectedPlatforms,
             Optional<String> completedAt,
             String createdAt,
             String expiresAt,
@@ -60,11 +65,13 @@ public final class ConnectLink {
             Optional<HostedConnectFailure> failure,
             String id,
             Platform platform,
+            List<Platform> platforms,
             Optional<String> returnUrl,
             ConnectLinkStatus status,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
         this.channelIds = channelIds;
+        this.connectedPlatforms = connectedPlatforms;
         this.completedAt = completedAt;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
@@ -72,6 +79,7 @@ public final class ConnectLink {
         this.failure = failure;
         this.id = id;
         this.platform = platform;
+        this.platforms = platforms;
         this.returnUrl = returnUrl;
         this.status = status;
         this.additionalProperties = additionalProperties;
@@ -88,6 +96,11 @@ public final class ConnectLink {
     @JsonProperty("channelIds")
     public List<String> getChannelIds() {
         return channelIds;
+    }
+
+    @JsonProperty("connectedPlatforms")
+    public List<Platform> getConnectedPlatforms() {
+        return connectedPlatforms;
     }
 
     @JsonIgnore
@@ -132,6 +145,11 @@ public final class ConnectLink {
     @JsonProperty("platform")
     public Platform getPlatform() {
         return platform;
+    }
+
+    @JsonProperty("platforms")
+    public List<Platform> getPlatforms() {
+        return platforms;
     }
 
     @JsonIgnore
@@ -191,6 +209,7 @@ public final class ConnectLink {
     private boolean equalTo(ConnectLink other) {
         return channelId.equals(other.channelId)
                 && channelIds.equals(other.channelIds)
+                && connectedPlatforms.equals(other.connectedPlatforms)
                 && completedAt.equals(other.completedAt)
                 && createdAt.equals(other.createdAt)
                 && expiresAt.equals(other.expiresAt)
@@ -198,6 +217,7 @@ public final class ConnectLink {
                 && failure.equals(other.failure)
                 && id.equals(other.id)
                 && platform.equals(other.platform)
+                && platforms.equals(other.platforms)
                 && returnUrl.equals(other.returnUrl)
                 && status.equals(other.status);
     }
@@ -207,6 +227,7 @@ public final class ConnectLink {
         return Objects.hash(
                 this.channelId,
                 this.channelIds,
+                this.connectedPlatforms,
                 this.completedAt,
                 this.createdAt,
                 this.expiresAt,
@@ -214,6 +235,7 @@ public final class ConnectLink {
                 this.failure,
                 this.id,
                 this.platform,
+                this.platforms,
                 this.returnUrl,
                 this.status);
     }
@@ -268,6 +290,12 @@ public final class ConnectLink {
 
         _FinalStage addAllChannelIds(List<String> channelIds);
 
+        _FinalStage connectedPlatforms(List<Platform> connectedPlatforms);
+
+        _FinalStage addConnectedPlatforms(Platform connectedPlatforms);
+
+        _FinalStage addAllConnectedPlatforms(List<Platform> connectedPlatforms);
+
         _FinalStage completedAt(Optional<String> completedAt);
 
         _FinalStage completedAt(String completedAt);
@@ -285,6 +313,12 @@ public final class ConnectLink {
         _FinalStage failure(HostedConnectFailure failure);
 
         _FinalStage failure(Nullable<HostedConnectFailure> failure);
+
+        _FinalStage platforms(List<Platform> platforms);
+
+        _FinalStage addPlatforms(Platform platforms);
+
+        _FinalStage addAllPlatforms(List<Platform> platforms);
 
         _FinalStage returnUrl(Optional<String> returnUrl);
 
@@ -308,11 +342,15 @@ public final class ConnectLink {
 
         private Optional<String> returnUrl = Optional.empty();
 
+        private List<Platform> platforms = new ArrayList<>();
+
         private Optional<HostedConnectFailure> failure = Optional.empty();
 
         private Optional<String> failedAt = Optional.empty();
 
         private Optional<String> completedAt = Optional.empty();
+
+        private List<Platform> connectedPlatforms = new ArrayList<>();
 
         private List<String> channelIds = new ArrayList<>();
 
@@ -326,6 +364,7 @@ public final class ConnectLink {
         public Builder from(ConnectLink other) {
             channelId(other.getChannelId());
             channelIds(other.getChannelIds());
+            connectedPlatforms(other.getConnectedPlatforms());
             completedAt(other.getCompletedAt());
             createdAt(other.getCreatedAt());
             expiresAt(other.getExpiresAt());
@@ -333,6 +372,7 @@ public final class ConnectLink {
             failure(other.getFailure());
             id(other.getId());
             platform(other.getPlatform());
+            platforms(other.getPlatforms());
             returnUrl(other.getReturnUrl());
             status(other.getStatus());
             return this;
@@ -395,6 +435,30 @@ public final class ConnectLink {
         @JsonSetter(value = "returnUrl", nulls = Nulls.SKIP)
         public _FinalStage returnUrl(Optional<String> returnUrl) {
             this.returnUrl = returnUrl;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllPlatforms(List<Platform> platforms) {
+            if (platforms != null) {
+                this.platforms.addAll(platforms);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addPlatforms(Platform platforms) {
+            this.platforms.add(platforms);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "platforms", nulls = Nulls.SKIP)
+        public _FinalStage platforms(List<Platform> platforms) {
+            this.platforms.clear();
+            if (platforms != null) {
+                this.platforms.addAll(platforms);
+            }
             return this;
         }
 
@@ -474,6 +538,30 @@ public final class ConnectLink {
         }
 
         @java.lang.Override
+        public _FinalStage addAllConnectedPlatforms(List<Platform> connectedPlatforms) {
+            if (connectedPlatforms != null) {
+                this.connectedPlatforms.addAll(connectedPlatforms);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addConnectedPlatforms(Platform connectedPlatforms) {
+            this.connectedPlatforms.add(connectedPlatforms);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "connectedPlatforms", nulls = Nulls.SKIP)
+        public _FinalStage connectedPlatforms(List<Platform> connectedPlatforms) {
+            this.connectedPlatforms.clear();
+            if (connectedPlatforms != null) {
+                this.connectedPlatforms.addAll(connectedPlatforms);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllChannelIds(List<String> channelIds) {
             if (channelIds != null) {
                 this.channelIds.addAll(channelIds);
@@ -527,6 +615,7 @@ public final class ConnectLink {
             return new ConnectLink(
                     channelId,
                     channelIds,
+                    connectedPlatforms,
                     completedAt,
                     createdAt,
                     expiresAt,
@@ -534,6 +623,7 @@ public final class ConnectLink {
                     failure,
                     id,
                     platform,
+                    platforms,
                     returnUrl,
                     status,
                     additionalProperties);
@@ -543,6 +633,7 @@ public final class ConnectLink {
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
                     || key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("connectedPlatforms")
                     || key.equalsIgnoreCase("completedAt")
                     || key.equalsIgnoreCase("createdAt")
                     || key.equalsIgnoreCase("expiresAt")
@@ -550,6 +641,7 @@ public final class ConnectLink {
                     || key.equalsIgnoreCase("failure")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("platform")
+                    || key.equalsIgnoreCase("platforms")
                     || key.equalsIgnoreCase("returnUrl")
                     || key.equalsIgnoreCase("status")) {
                 return;

@@ -17,6 +17,9 @@ public record ConnectLink : IJsonOnDeserialized
     [JsonPropertyName("channelIds")]
     public IEnumerable<string> ChannelIds { get; set; } = new List<string>();
 
+    [JsonPropertyName("connectedPlatforms")]
+    public IEnumerable<Platform> ConnectedPlatforms { get; set; } = new List<Platform>();
+
     [JsonPropertyName("completedAt")]
     public string? CompletedAt { get; set; }
 
@@ -37,6 +40,9 @@ public record ConnectLink : IJsonOnDeserialized
 
     [JsonPropertyName("platform")]
     public required Platform Platform { get; set; }
+
+    [JsonPropertyName("platforms")]
+    public IEnumerable<Platform> Platforms { get; set; } = new List<Platform>();
 
     [JsonPropertyName("returnUrl")]
     public string? ReturnUrl { get; set; }

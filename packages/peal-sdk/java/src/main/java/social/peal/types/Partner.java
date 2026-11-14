@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Partner.Builder.class)
 public final class Partner {
+    private final Optional<String> accentColor;
+
     private final String createdAt;
 
     private final String id;
@@ -41,6 +43,7 @@ public final class Partner {
     private final Map<String, Object> additionalProperties;
 
     private Partner(
+            Optional<String> accentColor,
             String createdAt,
             String id,
             Optional<String> logoUrl,
@@ -48,6 +51,7 @@ public final class Partner {
             List<String> returnOrigins,
             String workspaceId,
             Map<String, Object> additionalProperties) {
+        this.accentColor = accentColor;
         this.createdAt = createdAt;
         this.id = id;
         this.logoUrl = logoUrl;
@@ -55,6 +59,14 @@ public final class Partner {
         this.returnOrigins = returnOrigins;
         this.workspaceId = workspaceId;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonIgnore
+    public Optional<String> getAccentColor() {
+        if (accentColor == null) {
+            return Optional.empty();
+        }
+        return accentColor;
     }
 
     @JsonProperty("createdAt")
@@ -91,6 +103,12 @@ public final class Partner {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("accentColor")
+    private Optional<String> _getAccentColor() {
+        return accentColor;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("logoUrl")
     private Optional<String> _getLogoUrl() {
         return logoUrl;
@@ -108,7 +126,8 @@ public final class Partner {
     }
 
     private boolean equalTo(Partner other) {
-        return createdAt.equals(other.createdAt)
+        return accentColor.equals(other.accentColor)
+                && createdAt.equals(other.createdAt)
                 && id.equals(other.id)
                 && logoUrl.equals(other.logoUrl)
                 && name.equals(other.name)
@@ -118,7 +137,14 @@ public final class Partner {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.createdAt, this.id, this.logoUrl, this.name, this.returnOrigins, this.workspaceId);
+        return Objects.hash(
+                this.accentColor,
+                this.createdAt,
+                this.id,
+                this.logoUrl,
+                this.name,
+                this.returnOrigins,
+                this.workspaceId);
     }
 
     @java.lang.Override
@@ -155,6 +181,12 @@ public final class Partner {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage accentColor(Optional<String> accentColor);
+
+        _FinalStage accentColor(String accentColor);
+
+        _FinalStage accentColor(Nullable<String> accentColor);
+
         _FinalStage logoUrl(Optional<String> logoUrl);
 
         _FinalStage logoUrl(String logoUrl);
@@ -182,12 +214,15 @@ public final class Partner {
 
         private Optional<String> logoUrl = Optional.empty();
 
+        private Optional<String> accentColor = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(Partner other) {
+            accentColor(other.getAccentColor());
             createdAt(other.getCreatedAt());
             id(other.getId());
             logoUrl(other.getLogoUrl());
@@ -275,13 +310,40 @@ public final class Partner {
         }
 
         @java.lang.Override
+        public _FinalStage accentColor(Nullable<String> accentColor) {
+            if (accentColor.isNull()) {
+                this.accentColor = null;
+            } else if (accentColor.isEmpty()) {
+                this.accentColor = Optional.empty();
+            } else {
+                this.accentColor = Optional.of(accentColor.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage accentColor(String accentColor) {
+            this.accentColor = Optional.ofNullable(accentColor);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "accentColor", nulls = Nulls.SKIP)
+        public _FinalStage accentColor(Optional<String> accentColor) {
+            this.accentColor = accentColor;
+            return this;
+        }
+
+        @java.lang.Override
         public Partner build() {
-            return new Partner(createdAt, id, logoUrl, name, returnOrigins, workspaceId, additionalProperties);
+            return new Partner(
+                    accentColor, createdAt, id, logoUrl, name, returnOrigins, workspaceId, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("createdAt")
+            if (key.equalsIgnoreCase("accentColor")
+                    || key.equalsIgnoreCase("createdAt")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("logoUrl")
                     || key.equalsIgnoreCase("name")

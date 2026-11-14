@@ -52,17 +52,20 @@ module Peal
         end
       end
 
-      # Creates a link to hand to whoever owns an account of `platform`: it opens a hosted page where they sign in at
-      # the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. The
-      # answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1
-      # to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own
-      # account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and
-      # `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was
-      # connected, as anyone can write those parameters. Its origin must be one the workspace's partner account
-      # registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account).
-      # Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or
-      # expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server
-      # cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
+      # Creates a link to hand to whoever owns an account of `platform`, or accounts of each of `platforms`: it opens a
+      # hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to
+      # connect, without a Peal account. With `platforms`, the page offers each in turn, and the link waits until each
+      # one connected an account, or it is revoked or expires: `connectedPlatforms` and `channelIds` say what it
+      # connected so far. The answer holds the link's address, shown this once. The link works once, for 168 hours
+      # unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a
+      # sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with
+      # `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link
+      # by its id to know what was connected, as anyone can write those parameters. Its origin must be one the
+      # workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace
+      # without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it
+      # is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A
+      # platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most.
+      # Needs channel:connect.
       #
       # @param request_options [Hash]
       # @param params [Peal::ConnectLinks::Types::NewConnectLink]
@@ -74,10 +77,7 @@ module Peal
       # @option params [String] :workspace_id
       #
       # @example
-      #   client.connect_links.create(
-      #     workspace_id: "workspaceId",
-      #     platform: "x"
-      #   )
+      #   client.connect_links.create(workspace_id: "workspaceId")
       #
       # @return [Peal::Types::CreatedConnectLink]
       def create(request_options: {}, **params)

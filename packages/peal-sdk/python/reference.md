@@ -13718,7 +13718,7 @@ client.activity.list(
 </details>
 
 ## partner
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L32-L56">account</a>() -> PartnerOverview</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L33-L57">account</a>() -> PartnerOverview</code></summary>
 <dl>
 <dd>
 
@@ -13781,7 +13781,7 @@ client.partner.account()
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L58-L92">overview</a>(...) -> PartnerHealth</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L59-L93">overview</a>(...) -> PartnerHealth</code></summary>
 <dl>
 <dd>
 
@@ -13860,7 +13860,7 @@ client.partner.overview()
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L94-L136">list_workspaces</a>(...) -> CustomerWorkspacePage</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L95-L137">list_workspaces</a>(...) -> CustomerWorkspacePage</code></summary>
 <dl>
 <dd>
 
@@ -13955,7 +13955,7 @@ client.partner.list_workspaces()
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L138-L179">create_workspace</a>(...) -> CustomerWorkspace</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L139-L180">create_workspace</a>(...) -> CustomerWorkspace</code></summary>
 <dl>
 <dd>
 
@@ -14044,7 +14044,7 @@ client.partner.create_workspace(
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L181-L211">get_workspace</a>(...) -> CustomerWorkspace</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L182-L212">get_workspace</a>(...) -> CustomerWorkspace</code></summary>
 <dl>
 <dd>
 
@@ -14117,7 +14117,7 @@ client.partner.get_workspace(
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L213-L240">delete_workspace</a>(...)</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L214-L241">delete_workspace</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -14190,7 +14190,7 @@ client.partner.delete_workspace(
 </dl>
 </details>
 
-<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L242-L283">update_workspace</a>(...) -> CustomerWorkspace</code></summary>
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L243-L284">update_workspace</a>(...) -> CustomerWorkspace</code></summary>
 <dl>
 <dd>
 
@@ -14260,6 +14260,97 @@ client.partner.update_workspace(
 <dd>
 
 **name:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.partner.<a href="src/peal/partner/client.py#L286-L329">move_channel</a>(...) -> Channel</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.partner.move_channel(
+    workspace_id="workspaceId",
+    channel_id="channelId",
+    to_workspace_id="toWorkspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to_workspace_id:** `str` 
     
 </dd>
 </dl>
@@ -14604,7 +14695,7 @@ client.partner_account.close(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L128-L172">update</a>(...) -> Partner</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L128-L180">update</a>(...) -> Partner</code></summary>
 <dl>
 <dd>
 
@@ -14616,7 +14707,7 @@ client.partner_account.close(
 <dl>
 <dd>
 
-Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
+Changes the partner account's name, its logo (an HTTPS URL, shown from that address on the hosted pages; null removes it), its accent colour (`#RRGGBB`, drawn as a line beside the logo on the hosted pages, with at least 3:1 contrast against white and against Peal's page background `#FAFAF9`, so it is seen on Peal's light pages; null removes it) or its return origins: what is left out stays as it is. `returnOrigins` replaces the whole list, 20 at most: each is an origin as browsers write it (`https://app.example.com`: HTTPS, or HTTP on this machine alone, with nothing after the host and port). A hosted page sends a customer back only to an address whose origin is one of these, exactly. Needs partner:manage, and a signed-in member rather than an API key or an OAuth client.
 </dd>
 </dl>
 </dd>
@@ -14665,6 +14756,14 @@ client.partner_account.update(
 <dl>
 <dd>
 
+**accent_color:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **logo_url:** `typing.Optional[str]` 
     
 </dd>
@@ -14701,7 +14800,7 @@ client.partner_account.update(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L174-L204">list_keys</a>(...) -> typing.List[PartnerKey]</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L182-L212">list_keys</a>(...) -> typing.List[PartnerKey]</code></summary>
 <dl>
 <dd>
 
@@ -14774,7 +14873,7 @@ client.partner_account.list_keys(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L206-L261">create_key</a>(...) -> CreatedPartnerKey</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L214-L269">create_key</a>(...) -> CreatedPartnerKey</code></summary>
 <dl>
 <dd>
 
@@ -14886,7 +14985,7 @@ client.partner_account.create_key(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L263-L295">revoke_key</a>(...)</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L271-L303">revoke_key</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -14968,7 +15067,7 @@ client.partner_account.revoke_key(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L297-L336">overview</a>(...) -> PartnerHealth</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L305-L344">overview</a>(...) -> PartnerHealth</code></summary>
 <dl>
 <dd>
 
@@ -15057,7 +15156,7 @@ client.partner_account.overview(
 </dl>
 </details>
 
-<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L338-L390">list_workspaces</a>(...) -> CustomerWorkspacePage</code></summary>
+<details><summary><code>client.partner_account.<a href="src/peal/partner_account/client.py#L346-L398">list_workspaces</a>(...) -> CustomerWorkspacePage</code></summary>
 <dl>
 <dd>
 
@@ -15236,7 +15335,7 @@ client.connect_links.list(
 </dl>
 </details>
 
-<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L65-L126">create</a>(...) -> CreatedConnectLink</code></summary>
+<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L65-L129">create</a>(...) -> CreatedConnectLink</code></summary>
 <dl>
 <dd>
 
@@ -15248,7 +15347,7 @@ client.connect_links.list(
 <dl>
 <dd>
 
-Creates a link to hand to whoever owns an account of `platform`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
+Creates a link to hand to whoever owns an account of `platform`, or accounts of each of `platforms`: it opens a hosted page where they sign in at the platform and, when the sign-in reaches several accounts, pick those to connect, without a Peal account. With `platforms`, the page offers each in turn, and the link waits until each one connected an account, or it is revoked or expires: `connectedPlatforms` and `channelIds` say what it connected so far. The answer holds the link's address, shown this once. The link works once, for 168 hours unless `expiresInHours` (1 to 720) says otherwise; with `channelId`, it reconnects that channel, and only a sign-in to the channel's own account goes through. `returnUrl` is where the page sends them once done, with `peal_link` (the link's id) and `peal_status` (`connected`, `cancelled` or `failed`) in its query: read the link by its id to know what was connected, as anyone can write those parameters. Its origin must be one the workspace's partner account registered, exactly (422 `ReturnUrlNotAllowed` otherwise, and for a workspace without a partner account). Whoever holds the address can connect an account of theirs to the workspace until it is used, revoked or expired: hand it over a channel you trust, and revoke it when it is no longer needed. A platform this server cannot connect answers 422 `ConnectFailed`. A workspace has 100 links waiting at most. Needs channel:connect.
 </dd>
 </dl>
 </dd>
@@ -15273,7 +15372,6 @@ client = Peal(
 
 client.connect_links.create(
     workspace_id="workspaceId",
-    platform="x",
 )
 
 ```
@@ -15291,14 +15389,6 @@ client.connect_links.create(
 <dd>
 
 **workspace_id:** `str` 
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**platform:** `Platform` 
     
 </dd>
 </dl>
@@ -15338,6 +15428,22 @@ client.connect_links.create(
 <dl>
 <dd>
 
+**platform:** `typing.Optional[Platform]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**platforms:** `typing.Optional[typing.List[Platform]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **return_url:** `typing.Optional[str]` 
     
 </dd>
@@ -15358,7 +15464,7 @@ client.connect_links.create(
 </dl>
 </details>
 
-<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L128-L161">get</a>(...) -> ConnectLink</code></summary>
+<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L131-L164">get</a>(...) -> ConnectLink</code></summary>
 <dl>
 <dd>
 
@@ -15440,7 +15546,7 @@ client.connect_links.get(
 </dl>
 </details>
 
-<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L163-L196">revoke</a>(...) -> ConnectLink</code></summary>
+<details><summary><code>client.connect_links.<a href="src/peal/connect_links/client.py#L166-L199">revoke</a>(...) -> ConnectLink</code></summary>
 <dl>
 <dd>
 

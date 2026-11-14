@@ -16,6 +16,7 @@ public class GetTest : BaseMockServerTest
             {
               "canOpen": true,
               "partner": {
+                "accentColor": "accentColor",
                 "createdAt": "createdAt",
                 "id": "id",
                 "logoUrl": "logoUrl",
@@ -72,6 +73,7 @@ public class GetTest : BaseMockServerTest
             {
               "canOpen": true,
               "partner": {
+                "accentColor": "accentColor",
                 "createdAt": "createdAt",
                 "id": "id",
                 "logoUrl": "logoUrl",

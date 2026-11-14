@@ -20,6 +20,7 @@ pub enum HostedConnectFailure {
     PlanLimit,
     ChannelGone,
     PlatformUnreachable,
+    PlatformNotOffered,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -45,6 +46,7 @@ impl Serialize for HostedConnectFailure {
             Self::PlanLimit => serializer.serialize_str("planLimit"),
             Self::ChannelGone => serializer.serialize_str("channelGone"),
             Self::PlatformUnreachable => serializer.serialize_str("platformUnreachable"),
+            Self::PlatformNotOffered => serializer.serialize_str("platformNotOffered"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -71,6 +73,7 @@ impl<'de> Deserialize<'de> for HostedConnectFailure {
             "planLimit" => Ok(Self::PlanLimit),
             "channelGone" => Ok(Self::ChannelGone),
             "platformUnreachable" => Ok(Self::PlatformUnreachable),
+            "platformNotOffered" => Ok(Self::PlatformNotOffered),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -96,6 +99,7 @@ impl fmt::Display for HostedConnectFailure {
             Self::PlanLimit => write!(f, "planLimit"),
             Self::ChannelGone => write!(f, "channelGone"),
             Self::PlatformUnreachable => write!(f, "platformUnreachable"),
+            Self::PlatformNotOffered => write!(f, "platformNotOffered"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

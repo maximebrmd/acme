@@ -11,6 +11,9 @@ public record Partner : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("accentColor")]
+    public string? AccentColor { get; set; }
+
     [JsonPropertyName("createdAt")]
     public required string CreatedAt { get; set; }
 

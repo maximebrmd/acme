@@ -3,6 +3,7 @@
 export const PartnerDetailField = {
         Name: "name",
         LogoUrl: "logoUrl",
+        AccentColor: "accentColor",
         ReturnOrigins: "returnOrigins",
         ExternalId: "externalId",
         Permissions: "permissions"

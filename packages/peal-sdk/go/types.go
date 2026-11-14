@@ -4362,6 +4362,370 @@ func (c CeilingCurrencyMismatchEncodedTag) Ptr() *CeilingCurrencyMismatchEncoded
 }
 
 var (
+	channelFieldAvatarURL      = big.NewInt(1 << 0)
+	channelFieldConnection     = big.NewInt(1 << 1)
+	channelFieldDisplayName    = big.NewInt(1 << 2)
+	channelFieldHandle         = big.NewInt(1 << 3)
+	channelFieldID             = big.NewInt(1 << 4)
+	channelFieldLabel          = big.NewInt(1 << 5)
+	channelFieldPlatform       = big.NewInt(1 << 6)
+	channelFieldStatus         = big.NewInt(1 << 7)
+	channelFieldTokenExpiresAt = big.NewInt(1 << 8)
+)
+
+// channelNullableFields maps the wire names of Channel's nullable fields (required or optional) to their field bits.
+var channelNullableFields = map[string]*big.Int{
+	"avatarUrl":      channelFieldAvatarURL,
+	"connection":     channelFieldConnection,
+	"displayName":    channelFieldDisplayName,
+	"label":          channelFieldLabel,
+	"tokenExpiresAt": channelFieldTokenExpiresAt,
+}
+
+type Channel struct {
+	AvatarURL      *string            `json:"avatarUrl,omitempty" url:"avatarUrl,omitempty"`
+	Connection     *ChannelConnection `json:"connection,omitempty" url:"connection,omitempty"`
+	DisplayName    *string            `json:"displayName,omitempty" url:"displayName,omitempty"`
+	Handle         string             `json:"handle" url:"handle"`
+	ID             string             `json:"id" url:"id"`
+	Label          *string            `json:"label,omitempty" url:"label,omitempty"`
+	Platform       Platform           `json:"platform" url:"platform"`
+	Status         *ChannelStatus     `json:"status" url:"status"`
+	TokenExpiresAt *string            `json:"tokenExpiresAt,omitempty" url:"tokenExpiresAt,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *Channel) GetAvatarURL() *string {
+	if c == nil {
+		return nil
+	}
+	return c.AvatarURL
+}
+
+func (c *Channel) GetConnection() *ChannelConnection {
+	if c == nil {
+		return nil
+	}
+	return c.Connection
+}
+
+func (c *Channel) GetDisplayName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.DisplayName
+}
+
+func (c *Channel) GetHandle() string {
+	if c == nil {
+		return ""
+	}
+	return c.Handle
+}
+
+func (c *Channel) GetID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ID
+}
+
+func (c *Channel) GetLabel() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Label
+}
+
+func (c *Channel) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *Channel) GetStatus() *ChannelStatus {
+	if c == nil {
+		return nil
+	}
+	return c.Status
+}
+
+func (c *Channel) GetTokenExpiresAt() *string {
+	if c == nil {
+		return nil
+	}
+	return c.TokenExpiresAt
+}
+
+func (c *Channel) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *Channel) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetAvatarURL sets the AvatarURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetAvatarURL(avatarURL *string) {
+	c.AvatarURL = avatarURL
+	c.require(channelFieldAvatarURL)
+}
+
+// SetConnection sets the Connection field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetConnection(connection *ChannelConnection) {
+	c.Connection = connection
+	c.require(channelFieldConnection)
+}
+
+// SetDisplayName sets the DisplayName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetDisplayName(displayName *string) {
+	c.DisplayName = displayName
+	c.require(channelFieldDisplayName)
+}
+
+// SetHandle sets the Handle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetHandle(handle string) {
+	c.Handle = handle
+	c.require(channelFieldHandle)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetID(id string) {
+	c.ID = id
+	c.require(channelFieldID)
+}
+
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetLabel(label *string) {
+	c.Label = label
+	c.require(channelFieldLabel)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(channelFieldPlatform)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetStatus(status *ChannelStatus) {
+	c.Status = status
+	c.require(channelFieldStatus)
+}
+
+// SetTokenExpiresAt sets the TokenExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetTokenExpiresAt(tokenExpiresAt *string) {
+	c.TokenExpiresAt = tokenExpiresAt
+	c.require(channelFieldTokenExpiresAt)
+}
+
+func (c *Channel) UnmarshalJSON(data []byte) error {
+	type unmarshaler Channel
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = Channel(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, channelNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *Channel) MarshalJSON() ([]byte, error) {
+	type embed Channel
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *Channel) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelAccountTakenEncodedFieldCode      = big.NewInt(1 << 0)
+	channelAccountTakenEncodedFieldMessage   = big.NewInt(1 << 1)
+	channelAccountTakenEncodedFieldRequestID = big.NewInt(1 << 2)
+	channelAccountTakenEncodedFieldChannelID = big.NewInt(1 << 3)
+)
+
+type ChannelAccountTakenEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	ChannelID string  `json:"channelId" url:"channelId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelAccountTakenEncoded) GetCode() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Code
+}
+
+func (c *ChannelAccountTakenEncoded) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *ChannelAccountTakenEncoded) GetRequestID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.RequestID
+}
+
+func (c *ChannelAccountTakenEncoded) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ChannelAccountTakenEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelAccountTakenEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAccountTakenEncoded) SetCode(code *string) {
+	c.Code = code
+	c.require(channelAccountTakenEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAccountTakenEncoded) SetMessage(message *string) {
+	c.Message = message
+	c.require(channelAccountTakenEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAccountTakenEncoded) SetRequestID(requestID *string) {
+	c.RequestID = requestID
+	c.require(channelAccountTakenEncodedFieldRequestID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAccountTakenEncoded) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelAccountTakenEncodedFieldChannelID)
+}
+
+func (c *ChannelAccountTakenEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelAccountTakenEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelAccountTakenEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelAccountTakenEncoded) MarshalJSON() ([]byte, error) {
+	type embed ChannelAccountTakenEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelAccountTakenEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
 	channelCannotPostEncodedFieldTag       = big.NewInt(1 << 0)
 	channelCannotPostEncodedFieldCode      = big.NewInt(1 << 1)
 	channelCannotPostEncodedFieldMessage   = big.NewInt(1 << 2)
@@ -4952,6 +5316,376 @@ func NewChannelSetNameTakenEncodedTagFromString(s string) (ChannelSetNameTakenEn
 
 func (c ChannelSetNameTakenEncodedTag) Ptr() *ChannelSetNameTakenEncodedTag {
 	return &c
+}
+
+type ChannelStatus struct {
+	Type          string
+	Active        *ChannelStatusActive
+	RefreshNeeded *ChannelStatusRefreshNeeded
+	Disabled      *ChannelStatusDisabled
+
+	rawJSON json.RawMessage
+}
+
+func (c *ChannelStatus) GetType() string {
+	if c == nil {
+		return ""
+	}
+	return c.Type
+}
+
+func (c *ChannelStatus) GetActive() *ChannelStatusActive {
+	if c == nil {
+		return nil
+	}
+	return c.Active
+}
+
+func (c *ChannelStatus) GetRefreshNeeded() *ChannelStatusRefreshNeeded {
+	if c == nil {
+		return nil
+	}
+	return c.RefreshNeeded
+}
+
+func (c *ChannelStatus) GetDisabled() *ChannelStatusDisabled {
+	if c == nil {
+		return nil
+	}
+	return c.Disabled
+}
+
+func (c *ChannelStatus) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", c)
+	}
+	switch unmarshaler.Type {
+	case "active":
+		value := new(ChannelStatusActive)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Active = value
+	case "refreshNeeded":
+		value := new(ChannelStatusRefreshNeeded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.RefreshNeeded = value
+	case "disabled":
+		value := new(ChannelStatusDisabled)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Disabled = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c ChannelStatus) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Active != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Active, "_tag", "active")
+	}
+	if c.RefreshNeeded != nil {
+		return internal.MarshalJSONWithExtraProperty(c.RefreshNeeded, "_tag", "refreshNeeded")
+	}
+	if c.Disabled != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Disabled, "_tag", "disabled")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type ChannelStatusVisitor interface {
+	VisitActive(*ChannelStatusActive) error
+	VisitRefreshNeeded(*ChannelStatusRefreshNeeded) error
+	VisitDisabled(*ChannelStatusDisabled) error
+}
+
+func (c *ChannelStatus) Accept(visitor ChannelStatusVisitor) error {
+	if c.Active != nil {
+		return visitor.VisitActive(c.Active)
+	}
+	if c.RefreshNeeded != nil {
+		return visitor.VisitRefreshNeeded(c.RefreshNeeded)
+	}
+	if c.Disabled != nil {
+		return visitor.VisitDisabled(c.Disabled)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *ChannelStatus) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Active != nil {
+		fields = append(fields, "active")
+	}
+	if c.RefreshNeeded != nil {
+		fields = append(fields, "refreshNeeded")
+	}
+	if c.Disabled != nil {
+		fields = append(fields, "disabled")
+	}
+	if len(fields) == 0 {
+		if c.Type != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Type)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Type != "" {
+		field := fields[0]
+		if c.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Type,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+type ChannelStatusActive struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelStatusActive) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelStatusActive) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *ChannelStatusActive) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelStatusActive
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelStatusActive(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelStatusActive) MarshalJSON() ([]byte, error) {
+	type embed ChannelStatusActive
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelStatusActive) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelStatusDisabledFieldRefreshNeeded = big.NewInt(1 << 0)
+)
+
+type ChannelStatusDisabled struct {
+	RefreshNeeded bool `json:"refreshNeeded" url:"refreshNeeded"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelStatusDisabled) GetRefreshNeeded() bool {
+	if c == nil {
+		return false
+	}
+	return c.RefreshNeeded
+}
+
+func (c *ChannelStatusDisabled) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelStatusDisabled) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetRefreshNeeded sets the RefreshNeeded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelStatusDisabled) SetRefreshNeeded(refreshNeeded bool) {
+	c.RefreshNeeded = refreshNeeded
+	c.require(channelStatusDisabledFieldRefreshNeeded)
+}
+
+func (c *ChannelStatusDisabled) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelStatusDisabled
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelStatusDisabled(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelStatusDisabled) MarshalJSON() ([]byte, error) {
+	type embed ChannelStatusDisabled
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelStatusDisabled) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ChannelStatusRefreshNeeded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelStatusRefreshNeeded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelStatusRefreshNeeded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *ChannelStatusRefreshNeeded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelStatusRefreshNeeded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelStatusRefreshNeeded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelStatusRefreshNeeded) MarshalJSON() ([]byte, error) {
+	type embed ChannelStatusRefreshNeeded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelStatusRefreshNeeded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 var (
@@ -16685,20 +17419,23 @@ func (p PaidPlan) Ptr() *PaidPlan {
 }
 
 var (
-	partnerFieldCreatedAt     = big.NewInt(1 << 0)
-	partnerFieldID            = big.NewInt(1 << 1)
-	partnerFieldLogoURL       = big.NewInt(1 << 2)
-	partnerFieldName          = big.NewInt(1 << 3)
-	partnerFieldReturnOrigins = big.NewInt(1 << 4)
-	partnerFieldWorkspaceID   = big.NewInt(1 << 5)
+	partnerFieldAccentColor   = big.NewInt(1 << 0)
+	partnerFieldCreatedAt     = big.NewInt(1 << 1)
+	partnerFieldID            = big.NewInt(1 << 2)
+	partnerFieldLogoURL       = big.NewInt(1 << 3)
+	partnerFieldName          = big.NewInt(1 << 4)
+	partnerFieldReturnOrigins = big.NewInt(1 << 5)
+	partnerFieldWorkspaceID   = big.NewInt(1 << 6)
 )
 
 // partnerNullableFields maps the wire names of Partner's nullable fields (required or optional) to their field bits.
 var partnerNullableFields = map[string]*big.Int{
-	"logoUrl": partnerFieldLogoURL,
+	"accentColor": partnerFieldAccentColor,
+	"logoUrl":     partnerFieldLogoURL,
 }
 
 type Partner struct {
+	AccentColor   *string  `json:"accentColor,omitempty" url:"accentColor,omitempty"`
 	CreatedAt     string   `json:"createdAt" url:"createdAt"`
 	ID            string   `json:"id" url:"id"`
 	LogoURL       *string  `json:"logoUrl,omitempty" url:"logoUrl,omitempty"`
@@ -16711,6 +17448,13 @@ type Partner struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *Partner) GetAccentColor() *string {
+	if p == nil {
+		return nil
+	}
+	return p.AccentColor
 }
 
 func (p *Partner) GetCreatedAt() string {
@@ -16769,6 +17513,13 @@ func (p *Partner) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	p.explicitFields = next
+}
+
+// SetAccentColor sets the AccentColor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetAccentColor(accentColor *string) {
+	p.AccentColor = accentColor
+	p.require(partnerFieldAccentColor)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;
@@ -16985,6 +17736,7 @@ type PartnerDetailField string
 const (
 	PartnerDetailFieldName          PartnerDetailField = "name"
 	PartnerDetailFieldLogoURL       PartnerDetailField = "logoUrl"
+	PartnerDetailFieldAccentColor   PartnerDetailField = "accentColor"
 	PartnerDetailFieldReturnOrigins PartnerDetailField = "returnOrigins"
 	PartnerDetailFieldExternalID    PartnerDetailField = "externalId"
 	PartnerDetailFieldPermissions   PartnerDetailField = "permissions"
@@ -16996,6 +17748,8 @@ func NewPartnerDetailFieldFromString(s string) (PartnerDetailField, error) {
 		return PartnerDetailFieldName, nil
 	case "logoUrl":
 		return PartnerDetailFieldLogoURL, nil
+	case "accentColor":
+		return PartnerDetailFieldAccentColor, nil
 	case "returnOrigins":
 		return PartnerDetailFieldReturnOrigins, nil
 	case "externalId":

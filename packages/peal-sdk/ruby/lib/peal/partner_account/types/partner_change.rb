@@ -6,6 +6,8 @@ module Peal
       class PartnerChange < Internal::Types::Model
         field :workspace_id, -> { String }, optional: false, nullable: false, api_name: "workspaceId"
 
+        field :accent_color, -> { String }, optional: true, nullable: true, api_name: "accentColor"
+
         field :logo_url, -> { String }, optional: true, nullable: true, api_name: "logoUrl"
 
         field :name, -> { String }, optional: true, nullable: false

@@ -9,6 +9,7 @@ module Peal
 
       NAME = "name"
       LOGO_URL = "logoUrl"
+      ACCENT_COLOR = "accentColor"
       RETURN_ORIGINS = "returnOrigins"
       EXTERNAL_ID = "externalId"
       PERMISSIONS = "permissions"

@@ -4,6 +4,7 @@ import typing
 
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
+from ..types.channel import Channel
 from ..types.customer_workspace import CustomerWorkspace
 from ..types.customer_workspace_page import CustomerWorkspacePage
 from ..types.partner_health import PartnerHealth
@@ -279,6 +280,51 @@ class PartnerClient:
         """
         _response = self._raw_client.update_workspace(
             workspace_id, external_id=external_id, name=name, request_options=request_options
+        )
+        return _response.data
+
+    def move_channel(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        to_workspace_id: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        to_workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.partner.move_channel(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+            to_workspace_id="toWorkspaceId",
+        )
+        """
+        _response = self._raw_client.move_channel(
+            workspace_id, channel_id, to_workspace_id=to_workspace_id, request_options=request_options
         )
         return _response.data
 
@@ -606,5 +652,58 @@ class AsyncPartnerClient:
         """
         _response = await self._raw_client.update_workspace(
             workspace_id, external_id=external_id, name=name, request_options=request_options
+        )
+        return _response.data
+
+    async def move_channel(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        to_workspace_id: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Moves a channel from a workspace the partner owns to another one it owns (`toWorkspaceId`), without a new sign-in: the account, its tokens and its status go with it, and the platform is asked nothing. Answers the channel in the workspace it went to, under a new id: in the workspace it left, it is disconnected (`channel.disconnected` there, `channel.connected` in the other). What belongs to the workspace it left stays there: its posts, those scheduled on the channel included, which fail there as a disconnected channel's do unless they are changed first; the analytics of its posts, kept a week as a disconnected channel's are, should it come back; its inbox threads and direct messages, which end as a disconnected channel's do. Its name in the workspace is left behind too. The workspace it goes to starts reading the account afresh. The workspaces share one plan, so the move counts no channel more. A workspace that has a channel of the same account, or the workspace the channel is in, answers 409 `ChannelAccountTaken`; while a post or a change of a live post is being sent through the channel, 409 `WorkspaceBusy`: send it again a moment later. Needs the scope workspaces:write, and the key's permissions channel:connect and channel:disconnect. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        to_workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.partner.move_channel(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+                to_workspace_id="toWorkspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.move_channel(
+            workspace_id, channel_id, to_workspace_id=to_workspace_id, request_options=request_options
         )
         return _response.data

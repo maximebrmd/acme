@@ -8,6 +8,7 @@
  */
 export interface PartnerChange {
     workspaceId: string;
+    accentColor?: string | null;
     logoUrl?: string | null;
     name?: string;
     returnOrigins?: string[];

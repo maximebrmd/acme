@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct PartnerChange {
+    #[serde(rename = "accentColor")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accent_color: Option<String>,
     #[serde(rename = "logoUrl")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo_url: Option<String>,
@@ -21,12 +24,18 @@ impl PartnerChange {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct PartnerChangeBuilder {
+    accent_color: Option<String>,
     logo_url: Option<String>,
     name: Option<String>,
     return_origins: Option<Vec<String>>,
 }
 
 impl PartnerChangeBuilder {
+    pub fn accent_color(mut self, value: impl Into<String>) -> Self {
+        self.accent_color = Some(value.into());
+        self
+    }
+
     pub fn logo_url(mut self, value: impl Into<String>) -> Self {
         self.logo_url = Some(value.into());
         self
@@ -45,6 +54,7 @@ impl PartnerChangeBuilder {
     /// Consumes the builder and constructs a [`PartnerChange`].
     pub fn build(self) -> Result<PartnerChange, BuildError> {
         Ok(PartnerChange {
+            accent_color: self.accent_color,
             logo_url: self.logo_url,
             name: self.name,
             return_origins: self.return_origins,

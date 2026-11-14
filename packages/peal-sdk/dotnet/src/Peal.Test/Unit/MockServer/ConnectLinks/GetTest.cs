@@ -19,6 +19,10 @@ public class GetTest : BaseMockServerTest
                 "channelIds",
                 "channelIds"
               ],
+              "connectedPlatforms": [
+                "x",
+                "x"
+              ],
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "expiresAt": "expiresAt",
@@ -26,6 +30,10 @@ public class GetTest : BaseMockServerTest
               "failure": "platformNotSupported",
               "id": "id",
               "platform": "x",
+              "platforms": [
+                "x",
+                "x"
+              ],
               "returnUrl": "returnUrl",
               "status": "pending"
             }
@@ -60,6 +68,9 @@ public class GetTest : BaseMockServerTest
               "channelIds": [
                 "channelIds"
               ],
+              "connectedPlatforms": [
+                "x"
+              ],
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "expiresAt": "expiresAt",
@@ -67,6 +78,9 @@ public class GetTest : BaseMockServerTest
               "failure": "platformNotSupported",
               "id": "id",
               "platform": "x",
+              "platforms": [
+                "x"
+              ],
               "returnUrl": "returnUrl",
               "status": "pending"
             }

@@ -9,6 +9,8 @@ module Peal
 
       field :channel_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "channelIds"
 
+      field :connected_platforms, -> { Internal::Types::Array[Peal::Types::Platform] }, optional: false, nullable: false, api_name: "connectedPlatforms"
+
       field :completed_at, -> { String }, optional: false, nullable: true, api_name: "completedAt"
 
       field :created_at, -> { String }, optional: false, nullable: false, api_name: "createdAt"
@@ -22,6 +24,8 @@ module Peal
       field :id, -> { String }, optional: false, nullable: false
 
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
+
+      field :platforms, -> { Internal::Types::Array[Peal::Types::Platform] }, optional: false, nullable: false
 
       field :return_url, -> { String }, optional: false, nullable: true, api_name: "returnUrl"
 

@@ -18,6 +18,9 @@ class ConnectLink(UniversalBaseModel):
     channel_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
     ]
+    connected_platforms: typing_extensions.Annotated[
+        typing.List[Platform], FieldMetadata(alias="connectedPlatforms"), pydantic.Field(alias="connectedPlatforms")
+    ]
     completed_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="completedAt"), pydantic.Field(alias="completedAt")
     ] = None
@@ -29,6 +32,7 @@ class ConnectLink(UniversalBaseModel):
     failure: typing.Optional[HostedConnectFailure] = None
     id: str
     platform: Platform
+    platforms: typing.List[Platform]
     return_url: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="returnUrl"), pydantic.Field(alias="returnUrl")
     ] = None
