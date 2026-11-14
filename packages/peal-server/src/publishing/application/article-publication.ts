@@ -121,6 +121,13 @@ const turnWait = Duration.minutes(1);
 
 const turnDeadline = Duration.days(1);
 
+// A call that may have reached the site, whose post was not found: the
+// member looks for it.
+const stillToCheck: AttemptOutcome = {
+  _tag: "unconfirmed",
+  reason: "interrupted",
+};
+
 // The workspace holds more channels or members than its plan allows.
 const planRefusal: AttemptOutcome = new BadRequest({
   code: ownRefusalCodes.planLimit,
@@ -182,6 +189,14 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       });
     }
 
+    // A call that may have reached the site ends only published, or to
+    // check: a search that fails, or cannot start, settles nothing more.
+    const lookedFor = (request: SitePublishRequest) =>
+      publisher.resume(request).pipe(
+        Effect.catch(() => Effect.succeed(stillToCheck)),
+        Effect.catchDefect(() => Effect.succeed(adapterFailed))
+      );
+
     // The call, and the journal's record of how it ended, in the
     // channel's turn: no other attempt looks for its post on the site
     // before this one recorded it.
@@ -197,6 +212,13 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       if (start._tag === "completed") {
         return start;
       }
+
+      // The key the attempt's row is written under: its own, or the one an
+      // earlier run of it wrote.
+      const rowKey =
+        start._tag === "started"
+          ? attempt.idempotencyKey
+          : start.idempotencyKey;
 
       // An earlier attempt of the round that gave its turn back, or
       // stopped, left its call unfinished: one that never reached the
@@ -220,25 +242,17 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       const [first] = committed;
 
       if (first !== undefined) {
-        const outcome = yield* publisher
-          .resume({
-            articleId: attempt.articleId,
-            committing: Effect.succeed(first.at),
-            idempotencyKey: first.idempotencyKey,
-            startedAt: first.at,
-          })
-          .pipe(
-            Effect.catch((error) => Effect.succeed(error)),
-            Effect.catchDefect(() => Effect.succeed(adapterFailed))
-          );
+        const outcome = yield* lookedFor({
+          articleId: attempt.articleId,
+          committing: Effect.succeed(first.at),
+          idempotencyKey: first.idempotencyKey,
+          startedAt: first.at,
+        });
 
         const finishedAt = yield* DateTime.now;
 
         yield* Effect.forEach(
-          [
-            ...committed.map(({ idempotencyKey }) => idempotencyKey),
-            attempt.idempotencyKey,
-          ],
+          [...committed.map(({ idempotencyKey }) => idempotencyKey), rowKey],
           (key) =>
             journal
               .finish(key, outcome, finishedAt)
@@ -262,7 +276,7 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
 
       if (overPlan) {
         yield* journal
-          .finish(attempt.idempotencyKey, planRefusal, now)
+          .finish(rowKey, planRefusal, now)
           .pipe(Effect.retry(outcomeWriteRetry));
 
         return { finishedAt: now, outcome: planRefusal, startedAt: now };
@@ -278,24 +292,55 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       const request: SitePublishRequest = {
         articleId: attempt.articleId,
         committing: DateTime.now.pipe(
-          Effect.tap((at) => journal.committing(attempt.idempotencyKey, at))
+          Effect.tap((at) => journal.committing(rowKey, at))
         ),
-        idempotencyKey: attempt.idempotencyKey,
+        idempotencyKey: rowKey,
         startedAt: start._tag === "inFlight" ? start.committedAt : startedAt,
       };
 
+      // An earlier round's call that may be on the site, and was never
+      // found there, is looked for once more before anything is sent: a
+      // member who sends an article to check again may not have seen it.
+      const toCheck =
+        start._tag === "inFlight"
+          ? Option.none()
+          : yield* journal.toCheckBefore(call);
+
+      const earlierPost = yield* Option.match(toCheck, {
+        onNone: () => Effect.succeed(Option.none<AttemptOutcome>()),
+        onSome: (at) =>
+          publisher.find({ ...request, startedAt: at }).pipe(
+            Effect.map(Option.map((found): AttemptOutcome => found)),
+            Effect.catch((error) =>
+              Effect.succeed(Option.some<AttemptOutcome>(error))
+            ),
+            Effect.catchDefect(() =>
+              Effect.succeed(
+                Option.some<AttemptOutcome>(new PlatformUnavailable())
+              )
+            )
+          ),
+      });
+
       return yield* (
         start._tag === "inFlight"
-          ? publisher.resume(request)
-          : publisher.publish(request)
+          ? lookedFor(request)
+          : Option.match(earlierPost, {
+              onNone: () =>
+                publisher.publish(request).pipe(
+                  Effect.catch((error) =>
+                    Effect.succeed<AttemptOutcome>(error)
+                  ),
+                  Effect.catchDefect(() => Effect.succeed(adapterFailed))
+                ),
+              onSome: (found) => Effect.succeed(found),
+            })
       ).pipe(
-        Effect.catch((error) => Effect.succeed(error)),
-        Effect.catchDefect(() => Effect.succeed(adapterFailed)),
         Effect.flatMap((outcome: AttemptOutcome) =>
           DateTime.now.pipe(
             Effect.tap((at) =>
               journal
-                .finish(attempt.idempotencyKey, outcome, at)
+                .finish(rowKey, outcome, at)
                 .pipe(Effect.retry(outcomeWriteRetry))
             ),
             Effect.map((finishedAt) => ({ finishedAt, outcome, startedAt }))
@@ -336,6 +381,43 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
     // a day after it was due, the article fails as unreachable.
     if (Option.isNone(ended)) {
       const now = yield* DateTime.now;
+
+      // A call of the round that may be on the site ends to check, never
+      // failed: the member looks for it before sending again.
+      const committedLeft = (yield* journal.unfinishedBefore({
+        ...call,
+        attempt: attempt.attempt + 1,
+      })).flatMap(({ committedAt, idempotencyKey }) =>
+        Option.match(committedAt, {
+          onNone: () => [],
+          onSome: (at) => [{ at, idempotencyKey }],
+        })
+      );
+
+      const [leftFirst] = committedLeft;
+
+      if (
+        leftFirst !== undefined &&
+        Duration.isGreaterThan(
+          DateTime.distance(attempt.dueAt, now),
+          turnDeadline
+        )
+      ) {
+        yield* Effect.forEach(
+          committedLeft,
+          ({ idempotencyKey }) =>
+            journal
+              .finish(idempotencyKey, stillToCheck, now)
+              .pipe(Effect.retry(outcomeWriteRetry)),
+          { discard: true }
+        );
+
+        return decide(stillToCheck, {
+          earlier: { rateLimited: 0, unavailable: 0 },
+          sinceScheduled: DateTime.distance(attempt.dueAt, now),
+          startedAt: leftFirst.at,
+        });
+      }
 
       return Duration.isGreaterThan(
         DateTime.distance(attempt.dueAt, now),

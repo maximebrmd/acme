@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { ArticleId } from "#publishing/domain/article-id.ts";
 import type { Article } from "#publishing/domain/article.ts";
@@ -44,6 +44,13 @@ export class SitePublisher extends Context.Service<
     readonly resume: (
       request: SitePublishRequest
     ) => Effect.Effect<PublishResult, PublishFailure>;
+    /**
+     * Looks for the post a call made from `startedAt` on, never making
+     * one: it, none found, or the search failing.
+     */
+    readonly find: (
+      request: SitePublishRequest
+    ) => Effect.Effect<Option.Option<PublishResult>, PublishFailure>;
     /** Moves the article's post to the site's trash. */
     readonly remove: (
       article: Article,

@@ -259,6 +259,25 @@ layer(ConnectSiteTest)("connecting a website", (it) => {
     })
   );
 
+  it.effect("never moves a site's password from HTTPS to plain HTTP", () =>
+    Effect.gen(function* downgrade() {
+      const workspaceId = yield* freshWorkspace;
+      const sites = yield* ConnectSite;
+      const repository = yield* ChannelRepository;
+
+      const first = yield* sites.connect(manager(workspaceId), signIn());
+
+      const again = yield* sites.connect(manager(workspaceId), {
+        ...signIn(),
+        address: "garden.example/before-tls",
+      });
+
+      assert.strictEqual(again.id, first.id);
+      assert.strictEqual(again.accountId, root);
+      assert.lengthOf(yield* repository.list(workspaceId), 1);
+    })
+  );
+
   it.effect(
     "keeps a site on another host apart, whatever home page it names",
     () =>

@@ -13,6 +13,7 @@ CREATE TABLE "publishing"."article_calls" (
 CREATE TABLE "publishing"."article_files" (
 	"article_id" uuid,
 	"media_id" uuid,
+	"featured_refused" boolean DEFAULT false NOT NULL,
 	"site_media_id" bigint NOT NULL,
 	"source_url" text NOT NULL,
 	CONSTRAINT "article_files_pkey" PRIMARY KEY("article_id","media_id")

@@ -390,8 +390,13 @@ export const WordPressSitePublisherLive = Layer.effect(
     const fieldsOf = Effect.fn("WordPressArticles.fieldsOf")(function* fieldsOf(
       token: SiteToken,
       article: Article,
-      withStatus: boolean
+      // What the call is: the new post (its status sent, an empty term
+      // list left out), a change of a post just made (an empty list left
+      // out too), or a change on the site (the lists sent whole).
+      call: "create" | "newPostChange" | "change"
     ) {
+      const withStatus = call === "create";
+      const leavesEmptyOut = call !== "change";
       const { content } = article;
       const images = new Map<MediaAssetId, string>();
       let featured = 0;
@@ -421,7 +426,12 @@ export const WordPressSitePublisherLive = Layer.effect(
 
         images.set(mediaId, file.sourceUrl);
 
-        if (Option.contains(content.coverMediaId, mediaId)) {
+        // A file the site dropped as the featured image even sent again
+        // is not offered as one any more.
+        if (
+          Option.contains(content.coverMediaId, mediaId) &&
+          file.featuredRefused !== true
+        ) {
           featured = file.id;
         }
       }
@@ -449,10 +459,12 @@ export const WordPressSitePublisherLive = Layer.effect(
       // an empty list would take away; a change on the site sends them
       // whole, empty included.
       const categorised: PostFields =
-        withStatus && categories.length === 0 ? said : { ...said, categories };
+        leavesEmptyOut && categories.length === 0
+          ? said
+          : { ...said, categories };
 
       const fields: PostFields =
-        withStatus && tags.length === 0
+        leavesEmptyOut && tags.length === 0
           ? categorised
           : { ...categorised, tags };
 
@@ -577,7 +589,7 @@ export const WordPressSitePublisherLive = Layer.effect(
 
       return yield* credentials.withToken(article.channelId, (token) =>
         Effect.gen(function* publishing() {
-          const fields = yield* fieldsOf(token, article, true);
+          const fields = yield* fieldsOf(token, article, "create");
 
           // From here a run that stops looks for the post, never makes it.
           const committedAt = yield* request.committing.pipe(
@@ -618,13 +630,12 @@ export const WordPressSitePublisherLive = Layer.effect(
           ).pipe(Effect.option);
 
           if (Option.isSome(post) && lostCover(fields, post.value)) {
-            // Made without the cover the site lost: the files go once more,
-            // over the post just made, never as another. Should that fail,
-            // the post stands without it.
-            yield* journal.forgetFiles(article.id).pipe(Effect.ignore);
-            yield* updatePost(token, article, String(post.value.id)).pipe(
-              Effect.ignore
-            );
+            // Made without the cover the site lost: the cover goes once
+            // more, over the post just made, never as another. Should that
+            // fail, the post stands without it.
+            yield* coverAgain(token, article, String(post.value.id), {
+              newPost: true,
+            }).pipe(Effect.ignore);
           }
 
           return Option.isSome(post)
@@ -646,6 +657,18 @@ export const WordPressSitePublisherLive = Layer.effect(
 
       return yield* credentials.withToken(article.channelId, (token) =>
         lookedUp(token, article, request.startedAt, "interrupted")
+      );
+    });
+
+    const find = Effect.fn("WordPressArticles.find")(function* find(
+      request: SitePublishRequest
+    ) {
+      const article = yield* articleOf(request.articleId);
+
+      return yield* credentials.withToken(article.channelId, (token) =>
+        lookUp(token, article, request.startedAt).pipe(
+          Effect.map(Option.map(published))
+        )
       );
     });
 
@@ -686,43 +709,82 @@ export const WordPressSitePublisherLive = Layer.effect(
       );
     });
 
-    // Sends what the article says over its post. A featured image the
-    // site's library lost, as when its administrator deleted it, comes
-    // back as 0: the article's files are sent once more.
+    // Sends what the article says over its post, and what the site made
+    // of its featured image.
+    const changePost = (
+      token: SiteToken,
+      article: Article,
+      platformPostId: string,
+      call: "newPostChange" | "change"
+    ) =>
+      fieldsOf(token, article, call).pipe(
+        Effect.flatMap((fields) =>
+          execute(
+            api,
+            signed(
+              token,
+              HttpClientRequest.post(
+                postRoute(token, platformPostId, true)
+              ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
+            )
+          ).pipe(
+            Effect.flatMap(sentJson(PostSchema, [200])),
+            Effect.map((post) => ({ fields, post }))
+          )
+        )
+      );
+
+    // A featured image the site's library lost, as when its administrator
+    // deleted it, comes back as 0: the cover alone is sent once more, and a
+    // site that drops it again is not offered it any more.
+    const coverAgain = Effect.fn("WordPressArticles.coverAgain")(
+      function* coverAgain(
+        token: SiteToken,
+        article: Article,
+        platformPostId: string,
+        { newPost }: { readonly newPost: boolean }
+      ) {
+        const cover = Option.getOrUndefined(article.content.coverMediaId);
+
+        if (cover === undefined) {
+          return;
+        }
+
+        yield* journal
+          .forgetFile(article.id, cover)
+          .pipe(Effect.mapError(() => new PlatformUnavailable()));
+
+        const again = yield* changePost(
+          token,
+          article,
+          platformPostId,
+          newPost ? "newPostChange" : "change"
+        );
+
+        if (lostCover(again.fields, again.post)) {
+          yield* journal
+            .featuredRefused(article.id, cover)
+            .pipe(Effect.mapError(() => new PlatformUnavailable()));
+        }
+      }
+    );
+
     const updatePost = Effect.fn("WordPressArticles.updatePost")(
       function* updatePost(
         token: SiteToken,
         article: Article,
         platformPostId: string
       ) {
-        const send = fieldsOf(token, article, false).pipe(
-          Effect.flatMap((fields) =>
-            execute(
-              api,
-              signed(
-                token,
-                HttpClientRequest.post(
-                  postRoute(token, platformPostId, true)
-                ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
-              )
-            ).pipe(
-              Effect.flatMap(sentJson(PostSchema, [200])),
-              Effect.map((post) => ({ fields, post }))
-            )
-          )
+        const first = yield* changePost(
+          token,
+          article,
+          platformPostId,
+          "change"
         );
 
-        const first = yield* send;
-
-        if (!lostCover(first.fields, first.post)) {
-          return first.post;
+        if (lostCover(first.fields, first.post)) {
+          yield* coverAgain(token, article, platformPostId, { newPost: false });
         }
-
-        yield* journal
-          .forgetFiles(article.id)
-          .pipe(Effect.mapError(() => new PlatformUnavailable()));
-
-        return (yield* send).post;
       }
     );
 
@@ -739,6 +801,7 @@ export const WordPressSitePublisherLive = Layer.effect(
     });
 
     return SitePublisher.of({
+      find,
       publish,
       remove,
       resume,

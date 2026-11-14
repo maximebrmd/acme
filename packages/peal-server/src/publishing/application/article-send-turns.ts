@@ -9,9 +9,10 @@ import type { ChannelId } from "#shared/domain/ids.ts";
  * an attempt whose answer was lost looks for its post among the site's,
  * and would take another article's for its own were that one's attempt
  * still on its way. Each attempt records the post it made before its turn
- * ends. A turn is never waited for, since an attempt's uploads may keep it
- * many minutes: `inTurn` answers none when it is taken, or when the
- * process holds as many as it may, and the attempt is made again later.
+ * ends. `inTurn` never waits: it answers none when the turn is taken,
+ * when the process holds as many as it may, or when the database cannot
+ * be asked, and the attempt asks again a few seconds later, holding
+ * nothing meanwhile (`articleAttemptRun`).
  */
 export class ArticleSendTurns extends Context.Service<
   ArticleSendTurns,

@@ -82,6 +82,11 @@ export interface FakeWordPressOptions {
    * encoded, and answers it encoded.
    */
   readonly searchesDisplayedNames?: boolean;
+  /**
+   * Whether the site drops every featured image, as one whose files it
+   * does not treat as images: it answers `featured_media` 0.
+   */
+  readonly dropsFeatured?: boolean;
   /** Whether the site ignores `modified_after`, as WordPress before 5.7. */
   readonly beforeModifiedAfter?: boolean;
 }
@@ -242,7 +247,10 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
 
       // A featured image the site's library has, or none.
       const knownMedia = (id: number | undefined) =>
-        id === undefined || id === 0 || files.some((file) => file.id === id);
+        id === undefined ||
+        id === 0 ||
+        (options.dropsFeatured !== true &&
+          files.some((file) => file.id === id));
 
       const rootUrl = () =>
         pretty ? `${origin}/wp-json/` : `${origin}/?rest_route=/`;

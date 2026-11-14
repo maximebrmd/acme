@@ -1,5 +1,7 @@
 import { Effect, Option, Schedule, Schema, Semaphore } from "effect";
+import type { Scope } from "effect";
 import { SqlClient } from "effect/sql";
+import type { SqlConnection } from "effect/sql";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 
@@ -54,20 +56,37 @@ export type AdvisoryTryLock = <A, E, R>(
  *   and tries again later.
  */
 export const advisoryLocks = (namespace: string, heldAtOnce: number) =>
-  Effect.gen(function* advisoryLocksOf() {
-    const sql = yield* SqlClient.SqlClient;
-    const turns = yield* Semaphore.make(heldAtOnce);
+  SqlClient.SqlClient.pipe(
+    Effect.flatMap((sql) =>
+      advisoryLocksOver(sql.reserve, namespace, heldAtOnce)
+    )
+  );
 
-    // Runs `effect` once the lock is taken, `tries` times tried; none when
-    // it never was.
-    const holding = <A, E, R>(
-      key: string,
-      effect: Effect.Effect<A, E, R>,
-      tries: number
-    ) =>
-      Effect.scoped(
-        Effect.gen(function* locked() {
-          const connection = yield* sql.reserve.pipe(
+/**
+ * `advisoryLocks` over the connections `reserve` gives. `tryLock` answers
+ * none when no lock can be asked for, the database failing included: work
+ * that waits for its turn keeps waiting through an outage.
+ */
+export const advisoryLocksOver = <E>(
+  reserve: Effect.Effect<SqlConnection.Connection, E, Scope.Scope>,
+  namespace: string,
+  heldAtOnce: number
+) => {
+  // Runs `effect` once the lock is taken, `tries` times tried; none when
+  // it never was. `unavailable` is what the database failing to take it
+  // comes to.
+  const holding = <A, E2, R>(
+    key: string,
+    effect: Effect.Effect<A, E2, R>,
+    tries: number,
+    unavailable: (
+      failed: DatabaseError
+    ) => Effect.Effect<boolean, DatabaseError>
+  ) =>
+    Effect.scoped(
+      Effect.gen(function* locked() {
+        const taken = yield* Effect.gen(function* taking() {
+          const connection = yield* reserve.pipe(
             Effect.mapError((cause) => new DatabaseError({ cause }))
           );
 
@@ -88,23 +107,26 @@ export const advisoryLocks = (namespace: string, heldAtOnce: number) =>
             )
           );
 
-          const acquired =
-            tries <= 1
-              ? yield* once
-              : yield* once.pipe(
-                  Effect.repeat({
-                    schedule: waitSchedule,
-                    times: tries - 1,
-                    until: (held) => held,
-                  })
-                );
+          return tries <= 1
+            ? yield* once
+            : yield* once.pipe(
+                Effect.repeat({
+                  schedule: waitSchedule,
+                  times: tries - 1,
+                  until: (held) => held,
+                })
+              );
+        }).pipe(Effect.catch(unavailable));
 
-          return acquired ? Option.some(yield* effect) : Option.none<A>();
-        })
-      );
+        return taken ? Option.some(yield* effect) : Option.none<A>();
+      })
+    );
+
+  return Effect.gen(function* advisoryLocksOf() {
+    const turns = yield* Semaphore.make(heldAtOnce);
 
     const withLock: AdvisoryLock = (key, effect) =>
-      holding(key, effect, waitAttempts + 1).pipe(
+      holding(key, effect, waitAttempts + 1, Effect.fail).pipe(
         Effect.flatMap(
           Option.match({
             onNone: () =>
@@ -120,10 +142,11 @@ export const advisoryLocks = (namespace: string, heldAtOnce: number) =>
       );
 
     const tryLock: AdvisoryTryLock = (key, effect) =>
-      holding(key, effect, 1).pipe(
+      holding(key, effect, 1, () => Effect.succeed(false)).pipe(
         Semaphore.withPermitsIfAvailable(turns, 1),
         Effect.map(Option.flatten)
       );
 
     return { tryLock, withLock };
   });
+};

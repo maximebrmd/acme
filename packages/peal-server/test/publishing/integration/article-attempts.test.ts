@@ -421,52 +421,77 @@ describe("an attempt at sending an article", () => {
 
           assert.strictEqual(madePosts(site), 0);
           assert.lengthOf(site.posts(), 1);
+
+          // Attempt 1's call ended with what the search found.
+          assert.strictEqual(
+            Option.getOrUndefined(
+              yield* calls.found({
+                articleId: draft.id,
+                attempt: 1,
+                round: draft.round,
+              })
+            )?._tag,
+            "completed"
+          );
         })
       )
   );
 
-  it.effect("sends articles of eight sites due at once within seconds", () =>
-    onArticles(
-      Effect.gen(function* eightSites() {
-        const workspaceId = yield* freshWorkspace;
-        const articles = yield* Articles;
-        const actor = writer(workspaceId);
-        const sharding = yield* Sharding.Sharding;
-        const sent: ArticleId[] = [];
+  it.effect(
+    "sends articles of eight sites due at once, each by its first attempt",
+    () =>
+      onArticles(
+        Effect.gen(function* eightSites() {
+          const workspaceId = yield* freshWorkspace;
+          const articles = yield* Articles;
+          const actor = writer(workspaceId);
+          const sent: ArticleId[] = [];
 
-        for (let index = 0; index < 8; index += 1) {
-          const site = yield* fakeWordPress();
-          const channel = yield* siteChannel(workspaceId, site);
+          for (let index = 0; index < 8; index += 1) {
+            const site = yield* fakeWordPress();
+            const channel = yield* siteChannel(workspaceId, site);
 
-          const article = yield* articles.create(
-            actor,
-            { channelId: channel.id, content: content() },
-            now
+            const article = yield* articles.create(
+              actor,
+              { channelId: channel.id, content: content() },
+              now
+            );
+
+            sent.push(article.id);
+          }
+
+          // However slow the machine, on the virtual clock alone.
+          const sharding = yield* Sharding.Sharding;
+          const states = Effect.all(sent.map((id) => stateOf(id)));
+
+          for (
+            let round = 0;
+            round < 600 &&
+            !(yield* states).every((state) => state === "published");
+            round += 1
+          ) {
+            yield* sharding.pollStorage;
+            yield* TestClock.adjust(Duration.seconds(1));
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+          }
+
+          assert.deepStrictEqual(
+            yield* states,
+            sent.map(() => "published")
           );
 
-          sent.push(article.id);
-        }
+          // Each by its first attempt: none waited a minute for another.
+          const sql = yield* SqlClient.SqlClient;
 
-        const states = Effect.all(sent.map((id) => stateOf(id)));
-        let seconds = 0;
+          const later = yield* sql<{ readonly count: number }>`
+          SELECT count(*)::int AS count
+          FROM publishing.article_calls
+          WHERE article_id IN ${sql.in(sent)} AND attempt > 1`;
 
-        while (
-          !(yield* states).every((state) => state === "published") &&
-          seconds < 120
-        ) {
-          yield* sharding.pollStorage;
-          yield* TestClock.adjust(Duration.seconds(1));
-          yield* TestClock.withLive(Effect.sleep(Duration.millis(20)));
-          seconds += 1;
-        }
-
-        assert.deepStrictEqual(
-          yield* states,
-          sent.map(() => "published")
-        );
-        assert.isBelow(seconds, 30);
-      })
-    )
+          assert.strictEqual(later[0]?.count, 0);
+          assert.lengthOf(sent, 8);
+        })
+      )
   );
 
   it.effect("holds no more than two of the process's turns at once", () =>
@@ -616,6 +641,301 @@ describe("an attempt at sending an article", () => {
         );
 
         assert.lengthOf(site.posts(), 1);
+      })
+    )
+  );
+
+  it.effect(
+    "leaves a call that may be on the site to check, not failed, when no turn comes for a day",
+    () =>
+      onArticles(
+        Effect.gen(function* deadline() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const articles = yield* Articles;
+          const actor = writer(workspaceId);
+          const calls = yield* ArticleJournal;
+          const turns = yield* ArticleSendTurns;
+          const sharding = yield* Sharding.Sharding;
+
+          const draft = yield* articles.create(
+            actor,
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          // Attempt 1's call left, then the server stopped.
+          const key = `${draft.id}:synthetic:1`;
+          const startedAt = yield* DateTime.now;
+
+          yield* calls.begin({
+            articleId: draft.id,
+            attempt: 1,
+            idempotencyKey: key,
+            round: draft.round,
+            startedAt,
+          });
+          yield* calls.committing(key, startedAt);
+          site.addPost({ title: "Spring sowing" });
+
+          const held = yield* Deferred.make<boolean>();
+          const release = yield* Deferred.make<boolean>();
+
+          yield* turns
+            .inTurn(
+              channel.id,
+              Deferred.succeed(held, true).pipe(
+                Effect.andThen(Deferred.await(release))
+              )
+            )
+            .pipe(Effect.forkScoped);
+
+          yield* Deferred.await(held);
+
+          yield* articles.schedule(actor, draft.id, {
+            at: Option.none(),
+            timeZone: zone,
+          });
+
+          // A day and more without the site's turn.
+          for (
+            let round = 0;
+            round < 1000 &&
+            ["publishing", "scheduled"].includes(yield* stateOf(draft.id));
+            round += 1
+          ) {
+            yield* sharding.pollStorage;
+            yield* TestClock.adjust(Duration.minutes(15));
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+          }
+
+          assert.strictEqual(yield* stateOf(draft.id), "unconfirmed");
+
+          yield* Deferred.succeed(release, true);
+
+          // Sent again, it finds the post the call made, and makes none.
+          yield* articles.retry(actor, draft.id);
+
+          yield* eventually(
+            "the article is published",
+            stateOf(draft.id).pipe(Effect.map((state) => state === "published"))
+          );
+
+          assert.strictEqual(madePosts(site), 0);
+          assert.lengthOf(site.posts(), 1);
+        })
+      )
+  );
+
+  it.effect("leaves a call to check when its search cannot even start", () =>
+    onArticles(
+      Effect.gen(function* searchRefused() {
+        const site = yield* fakeWordPress();
+        const workspaceId = yield* freshWorkspace;
+
+        // Its password was revoked since: the search is refused.
+        const channel = yield* siteChannel(
+          workspaceId,
+          site,
+          "synthetic revoked password"
+        );
+
+        const articles = yield* Articles;
+        const actor = writer(workspaceId);
+        const calls = yield* ArticleJournal;
+
+        const draft = yield* articles.create(
+          actor,
+          { channelId: channel.id, content: content() },
+          Option.none()
+        );
+
+        const key = `${draft.id}:synthetic:1`;
+        const startedAt = yield* DateTime.now;
+
+        yield* calls.begin({
+          articleId: draft.id,
+          attempt: 1,
+          idempotencyKey: key,
+          round: draft.round,
+          startedAt,
+        });
+        yield* calls.committing(key, startedAt);
+
+        yield* articles.schedule(actor, draft.id, {
+          at: Option.none(),
+          timeZone: zone,
+        });
+
+        yield* eventually(
+          "the article ended",
+          stateOf(draft.id).pipe(
+            Effect.map(
+              (state) => state !== "scheduled" && state !== "publishing"
+            )
+          )
+        );
+
+        assert.strictEqual(yield* stateOf(draft.id), "unconfirmed");
+        assert.strictEqual(madePosts(site), 0);
+      })
+    )
+  );
+
+  it.effect(
+    "finds an article's post when it is sent again after it was to check",
+    () =>
+      onArticles(
+        Effect.gen(function* sentAgain() {
+          let searchDown = true;
+
+          // The post is made, its answer lost, and the search fails: to
+          // check.
+          const { actor, sent, site } = yield* sentTo({
+            drop: (request) =>
+              request.route === "/wp/v2/posts" &&
+              request.method === "POST" &&
+              request.query.get("search") === null,
+            intercept: (request) =>
+              searchDown &&
+              request.route === "/wp/v2/posts" &&
+              request.method === "GET"
+                ? { body: "Service Unavailable", status: 503 }
+                : undefined,
+          });
+
+          assert.strictEqual(sent.state._tag, "unconfirmed");
+          assert.lengthOf(site.posts(), 1);
+
+          searchDown = false;
+
+          yield* (yield* Articles).retry(actor, sent.id);
+
+          yield* eventually(
+            "the article is published",
+            stateOf(sent.id).pipe(Effect.map((state) => state === "published"))
+          );
+
+          assert.lengthOf(site.posts(), 1);
+        })
+      )
+  );
+
+  it.effect(
+    "forgets an earlier attempt's call that never left, and sends afresh",
+    () =>
+      onArticles(
+        Effect.gen(function* dropped() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const articles = yield* Articles;
+          const actor = writer(workspaceId);
+          const calls = yield* ArticleJournal;
+          const turns = yield* ArticleSendTurns;
+          const sharding = yield* Sharding.Sharding;
+
+          const draft = yield* articles.create(
+            actor,
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          // Attempt 1 began, and stopped before its post's call.
+          yield* calls.begin({
+            articleId: draft.id,
+            attempt: 1,
+            idempotencyKey: `${draft.id}:synthetic:1`,
+            round: draft.round,
+            startedAt: yield* DateTime.now,
+          });
+
+          const held = yield* Deferred.make<boolean>();
+          const release = yield* Deferred.make<boolean>();
+
+          yield* turns
+            .inTurn(
+              channel.id,
+              Deferred.succeed(held, true).pipe(
+                Effect.andThen(Deferred.await(release))
+              )
+            )
+            .pipe(Effect.forkScoped);
+
+          yield* Deferred.await(held);
+
+          yield* articles.schedule(actor, draft.id, {
+            at: Option.none(),
+            timeZone: zone,
+          });
+
+          // Past attempt 1's patience: attempt 2 takes the round up.
+          for (let round = 0; round < 200; round += 1) {
+            yield* sharding.pollStorage;
+            yield* TestClock.adjust(Duration.seconds(10));
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+          }
+
+          yield* Deferred.succeed(release, true);
+
+          yield* eventuallyLater(
+            "the article is published",
+            stateOf(draft.id).pipe(Effect.map((state) => state === "published"))
+          );
+
+          assert.strictEqual(madePosts(site), 1);
+          assert.isTrue(
+            Option.isNone(
+              yield* calls.found({
+                articleId: draft.id,
+                attempt: 1,
+                round: draft.round,
+              })
+            )
+          );
+        })
+      )
+  );
+
+  it.effect("leaves an earlier round's calls to that round", () =>
+    onArticles(
+      Effect.gen(function* earlierRound() {
+        const { actor, sent } = yield* sentTo(
+          {},
+          {},
+          "synthetic revoked password"
+        );
+
+        const calls = yield* ArticleJournal;
+
+        assert.strictEqual(sent.state._tag, "failed");
+
+        // A call of round 0 that began and never left.
+        const later = { articleId: sent.id, attempt: 9, round: sent.round };
+
+        yield* calls.begin({
+          ...later,
+          idempotencyKey: `${sent.id}:synthetic:9`,
+          startedAt: yield* DateTime.now,
+        });
+
+        // Sent again, in round 1: round 0's call is not its to take up.
+        yield* (yield* Articles).retry(actor, sent.id);
+
+        yield* eventually(
+          "the article ended",
+          stateOf(sent.id).pipe(
+            Effect.map(
+              (state) => state !== "scheduled" && state !== "publishing"
+            )
+          )
+        );
+
+        assert.strictEqual(
+          Option.getOrUndefined(yield* calls.found(later))?._tag,
+          "prepared"
+        );
       })
     )
   );

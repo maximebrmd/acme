@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { ArticleJournal } from "#publishing/application/article-journal.ts";
@@ -345,7 +355,11 @@ const callStartOf = (row: CallRow) =>
       (row.finishedAt === null || row.outcome === null) &&
       row.committedAt === null
     ) {
-      const prepared: ArticleCallStart = { _tag: "prepared", startedAt };
+      const prepared: ArticleCallStart = {
+        _tag: "prepared",
+        idempotencyKey: row.idempotencyKey,
+        startedAt,
+      };
 
       return prepared;
     }
@@ -354,6 +368,7 @@ const callStartOf = (row: CallRow) =>
       const inFlight: ArticleCallStart = {
         _tag: "inFlight",
         committedAt: utc(row.committedAt ?? row.startedAt),
+        idempotencyKey: row.idempotencyKey,
         startedAt,
       };
 
@@ -414,13 +429,39 @@ export const DrizzleArticleJournal = Layer.effect(
           ? yield* Effect.die("A journal row vanished after a conflict")
           : yield* callStartOf(row);
       }),
+      toCheckBefore: (call) =>
+        db
+          .select({ committedAt: articleCalls.committedAt })
+          .from(articleCalls)
+          .where(
+            and(
+              eq(articleCalls.articleId, call.articleId),
+              lt(articleCalls.round, call.round),
+              isNotNull(articleCalls.committedAt),
+              or(
+                isNull(articleCalls.finishedAt),
+                sql`${articleCalls.outcome}->>'_tag' = 'unconfirmed'`
+              )
+            )
+          )
+          .orderBy(desc(articleCalls.round), desc(articleCalls.attempt))
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) =>
+              Option.fromNullishOr(row?.committedAt).pipe(Option.map(utc))
+            )
+          ),
       drop: (idempotencyKey) =>
         db
           .delete(articleCalls)
           .where(
             and(
               eq(articleCalls.idempotencyKey, idempotencyKey),
-              isNull(articleCalls.finishedAt)
+              isNull(articleCalls.finishedAt),
+              // Only a call that never left: one that may have is looked
+              // for, never forgotten.
+              isNull(articleCalls.committedAt)
             )
           )
           .pipe(Effect.mapError(failed), Effect.asVoid),
@@ -467,12 +508,26 @@ export const DrizzleArticleJournal = Layer.effect(
                 : callStartOf(row).pipe(Effect.map(Option.some))
             )
           ),
-      committing: (idempotencyKey, at) =>
-        db
-          .update(articleCalls)
-          .set({ committedAt: date(at) })
-          .where(eq(articleCalls.idempotencyKey, idempotencyKey))
-          .pipe(Effect.mapError(failed), Effect.asVoid),
+      // A call whose row is gone, as when another took its round up, is
+      // not made: the mark fails, and with it the call.
+      committing: Effect.fn("ArticleJournal.committing")(
+        function* committing(idempotencyKey, at) {
+          const marked = yield* db
+            .update(articleCalls)
+            .set({ committedAt: date(at) })
+            .where(eq(articleCalls.idempotencyKey, idempotencyKey))
+            .returning({ key: articleCalls.idempotencyKey })
+            .pipe(Effect.mapError(failed));
+
+          yield* marked.length === 0
+            ? Effect.fail(
+                new DatabaseError({
+                  cause: new Error("The call's journal row is gone"),
+                })
+              )
+            : Effect.void;
+        }
+      ),
       fileSent: (articleId, mediaId, file) =>
         db
           .insert(articleFiles)
@@ -487,10 +542,26 @@ export const DrizzleArticleJournal = Layer.effect(
             target: [articleFiles.articleId, articleFiles.mediaId],
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
-      forgetFiles: (articleId) =>
+      featuredRefused: (articleId, mediaId) =>
+        db
+          .update(articleFiles)
+          .set({ featuredRefused: true })
+          .where(
+            and(
+              eq(articleFiles.articleId, articleId),
+              eq(articleFiles.mediaId, mediaId)
+            )
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      forgetFile: (articleId, mediaId) =>
         db
           .delete(articleFiles)
-          .where(eq(articleFiles.articleId, articleId))
+          .where(
+            and(
+              eq(articleFiles.articleId, articleId),
+              eq(articleFiles.mediaId, mediaId)
+            )
+          )
           .pipe(Effect.mapError(failed), Effect.asVoid),
       filesSent: (articleId) =>
         db
@@ -507,7 +578,11 @@ export const DrizzleArticleJournal = Layer.effect(
                     (mediaId) =>
                       [
                         mediaId,
-                        { id: row.siteMediaId, sourceUrl: row.sourceUrl },
+                        {
+                          featuredRefused: row.featuredRefused,
+                          id: row.siteMediaId,
+                          sourceUrl: row.sourceUrl,
+                        },
                       ] as const
                   )
                 )

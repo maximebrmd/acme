@@ -267,7 +267,18 @@ export class ConnectSite extends Context.Service<
         );
 
         if (moved !== undefined) {
-          return yield* reconnectTo(moved, tokens, connected, site.accountId);
+          // Never from HTTPS to plain HTTP: the password would then go in
+          // clear. The channel keeps its HTTPS root.
+          const downgraded =
+            moved.accountId.startsWith("https:") &&
+            !site.accountId.startsWith("https:");
+
+          return yield* reconnectTo(
+            moved,
+            tokens,
+            connected,
+            downgraded ? moved.accountId : site.accountId
+          );
         }
 
         return yield* add(actor, signIn, site, tokens).pipe(

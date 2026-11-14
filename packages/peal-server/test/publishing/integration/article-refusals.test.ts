@@ -432,4 +432,31 @@ describe("a file of the library an article shows", () => {
         })
       )
   );
+
+  it.effect(
+    "does not count an article on its site among those that lose it",
+    () =>
+      onArticles(
+        Effect.gen(function* onSite() {
+          const { sent } = yield* sentTo();
+
+          const inPosts = yield* MediaInPosts.pipe(
+            Effect.provide(
+              MediaInPosts.layer.pipe(
+                Layer.provide(
+                  Layer.merge(DrizzlePostRepository, DrizzleArticleStore)
+                )
+              )
+            )
+          );
+
+          assert.strictEqual(sent.state._tag, "published");
+          assert.deepStrictEqual(
+            (yield* inPosts.usage(sent.workspaceId, coverImage.media.mediaId))
+              .articles,
+            { drafts: [], scheduled: [] }
+          );
+        })
+      )
+  );
 });

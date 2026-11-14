@@ -730,4 +730,143 @@ describe("an article", () => {
         })
       )
   );
+
+  it.effect(
+    "sends a new post's lost cover again over it, its default category kept",
+    () =>
+      onArticles(
+        Effect.gen(function* newPostCover() {
+          let refused = 0;
+
+          // The first post is refused, after its files went.
+          const { actor, sent, site } = yield* sentTo(
+            {
+              intercept: (request) => {
+                const refuse =
+                  refused === 0 &&
+                  request.route === "/wp/v2/posts" &&
+                  request.method === "POST" &&
+                  request.query.get("search") === null;
+
+                refused += refuse ? 1 : 0;
+
+                return refuse
+                  ? {
+                      body: {
+                        code: "rest_cannot_create",
+                        data: { status: 400 },
+                        message: "Sorry, you are not allowed to do that.",
+                      },
+                      status: 400,
+                    }
+                  : undefined;
+              },
+            },
+            { categories: [], tags: [] }
+          );
+
+          const cover = site.media()[0]?.id ?? 0;
+
+          // The site's administrator deletes the cover meanwhile.
+          site.deleteMedia(cover);
+
+          yield* (yield* Articles).retry(actor, sent.id);
+
+          yield* eventually(
+            "the article is published",
+            ArticleStore.use((store) => store.get(sent.id)).pipe(
+              Effect.map((found) =>
+                Option.exists(found, ({ state }) => state._tag === "published")
+              )
+            )
+          );
+
+          const [post] = site.posts();
+
+          assert.lengthOf(site.posts(), 1);
+          assert.notStrictEqual(post?.featured_media, 0);
+          assert.isFalse(
+            site
+              .requests()
+              .some(
+                ({ body, method, route }) =>
+                  /^\/wp\/v2\/posts\/\d+$/u.test(route) &&
+                  method === "POST" &&
+                  body.toString().includes('"categories"')
+              )
+          );
+          // Only the cover went again, not the body's image.
+          assert.lengthOf(site.media(), 2);
+        })
+      )
+  );
+
+  it.effect(
+    "sends a cover the site keeps dropping once more, then no more",
+    () =>
+      onArticles(
+        Effect.gen(function* dropped() {
+          const { actor, sent, site } = yield* sentTo({ dropsFeatured: true });
+          const articles = yield* Articles;
+          const before = site.media().length;
+
+          yield* articles.updateOnSite(
+            actor,
+            sent.id,
+            content({ title: "Spring sowing, again" })
+          );
+
+          const afterFirst = site.media().length;
+
+          yield* articles.updateOnSite(
+            actor,
+            sent.id,
+            content({ title: "Spring sowing, once more" })
+          );
+
+          // The new post sent it once more; the updates send nothing.
+          assert.isAtMost(afterFirst - before, 1);
+          assert.strictEqual(site.media().length, afterFirst);
+        })
+      )
+  );
+
+  it.effect(
+    "drops only a call that never left, and marks none that is gone",
+    () =>
+      onArticles(
+        Effect.gen(function* guarded() {
+          const site = yield* fakeWordPress();
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* siteChannel(workspaceId, site);
+          const calls = yield* ArticleJournal;
+
+          const article = yield* (yield* Articles).create(
+            writer(workspaceId),
+            { channelId: channel.id, content: content() },
+            Option.none()
+          );
+
+          const at = yield* DateTime.now;
+          const key = `${article.id}:synthetic:1`;
+          const call = { articleId: article.id, attempt: 1, round: 0 };
+
+          yield* calls.begin({ ...call, idempotencyKey: key, startedAt: at });
+          yield* calls.committing(key, at);
+          yield* calls.drop(key);
+
+          // Its call may have left: kept.
+          assert.strictEqual(
+            Option.getOrUndefined(yield* calls.found(call))?._tag,
+            "inFlight"
+          );
+
+          const gone = yield* calls
+            .committing(`${article.id}:synthetic:gone`, at)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(gone._tag, "DatabaseError");
+        })
+      )
+  );
 });

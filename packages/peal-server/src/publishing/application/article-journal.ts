@@ -29,6 +29,8 @@ export interface UnfinishedCall {
 export interface SiteFile {
   readonly id: number;
   readonly sourceUrl: string;
+  /** The site dropped it as the featured image, even sent again. */
+  readonly featuredRefused?: boolean;
 }
 
 /** What the journal knew of a call when it was about to be made. */
@@ -37,12 +39,18 @@ export type ArticleCallStart =
   | { readonly _tag: "started" }
   // A run began it and stopped before the call that makes the post: it
   // never reached the site, and is made again.
-  | { readonly _tag: "prepared"; readonly startedAt: DateTime.Utc }
+  | {
+      readonly _tag: "prepared";
+      /** The key the row was written under, which its marks name. */
+      readonly idempotencyKey: string;
+      readonly startedAt: DateTime.Utc;
+    }
   // A run made the call that makes the post, and never wrote how it
   // ended: it may have gone out, from `committedAt` on.
   | {
       readonly _tag: "inFlight";
       readonly committedAt: DateTime.Utc;
+      readonly idempotencyKey: string;
       readonly startedAt: DateTime.Utc;
     }
   // A run made it and wrote how it ended.
@@ -74,6 +82,15 @@ export class ArticleJournal extends Context.Service<
       readonly attempt: number;
       readonly round: number;
     }) => Effect.Effect<readonly UnfinishedCall[], DatabaseError>;
+    /**
+     * When the latest call of an earlier round that may have reached the
+     * site, and was never found there, left: what "Send again" looks for
+     * before it sends.
+     */
+    readonly toCheckBefore: (call: {
+      readonly articleId: ArticleId;
+      readonly round: number;
+    }) => Effect.Effect<Option.Option<DateTime.Utc>, DatabaseError>;
     /** Forgets a call that never reached the site. */
     readonly drop: (
       idempotencyKey: string
@@ -98,11 +115,20 @@ export class ArticleJournal extends Context.Service<
       articleId: ArticleId
     ) => Effect.Effect<ReadonlyMap<MediaAssetId, SiteFile>, DatabaseError>;
     /**
-     * Forgets the files the article sent its site, which the site no
-     * longer has: they are sent again.
+     * Forgets a file the article sent its site, which the site no longer
+     * has: it is sent again.
      */
-    readonly forgetFiles: (
-      articleId: ArticleId
+    readonly forgetFile: (
+      articleId: ArticleId,
+      mediaId: MediaAssetId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Records that the site drops the file as the featured image, even
+     * sent again: it is not offered as one any more.
+     */
+    readonly featuredRefused: (
+      articleId: ArticleId,
+      mediaId: MediaAssetId
     ) => Effect.Effect<void, DatabaseError>;
     /** Records a file the site took for the article. */
     readonly fileSent: (

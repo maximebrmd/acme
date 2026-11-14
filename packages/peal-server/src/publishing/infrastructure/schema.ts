@@ -825,6 +825,9 @@ export const articleFiles = publishing.table(
       .notNull()
       .references(() => articles.id, { onDelete: "cascade" }),
     mediaId: uuid("media_id").notNull(),
+    // The site dropped it as the post's featured image, even sent again:
+    // it is not offered as one any more.
+    featuredRefused: boolean("featured_refused").notNull().default(false),
     siteMediaId: bigint("site_media_id", { mode: "number" }).notNull(),
     sourceUrl: text("source_url").notNull(),
   },
