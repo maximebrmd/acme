@@ -20,6 +20,8 @@ import { FollowUpRuleIdSchema } from "./follow-up-rule-id.ts";
 import type { FollowUpRuleId } from "./follow-up-rule-id.ts";
 import { PostOriginSchema } from "./post-origin.ts";
 import type { PostOrigin } from "./post-origin.ts";
+import { isSettled } from "./post-target.ts";
+import type { PostTarget } from "./post-target.ts";
 
 // The limits below are the owner's to change: each is written once here,
 // and the contract's copy is kept equal by a test.
@@ -303,6 +305,24 @@ export const withoutStarter = (rule: FollowUpRule): FollowUpRule =>
  */
 export const mayAct = (rule: FollowUpRule, starterHeld: boolean): boolean =>
   rule.approval._tag === "approved" || !starterHeld;
+
+/**
+ * Whether nothing of the target can still be followed up by a post's rule
+ * at `now`: out, cancelled, or a failure (or an outcome never confirmed)
+ * older than `followUpWindow`, past which a member sending it again is not
+ * waited for. A younger one may still be sent again, and go out.
+ */
+export const isDoneFor = (target: PostTarget, now: DateTime.Utc): boolean => {
+  const { status } = target;
+
+  if (status._tag === "failed" || status._tag === "unconfirmed") {
+    const since = status._tag === "failed" ? status.failedAt : status.attemptedAt;
+
+    return !DateTime.isLessThan(now, DateTime.addDuration(since, followUpWindow));
+  }
+
+  return isSettled(target);
+};
 
 /** The instant until which a rule acts on a post live since `publishedAt`. */
 export const actsUntil = (publishedAt: DateTime.Utc): DateTime.Utc =>

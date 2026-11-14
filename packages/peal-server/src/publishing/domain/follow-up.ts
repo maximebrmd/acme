@@ -56,13 +56,14 @@ export type FollowUpExpiryReason = typeof FollowUpExpiryReasonSchema.Type;
  * (`ruleEnded`), its post is no longer on the platform or no longer
  * published there (`postGone`), or its channel can no longer carry it
  * (`unavailable`: disconnected, the permission withdrawn, the operator
- * turned it off).
+ * turned it off), or a change took its kind off the rule (`notAsked`).
  * Stored: add a member, never rename or remove one.
  */
 export const FollowUpCancelReasonSchema = Schema.Literals([
   "ruleEnded",
   "postGone",
   "unavailable",
+  "notAsked",
 ]);
 
 export type FollowUpCancelReason = typeof FollowUpCancelReasonSchema.Type;

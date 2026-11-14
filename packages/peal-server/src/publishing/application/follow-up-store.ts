@@ -158,15 +158,19 @@ export class FollowUpStore extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly FollowUp[], DatabaseError>;
     /**
-     * Post-scoped rules that are active or paused and have armed
-     * follow-ups, none of which is armed or on its way: `limit` at most.
+     * Post-scoped rules that are active or paused, none of whose
+     * follow-ups is armed, waiting or on its way, on a post with nothing
+     * left to publish: no target pending or publishing, nor failed or
+     * unconfirmed since `failedBefore` (it may still be sent again).
+     * `limit` at most.
      */
     readonly settledPostRules: (
+      failedBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly FollowUpRule[], DatabaseError>;
     /**
-     * Follow-ups waiting for their channel to be connected again, of
-     * rules that have not ended, with their rule, by id after `after`.
+     * Follow-ups waiting for their channel to be connected again, with
+     * their rule whatever its status, by id after `after`.
      */
     readonly waiting: (
       after: Option.Option<FollowUpId>,

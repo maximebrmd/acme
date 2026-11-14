@@ -779,7 +779,8 @@ export const followUpRules = publishing.table(
  * but for those given up (`cancelled`), so a post is never followed up
  * twice the same way. `status` is the
  * state's tag, `state` the domain's JSON of it (ids, counts, instants and
- * a platform's code, never text); `until` is an armed one's window,
+ * a platform's code, never text); `until` is an armed one's window
+ * (null for one waiting, whose window its state holds),
  * `triggered_at` when its threshold was reached, for the channel's day,
  * and `call_claimed_at` when a gate last claimed its call, which keeps it
  * from being handed over while the call runs.

@@ -363,6 +363,15 @@ describe("a follow-up", () => {
     ).toStrictEqual({ _tag: "armed", until: actsUntil(now) });
   });
 
+  it("is armed only from waiting, and only within its window", () => {
+    const waiting = waitFollowUp(arming(), now);
+
+    expect(Result.isFailure(grantFollowUp(armed(), later(1)))).toBeTruthy();
+    expect(
+      Result.isFailure(grantFollowUp(waiting, actsUntil(now)))
+    ).toBeTruthy();
+  });
+
   it("is given up with its rule, or expires with its window, while it waits for its channel", () => {
     const waiting = waitFollowUp(arming(), now);
 

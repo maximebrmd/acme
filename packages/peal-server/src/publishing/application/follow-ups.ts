@@ -16,6 +16,8 @@ import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   actsUntil,
   endFollowUpRule,
+  followUpWindow,
+  isDoneFor,
   mayAct,
   maxFollowUpsPerChannelDay,
 } from "#publishing/domain/follow-up-rule.ts";
@@ -40,7 +42,7 @@ import type {
   FollowUpKind,
 } from "#publishing/domain/follow-up.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
-import { isSettled, livePartsOf } from "#publishing/domain/post-target.ts";
+import { livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
@@ -111,8 +113,8 @@ export interface FollowUpRun {
   /** Channel-scoped rules that ended, their channel disconnected. */
   readonly channelGone: number;
   /**
-   * Kinds armed on posts already out, that their channel could not carry
-   * when they were armed: a repost once the account grants reposts.
+   * Follow-ups that waited for their channel to be connected again and
+   * were armed: a Bluesky repost once the account granted reposts.
    */
   readonly armed: number;
 }
@@ -214,6 +216,13 @@ export class FollowUps extends Context.Service<
      * how many.
      */
     readonly settleStranded: Effect.Effect<number, DatabaseError>;
+    /**
+     * Gives up what a rule armed or kept waiting and has not sent, of a
+     * kind it no longer asks (`notAsked`), once a change took it off.
+     */
+    readonly cancelUnasked: (
+      rule: FollowUpRule
+    ) => Effect.Effect<number, DatabaseError>;
     /** Gives up what a rule armed and has not sent: it ended. */
     readonly cancelArmed: (
       rule: FollowUpRule
@@ -364,6 +373,7 @@ export class FollowUps extends Context.Service<
             } satisfies ArmedPublished;
           }
 
+          const now = yield* DateTime.now;
           const targets = yield* posts.targets(rule.scope.postId);
 
           const armings = yield* Effect.forEach((target: PostTarget) =>
@@ -375,7 +385,7 @@ export class FollowUps extends Context.Service<
 
           return {
             armed,
-            settled: targets.every(isSettled),
+            settled: targets.every((target) => isDoneFor(target, now)),
             taken: wanted.length - armed.length,
           } satisfies ArmedPublished;
         }
@@ -390,6 +400,22 @@ export class FollowUps extends Context.Service<
           onFailure: () => Effect.succeed(false),
           onSuccess: (next) => store.advance(next, followUp),
         });
+
+      const cancelUnasked = Effect.fn("FollowUps.cancelUnasked")(
+        function* cancelUnasked(rule: FollowUpRule) {
+          const now = yield* DateTime.now;
+          const asked = new Set(kindsAsked(rule));
+          const armed = yield* store.armedOfRule(rule.id);
+
+          const done = yield* Effect.forEach((followUp: FollowUp) =>
+            asked.has(followUp.kind)
+              ? Effect.succeed(false)
+              : cancel(followUp, "notAsked", now)
+          )(armed);
+
+          return done.filter(Boolean).length;
+        }
+      );
 
       const cancelArmed = Effect.fn("FollowUps.cancelArmed")(
         function* cancelArmed(rule: FollowUpRule) {
@@ -588,7 +614,7 @@ export class FollowUps extends Context.Service<
 
         const targets = yield* posts.targets(locked.value.scope.postId);
 
-        if (!targets.every(isSettled)) {
+        if (!targets.every((target) => isDoneFor(target, now))) {
           return false;
         }
 
@@ -677,7 +703,22 @@ export class FollowUps extends Context.Service<
         waiting: ArmedFollowUp
       ) {
         const now = yield* DateTime.now;
-        const { followUp, rule } = waiting;
+        const { followUp } = waiting;
+
+        // Under the rule's lock, as a trigger is: a rule stopped or ended
+        // meanwhile gives up what waited for it.
+        const locked = yield* store.lockRule(
+          followUp.workspaceId,
+          followUp.ruleId
+        );
+
+        if (Option.isNone(locked) || !isOpen(locked.value)) {
+          return (yield* cancel(followUp, "ruleEnded", now))
+            ? ("cancelled" as const)
+            : ("left" as const);
+        }
+
+        const rule = locked.value;
 
         if (isPast(followUp, now)) {
           const expired = expireFollowUp(followUp, "notGranted", now);
@@ -703,7 +744,7 @@ export class FollowUps extends Context.Service<
       // Every follow-up waiting for its channel, a page at a time.
       const armMissing = Effect.gen(function* armMissing() {
         let after = Option.none<FollowUpId>();
-        const tally = { armed: 0, expired: 0 };
+        const tally = { armed: 0, cancelled: 0, expired: 0 };
 
         for (;;) {
           const page = yield* store.waiting(after, armedPageSize);
@@ -783,7 +824,10 @@ export class FollowUps extends Context.Service<
           }
         }
 
-        const settled = yield* store.settledPostRules(completedPerRun);
+        const settled = yield* store.settledPostRules(
+          DateTime.subtractDuration(yield* DateTime.now, followUpWindow),
+          completedPerRun
+        );
 
         for (const rule of settled) {
           if (yield* transaction(complete(rule))) {
@@ -796,6 +840,7 @@ export class FollowUps extends Context.Service<
         const waited = yield* armMissing;
 
         tally.armed = waited.armed;
+        tally.cancelled += waited.cancelled;
         tally.expired += waited.expired;
 
         for (const [outcome, count] of Object.entries(tally)) {
@@ -854,6 +899,7 @@ export class FollowUps extends Context.Service<
       return FollowUps.of({
         arm,
         armPublished,
+        cancelUnasked,
         cancelArmed,
         runDue,
         settleStranded,

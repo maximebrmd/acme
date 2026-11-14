@@ -194,8 +194,8 @@ export const DrizzleFollowUpStore = Layer.effect(
         )
         .pipe(Effect.mapError(failed), Effect.flatMap(firstOf(toRule)));
 
-    // The follow-ups in `status`, a page by id, each with its rule: those
-    // waiting, only of rules that have not ended.
+    // The follow-ups in `status`, a page by id, each with its rule,
+    // whatever the rule's status: the run ends those of rules that ended.
     const withRules = (
       status: "armed" | "waiting",
       after: Option.Option<FollowUp["id"]>,
@@ -208,9 +208,6 @@ export const DrizzleFollowUpStore = Layer.effect(
         .where(
           and(
             eq(followUps.status, status),
-            ...(status === "waiting"
-              ? [ne(followUpRules.status, "ended")]
-              : []),
             ...Option.toArray(
               after.pipe(Option.map((id) => gt(followUps.id, id)))
             )
@@ -413,7 +410,7 @@ export const DrizzleFollowUpStore = Layer.effect(
           .orderBy(asc(followUpRules.id))
           .limit(limit)
           .pipe(Effect.mapError(failed), Effect.flatMap(rulesOf)),
-      settledPostRules: (limit) =>
+      settledPostRules: (failedBefore, limit) =>
         db
           .select()
           .from(followUpRules)
@@ -421,9 +418,11 @@ export const DrizzleFollowUpStore = Layer.effect(
             and(
               eq(followUpRules.scope, "post"),
               ne(followUpRules.status, "ended"),
-              // Nothing of its post left to publish: cancelled, failed or
-              // out everywhere, whether it armed anything or not.
-              sql`NOT EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${followUpRules.postId} AND ${postTargets.status} IN ('pending', 'publishing'))`,
+              // Nothing of its post left to publish: out or cancelled
+              // everywhere, or failed (or never confirmed) longer ago than
+              // a member would send it again, whether it armed anything or
+              // not.
+              sql`NOT EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${followUpRules.postId} AND (${postTargets.status} IN ('pending', 'publishing') OR (${postTargets.status} = 'failed' AND (${postTargets.finishedAt} IS NULL OR ${postTargets.finishedAt} > ${date(failedBefore)})) OR (${postTargets.status} = 'unconfirmed' AND (${postTargets.startedAt} IS NULL OR ${postTargets.startedAt} > ${date(failedBefore)}))))`,
               sql`NOT EXISTS (SELECT 1 FROM ${followUps} WHERE ${followUps.ruleId} = ${followUpRules.id} AND ${followUps.status} IN ('armed', 'sending', 'waiting'))`
             )
           )

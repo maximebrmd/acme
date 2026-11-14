@@ -1210,24 +1210,11 @@ describe("follow-up rules", () => {
             ["cancelled", "cancelled"]
           );
 
-          // Nor is a follow-up of an ended rule read as waiting, however
-          // its row came to say it.
-          yield* SqlClient.SqlClient.use(
-            (sql) =>
-              sql`UPDATE publishing.follow_ups SET status = 'waiting', state = state || '{"_tag":"waiting","until":"2026-07-13T07:00:00.000Z"}'::jsonb WHERE rule_id = ${stopping.rule.id} AND kind = 'repost'`
-          ).pipe(Effect.orDie);
-          assert.isFalse(
-            (yield* FollowUpStore.use((store) =>
-              store.waiting(Option.none(), 100)
-            )).some(({ rule }) => rule.id === stopping.rule.id)
-          );
-          yield* SqlClient.SqlClient.use(
-            (sql) =>
-              sql`DELETE FROM publishing.follow_ups WHERE rule_id = ${stopping.rule.id} AND kind = 'repost'`
-          ).pipe(Effect.orDie);
 
           yield* TestClock.adjust("8 days");
-          yield* runDue;
+
+          // The comment past its window, and the repost never granted.
+          assert.strictEqual((yield* runDue).expired, 2);
 
           const lapsed = (yield* ruleNow(
             workspaceId,
@@ -1368,6 +1355,129 @@ describe("follow-up rules", () => {
             "completed"
           );
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "keep a post's rule open while a failed publication may still be sent again, and follow the retry up",
+    () =>
+      onServer(
+        Effect.gen(function* retried() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const sql = yield* SqlClient.SqlClient;
+
+          // As if the publication had failed: the member may send it again.
+          yield* sql`UPDATE publishing.post_targets SET status = 'failed', failure_reason = 'contentRejected', listed_at = NULL WHERE post_id = ${postId}`.pipe(
+            Effect.orDie
+          );
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          assert.deepStrictEqual(started.followUps, []);
+          assert.strictEqual((yield* runDue).completed, 0);
+
+          // Sent again, and out.
+          yield* sql`UPDATE publishing.post_targets SET status = 'published', failure_reason = NULL, listed_at = finished_at WHERE post_id = ${postId}`.pipe(
+            Effect.orDie
+          );
+
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+          yield* FollowUps.use((followUps) => followUps.arm(target));
+
+          const after = yield* ruleNow(workspaceId, started.rule.id);
+
+          assert.strictEqual(after.rule.status._tag, "active");
+          assert.deepStrictEqual(
+            after.followUps.map(({ status }) => status._tag),
+            ["armed"]
+          );
+
+          // Seven days after the failure, a rule on a post that never went
+          // out again completes.
+          yield* sql`UPDATE publishing.post_targets SET status = 'failed', failure_reason = 'contentRejected', listed_at = NULL WHERE post_id = ${postId}`.pipe(
+            Effect.orDie
+          );
+          yield* sql`DELETE FROM publishing.follow_ups WHERE rule_id = ${started.rule.id}`.pipe(
+            Effect.orDie
+          );
+          yield* TestClock.adjust("8 days");
+          assert.strictEqual((yield* runDue).completed, 1);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "end what waits on a rule that ended meanwhile, arm under the rule's lock, and give up a kind the rule no longer asks",
+    () =>
+      onServer(
+        Effect.gen(function* raced() {
+          const workspaceId = yield* freshWorkspace;
+          const bluesky = yield* connected(workspaceId, "bluesky");
+          const first = yield* published(workspaceId, [bluesky]);
+          const second = yield* published(workspaceId, [bluesky], "Later.");
+
+          yield* Ref.set(withoutReposts, new Set([bluesky]));
+
+          const stopped = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(first))
+          );
+          const changed = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(second))
+          );
+
+          // A waiting row the stop did not reach, as a race would leave it.
+          yield* FollowUpRules.use((rules) =>
+            rules.stop(actorIn(workspaceId), stopped.rule.id)
+          );
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE publishing.follow_ups SET status = 'waiting', state = ${JSON.stringify({ _tag: "waiting", until: "2026-07-13T07:01:00.000Z" })}::jsonb WHERE rule_id = ${stopped.rule.id} AND kind = 'repost'`
+          ).pipe(Effect.orDie);
+
+          // The repost taken off the other rule: what waited is given up.
+          yield* FollowUpRules.use((rules) =>
+            rules.change(actorIn(workspaceId), changed.rule.id, {
+              repost: false,
+            })
+          );
+
+          const changedNow = yield* ruleNow(workspaceId, changed.rule.id);
+
+          assert.deepStrictEqual(
+            kinds(changedNow.followUps),
+            new Map([
+              ["comment", "armed"],
+              ["repost", "cancelled"],
+            ])
+          );
+
+          // The channel grants reposts: nothing is armed of either.
+          yield* Ref.set(withoutReposts, new Set());
+
+          const run = yield* runDue;
+
+          assert.strictEqual(run.armed, 0);
+          assert.strictEqual(run.cancelled, 1);
+
+          const stoppedNow = yield* ruleNow(workspaceId, stopped.rule.id);
+          const repost = stoppedNow.followUps.find(
+            ({ kind }) => kind === "repost"
+          );
+
+          assert.deepStrictEqual(
+            repost?.status._tag === "cancelled" ? repost.status.reason : repost,
+            "ruleEnded"
+          );
+        }).pipe(Effect.ensuring(Ref.set(withoutReposts, new Set()))),
+        GrantingServer
       ),
     timeout
   );

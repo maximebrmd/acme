@@ -497,7 +497,9 @@ export class FollowUpRules extends Context.Service<
             }
 
             yield* store.updateRule(next);
-            // A kind it now asks goes on what of its post is already out.
+            // A kind it no longer asks is given up; one it now asks goes
+            // on what of its post is already out.
+            yield* followUps.cancelUnasked(next);
             yield* followUps.armPublished(next);
 
             return next;
