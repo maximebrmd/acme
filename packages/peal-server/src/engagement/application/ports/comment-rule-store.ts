@@ -77,22 +77,32 @@ export class CommentRuleStore extends Context.Service<
       postId: PostId
     ) => Effect.Effect<readonly ChannelId[], DatabaseError>;
     /**
-     * Comments the rule has not looked at, under the posts it answers on,
-     * received since it started and still waiting for an answer, oldest
-     * first: `limit` at most.
+     * Comments the rule has not looked at, or claimed before
+     * `claimedBefore` and never settled, on the channels `channelIds`
+     * under the posts it answers on, received from `answersFrom` and still
+     * waiting for an answer, oldest first: `limit` at most.
      */
     readonly candidates: (
       rule: CommentRule,
+      channelIds: readonly ChannelId[],
+      claimedBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly Candidate[], DatabaseError>;
+    /** How many replies every rule made on the channel since `since`. */
+    readonly repliedOnChannelSince: (
+      channelId: ChannelId,
+      since: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     /**
-     * Marks the comment looked at by the rule (`claimed`): false when it
-     * was already, by another run.
+     * Marks the comment looked at by the rule (`claimed`), or takes again
+     * a claim older than `claimedBefore` that never settled: false when
+     * another run holds it, or settled it.
      */
     readonly claimMatch: (
       ruleId: CommentRuleId,
       commentId: CommentId,
-      now: DateTime.Utc
+      now: DateTime.Utc,
+      claimedBefore: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;
     readonly settleMatch: (
       ruleId: CommentRuleId,

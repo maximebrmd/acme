@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, gte, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, ne, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -40,6 +40,11 @@ const decodeCandidates = Schema.decodeUnknownEffect(
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+const decodeCount = (rows: readonly unknown[]) =>
+  Schema.decodeUnknownEffect(
+    Schema.Tuple([Schema.Struct({ count: Schema.Int })])
+  )(rows).pipe(Effect.map(([row]) => row.count));
+
 const utc = (date: Date) => DateTime.fromDateUnsafe(date);
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
@@ -63,6 +68,7 @@ const statusOf = (row: Row) => {
 const toRule = (row: Row) =>
   Effect.gen(function* decodingRule() {
     return yield* decodeRule({
+      answersFrom: utc(row.answersFrom),
       createdAt: utc(row.createdAt),
       id: row.id,
       keywords: row.keywords,
@@ -110,6 +116,7 @@ const statusColumns = (status: CommentRuleStatus) => {
 
 const changing = (rule: CommentRule) => ({
   ...statusColumns(rule.status),
+  answersFrom: date(rule.answersFrom),
   keywords: [...rule.keywords],
   reply: rule.reply,
   startedBy: Option.getOrNull(rule.startedBy),
@@ -198,8 +205,10 @@ export const DrizzleCommentRuleStore = Layer.effect(
           Effect.map((rows) => rows.length > 0),
           Effect.mapError(failed)
         ),
-      candidates: (rule, limit) =>
-        client`
+      candidates: (rule, channelIds, claimedBefore, limit) =>
+        channelIds.length === 0
+          ? Effect.succeed([])
+          : client`
           SELECT c.id AS "commentId", c.channel_id AS "channelId",
             c.author_platform_id AS "authorPlatformId", c.text
           FROM engagement.comments c
@@ -210,11 +219,13 @@ export const DrizzleCommentRuleStore = Layer.effect(
                 ? client`t.post_id = ${rule.scope.postId}`
                 : client`t.channel_id = ${rule.scope.channelId}`
             }
+            AND c.channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
             AND c.state = 'new'
-            AND c.received_at >= ${date(rule.createdAt)}
+            AND c.received_at >= ${date(rule.answersFrom)}
             AND NOT EXISTS (
               SELECT 1 FROM engagement.comment_rule_matches m
               WHERE m.rule_id = ${rule.id} AND m.comment_id = c.id
+                AND (m.outcome <> 'claimed' OR m.looked_at >= ${date(claimedBefore)})
             )
           ORDER BY c.received_at, c.id
           LIMIT ${limit}
@@ -251,7 +262,7 @@ export const DrizzleCommentRuleStore = Layer.effect(
           Effect.asVoid,
           Effect.mapError(failed)
         ),
-      claimMatch: (ruleId, commentId, now) =>
+      claimMatch: (ruleId, commentId, now, claimedBefore) =>
         db
           .insert(commentRuleMatches)
           .values({
@@ -260,7 +271,13 @@ export const DrizzleCommentRuleStore = Layer.effect(
             outcome: "claimed",
             ruleId,
           })
-          .onConflictDoNothing()
+          // A claim no run settled in its lifetime is taken again: its
+          // reply, made under the same key, answers the reply it made.
+          .onConflictDoUpdate({
+            set: { lookedAt: date(now) },
+            setWhere: sql`${commentRuleMatches.outcome} = 'claimed' AND ${commentRuleMatches.lookedAt} < ${date(claimedBefore)}`,
+            target: [commentRuleMatches.ruleId, commentRuleMatches.commentId],
+          })
           .returning({ commentId: commentRuleMatches.commentId })
           .pipe(
             Effect.map((rows) => rows.length > 0),
@@ -347,6 +364,17 @@ export const DrizzleCommentRuleStore = Layer.effect(
             )
           )
           .pipe(Effect.asVoid, Effect.mapError(failed)),
+      repliedOnChannelSince: (channelId, since) =>
+        client`
+          SELECT count(*)::int AS count FROM engagement.comment_rule_matches m
+          JOIN engagement.comments c ON c.id = m.comment_id
+          WHERE c.channel_id = ${channelId}
+            AND m.outcome = 'replied'
+            AND m.looked_at >= ${date(since)}
+        `.pipe(
+          Effect.flatMap(decodeCount),
+          Effect.mapError(failed)
+        ),
       repliedSince: (ruleId, since) =>
         db
           .select({ replied: count() })

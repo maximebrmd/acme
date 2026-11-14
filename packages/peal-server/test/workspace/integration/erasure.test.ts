@@ -787,8 +787,8 @@ const fill = Effect.fn("fill")(function* fill(
   // the comment it looked at.
   const commentRuleId = uuid7();
 
-  yield* sql`INSERT INTO engagement.comment_rules (id, workspace_id, scope, channel_id, keywords, reply, status, started_by, started_via, created_at)
-    VALUES (${commentRuleId}, ${workspaceId}, 'channel', ${uuid7()}, ARRAY['price'], 'A synthetic reply', 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
+  yield* sql`INSERT INTO engagement.comment_rules (id, workspace_id, scope, channel_id, keywords, reply, status, started_by, started_via, created_at, answers_from)
+    VALUES (${commentRuleId}, ${workspaceId}, 'channel', ${uuid7()}, ARRAY['price'], 'A synthetic reply', 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now(), now())`;
 
   yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
     VALUES (${commentRuleId}, ${commentId}, 'noMatch', now())`;

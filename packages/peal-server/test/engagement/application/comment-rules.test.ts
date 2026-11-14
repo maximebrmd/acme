@@ -11,6 +11,7 @@ import { EngagementStore } from "#engagement/application/ports/engagement-store.
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
+import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
@@ -25,7 +26,7 @@ import {
   PostIdSchema,
   PostTargetIdSchema,
 } from "#shared/domain/ids.ts";
-import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -129,7 +130,8 @@ const publishedAt = "2047-03-02T10:00:00.000Z";
 // A post that went out on a channel of `platform`, followed by the inbox.
 const threadOn = Effect.fn("threadOn")(function* threadOn(
   workspaceId: WorkspaceId,
-  platform: Platform
+  platform: Platform,
+  onPost?: PostId
 ) {
   const channelId = yield* newId(ChannelIdSchema);
 
@@ -143,7 +145,7 @@ const threadOn = Effect.fn("threadOn")(function* threadOn(
     channelId,
     permalink: Option.none(),
     platformPostId: PlatformPostIdSchema.make("1001"),
-    postId: yield* newId(PostIdSchema),
+    postId: onPost ?? (yield* newId(PostIdSchema)),
     publishedAt: utc(publishedAt),
     targetId: yield* newId(PostTargetIdSchema),
     workspaceId,
@@ -321,11 +323,120 @@ describe("comment rules", () => {
 
         assert.strictEqual((yield* rules.runDue).looked, 0);
 
+        // Set going again, it never answers what came while it was paused.
+        yield* rules.change(actorIn(workspaceId), rule.rule.id, {
+          paused: false,
+        });
+
+        assert.strictEqual((yield* rules.runDue).looked, 0);
+
         yield* rules.stop(actorIn(workspaceId), rule.rule.id);
 
         const stopped = yield* rules.get(actorIn(workspaceId), rule.rule.id);
 
         assert.strictEqual(stopped.rule.status._tag, "ended");
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("never answer on a channel whose platform forbids it, on a post that went out on several", () =>
+    Effect.gen(function* refusesThere() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const mastodon = yield* threadOn(workspaceId, "mastodon");
+        const bluesky = yield* threadOn(workspaceId, "bluesky", mastodon.postId);
+        const rules = yield* CommentRules;
+
+        const rule = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "post", postId: mastodon.postId },
+        });
+
+        assert.deepStrictEqual(
+          new Map(rule.channels.map(({ platform, reply }) => [platform, reply])),
+          new Map([
+            ["bluesky", "notAllowed"],
+            ["mastodon", "available"],
+          ])
+        );
+
+        yield* Effect.sleep("5 millis");
+
+        const [onBluesky] = yield* received(bluesky, [
+          { author: 5, text: "price?" },
+        ]);
+        const [onMastodon] = yield* received(mastodon, [
+          { author: 6, text: "price?" },
+        ]);
+
+        const before = (yield* Ref.get(started)).length;
+        const run = yield* rules.runDue;
+
+        assert.strictEqual(run.replied, 1);
+        assert.strictEqual((yield* Ref.get(started)).length, before + 1);
+
+        const after = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+
+        assert.deepStrictEqual(
+          after.matches.map(({ commentId }) => commentId),
+          [onMastodon?.id]
+        );
+        assert.isFalse(
+          after.matches.some(({ commentId }) => commentId === onBluesky?.id)
+        );
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("answer no more than a channel's day allows, every rule together", () =>
+    Effect.gen(function* boundedDay() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const thread = yield* threadOn(workspaceId, "mastodon");
+        const rules = yield* CommentRules;
+        const sql = yield* SqlClient.SqlClient;
+
+        const first = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["hours"],
+          reply: "Nine to five.",
+          scope: { _tag: "channel", channelId: thread.channelId },
+        });
+
+        // The channel's day, full: as many replies as it takes, today.
+        const earlier = yield* received(
+          thread,
+          Array.from({ length: maxChannelRepliesPerDay }, (_, n) => ({
+            author: 100 + n,
+            text: `earlier ${String(n)}`,
+          }))
+        );
+
+        for (const comment of earlier) {
+          yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+            VALUES (${first.rule.id}, ${comment.id}, 'replied', now())`;
+        }
+
+        const second = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "post", postId: thread.postId },
+        });
+
+        yield* Effect.sleep("5 millis");
+        yield* received(thread, [{ author: 7, text: "price?" }]);
+
+        const before = (yield* Ref.get(started)).length;
+
+        yield* rules.runDue;
+
+        assert.strictEqual((yield* Ref.get(started)).length, before);
+        assert.deepStrictEqual(
+          (yield* rules.get(actorIn(workspaceId), second.rule.id)).matches,
+          []
+        );
       }).pipe(Effect.ensuring(forget(workspaceId)));
     }).pipe(Effect.provide(RulesTest))
   );

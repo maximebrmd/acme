@@ -1,4 +1,5 @@
 import type { DateTime, Option } from "effect";
+import { Duration } from "effect";
 import { Result, Schema } from "effect";
 
 import {
@@ -30,6 +31,15 @@ export const maxKeywordLength = 60;
 
 /** The most replies a rule sends a UTC day, whatever its comments. */
 export const maxRuleRepliesPerDay = 25;
+
+/** The most replies rules send on one channel a UTC day, all together. */
+export const maxChannelRepliesPerDay = 100;
+
+/**
+ * How long a comment claimed for a reply that never settled (the run cut
+ * short) waits before a run takes it again: far past a reply's journal.
+ */
+export const claimLifetime = Duration.minutes(30);
 
 /**
  * What a rule answers on: the comments under one post, or under every
@@ -76,6 +86,9 @@ export type CommentRuleStatus = typeof CommentRuleStatusSchema.Type;
 export class CommentRule extends Schema.Class<CommentRule>(
   "peal-server/engagement/domain/CommentRule"
 )({
+  // The comments received from when it answers: when it started, or was
+  // last set going again, so it never answers what came while paused.
+  answersFrom: Schema.DateTimeUtc,
   createdAt: Schema.DateTimeUtc,
   id: CommentRuleIdSchema,
   keywords: Schema.Array(Schema.String),
@@ -91,6 +104,7 @@ type RuleFields = ConstructorParameters<typeof CommentRule>[0];
 
 const changed = (rule: CommentRule, fields: Partial<RuleFields>): CommentRule =>
   new CommentRule({
+    answersFrom: rule.answersFrom,
     createdAt: rule.createdAt,
     id: rule.id,
     keywords: rule.keywords,
@@ -173,6 +187,7 @@ export const startCommentRule = (
 ): CommentRule =>
   new CommentRule({
     ...request,
+    answersFrom: now,
     createdAt: now,
     status: { _tag: "active" },
   });
@@ -194,15 +209,18 @@ export const changeCommentRule = (
   }
 
   let status: CommentRuleStatus = rule.status;
+  let { answersFrom } = rule;
 
   if (change.paused === true && rule.status._tag !== "paused") {
     status = { _tag: "paused", pausedAt: now };
-  } else if (change.paused === false) {
+  } else if (change.paused === false && rule.status._tag === "paused") {
     status = { _tag: "active" };
+    answersFrom = now;
   }
 
   return Result.succeed(
     changed(rule, {
+      answersFrom,
       keywords: change.keywords ?? rule.keywords,
       reply: change.reply ?? rule.reply,
       status,

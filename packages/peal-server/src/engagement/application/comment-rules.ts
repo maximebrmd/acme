@@ -20,7 +20,9 @@ import {
   maxCommentRulesPerWorkspace,
   maxKeywordLength,
   maxKeywords,
+  maxChannelRepliesPerDay,
   maxRuleRepliesPerDay,
+  claimLifetime,
   startCommentRule,
 } from "#engagement/domain/comment-rule.ts";
 import type {
@@ -566,23 +568,55 @@ export class CommentRules extends Context.Service<
           return tally;
         }
 
-        let today = yield* store.repliedSince(
-          rule.id,
-          DateTime.startOf(now, "day")
-        );
+        const dayStart = DateTime.startOf(now, "day");
+        let today = yield* store.repliedSince(rule.id, dayStart);
 
         if (today >= maxRuleRepliesPerDay) {
           return tally;
         }
 
-        const candidates = yield* store.candidates(rule, candidatesPerRun);
+        // Only the channels that can carry the reply now, by their
+        // platform's rules too: a post's rule never answers on Bluesky,
+        // X, LinkedIn or YouTube, whatever the inbox may do there.
+        const carried = (yield* channelsOf(rule)).flatMap(
+          ({ channelId, reply }) => (reply === "available" ? [channelId] : [])
+        );
+
+        const claimedBefore = DateTime.subtractDuration(now, claimLifetime);
+
+        const candidates = yield* store.candidates(
+          rule,
+          carried,
+          claimedBefore,
+          candidatesPerRun
+        );
+
+        // Each channel's replies today, every rule's together.
+        const onChannel = new Map<ChannelId, number>();
 
         for (const candidate of candidates) {
           if (today >= maxRuleRepliesPerDay) {
             break;
           }
 
-          if (!(yield* store.claimMatch(rule.id, candidate.commentId, now))) {
+          const channelToday =
+            onChannel.get(candidate.channelId) ??
+            (yield* store.repliedOnChannelSince(candidate.channelId, dayStart));
+
+          onChannel.set(candidate.channelId, channelToday);
+
+          if (channelToday >= maxChannelRepliesPerDay) {
+            continue;
+          }
+
+          if (
+            !(yield* store.claimMatch(
+              rule.id,
+              candidate.commentId,
+              now,
+              claimedBefore
+            ))
+          ) {
             continue;
           }
 
@@ -642,6 +676,7 @@ export class CommentRules extends Context.Service<
           if (answered.value._tag === "replied") {
             today += 1;
             tally.replied += 1;
+            onChannel.set(candidate.channelId, channelToday + 1);
           }
         }
 
@@ -656,7 +691,16 @@ export class CommentRules extends Context.Service<
           const page = yield* store.active(after, rulePage);
 
           for (const rule of page) {
-            const done = yield* runRule(rule);
+            // One rule the database fails on waits for the next run; the
+            // others go on.
+            const done = yield* runRule(rule).pipe(
+              Effect.catchTag("DatabaseError", (failure) =>
+                Effect.logWarning("A comment rule's run failed", failure).pipe(
+                  Effect.annotateLogs({ ruleId: rule.id }),
+                  Effect.as({ ended: 0, looked: 0, replied: 0 })
+                )
+              )
+            );
 
             tally.ended += done.ended;
             tally.looked += done.looked;

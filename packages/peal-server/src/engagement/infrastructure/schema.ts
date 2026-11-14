@@ -597,6 +597,7 @@ export const messageApplications = engagement.table(
 export const commentRules = engagement.table(
   "comment_rules",
   {
+    answersFrom: instant("answers_from").notNull(),
     channelId: uuid("channel_id"),
     createdAt: instant("created_at").notNull(),
     endedReason: text("ended_reason"),
