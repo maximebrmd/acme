@@ -545,6 +545,18 @@ layer(metersOn(true))("the meters on a server that bills", (it) => {
         yield* claimOf(paid, "xApi", 15).pipe(Effect.flip);
         assert.deepStrictEqual(yield* xTold, [80, 100]);
 
+        // A ceiling raised is announced again as it is reached.
+        yield* ceilings.set(ownerOf(paid, payer), "x", 200);
+        yield* claimOf(paid, "xApi", 610);
+
+        assert.deepStrictEqual(yield* xTold, [80, 100, 80]);
+
+        // A ceiling of nothing is never "reached": no notice.
+        yield* ceilings.set(ownerOf(paid, payer), "x", 0);
+        yield* claimOf(paid, "xApi", 15).pipe(Effect.flip);
+
+        assert.deepStrictEqual(yield* xTold, [80, 100, 80]);
+
         yield* cleanUp([paid]);
       })
   );

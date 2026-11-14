@@ -72,6 +72,15 @@ const paidInvoices = [
     object: "invoice",
     status: "paid",
   },
+  // Settled from the customer's credit balance: paid, nothing charged.
+  {
+    amount_paid: 0,
+    currency: "usd",
+    id: "in_credit",
+    object: "invoice",
+    status: "paid",
+    total: 1200,
+  },
 ];
 
 // Only the business's VAT number was verified.
@@ -186,6 +195,28 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
       assert.isTrue(yield* contracts.isBusiness(workspaceId, "cus_business"));
       assert.isFalse(yield* contracts.isBusiness(workspaceId, "cus_consumer"));
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "count an invoice settled by credit as paid for the first paid invoice, never one of nothing",
+    () =>
+      Effect.gen(function* settled() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        const invoices = yield* contracts.paidInvoices(
+          workspaceId,
+          "sub_paid",
+          {
+            settledByCredit: true,
+          }
+        );
+
+        assert.deepStrictEqual(
+          invoices.map(({ invoiceId }) => invoiceId),
+          ["in_proration", "in_synthetic", "in_credit"]
+        );
+      }).pipe(Effect.scoped)
   );
 
   it.effect(

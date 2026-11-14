@@ -176,8 +176,9 @@
   to the catalogue (`ensureItems`: adds a missing line, moves an item
   whose price lost its lookup key, without proration), sets its threshold
   again while no invoice is paid, and records the first paid invoice
-  (`paidInvoices`, `subscriptions.paid_invoice_at`), removing the
-  threshold first. Account-days and reports are purged 400 days on (the
+  (`paidInvoices` with `settledByCredit`: one settled from the customer's
+  credit balance counts, one of nothing does not;
+  `subscriptions.paid_invoice_at`), removing the threshold first. Account-days and reports are purged 400 days on (the
   snapshot), go with the workspace's export (`accountDays`,
   `usageReports`) and erasure, which deletes unsent reports too (a rise in
   the minutes before a billing workspace is erased is not on its final
@@ -269,9 +270,19 @@
   not bill answers `BillingNotEnabled` and reads none of it. A claim
   whose X spend reaches 80% or 100% of the `x` ceiling
   (`ceilingSharesReached`) tells the billing managers (`XSpendCeiling`,
-  keyed `x-ceiling:<holder>:<YYYY-MM>:<percent>`, always emailed); a
-  claim refused at the ceiling tells the 100% one after its transaction
-  rolled back, so a ceiling never quite reached is told too.
+  keyed `x-ceiling:<holder>:<YYYY-MM>:<ceiling>:<percent>`, so a raised
+  ceiling is announced again, always emailed); a claim refused at the
+  ceiling tells the 100% one after its transaction rolled back, so a
+  ceiling never quite reached is told too, never for a ceiling of
+  nothing. Reads that do not fit claim the whole first for that refusal.
+- What X bills that is not passed through, Peal's own cost, unmetered:
+  the post lookups that confirm an unanswered post on resume (up to 20
+  posts, `postRead` each), alt text (`POST /2/media/metadata`), deleting
+  a live post, and the account read when X is connected
+  (`GET /2/users/me`, before the second `paidFor`). Reads are
+  deduplicated per workspace, X's per app: one X account in two
+  workspaces of an account is claimed twice a day, X bills it once;
+  accepted.
 - Sandbox runbook for the meters (the owner, test mode, never in tests):
   on a `payAsYouGo` subscription with a test clock, send 10,001 replies'
   worth (seed `meter_usage` at 10,000, then reply once) and read the

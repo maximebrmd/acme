@@ -239,7 +239,8 @@ const BilledMeteredUsageLive = Layer.effect(
       percent: number
     ) =>
       notices.tell({
-        key: `x-ceiling:${holder}:${DateTime.formatIsoDateUtc(month).slice(0, 7)}:${String(percent)}`,
+        // The ceiling in the key: one raised is announced again.
+        key: `x-ceiling:${holder}:${DateTime.formatIsoDateUtc(month).slice(0, 7)}:${String(ceiling)}:${String(percent)}`,
         notice: {
           _tag: "XSpendCeiling",
           ceiling,
@@ -303,10 +304,12 @@ const BilledMeteredUsageLive = Layer.effect(
           );
 
           if (Result.isFailure(decided)) {
+            // A ceiling of nothing is never reached: nothing to tell.
             if (decided.failure.reason === "ceilingReached") {
               yield* Ref.set(
                 ceilingMet,
                 xCeiling.pipe(
+                  Option.filter((cents) => cents > 0),
                   Option.map((cents) => ({ ceiling: cents, holder }))
                 )
               );
