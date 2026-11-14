@@ -322,6 +322,13 @@ describe("the messages' collection", () => {
         world.state.read = listing(["c9"]);
         yield* collected;
         assert.strictEqual(world.state.conversations.size, 1);
+
+        // A whole listing that comes back empty deletes nothing, however
+        // often: the conversation goes by its time.
+        world.state.read = listing([]);
+        yield* collected;
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
       }).pipe(Effect.provide(world.layer));
     }
   );
