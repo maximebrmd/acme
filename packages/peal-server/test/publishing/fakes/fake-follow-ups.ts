@@ -1,8 +1,11 @@
-import { Effect, Layer, Ref } from "effect";
+import { DateTime, Effect, Layer, Ref } from "effect";
 
 import { FollowUpCounts } from "#publishing/application/follow-up-counts.ts";
+import { FollowUpNotices } from "#publishing/application/follow-up-notices.ts";
 import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import type { FollowUpRequest } from "#publishing/application/follow-up-publisher.ts";
+import { notSentReasonsOf } from "#publishing/domain/follow-up.ts";
+import type { FollowUpNotSentReason } from "#publishing/domain/follow-up.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -30,12 +33,34 @@ const published: Answer = (request) =>
 
 const answer = Ref.makeUnsafe<Answer>(published);
 
+/** What members would be told of a rule, as the notices would key it. */
+export type ToldFollowUp =
+  | {
+      readonly _tag: "notSent";
+      readonly count: number;
+      readonly key: string;
+      readonly reasons: readonly FollowUpNotSentReason[];
+      readonly ruleId: string;
+    }
+  | {
+      readonly _tag: "stopped";
+      readonly key: string;
+      readonly reason: string;
+      readonly ruleId: string;
+    };
+
+const told = Ref.makeUnsafe<readonly ToldFollowUp[]>([]);
+
 /** No target has likes, no follow-up was carried out, each is published. */
 export const resetFollowUps = Effect.all([
   Ref.set(likes, new Map()),
   Ref.set(calls, []),
   Ref.set(answer, published),
+  Ref.set(told, []),
 ]);
+
+/** What members were told of follow-up rules so far, in order. */
+export const toldFollowUps = Ref.get(told);
 
 /** The target has `count` likes, as analytics last counted them. */
 export const likesOf = (targetId: PostTargetId, count: number) =>
@@ -81,5 +106,33 @@ export const FakeFollowUpPublisher = Layer.succeed(
         Effect.andThen(Ref.get(answer)),
         Effect.flatMap((respond) => respond(request))
       ),
+  })
+);
+
+/** Records what `NotifiedFollowUpNotices` would tell, keyed as it keys it. */
+export const FakeFollowUpNotices = Layer.succeed(
+  FollowUpNotices,
+  FollowUpNotices.of({
+    notSent: (rule, followUps, now) =>
+      Ref.update(told, (so): readonly ToldFollowUp[] => [
+        ...so,
+        {
+          _tag: "notSent",
+          count: followUps.length,
+          key: `follow-ups-not-sent:${rule.id}:${DateTime.formatIso(now).slice(0, 10)}`,
+          reasons: notSentReasonsOf(followUps),
+          ruleId: rule.id,
+        },
+      ]),
+    stopped: (rule, reason) =>
+      Ref.update(told, (so): readonly ToldFollowUp[] => [
+        ...so,
+        {
+          _tag: "stopped",
+          key: `follow-up-rule:${rule.id}:stopped`,
+          reason,
+          ruleId: rule.id,
+        },
+      ]),
   })
 );

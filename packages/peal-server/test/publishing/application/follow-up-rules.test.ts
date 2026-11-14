@@ -49,11 +49,13 @@ import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   FakeFollowUpCounts,
+  FakeFollowUpNotices,
   FakeFollowUpPublisher,
   followUpCalls,
   followUpsAnswer,
   likesOf,
   resetFollowUps,
+  toldFollowUps,
 } from "#test/publishing/fakes/fake-follow-ups.ts";
 import { RepositoryCredentials } from "#test/publishing/fakes/fake-live-post-clients.ts";
 import {
@@ -134,6 +136,7 @@ const serverBehind = (gate: Layer.Layer<ApprovalGate>) =>
     Layer.mergeAll(
       FollowUpChannels.supported,
       FakeFollowUpCounts,
+      FakeFollowUpNotices,
       FakeFollowUpPublisher
     )
   );
@@ -171,7 +174,12 @@ const GrantingServer = postsServerBehind(
   FakeRecycling,
   FeedsUnused,
   ShortLinkDefaults.none,
-  Layer.mergeAll(GrantingChannels, FakeFollowUpCounts, FakeFollowUpPublisher)
+  Layer.mergeAll(
+    GrantingChannels,
+    FakeFollowUpCounts,
+    FakeFollowUpNotices,
+    FakeFollowUpPublisher
+  )
 );
 
 // What the platforms' clients were handed, as the gates' side builds it.
@@ -240,6 +248,7 @@ const routedServerBehind = (gate: Layer.Layer<ApprovalGate>) =>
     Layer.mergeAll(
       FollowUpChannels.supported,
       FakeFollowUpCounts,
+      FakeFollowUpNotices,
       RoutedFollowUpPublisher.pipe(
         Layer.provide(
           Layer.mergeAll(
@@ -1051,6 +1060,18 @@ describe("follow-up rules", () => {
           const kept = yield* ruleNow(workspaceId, staying.rule.id);
 
           assert.strictEqual(kept.rule.status._tag, "active");
+
+          // Told once, whoever runs again.
+          yield* runDue;
+
+          assert.deepStrictEqual(yield* toldFollowUps, [
+            {
+              _tag: "stopped",
+              key: `follow-up-rule:${leaving.rule.id}:stopped`,
+              reason: "channelGone",
+              ruleId: leaving.rule.id,
+            },
+          ]);
         })
       ),
     timeout
@@ -1525,6 +1546,97 @@ describe("follow-up rules", () => {
               : followUp,
             "windowEnded"
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "tell follow-ups that did not go out once a rule and a day, with a count, and those after it the next day",
+    () =>
+      onServer(
+        Effect.gen(function* toldOnce() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+
+          const rule = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), {
+              comment: Option.some("Thank you all for reading!"),
+              likes: 10,
+              repost: true,
+              scope: { _tag: "channel", channelId: mastodon },
+            })
+          );
+
+          yield* followUpsAnswer(() =>
+            Effect.fail(new BadRequest({ code: "unprocessable" }))
+          );
+
+          // A post whose comment and repost the platform refuses.
+          const failing = Effect.fn("failing")(function* failing(text: string) {
+            const postId = yield* published(workspaceId, [mastodon], text);
+            const [target] = yield* targetsOf(postId);
+
+            assert.isDefined(target);
+            yield* FollowUps.use((followUps) => followUps.arm(target));
+            yield* likesOf(target.id, 10);
+            yield* runDue;
+
+            yield* eventually(
+              "its follow-ups failed",
+              ruleNow(workspaceId, rule.rule.id).pipe(
+                Effect.map(({ followUps }) =>
+                  followUps.every(({ status }) => status._tag === "failed")
+                )
+              )
+            );
+          });
+
+          yield* failing("Our summer opening hours.");
+          yield* runDue;
+
+          const day = DateTime.formatIso(yield* DateTime.now).slice(0, 10);
+
+          const first = {
+            _tag: "notSent",
+            count: 2,
+            key: `follow-ups-not-sent:${rule.rule.id}:${day}`,
+            reasons: ["failed"],
+            ruleId: rule.rule.id,
+          } as const;
+
+          assert.deepStrictEqual(yield* toldFollowUps, [first]);
+
+          // More fail the same day: told the next.
+          yield* failing("Our winter opening hours.");
+          yield* runDue;
+          assert.deepStrictEqual(yield* toldFollowUps, [first]);
+
+          const now = yield* DateTime.now;
+
+          yield* TestClock.setTime(
+            DateTime.toEpochMillis(
+              DateTime.add(DateTime.startOf(now, "day"), {
+                days: 1,
+                minutes: 1,
+              })
+            )
+          );
+          yield* runDue;
+
+          const next = DateTime.formatIso(yield* DateTime.now).slice(0, 10);
+
+          assert.deepStrictEqual(yield* toldFollowUps, [
+            first,
+            {
+              ...first,
+              key: `follow-ups-not-sent:${rule.rule.id}:${next}`,
+            },
+          ]);
+
+          // Each is told once.
+          yield* runDue;
+          assert.strictEqual((yield* toldFollowUps).length, 2);
         })
       ),
     timeout

@@ -453,6 +453,7 @@ const PublishingCronWorkTest = Layer.mergeAll(
             completed: 0,
             expired: 0,
             left: 0,
+            told: 0,
             triggered: 0,
           }),
           settleStranded: Effect.succeed(0),

@@ -15,6 +15,7 @@ import { FeedSource } from "#publishing/application/feed-source.ts";
 import { Feeds } from "#publishing/application/feeds.ts";
 import { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
 import { FollowUpCounts } from "#publishing/application/follow-up-counts.ts";
+import { FollowUpNotices } from "#publishing/application/follow-up-notices.ts";
 import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { FollowUpRules } from "#publishing/application/follow-up-rules.ts";
 import { FollowUps } from "#publishing/application/follow-ups.ts";
@@ -112,6 +113,7 @@ import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-
 import { MeteredXPostsLive } from "#publishing/infrastructure/metered-x-posts.ts";
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedFeedNotices } from "#publishing/infrastructure/notified-feed-notices.ts";
+import { NotifiedFollowUpNotices } from "#publishing/infrastructure/notified-follow-up-notices.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { NotifiedRecyclingNotices } from "#publishing/infrastructure/notified-recycling-notices.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
@@ -157,16 +159,18 @@ type RecyclingServices = RecyclingActors | RecyclingNotices;
 type FeedServices = FeedNotices | FeedPictures | FeedSource;
 
 // What follow-up rules need beside publishing's own adapters: what each
-// channel can carry, and the likes analytics counted.
-type FollowUpServices = FollowUpChannels | FollowUpCounts;
+// channel can carry, the likes analytics counted, and who hears what a
+// rule did not do.
+type FollowUpServices = FollowUpChannels | FollowUpCounts | FollowUpNotices;
 
 /**
  * For tests that count nothing: every channel carries what its platform
- * supports, and no post has likes.
+ * supports, no post has likes, and nobody hears.
  */
-export const FollowUpsUnused = Layer.merge(
+export const FollowUpsUnused = Layer.mergeAll(
   FollowUpChannels.supported,
-  FollowUpCounts.none
+  FollowUpCounts.none,
+  FollowUpNotices.none
 );
 
 /**
@@ -402,8 +406,9 @@ const PacedLookupsLive = pacedLookups(
 
 // What follow-up rules read on the server: what a channel can carry, from
 // its grants, the operator's threads and analytics' coverage, and the
-// likes analytics counted (PostLikes, from the composition root).
-const FollowUpServicesLive = Layer.merge(
+// likes analytics counted (PostLikes, from the composition root); and the
+// notices that tell what a rule did not do.
+const FollowUpServicesLive = Layer.mergeAll(
   FollowUpChannels.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
@@ -413,7 +418,8 @@ const FollowUpServicesLive = Layer.merge(
       )
     )
   ),
-  AnalyticsFollowUpCounts
+  AnalyticsFollowUpCounts,
+  NotifiedFollowUpNotices
 );
 
 // The follow-ups that arm a target as it is published, beside the use

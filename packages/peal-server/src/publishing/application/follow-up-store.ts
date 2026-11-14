@@ -20,6 +20,12 @@ export interface FollowUpRulePage {
   readonly status: Option.Option<FollowUpRuleStatus["_tag"]>;
 }
 
+/** A rule's follow-ups members are to be told of, and when they last were. */
+export interface UntoldFollowUps {
+  readonly followUps: readonly FollowUp[];
+  readonly lastTold: Option.Option<DateTime.Utc>;
+}
+
 /** An armed follow-up, with the rule that armed it. */
 export interface ArmedFollowUp {
   readonly followUp: FollowUp;
@@ -176,6 +182,30 @@ export class FollowUpStore extends Context.Service<
       after: Option.Option<FollowUpId>,
       limit: number
     ) => Effect.Effect<readonly ArmedFollowUp[], DatabaseError>;
+    /**
+     * Rules with follow-ups that ended without going out, which members
+     * are to be told of (`notSentReasonOf`), by id after `after`.
+     */
+    readonly untoldRules: (
+      after: Option.Option<FollowUpRuleId>,
+      limit: number
+    ) => Effect.Effect<
+      readonly {
+        readonly ruleId: FollowUpRuleId;
+        readonly workspaceId: WorkspaceId;
+      }[],
+      DatabaseError
+    >;
+    /** The rule's follow-ups members are to be told of, and when they last were. */
+    readonly untold: (
+      ruleId: FollowUpRuleId
+    ) => Effect.Effect<UntoldFollowUps, DatabaseError>;
+    /** Members were told of these follow-ups of the rule at `now`. */
+    readonly told: (
+      ruleId: FollowUpRuleId,
+      followUpIds: readonly FollowUpId[],
+      now: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
     /** Channel-scoped rules that have not ended, by id, after `after`. */
     readonly openChannelRules: (
       after: Option.Option<FollowUpRuleId>,

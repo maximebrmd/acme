@@ -12,6 +12,7 @@ import type { FeedPictures } from "#publishing/application/feed-pictures.ts";
 import type { FeedSource } from "#publishing/application/feed-source.ts";
 import type { FollowUpChannels } from "#publishing/application/follow-up-channels.ts";
 import type { FollowUpCounts } from "#publishing/application/follow-up-counts.ts";
+import type { FollowUpNotices } from "#publishing/application/follow-up-notices.ts";
 import { FollowUpPublisher } from "#publishing/application/follow-up-publisher.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
@@ -87,7 +88,7 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4, RF = never>(
   // What channels carry of follow-up rules and the likes counted, and
   // what carries follow-ups out: by default, nothing is counted.
   followUps: Layer.Layer<
-    FollowUpChannels | FollowUpCounts | FollowUpPublisher,
+    FollowUpChannels | FollowUpCounts | FollowUpNotices | FollowUpPublisher,
     never,
     RF
   > = Layer.merge(FollowUpsUnused, FollowUpPublisher.none)

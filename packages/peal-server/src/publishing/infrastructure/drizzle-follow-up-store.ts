@@ -18,6 +18,7 @@ import { SqlClient } from "effect/sql";
 
 import { FollowUpStore } from "#publishing/application/follow-up-store.ts";
 import type { ArmedFollowUp } from "#publishing/application/follow-up-store.ts";
+import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import {
   FollowUpApprovalSchema,
   FollowUpRule,
@@ -26,10 +27,12 @@ import type { FollowUpRuleStatus } from "#publishing/domain/follow-up-rule.ts";
 import {
   FollowUp,
   FollowUpStatusSchema,
+  notSentReasonOf,
 } from "#publishing/domain/follow-up.ts";
 import type { FollowUpStatus } from "#publishing/domain/follow-up.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { followUpRules, followUps, postTargets } from "./schema.ts";
@@ -162,6 +165,8 @@ const triggeredAtOf = (status: FollowUpStatus) =>
 
 const stateColumns = (followUp: FollowUp) => ({
   attempt: followUp.attempt,
+  // Its states that members are told of are final: written once.
+  noticeDue: Option.isSome(notSentReasonOf(followUp)),
   state: encodeStatus(followUp.status),
   status: followUp.status._tag,
   triggeredAt: triggeredAtOf(followUp.status),
@@ -394,6 +399,71 @@ export const DrizzleFollowUpStore = Layer.effect(
           .from(followUpRules)
           .where(ruleInWorkspace(workspaceId, ruleId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstOf(toRule))),
+      untoldRules: (after, limit) =>
+        db
+          .selectDistinct({
+            ruleId: followUps.ruleId,
+            workspaceId: followUps.workspaceId,
+          })
+          .from(followUps)
+          .where(
+            and(
+              eq(followUps.noticeDue, true),
+              ...Option.toArray(
+                after.pipe(Option.map((id) => gt(followUps.ruleId, id)))
+              )
+            )
+          )
+          .orderBy(asc(followUps.ruleId))
+          .limit(limit)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) =>
+              rows.map(({ ruleId, workspaceId }) => ({
+                ruleId: FollowUpRuleIdSchema.make(ruleId),
+                workspaceId: WorkspaceIdSchema.make(workspaceId),
+              }))
+            )
+          ),
+      untold: (ruleId) =>
+        Effect.all([
+          db
+            .select()
+            .from(followUps)
+            .where(
+              and(eq(followUps.ruleId, ruleId), eq(followUps.noticeDue, true))
+            )
+            .orderBy(asc(followUps.id))
+            .pipe(Effect.mapError(failed), Effect.flatMap(followUpsOf)),
+          db
+            .select({ toldAt: followUpRules.notSentToldAt })
+            .from(followUpRules)
+            .where(eq(followUpRules.id, ruleId))
+            .pipe(Effect.mapError(failed)),
+        ]).pipe(
+          Effect.map(([found, [rule]]) => ({
+            followUps: found,
+            lastTold: Option.fromNullishOr(rule?.toldAt).pipe(Option.map(utc)),
+          }))
+        ),
+      told: (ruleId, followUpIds, now) =>
+        followUpIds.length === 0
+          ? Effect.void
+          : Effect.all([
+              db
+                .update(followUps)
+                .set({ noticeDue: false })
+                .where(
+                  and(
+                    eq(followUps.ruleId, ruleId),
+                    inArray(followUps.id, [...followUpIds])
+                  )
+                ),
+              db
+                .update(followUpRules)
+                .set({ notSentToldAt: date(now) })
+                .where(eq(followUpRules.id, ruleId)),
+            ]).pipe(Effect.asVoid, Effect.mapError(failed)),
       openChannelRules: (after, limit) =>
         db
           .select()

@@ -1,0 +1,125 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ea69fa9c-0b3e-4631-94f8-a4101cc116e4",
+  "prevIds": [
+    "8d58a4c1-8bd8-4f53-953b-42d7b5940b28"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "follow_up_rules",
+        "not_sent_told_at"
+      ],
+      "writes": [
+        "s|col|publishing.follow_up_rules.not_sent_told_at",
+        "n|col|publishing.follow_up_rules.not_sent_told_at",
+        "e|col|publishing.follow_up_rules.not_sent_told_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.follow_up_rules",
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "publishing",
+        "follow_ups",
+        "notice_due"
+      ],
+      "writes": [
+        "s|col|publishing.follow_ups.notice_due",
+        "n|col|publishing.follow_ups.notice_due",
+        "e|col|publishing.follow_ups.notice_due"
+      ],
+      "reads": [
+        "n|tbl|publishing.follow_ups",
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "follow_ups",
+        "follow_ups_notice_due"
+      ],
+      "writes": [
+        "s|idx|publishing.follow_ups_notice_due",
+        "n|idx|publishing.follow_ups_notice_due",
+        "e|idx|publishing.follow_ups_notice_due",
+        "n|rel|publishing.follow_ups_notice_due"
+      ],
+      "reads": [
+        "n|tbl|publishing.follow_ups",
+        "n|sch|publishing",
+        "n|col|publishing.follow_ups.rule_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "follow_up_rules",
+        "name": "not_sent_told_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "follow_ups",
+        "name": "notice_due",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "follow_ups",
+        "name": "follow_ups_notice_due",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "rule_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"notice_due\"",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

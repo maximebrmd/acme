@@ -746,6 +746,9 @@ export const followUpRules = publishing.table(
     endedReason: text("ended_reason"),
     id: uuid("id").primaryKey(),
     likes: integer("likes").notNull(),
+    // When members were last told of follow-ups of its that did not go
+    // out: once a UTC day at most.
+    notSentToldAt: instant("not_sent_told_at"),
     postId: uuid("post_id").references(() => posts.id, {
       onDelete: "cascade",
     }),
@@ -794,6 +797,9 @@ export const followUps = publishing.table(
     channelId: uuid("channel_id").notNull(),
     id: uuid("id").primaryKey(),
     kind: text("kind").notNull(),
+    // It ended without going out in a way members are told of, and they
+    // have not been yet.
+    noticeDue: boolean("notice_due").notNull().default(false),
     postId: uuid("post_id").notNull(),
     ruleId: uuid("rule_id")
       .notNull()
@@ -830,5 +836,9 @@ export const followUps = publishing.table(
       .on(table.triggeredAt)
       .where(sql`${table.status} = 'sending'`),
     index("follow_ups_rule").on(table.ruleId, table.id),
+    // Those to tell members of, by rule.
+    index("follow_ups_notice_due")
+      .on(table.ruleId)
+      .where(sql`${table.noticeDue}`),
   ]
 );

@@ -439,3 +439,59 @@ export const isOver = (followUp: FollowUp): boolean =>
   followUp.status._tag !== "armed" &&
   followUp.status._tag !== "sending" &&
   followUp.status._tag !== "waiting";
+
+/**
+ * Why a follow-up that ended without going out is told to members: the
+ * platform refused it (`failed`), it may be out without Peal knowing
+ * (`unconfirmed`), or its window passed while the platform put it off
+ * (`windowEnded`), its channel was not connected again (`notGranted`) or
+ * its rule waited for an approval (`notApproved`). In this order.
+ */
+export const followUpNotSentReasons = [
+  "failed",
+  "unconfirmed",
+  "windowEnded",
+  "notGranted",
+  "notApproved",
+] as const;
+
+export type FollowUpNotSentReason = (typeof followUpNotSentReasons)[number];
+
+/**
+ * Why members are told the follow-up did not go out, or none: one that
+ * went out, waits, or ended as its rule or the post's likes made it end
+ * (below its threshold, paused, given up, the channel's day full) is not
+ * told.
+ */
+export const notSentReasonOf = (
+  followUp: FollowUp
+): Option.Option<FollowUpNotSentReason> => {
+  const { status } = followUp;
+
+  if (status._tag === "failed" || status._tag === "unconfirmed") {
+    return Option.some(status._tag);
+  }
+
+  if (status._tag !== "expired") {
+    return Option.none();
+  }
+
+  const { reason } = status;
+
+  return reason === "windowEnded" ||
+    reason === "notGranted" ||
+    reason === "notApproved"
+    ? Option.some(reason)
+    : Option.none();
+};
+
+/** The reasons the follow-ups are told for, each once, in their order. */
+export const notSentReasonsOf = (
+  followUps: readonly FollowUp[]
+): readonly FollowUpNotSentReason[] => {
+  const found = new Set(
+    followUps.flatMap((followUp) => Option.toArray(notSentReasonOf(followUp)))
+  );
+
+  return followUpNotSentReasons.filter((reason) => found.has(reason));
+};
