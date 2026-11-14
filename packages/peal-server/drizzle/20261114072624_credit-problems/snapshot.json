@@ -2,9 +2,9 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "d53a3141-0585-462b-bf2e-3886d465d9c7",
+  "id": "7b424f22-c558-4926-a75d-e06eaaabb3b5",
   "prevIds": [
-    "3c7cb8fd-b189-4283-ac75-ea5b366e116b"
+    "634e0ce6-2375-489f-a350-c20b29539f86"
   ],
   "footprints": [
     {
@@ -212,6 +212,22 @@
         "table": "credit_problems",
         "name": "refund_id",
         "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "credit_problems",
+        "name": "settled_at",
+        "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": false,
         "dimensions": 0,

@@ -2,6 +2,8 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import { BillingOff } from "#billing/domain/billing-off.ts";
 import {
+  chargesRenewal,
+  endsOnDay,
   retirementDay,
   retirementTelling,
 } from "#billing/domain/plan-retirement.ts";
@@ -62,7 +64,7 @@ const ownEndOf = ({
   );
 
 const planned = (
-  { retiresAt, subscription, toldAt }: RetiringSubscription,
+  { requestedFor, retiresAt, subscription, toldAt }: RetiringSubscription,
   endsAt: DateTime.Utc
 ): Retirement => {
   if (Option.isSome(retiresAt)) {
@@ -76,6 +78,12 @@ const planned = (
 
   if (subscription.status === "trialing") {
     return { _tag: "trial", subscription };
+  }
+
+  // Asked of Stripe before and never confirmed: the same day again, which
+  // Stripe may hold already, never read as the subscriber's own end.
+  if (Option.isSome(requestedFor)) {
+    return { _tag: "retire", endsAt: requestedFor.value, subscription };
   }
 
   // A cancellation that ends it by the day stands; one for a later day is
@@ -98,13 +106,18 @@ const planned = (
  * Retiring the legacy plans (`nx run peal-server:billing:retire-plans`):
  * lists every legacy subscription that may still give its plan with what
  * retiring does to it, and changes nothing. With `apply`, each one on its
- * own: Stripe is set first to end it on the day (`retirementDay`: 30 days
- * after the latest its notice may go out, `retirementTelling`), within the
- * period paid for without proration, in a later one charging that period
- * only up to the day; only once Stripe took it is the day kept, so the
- * hourly reminders tell its billing managers of an end Stripe will make
- * (`PlansRetiring`, always emailed). One Stripe refuses or does not answer
- * is reported (`failed`) and the others go on; a run again retries it. A
+ * own: the day asked is kept first (`retirement_requested_for`, with the
+ * period it had paid for), then Stripe is set to end it on the day
+ * (`retirementDay`: 30 days after the latest its notice may go out,
+ * `retirementTelling`), within the period paid for without proration,
+ * past it charging the renewal only up to the day (`chargesRenewal`); only
+ * once Stripe took it is the day confirmed (`retires_at`), so the hourly
+ * reminders tell its billing managers of an end Stripe will make
+ * (`PlansRetiring`, always emailed). One that fails is reported
+ * (`failed`) and the others go on; a run again takes it up from the day
+ * kept, and one Stripe holds already (its `cancel_at` the day asked) is
+ * confirmed without asking again, never read as the subscriber's own
+ * end. A
  * trial runs to its end; a cancellation that ends it by the day stands.
  * A server that does not bill lists them, and applies nothing
  * (`BillingOff`).
@@ -124,44 +137,60 @@ export class RetireLegacyPlans extends Context.Service<
       const retirements = yield* PlanRetirements;
       const stripe = yield* StripeContracts;
 
-      // Stripe first, then the day kept; a refusal or no answer is
-      // reported, and nothing is kept.
+      // The day kept before Stripe is asked, Stripe asked (not when it
+      // holds that day already: a call whose answer was lost), then the day
+      // confirmed. Stripe refusing or not answering, or the database
+      // failing, is reported, and a run again takes it up from what was
+      // kept.
       const apply = (
-        subscription: Subscription,
+        held: RetiringSubscription,
         endsAt: DateTime.Utc,
         now: DateTime.Utc
-      ): Effect.Effect<Retirement, DatabaseError> =>
-        stripe
-          .retireAt(
-            subscription.workspaceId,
-            subscription.stripeSubscriptionId,
-            endsAt,
-            Option.exists(subscription.currentPeriodEnd, (end) =>
-              DateTime.isLessThan(end, endsAt)
-            )
-          )
-          .pipe(
-            Effect.andThen(
-              retirements.retire(subscription.stripeSubscriptionId, endsAt, now)
-            ),
-            Effect.as<Retirement>({ _tag: "retire", endsAt, subscription }),
-            Effect.catchTag("StripeUnreachable", ({ permanent }) =>
-              Effect.logWarning(
-                "Stripe did not take a legacy plan's retirement: a run again tries again"
-              ).pipe(
-                Effect.annotateLogs({
-                  permanent,
-                  stripeSubscriptionId: subscription.stripeSubscriptionId,
-                }),
-                Effect.as<Retirement>({
-                  _tag: "failed",
-                  endsAt,
-                  permanent,
-                  subscription,
-                })
-              )
-            )
+      ): Effect.Effect<Retirement> => {
+        const { subscription } = held;
+        const id = subscription.stripeSubscriptionId;
+
+        const paidUntil = Option.orElse(
+          held.paidUntil,
+          () => subscription.currentPeriodEnd
+        );
+
+        const asked = Option.isSome(held.requestedFor)
+          ? Effect.void
+          : retirements.request(id, endsAt, paidUntil, now);
+
+        const atStripe = endsOnDay(subscription.cancelAt, endsAt)
+          ? Effect.void
+          : stripe.retireAt(
+              subscription.workspaceId,
+              id,
+              endsAt,
+              chargesRenewal(endsAt, paidUntil)
+            );
+
+        const failedWith = (permanent: boolean) =>
+          Effect.logWarning(
+            "A legacy plan's retirement did not go through: a run again takes it up"
+          ).pipe(
+            Effect.annotateLogs({ permanent, stripeSubscriptionId: id }),
+            Effect.as<Retirement>({
+              _tag: "failed",
+              endsAt,
+              permanent,
+              subscription,
+            })
           );
+
+        return asked.pipe(
+          Effect.andThen(atStripe),
+          Effect.andThen(retirements.retire(id, endsAt, now)),
+          Effect.as<Retirement>({ _tag: "retire", endsAt, subscription }),
+          Effect.catchTags({
+            DatabaseError: () => failedWith(false),
+            StripeUnreachable: ({ permanent }) => failedWith(permanent),
+          })
+        );
+      };
 
       const run = Effect.fn("RetireLegacyPlans.run")(function* run(options: {
         readonly apply: boolean;
@@ -176,20 +205,21 @@ export class RetireLegacyPlans extends Context.Service<
           DateTime.addDuration(now, retirementTelling)
         );
 
-        const found = (yield* retirements.legacy).map((held) =>
-          planned(held, endsAt)
+        const legacy = yield* retirements.legacy;
+        const found = legacy.map(
+          (held) => [held, planned(held, endsAt)] as const
         );
 
         const retired = options.apply
           ? yield* Effect.forEach(
               found,
-              (retirement) =>
+              ([held, retirement]) =>
                 retirement._tag === "retire"
-                  ? apply(retirement.subscription, retirement.endsAt, now)
+                  ? apply(held, retirement.endsAt, now)
                   : Effect.succeed(retirement),
               { concurrency: 1 }
             )
-          : found;
+          : found.map(([, retirement]) => retirement);
 
         const report: RetirementReport = {
           applied: options.apply,

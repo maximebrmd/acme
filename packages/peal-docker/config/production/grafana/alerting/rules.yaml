@@ -1000,6 +1000,38 @@ groups:
                     type: gt
                     params: [7200]
 
+      - uid: peal-retirements-unconfirmed
+        title: A plan retirement was asked of Stripe and not confirmed
+        condition: B
+        for: 2h
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A legacy plan retirement was asked of Stripe and never confirmed, and Stripe does not hold the day asked (peal.billing.retirements.unconfirmed, how many), so billing:retire-plans --apply failed for it, Stripe refusing or not answering. Run the command again, which takes it up from the day kept; its output names each that failed and why. A retirement Stripe took whose answer was lost is confirmed by the hourly reminders and is not counted here.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Set by each hourly reminders run on a server that bills; one that does not never sets it.
+              expr: max(peal_billing_retirements_unconfirmed) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-usage-report-stopped
         title: The reporter of usage to Stripe stopped
         condition: B

@@ -78,6 +78,29 @@ layer(RepositoryTest)("the legacy plans' retirement in Postgres", (it) => {
         const first = at("2026-11-14T10:00:00Z");
         const day = at("2027-01-01T00:00:00Z");
 
+        // Asked before Stripe is: kept, with what it had paid for, and
+        // unconfirmed until Stripe took it.
+        yield* retire.request(
+          starter,
+          at("2026-12-16T00:00:00Z"),
+          Option.some(at("2026-12-01T00:00:00Z")),
+          first
+        );
+
+        const asked = (yield* retire.unconfirmed).find(
+          ({ subscription }) => subscription.stripeSubscriptionId === starter
+        );
+
+        assert.deepStrictEqual(
+          asked?.requestedFor,
+          Option.some(at("2026-12-16T00:00:00Z"))
+        );
+        assert.deepStrictEqual(
+          asked?.paidUntil,
+          Option.some(at("2026-12-01T00:00:00Z"))
+        );
+        assert.deepStrictEqual(yield* retire.retiresAt(starter), Option.none());
+
         yield* retire.retire(starter, at("2026-12-16T00:00:00Z"), first);
         // Moved later, as when its notice went out late: the day is the
         // new one, and when it was first applied stays.
@@ -94,6 +117,7 @@ layer(RepositoryTest)("the legacy plans' retirement in Postgres", (it) => {
 
         assert.deepStrictEqual(untold?.retiresAt, Option.some(day));
         assert.deepStrictEqual(untold?.retiredAt, Option.some(first));
+        assert.notInclude(ids(yield* retire.unconfirmed), starter);
 
         yield* retire.told(starter, at("2026-11-14T11:00:00Z"));
         yield* retire.told(starter, at("2026-11-14T12:00:00Z"));

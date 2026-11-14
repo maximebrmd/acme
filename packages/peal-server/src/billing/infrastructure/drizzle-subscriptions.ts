@@ -420,6 +420,8 @@ const retiring = and(
 const retiringOf = (row: Row) =>
   toSubscription(row).pipe(
     Effect.map((subscription) => ({
+      paidUntil: instantOf(row.retirementPaidUntil),
+      requestedFor: instantOf(row.retirementRequestedFor),
       retiredAt: instantOf(row.retiredAt),
       retiresAt: instantOf(row.retiresAt),
       subscription,
@@ -446,11 +448,22 @@ export const DrizzlePlanRetirementsLive = Layer.effect(
 
     return PlanRetirements.of({
       legacy: read(retiring).pipe(Effect.withSpan("PlanRetirements.legacy")),
+      request: (subscriptionId, requestedFor, paidUntil, at) =>
+        db
+          .update(subscriptions)
+          .set({
+            retiredAt: sql`coalesce(${subscriptions.retiredAt}, ${date(at)})`,
+            retirementPaidUntil: sql`coalesce(${subscriptions.retirementPaidUntil}, ${dateOf(paidUntil)})`,
+            retirementRequestedFor: date(requestedFor),
+          })
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       retire: (subscriptionId, retiresAt, at) =>
         db
           .update(subscriptions)
           .set({
             retiredAt: sql`coalesce(${subscriptions.retiredAt}, ${date(at)})`,
+            retirementRequestedFor: date(retiresAt),
             retiresAt: date(retiresAt),
           })
           .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
@@ -475,6 +488,13 @@ export const DrizzlePlanRetirementsLive = Layer.effect(
             )
           )
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      unconfirmed: read(
+        and(
+          retiring,
+          isNotNull(subscriptions.retirementRequestedFor),
+          isNull(subscriptions.retiresAt)
+        )
+      ).pipe(Effect.withSpan("PlanRetirements.unconfirmed")),
       untold: read(
         and(
           retiring,

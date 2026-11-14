@@ -15,6 +15,8 @@ import type {
   NoticeRates,
 } from "#billing/domain/billing-notice.ts";
 import {
+  chargesRenewal,
+  endsOnDay,
   noticeIsShort,
   retirementDay,
 } from "#billing/domain/plan-retirement.ts";
@@ -36,6 +38,7 @@ import { BillingMode, inGrace } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { ContractReferences } from "./ports/contract-references.ts";
 import { PlanRetirements } from "./ports/plan-retirements.ts";
+import type { RetiringSubscription } from "./ports/plan-retirements.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
@@ -59,6 +62,19 @@ export const retirementNoticesBehind = Metric.gauge(
   {
     description:
       "Seconds since the oldest legacy plan retirement still untold was applied; 0 when none waits",
+  }
+);
+
+/**
+ * How many retirements were asked of Stripe and never confirmed, Stripe
+ * not holding the day asked: the command's run failed for them and must
+ * be run again (alert peal-retirements-unconfirmed).
+ */
+export const retirementsUnconfirmed = Metric.gauge(
+  "peal.billing.retirements.unconfirmed",
+  {
+    description:
+      "Legacy plan retirements asked of Stripe and not confirmed, Stripe not holding the day asked",
   }
 );
 
@@ -282,6 +298,88 @@ export class SendBillingReminders extends Context.Service<
       // plan and the day it ends. A day that would leave fewer than 30
       // days moves later first, at Stripe then on its row; one Stripe does
       // not take waits for the next run, untold.
+      // A retirement Stripe took whose day Peal never confirmed (the
+      // command stopped, or its write failed, after Stripe answered):
+      // confirmed when Stripe's end is the day asked; the others are
+      // counted for the alert.
+      const adoptRetirements = Effect.fn(
+        "SendBillingReminders.adoptRetirements"
+      )(function* adoptRetirements(now: DateTime.Utc) {
+        let left = 0;
+
+        for (const {
+          requestedFor,
+          subscription,
+        } of yield* retirements.unconfirmed) {
+          if (
+            Option.isSome(requestedFor) &&
+            endsOnDay(subscription.cancelAt, requestedFor.value)
+          ) {
+            yield* retirements.retire(
+              subscription.stripeSubscriptionId,
+              requestedFor.value,
+              now
+            );
+            yield* Effect.logWarning(
+              "Confirmed a retirement Stripe held and Peal had not kept"
+            ).pipe(
+              Effect.annotateLogs({
+                stripeSubscriptionId: subscription.stripeSubscriptionId,
+              })
+            );
+          } else {
+            left += 1;
+          }
+        }
+
+        yield* Metric.update(retirementsUnconfirmed, left);
+      });
+
+      // Moves a retirement's day later at Stripe, the day kept first: never
+      // prorating a day the plan had paid for.
+      const moveLater = (
+        held: RetiringSubscription,
+        later: DateTime.Utc,
+        now: DateTime.Utc
+      ) => {
+        const { subscription } = held;
+        const id = subscription.stripeSubscriptionId;
+
+        const paidUntil = Option.orElse(
+          held.paidUntil,
+          () => subscription.currentPeriodEnd
+        );
+
+        return retirements.request(id, later, paidUntil, now).pipe(
+          Effect.andThen(
+            StripeContracts.use((stripe) =>
+              stripe.retireAt(
+                subscription.workspaceId,
+                id,
+                later,
+                chargesRenewal(later, paidUntil)
+              )
+            ).pipe(Effect.provide(context))
+          ),
+          Effect.andThen(retirements.retire(id, later, now)),
+          Effect.as(true),
+          Effect.catchTag("StripeUnreachable", () =>
+            Effect.logWarning(
+              "A retired plan's notice would be short, and Stripe did not take the later day: it waits"
+            ).pipe(
+              Effect.annotateLogs({ stripeSubscriptionId: id }),
+              Effect.as(false)
+            )
+          )
+        );
+      };
+
+      // The legacy plans retired since the last run, each told once: its
+      // plan and the day it ends. A day that would leave fewer than 30
+      // days moves later first, at Stripe then on its row, unless the
+      // subscriber's own cancellation ends it sooner: that stands, and no
+      // retirement is told. One Stripe does not take waits for the next
+      // run, untold.
       const tellRetirements = Effect.fn("SendBillingReminders.tellRetirements")(
         function* tellRetirements(now: DateTime.Utc) {
           const untold = yield* retirements.untold;
@@ -301,7 +399,9 @@ export class SendBillingReminders extends Context.Service<
 
           yield* Metric.update(retirementNoticesBehind, oldest);
 
-          for (const { retiresAt, subscription } of untold) {
+          for (const held of untold) {
+            const { retiresAt, subscription } = held;
+
             if (Option.isNone(retiresAt)) {
               continue;
             }
@@ -309,36 +409,29 @@ export class SendBillingReminders extends Context.Service<
             const { stripeSubscriptionId: id, workspaceId } = subscription;
             let endsAt = retiresAt.value;
 
+            // The subscriber cancelled for a day before the retirement's.
+            const ownEarlier = Option.exists(
+              subscription.cancelAt,
+              (at) =>
+                !endsOnDay(Option.some(at), endsAt) &&
+                DateTime.isLessThan(at, endsAt)
+            );
+
+            if (ownEarlier) {
+              yield* retirements.told(id, now);
+              yield* Effect.logInfo(
+                "A retired plan's subscriber cancelled for an earlier day: that stands, and the retirement is not told"
+              ).pipe(Effect.annotateLogs({ stripeSubscriptionId: id }));
+              continue;
+            }
+
             if (noticeIsShort(endsAt, now)) {
               const later = retirementDay(now);
 
-              const moved = yield* StripeContracts.use((stripe) =>
-                stripe.retireAt(
-                  workspaceId,
-                  id,
-                  later,
-                  Option.exists(subscription.currentPeriodEnd, (end) =>
-                    DateTime.isLessThan(end, later)
-                  )
-                )
-              ).pipe(
-                Effect.provide(context),
-                Effect.as(true),
-                Effect.catchTag("StripeUnreachable", () =>
-                  Effect.logWarning(
-                    "A retired plan's notice would be short, and Stripe did not take the later day: it waits"
-                  ).pipe(
-                    Effect.annotateLogs({ stripeSubscriptionId: id }),
-                    Effect.as(false)
-                  )
-                )
-              );
-
-              if (!moved) {
+              if (!(yield* moveLater(held, later, now))) {
                 continue;
               }
 
-              yield* retirements.retire(id, later, now);
               yield* Effect.logWarning(
                 "A retired plan's notice went out late: its day moved later, to keep 30 days"
               ).pipe(Effect.annotateLogs({ stripeSubscriptionId: id }));
@@ -367,7 +460,8 @@ export class SendBillingReminders extends Context.Service<
         const now = yield* DateTime.now;
 
         // Neither holds back the other, nor the reminders the law asks for.
-        yield* tellRetirements(now).pipe(
+        yield* adoptRetirements(now).pipe(
+          Effect.andThen(tellRetirements(now)),
           Effect.catchCause((cause) =>
             Effect.logError(
               "The notices of retired plans could not be sent: the next run tries again",

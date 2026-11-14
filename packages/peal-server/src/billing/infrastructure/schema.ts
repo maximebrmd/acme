@@ -53,6 +53,10 @@ export const subscriptions = billing.table(
     retiresAt: instant("retires_at"),
     retiredAt: instant("retired_at"),
     retirementToldAt: instant("retirement_told_at"),
+    // The day asked of Stripe, kept before asking, and the end of the
+    // period it had paid for then.
+    retirementRequestedFor: instant("retirement_requested_for"),
+    retirementPaidUntil: instant("retirement_paid_until"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     stripeCustomerId: text("stripe_customer_id").notNull(),

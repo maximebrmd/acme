@@ -8,6 +8,7 @@ CREATE TABLE "billing"."credit_problems" (
 	"occurred_at" timestamp with time zone NOT NULL,
 	"reason" text,
 	"refund_id" text,
+	"settled_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"workspace_id" uuid
 );

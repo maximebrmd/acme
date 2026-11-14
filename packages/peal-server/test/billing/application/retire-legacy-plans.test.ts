@@ -18,6 +18,7 @@ import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RetireLegacyPlans } from "#billing/application/retire-legacy-plans.ts";
 import {
   retirementNoticesBehind,
+  retirementsUnconfirmed,
   SendBillingReminders,
 } from "#billing/application/send-billing-reminders.ts";
 import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
@@ -58,9 +59,31 @@ const legacy = (
     ...fields,
   });
 
+// The subscription as Stripe's event records it once set to end at `at`:
+// its period shortened to the day when the day falls within it.
+const withEnd = (subscription: Subscription, endsOn: DateTime.Utc) => {
+  const { currentPeriodEnd, interval, plan, stripeSubscriptionId, status } =
+    subscription;
+
+  return legacy(stripeSubscriptionId, {
+    cancelAt: Option.some(endsOn),
+    cancelAtPeriodEnd: true,
+    currentPeriodEnd: Option.exists(currentPeriodEnd, (end) =>
+      DateTime.isLessThan(endsOn, end)
+    )
+      ? Option.some(endsOn)
+      : currentPeriodEnd,
+    interval,
+    plan,
+    status,
+  });
+};
+
 // The subscriptions, each with its day once retired and when it was told.
 interface Row {
   subscription: Subscription;
+  paidUntil: Option.Option<DateTime.Utc>;
+  requestedFor: Option.Option<DateTime.Utc>;
   retiresAt: Option.Option<DateTime.Utc>;
   retiredAt: Option.Option<DateTime.Utc>;
   toldAt: Option.Option<DateTime.Utc>;
@@ -103,6 +126,8 @@ const world = () => {
     },
   ].map((row) => ({
     ...row,
+    paidUntil: Option.none(),
+    requestedFor: Option.none(),
     retiredAt: Option.none(),
     retiresAt: Option.none(),
     toldAt: Option.none(),
@@ -110,8 +135,10 @@ const world = () => {
 
   const asked: string[] = [];
   const told: string[] = [];
+  // Subscriptions whose call Stripe takes and whose answer is lost.
+  const losing = new Set<string>();
 
-  return { asked, rows, told };
+  return { asked, losing, rows, told };
 };
 
 type World = ReturnType<typeof world>;
@@ -135,17 +162,38 @@ const Ports = (state: World, enabled = true) =>
       PlanRetirements,
       PlanRetirements.of({
         legacy: Effect.sync(() => state.rows.map((row) => ({ ...row }))),
+        request: (id, requestedFor, paidUntil, when) =>
+          Effect.sync(() => {
+            const row = rowOf(state, id);
+
+            if (row !== undefined) {
+              row.requestedFor = Option.some(requestedFor);
+              row.paidUntil = Option.orElse(row.paidUntil, () => paidUntil);
+              row.retiredAt = Option.orElse(row.retiredAt, () =>
+                Option.some(when)
+              );
+            }
+          }),
         retire: (id, retiresAt, when) =>
           Effect.sync(() => {
             const row = rowOf(state, id);
 
             if (row !== undefined) {
+              row.requestedFor = Option.some(retiresAt);
               row.retiresAt = Option.some(retiresAt);
               row.retiredAt = Option.orElse(row.retiredAt, () =>
                 Option.some(when)
               );
             }
           }),
+        unconfirmed: Effect.sync(() =>
+          state.rows
+            .filter(
+              ({ requestedFor, retiresAt }) =>
+                Option.isSome(requestedFor) && Option.isNone(retiresAt)
+            )
+            .map((row) => ({ ...row }))
+        ),
         retiresAt: (id) =>
           Effect.sync(() => rowOf(state, id)?.retiresAt ?? Option.none()),
         told: (id, when) =>
@@ -167,16 +215,28 @@ const Ports = (state: World, enabled = true) =>
       })
     ),
     Layer.mock(StripeContracts, {
-      retireAt: (workspace, id, when, prorate) =>
-        id === "sub_synthetic_refused"
-          ? Effect.fail(
-              new StripeUnreachable({ permanent: true, workspaceId: workspace })
-            )
-          : Effect.sync(() => {
-              state.asked.push(
-                `retireAt ${id} ${DateTime.formatIso(when)} ${prorate ? "prorated" : "unprorated"}`
-              );
-            }),
+      retireAt: (workspace, id, when, prorate) => {
+        if (id === "sub_synthetic_refused") {
+          return Effect.fail(
+            new StripeUnreachable({ permanent: true, workspaceId: workspace })
+          );
+        }
+
+        state.asked.push(
+          `retireAt ${id} ${DateTime.formatIso(when)} ${prorate ? "prorated" : "unprorated"}`
+        );
+
+        // Stripe ends it then, as its next event will record.
+        const row = rowOf(state, id);
+
+        if (row !== undefined) {
+          row.subscription = withEnd(row.subscription, when);
+        }
+
+        return state.losing.has(id)
+          ? Effect.fail(new StripeUnreachable({ workspaceId: workspace }))
+          : Effect.void;
+      },
     })
   );
 
@@ -328,6 +388,118 @@ describe("retiring the legacy plans", () => {
         assert.strictEqual(
           (yield* Metric.value(retirementNoticesBehind)).value,
           3 * 24 * 3600
+        );
+      })
+  );
+
+  it.effect(
+    "confirms a retirement Stripe took whose answer was lost, on the next run, and tells it, never as the subscriber's own end",
+    () =>
+      Effect.gen(function* lost() {
+        const state = world();
+
+        state.losing.add("sub_synthetic_monthly");
+        yield* TestClock.setTime(DateTime.toEpochMillis(now));
+
+        const first = yield* retired(state, true);
+
+        assert.include(
+          first.retirements
+            .filter(({ _tag }) => _tag === "failed")
+            .map(({ subscription }) => subscription.stripeSubscriptionId),
+          "sub_synthetic_monthly"
+        );
+
+        state.losing.clear();
+        state.asked.length = 0;
+
+        const again = yield* retired(state, true);
+
+        const monthly = again.retirements.find(
+          ({ subscription }) =>
+            subscription.stripeSubscriptionId === "sub_synthetic_monthly"
+        );
+
+        assert.strictEqual(monthly?._tag, "retire");
+        // Stripe held the day: not asked again.
+        assert.notInclude(
+          state.asked,
+          `retireAt sub_synthetic_monthly ${day} prorated`
+        );
+        assert.deepStrictEqual(
+          rowOf(state, "sub_synthetic_monthly")?.retiresAt,
+          Option.some(at(day))
+        );
+
+        yield* remind(state);
+
+        assert.include(
+          state.told,
+          `plans-retiring:sub_synthetic_monthly PlansRetiring starter ${day}`
+        );
+      })
+  );
+
+  it.effect(
+    "confirms such a retirement from the hourly reminders too, and counts those Stripe does not hold",
+    () =>
+      Effect.gen(function* adopted() {
+        const state = world();
+
+        state.losing.add("sub_synthetic_monthly");
+        yield* TestClock.setTime(DateTime.toEpochMillis(now));
+        yield* retired(state, true);
+
+        yield* remind(state);
+
+        assert.include(
+          state.told,
+          `plans-retiring:sub_synthetic_monthly PlansRetiring starter ${day}`
+        );
+        // The one Stripe refused stays asked and unconfirmed: counted.
+        assert.strictEqual(
+          (yield* Metric.value(retirementsUnconfirmed)).value,
+          1
+        );
+      })
+  );
+
+  it.effect(
+    "moves a yearly plan's day later without proration, a monthly one charged only past what it paid, and keeps a subscriber's own earlier end",
+    () =>
+      Effect.gen(function* movedLater() {
+        const state = world();
+
+        yield* TestClock.setTime(DateTime.toEpochMillis(now));
+        yield* retired(state, true);
+
+        // The subscriber of the brought-forward plan cancelled since for
+        // the end of the period they paid.
+        const later = rowOf(state, "sub_synthetic_later");
+
+        if (later !== undefined) {
+          later.subscription = withEnd(
+            later.subscription,
+            at("2026-12-01T00:00:00Z")
+          );
+        }
+
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(at("2026-11-17T10:00:00Z"))
+        );
+        state.asked.length = 0;
+
+        yield* remind(state);
+
+        const moved = "2026-12-18T00:00:00.000Z";
+
+        assert.deepStrictEqual(state.asked, [
+          `retireAt sub_synthetic_monthly ${moved} prorated`,
+          `retireAt sub_synthetic_yearly ${moved} unprorated`,
+        ]);
+        assert.notInclude(
+          state.told.join(" "),
+          "plans-retiring:sub_synthetic_later"
         );
       })
   );
