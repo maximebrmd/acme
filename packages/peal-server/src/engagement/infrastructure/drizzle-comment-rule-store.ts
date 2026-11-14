@@ -1,4 +1,15 @@
-import { and, asc, count, desc, eq, gt, gte, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -262,6 +273,14 @@ export const DrizzleCommentRuleStore = Layer.effect(
           Effect.asVoid,
           Effect.mapError(failed)
         ),
+      claimReplyDay: (ruleId, channelId) =>
+        client`SELECT pg_advisory_xact_lock(hashtext('peal-server/engagement/comment-rule-day'), hashtext(${ruleId}))`.pipe(
+          Effect.andThen(
+            client`SELECT pg_advisory_xact_lock(hashtext('peal-server/engagement/comment-channel-day'), hashtext(${channelId}))`
+          ),
+          Effect.asVoid,
+          Effect.mapError(failed)
+        ),
       claimMatch: (ruleId, commentId, now, claimedBefore) =>
         db
           .insert(commentRuleMatches)
@@ -369,7 +388,7 @@ export const DrizzleCommentRuleStore = Layer.effect(
           SELECT count(*)::int AS count FROM engagement.comment_rule_matches m
           JOIN engagement.comments c ON c.id = m.comment_id
           WHERE c.channel_id = ${channelId}
-            AND m.outcome = 'replied'
+            AND m.outcome IN ('replied', 'claimed')
             AND m.looked_at >= ${date(since)}
         `.pipe(Effect.flatMap(decodeCount), Effect.mapError(failed)),
       repliedSince: (ruleId, since) =>
@@ -379,7 +398,7 @@ export const DrizzleCommentRuleStore = Layer.effect(
           .where(
             and(
               eq(commentRuleMatches.ruleId, ruleId),
-              eq(commentRuleMatches.outcome, "replied"),
+              inArray(commentRuleMatches.outcome, ["replied", "claimed"]),
               gte(commentRuleMatches.lookedAt, date(since))
             )
           )

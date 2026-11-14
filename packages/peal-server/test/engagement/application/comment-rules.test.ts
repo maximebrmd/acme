@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Deferred, Effect, Fiber, Layer, Option, Ref } from "effect";
 import { MessageStorage, ShardingConfig } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
@@ -14,7 +14,10 @@ import { FollowedPosts } from "#engagement/application/ports/followed-posts.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
 import { RuleStarters } from "#engagement/application/ports/rule-starters.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
-import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
+import {
+  maxChannelRepliesPerDay,
+  maxRuleRepliesPerDay,
+} from "#engagement/domain/comment-rule.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
@@ -26,6 +29,7 @@ import { UnreadComments } from "#publishing/container.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import { MeteredUsage } from "#shared/application/metered-usage.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
@@ -678,6 +682,104 @@ describe("comment rules", () => {
             (yield* rules.get(actorIn(workspaceId), second.rule.id)).matches,
             []
           );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("count a rule's day with the replies other runs are making", () =>
+    Effect.gen(function* inFlight() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const thread = yield* threadOn(workspaceId, "mastodon");
+        const rules = yield* CommentRules;
+        const sql = yield* SqlClient.SqlClient;
+
+        const rule = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "channel", channelId: thread.channelId },
+        });
+
+        yield* Effect.sleep("5 millis");
+
+        // Another run claimed as many comments as the rule's day allows,
+        // and its replies are on their way.
+        const claimed = yield* received(
+          thread,
+          Array.from({ length: maxRuleRepliesPerDay }, (_, n) => ({
+            author: 200 + n,
+            text: `price ${String(n)}?`,
+          }))
+        );
+
+        for (const comment of claimed) {
+          yield* sql`INSERT INTO engagement.comment_rule_matches (rule_id, comment_id, outcome, looked_at)
+            VALUES (${rule.rule.id}, ${comment.id}, 'claimed', now())`;
+        }
+
+        const [late] = yield* received(thread, [{ author: 7, text: "price?" }]);
+
+        const before = (yield* Ref.get(started)).length;
+        const run = yield* rules.runDue;
+
+        assert.strictEqual(run.replied, 0);
+        assert.strictEqual((yield* Ref.get(started)).length, before);
+        assert.isFalse(
+          (yield* rules.get(actorIn(workspaceId), rule.rule.id)).matches.some(
+            ({ commentId }) => commentId === late?.id
+          )
+        );
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live(
+    "count a rule's and a channel's day under their lock, waiting for whoever holds it",
+    () =>
+      Effect.gen(function* locked() {
+        const workspaceId = yield* freshWorkspace;
+
+        yield* Effect.gen(function* checks() {
+          const thread = yield* threadOn(workspaceId, "mastodon");
+          const rules = yield* CommentRules;
+
+          const rule = yield* rules.start(actorIn(workspaceId), {
+            keywords: ["price"],
+            reply: "On our site.",
+            scope: { _tag: "channel", channelId: thread.channelId },
+          });
+
+          yield* Effect.sleep("5 millis");
+          yield* received(thread, [{ author: 7, text: "price?" }]);
+
+          // Another transaction holds the rule's and the channel's day.
+          const held = yield* Deferred.make<boolean>();
+          const release = yield* Deferred.make<boolean>();
+          const { transaction } = yield* TransactionRunner;
+
+          const holder = yield* transaction(
+            CommentRuleStore.use((store) =>
+              store.claimReplyDay(rule.rule.id, thread.channelId)
+            ).pipe(
+              Effect.andThen(Deferred.succeed(held, true)),
+              Effect.andThen(Deferred.await(release))
+            )
+          ).pipe(Effect.forkChild);
+
+          yield* Deferred.await(held);
+
+          const run = yield* rules.runDue.pipe(Effect.forkChild);
+
+          yield* Effect.sleep("300 millis");
+
+          const waited = run.pollUnsafe() === undefined;
+
+          yield* Deferred.succeed(release, true);
+          yield* Fiber.join(holder);
+
+          assert.isTrue(waited);
+          assert.strictEqual((yield* Fiber.join(run)).replied, 1);
         }).pipe(Effect.ensuring(forget(workspaceId)));
       }).pipe(Effect.provide(RulesTest))
   );

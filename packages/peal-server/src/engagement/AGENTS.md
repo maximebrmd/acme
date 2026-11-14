@@ -384,9 +384,11 @@
   `maxChannelRepliesPerDay` (100) a channel, every rule together, each
   UTC day, a meter without room releasing the claim for a later run, a
   claim left `claimed` `claimLifetime` (30 minutes) taken again, and one
-  rule's database error logged without stopping the others. The caps are
-  counted without a lock: the cron runs on one runner, and only runs that
-  overlap could pass one by a few. Where it answers is
+  rule's database error logged without stopping the others. A comment to
+  answer is claimed in a transaction under the rule's day, then the
+  channel's (`claimReplyDay`: advisory locks held to its end, always in
+  that order), the caps counting the comments claimed today with those
+  answered, so runs that overlap never pass one. Where it answers is
   `commentRuleSupport`, from each platform's pages: Bluesky (its bot
   guidance), X, LinkedIn and YouTube are `notAllowed`, refused when the
   rule starts (`CommentRuleNotPossible`, each channel with its reason)

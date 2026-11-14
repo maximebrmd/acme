@@ -575,9 +575,10 @@ export class CommentRules extends Context.Service<
         }
 
         const dayStart = DateTime.startOf(now, "day");
-        let today = yield* store.repliedSince(rule.id, dayStart);
 
-        if (today >= maxRuleRepliesPerDay) {
+        if (
+          (yield* store.repliedSince(rule.id, dayStart)) >= maxRuleRepliesPerDay
+        ) {
           return tally;
         }
 
@@ -597,43 +598,70 @@ export class CommentRules extends Context.Service<
           candidatesPerRun
         );
 
-        // Each channel's replies today, every rule's together.
-        const onChannel = new Map<ChannelId, number>();
+        // A comment to answer is claimed under the rule's and the
+        // channel's day, counted with the replies on their way, in one
+        // transaction: overlapping runs take turns and pass no cap.
+        const claimToAnswer = Effect.fn("CommentRules.claimToAnswer")(
+          function* claimToAnswer(candidate: (typeof candidates)[number]) {
+            yield* store.claimReplyDay(rule.id, candidate.channelId);
 
-        for (const candidate of candidates) {
-          if (today >= maxRuleRepliesPerDay) {
-            break;
-          }
+            if (
+              (yield* store.repliedSince(rule.id, dayStart)) >=
+              maxRuleRepliesPerDay
+            ) {
+              return "ruleFull" as const;
+            }
 
-          const channelToday =
-            onChannel.get(candidate.channelId) ??
-            (yield* store.repliedOnChannelSince(candidate.channelId, dayStart));
+            if (
+              (yield* store.repliedOnChannelSince(
+                candidate.channelId,
+                dayStart
+              )) >= maxChannelRepliesPerDay
+            ) {
+              return "channelFull" as const;
+            }
 
-          onChannel.set(candidate.channelId, channelToday);
-
-          if (channelToday >= maxChannelRepliesPerDay) {
-            continue;
-          }
-
-          if (
-            !(yield* store.claimMatch(
+            return (yield* store.claimMatch(
               rule.id,
               candidate.commentId,
               now,
               claimedBefore
             ))
-          ) {
+              ? ("claimed" as const)
+              : ("taken" as const);
+          }
+        );
+
+        for (const candidate of candidates) {
+          if (!isMatch(rule, candidate.text)) {
+            if (
+              yield* store.claimMatch(
+                rule.id,
+                candidate.commentId,
+                now,
+                claimedBefore
+              )
+            ) {
+              tally.looked += 1;
+              yield* store.settleMatch(rule.id, candidate.commentId, {
+                _tag: "noMatch",
+              });
+            }
+
+            continue;
+          }
+
+          const claimed = yield* transaction(claimToAnswer(candidate));
+
+          if (claimed === "ruleFull") {
+            break;
+          }
+
+          if (claimed !== "claimed") {
             continue;
           }
 
           tally.looked += 1;
-
-          if (!isMatch(rule, candidate.text)) {
-            yield* store.settleMatch(rule.id, candidate.commentId, {
-              _tag: "noMatch",
-            });
-            continue;
-          }
 
           if (
             Option.isSome(candidate.authorPlatformId) &&
@@ -680,9 +708,7 @@ export class CommentRules extends Context.Service<
           );
 
           if (answered.value._tag === "replied") {
-            today += 1;
             tally.replied += 1;
-            onChannel.set(candidate.channelId, channelToday + 1);
           }
         }
 

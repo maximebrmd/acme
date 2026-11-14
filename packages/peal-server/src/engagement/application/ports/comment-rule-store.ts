@@ -88,7 +88,22 @@ export class CommentRuleStore extends Context.Service<
       claimedBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly Candidate[], DatabaseError>;
-    /** How many replies every rule made on the channel since `since`. */
+    /**
+     * Holds back, until the transaction it runs in ends, any other that
+     * claims the rule's day or the channel's: counting the replies made
+     * today, then claiming a comment to answer, takes turns, so
+     * overlapping runs never pass a cap. The rule's first, then the
+     * channel's, always in that order.
+     */
+    readonly claimReplyDay: (
+      ruleId: CommentRuleId,
+      channelId: ChannelId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * How many replies every rule made on the channel since `since`, or
+     * is making: a comment claimed since then counts, its reply on its
+     * way.
+     */
     readonly repliedOnChannelSince: (
       channelId: ChannelId,
       since: DateTime.Utc
@@ -114,7 +129,10 @@ export class CommentRuleStore extends Context.Service<
       ruleId: CommentRuleId,
       commentId: CommentId
     ) => Effect.Effect<void, DatabaseError>;
-    /** How many replies the rule made since `since`. */
+    /**
+     * How many replies the rule made since `since`, or is making: a
+     * comment claimed since then counts, its reply on its way.
+     */
     readonly repliedSince: (
       ruleId: CommentRuleId,
       since: DateTime.Utc
