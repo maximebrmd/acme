@@ -55,7 +55,9 @@ peal_credentials:
   # Google Business Profile locations' reviews, need none either:
   # PEAL_INBOX_PLATFORMS goes in peal_settings, beside META_APP_ID,
   # INSTAGRAM_APP_ID, YOUTUBE_CLIENT_ID, LINKEDIN_PAGES_CLIENT_ID or
-  # GOOGLE_BUSINESS_CLIENT_ID.
+  # GOOGLE_BUSINESS_CLIENT_ID. Websites need nothing either:
+  # PEAL_OUTBOUND_ALLOWED_HOSTS is a self-hoster's, refused here by
+  # peal_preflight, as Peal's servers never reach a private host.
   # A Stripe key needs write access to meters, products and prices
   # for the catalogue command (README.md, "Stripe catalogue").
   # PEAL_AI_API_KEY: REPLACE

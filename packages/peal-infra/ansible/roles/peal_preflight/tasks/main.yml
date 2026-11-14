@@ -45,6 +45,23 @@
             if 'PEAL_SHORT_LINK_BASE' in peal_settings | default({})
             else []) }}
 
+# Private hosts: PEAL_OUTBOUND_ALLOWED_HOSTS lets a self-hoster's server
+# reach hosts on their own network that members name (a website). Peal's
+# own service never does: anything a member names reaches public
+# addresses only, so the setting is refused on every server here.
+- name: Refuse private hosts members could reach
+  ansible.builtin.assert:
+    that: peal_preflight_private_hosts | length == 0
+    fail_msg: >-
+      Remove {{ peal_preflight_private_hosts | join(', ') }}: Peal's own
+      servers never let members reach a private host.
+    quiet: true
+  vars:
+    peal_preflight_private_hosts: >-
+      {{ ['peal_settings.PEAL_OUTBOUND_ALLOWED_HOSTS']
+         if 'PEAL_OUTBOUND_ALLOWED_HOSTS' in peal_settings | default({})
+         else [] }}
+
 # Postgres's memory (compose.production.yaml's PEAL_POSTGRES_*): a value
 # Postgres cannot read stops it at start, and the release has stopped the
 # server by then. Checked here, before anything stops: a size is a whole
