@@ -6,6 +6,7 @@ import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
   dropped,
+  empty,
   json,
   platformServer,
   textOf,
@@ -195,6 +196,27 @@ describe("a first comment on a Facebook Page", () => {
           new BadRequest({ code: "permissionDenied" })
         );
         assert.strictEqual(posted(server, facebookComments).length, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "fails as refused, never a refused token, on a 401 or 403 without Meta's error",
+    () =>
+      Effect.gen(function* bare() {
+        for (const status of [401, 403]) {
+          const server = yield* fakeWith(() => empty(status));
+          const client = yield* facebookOn(server);
+
+          const failure = yield* client
+            .publish(yield* commentPart(pageId))
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            failure,
+            new BadRequest({ code: "permissionDenied" })
+          );
+          assert.strictEqual(posted(server, facebookComments).length, 1);
+        }
       }).pipe(Effect.scoped)
   );
 

@@ -608,6 +608,28 @@ layer(
     threadedPlatformsWith(true, new Set(["facebook"])).takesParts
   )
 )("the adapters of a platform of first comments", (it) => {
+  it.effect("mark the target when its post goes out, before any comment", () =>
+    Effect.gen(function* marksAtPost() {
+      const posts = yield* PostRepository;
+      const { channelId, postId, target } = yield* commentedPost;
+
+      yield* Effect.gen(function* checks() {
+        yield* PlatformPublisher.use((publisher) =>
+          publisher.publish({
+            channelId,
+            idempotencyKey: "a-synthetic-page-post",
+            part: 0,
+            postId,
+            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            targetId: target.id,
+          })
+        ).pipe(Effect.ignore);
+
+        assert.isTrue(yield* firstCommentOf(target.id));
+      }).pipe(Effect.ensuring(posts.remove(postId).pipe(Effect.orDie)));
+    })
+  );
+
   it.effect("mark the target before its comment goes out", () =>
     Effect.gen(function* marks() {
       const posts = yield* PostRepository;

@@ -258,11 +258,11 @@ export const RoutedPlatformPublisher = Layer.effect(
         return yield* new BadRequest({ code: firstCommentsOff });
       }
 
-      // A first comment goes under a post that is live: the target is
-      // marked so before the comment is sent, so its post counts as live
-      // whatever becomes of the comment.
+      // A post with a first comment: the target is marked so when its post
+      // goes out, so the post counts as live once it is, whatever becomes
+      // of the comment, even if the comment is never sent.
       if (
-        part.index > 0 &&
+        (part.index > 0 || post.content.followUps.length > 0) &&
         followUpsThrough(
           account.platform,
           account.connection,

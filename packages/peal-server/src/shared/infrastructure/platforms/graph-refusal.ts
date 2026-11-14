@@ -63,7 +63,13 @@ const errorOf = (body: ErrorBody): GraphError =>
  *   (`graph<code>` or `graph<code>.<subcode>`, or `http<status>`).
  */
 export type GraphRefusal =
-  | { readonly _tag: "token"; readonly permission: boolean }
+  | {
+      readonly _tag: "token";
+      readonly permission: boolean;
+      // Meta named the refusal with a Graph error code; false for a bare
+      // 401 or 403, which a proxy on the way may give as well.
+      readonly coded: boolean;
+    }
   | {
       readonly _tag: "rateLimited";
       readonly retryAfter: Option.Option<Duration.Duration>;
@@ -143,6 +149,7 @@ export const graphRefusalOf = Effect.fn("MetaGraph.refusalOf")(
       if (isTokenCode(code)) {
         return {
           _tag: "token",
+          coded: true,
           permission: isPermissionCode(code),
         } satisfies GraphRefusal;
       }
@@ -173,7 +180,11 @@ export const graphRefusalOf = Effect.fn("MetaGraph.refusalOf")(
     }
 
     if (Option.isNone(error.code) && (status === 401 || status === 403)) {
-      return { _tag: "token", permission: false } satisfies GraphRefusal;
+      return {
+        _tag: "token",
+        coded: false,
+        permission: false,
+      } satisfies GraphRefusal;
     }
 
     const refusal: GraphRefusal = {

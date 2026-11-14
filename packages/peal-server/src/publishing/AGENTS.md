@@ -83,14 +83,14 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   attempt's start settles nothing). A comment's refusal fails the part
   alone, never the token: only LinkedIn's 401 in its own words, YouTube's
   401 and Meta's invalid token (not a missing permission) are refused
-  tokens; a LinkedIn 403 (a content administrator, whom LinkedIn does not
+  tokens (a bare 401 or 403 without Meta's error code is not); a LinkedIn 403 (a content administrator, whom LinkedIn does not
   let comment: `comment.needs`, `commentNeeds` in the capabilities) is
   `permissionDenied`, its 429 waits a minute, and a LinkedIn comment is
   kept by its URN. A comment that fails after the post went live leaves
   the target failed with its live post, the post `partiallyPublished`
   (its notice says only the comment did not go out: `PostFailed.notSent`),
-  and a repost sends the comment alone. The router marks such a target
-  `post_targets.first_comment` before it sends the comment
+  and a repost sends the comment alone. The router marks a target with a first comment
+  `post_targets.first_comment` when it sends the post itself
   (`markFirstComment`), so `PublishedTargets` lists it by its first live
   part from then on (`listed_at`, kept by `listedOf`, on the
   `post_targets_listed` index), whatever the comment became.

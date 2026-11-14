@@ -116,12 +116,13 @@ interface MetaCommentOptions {
 /**
  * What Meta refusing a comment means: as a post's (`graphRefusal`), but a
  * permission the token lacks (code 10, 200 to 299), or a role the person
- * lost, refuses this comment alone. The post is live with the same token,
+ * lost, refuses this comment alone, as does a 401 or 403 without Meta's
+ * error code, which proves nothing of the token. The post is live with the same token,
  * so the channel is never marked to reconnect for it: the part fails as
  * `permissionDenied`, which a member reads.
  */
 const commentRefusal: typeof graphRefusal = (call, refusal) =>
-  refusal._tag === "token" && refusal.permission
+  refusal._tag === "token" && (refusal.permission || !refusal.coded)
     ? new BadRequest({ code: "permissionDenied" })
     : graphRefusal(call, refusal);
 
