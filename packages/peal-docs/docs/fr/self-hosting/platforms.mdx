@@ -20,6 +20,7 @@ Un serveur auto-hébergé propose une plateforme une fois que vous y avez enregi
 | [YouTube](#youtube)                            | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`                                                                         | Un écran de consentement publié, vérifié par Google     |
 | [Pinterest](#pinterest)                        | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`                                                                           | L’accès Standard de Pinterest                           |
 | [Google Business Profile](#google-business)    | `GOOGLE_BUSINESS_CLIENT_ID`, `GOOGLE_BUSINESS_CLIENT_SECRET`                                                         | L’accès de Google aux API Business Profile              |
+| [Sites WordPress](#wordpress)                  | Aucun : chaque membre donne le mot de passe d’application de son site                                                | Rien à enregistrer                                      |
 
 Pour LinkedIn, X, YouTube, Pinterest et Google Business Profile, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme. [Variables d’environnement](/self-hosting/environment-variables#channels) liste chaque réglage des plateformes, avec sa valeur par défaut.
 
@@ -513,3 +514,7 @@ Google va chercher chaque photo par un lien vers le stockage des médias, valabl
   suppression de l’espace de travail : lisez ces règles, et jugez si cela
   convient à votre usage.
 </Callout>
+
+## Sites WordPress [#wordpress]
+
+Un site WordPress ne demande aucune application : un membre le connecte avec son adresse, un utilisateur et un mot de passe d’application créé sur la page de profil de cet utilisateur ([Sites web et articles](/guides/channels/websites)), que le serveur garde chiffré avec `PEAL_TOKEN_KEYS`. Peal joint l’API REST du site en HTTPS sur le port par défaut, à des adresses publiques seulement, redirections comprises : un site de votre propre réseau demande son nom d’hôte, ou son adresse, dans `PEAL_OUTBOUND_ALLOWED_HOSTS` ([Variables d’environnement](/self-hosting/environment-variables#channels)). N’y mettez que des hôtes auxquels vous confiez tous les membres : c’est ainsi qu’une requête pourrait atteindre un service de votre réseau.

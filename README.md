@@ -57,21 +57,24 @@ write a post once, schedule it across platforms, and see how it performs.
 
 ## Platforms
 
-| Platform                | Publish |      Analytics      | Inbox |
-| ----------------------- | :-----: | :-----------------: | :---: |
-| Mastodon                |    ✓    |          ✓          |   ✓   |
-| Bluesky                 |    ✓    |          ✓          |   ✓   |
-| LinkedIn profiles       |    ✓    |                     |       |
-| LinkedIn pages          |    ✓    |          ✓          |       |
-| X                       |    ✓    | ✓ (operator opt-in) |       |
-| Threads                 |    ✓    |          ✓          |       |
-| Instagram               |    ✓    |          ✓          |       |
-| Facebook Pages          |    ✓    |          ✓          |       |
-| TikTok                  |    ✓    |          ✓          |       |
-| YouTube                 |    ✓    |          ✓          |       |
-| Pinterest               |    ✓    |          ✓          |       |
-| Google Business Profile |    ✓    |                     |       |
+| Platform                   | Publish |      Analytics      | Inbox |
+| -------------------------- | :-----: | :-----------------: | :---: |
+| Mastodon                   |    ✓    |          ✓          |   ✓   |
+| Bluesky                    |    ✓    |          ✓          |   ✓   |
+| LinkedIn profiles          |    ✓    |                     |       |
+| LinkedIn pages             |    ✓    |          ✓          |       |
+| X                          |    ✓    | ✓ (operator opt-in) |       |
+| Threads                    |    ✓    |          ✓          |       |
+| Instagram                  |    ✓    |          ✓          |       |
+| Facebook Pages             |    ✓    |          ✓          |       |
+| TikTok                     |    ✓    |          ✓          |       |
+| YouTube                    |    ✓    |          ✓          |       |
+| Pinterest                  |    ✓    |          ✓          |       |
+| Google Business Profile    |    ✓    |                     |       |
+| WordPress sites (articles) |    ✓    |                     |       |
 
+A WordPress site takes articles, with a formatted body, a featured image,
+tags and categories ([Websites and articles](https://docs.peal.social/guides/channels/websites)).
 Each platform's limits, media rules and the counts it gives are in the docs'
 [Channels](https://docs.peal.social/guides/channels) and
 [Analytics](https://docs.peal.social/guides/engage/analytics) pages. Meta ad accounts can be

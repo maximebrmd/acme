@@ -5,7 +5,7 @@ import { defineMeta } from "blume";
 export const shared = {
   directory: "none",
   display: "flat",
-  pages: ["index"],
+  pages: ["index", "websites"],
   title: "Channels",
 } as const;
 

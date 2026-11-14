@@ -171,3 +171,49 @@ none of them, and the new table is ignored.
 
 3. **Either lists a row:** do not roll back past this release; release a
    fix forward instead. Never change the rows by hand.
+
+## Past websites and articles
+
+The release that connects WordPress sites and sends articles to them
+(migration `articles`) stores what the release before cannot read:
+
+- a channel of a website (`channels.channels.platform = 'wordpress'`):
+  the release before reads every channel as a social network's, so the
+  workspace's channels, and the jobs that walk every channel (analytics'
+  collection, the inbox's), fail on that row for every workspace;
+- the events and notices that name one: a webhook event of a website's
+  channel (`channel.connected`…, `article.published`, `article.failed`)
+  and a notice that it must be reconnected, which the release before
+  fails to decode where it reads them;
+- articles (`publishing.articles`, `publishing.article_calls`) and their
+  jobs (`PublishArticleV1`), which the release before ignores: an article
+  waiting to go out is not sent while it runs.
+
+1. **Channels of websites:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT id, workspace_id FROM channels.channels WHERE platform = 'wordpress'"
+   ```
+
+2. **Events and notices that name a website, or an article:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT 'event' AS kind, id FROM webhooks.events WHERE type LIKE 'article.%' OR data->>'platform' = 'wordpress' UNION ALL SELECT 'notice', id FROM notifications.notices WHERE event->'channel'->>'platform' = 'wordpress'"
+   ```
+
+3. **Articles waiting to go out:**
+
+   ```sh
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     "SELECT id, workspace_id, status FROM publishing.articles WHERE status IN ('scheduled', 'publishing')"
+   ```
+
+4. **Checks 1 or 2 list a row:** do not roll back past this release;
+   release a fix forward instead. Never change the rows by hand.
+
+5. **Check 3 lists an article, and nothing else does:** rolling back
+   leaves it unsent until this release is back, when its job runs, late
+   or missed past an hour (`missed`). Tell its workspace, or wait until it
+   has gone out.

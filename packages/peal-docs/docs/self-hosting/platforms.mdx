@@ -20,6 +20,7 @@ A self-hosted server offers a platform once you register an app for it on that p
 | [YouTube](#youtube)                         | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`                                                                         | A published consent screen, verified by Google |
 | [Pinterest](#pinterest)                     | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`                                                                           | Pinterest's Standard access                    |
 | [Google Business Profile](#google-business) | `GOOGLE_BUSINESS_CLIENT_ID`, `GOOGLE_BUSINESS_CLIENT_SECRET`                                                         | Google's access to the Business Profile APIs   |
+| [WordPress websites](#wordpress)            | None: each member gives their site's application password                                                            | Nothing to register                            |
 
 For LinkedIn, X, YouTube, Pinterest and Google Business Profile, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform. [Environment variables](/self-hosting/environment-variables#channels) lists every platform setting, with its default.
 
@@ -492,3 +493,7 @@ Google fetches each photo from a link to the media store, valid for two hours: t
   post's name and address on Google, until the channel is disconnected or the
   workspace deleted: read the policies, and decide whether that suits your use.
 </Callout>
+
+## WordPress websites [#wordpress]
+
+A WordPress site needs no app: a member connects it with its address, a user and an application password made on that user's profile page ([Websites and articles](/guides/channels/websites)), which the server keeps encrypted with `PEAL_TOKEN_KEYS`. Peal reaches the site's REST API over HTTPS on the default port, at public addresses only, redirects included: a site on your own network needs its host name, or address, in `PEAL_OUTBOUND_ALLOWED_HOSTS` ([Environment variables](/self-hosting/environment-variables#channels)). List only hosts you trust every member with: it is how a request could reach a service inside your network.
