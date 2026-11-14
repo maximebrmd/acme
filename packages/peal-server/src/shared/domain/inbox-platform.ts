@@ -5,15 +5,18 @@ import { Schema } from "effect";
  * operator turned them on (`PEAL_INBOX_PLATFORMS`): their platforms grant
  * the permissions they take to an app only after a review (Meta's App
  * Review; Google's verification of a sensitive scope for YouTube;
- * LinkedIn's Community Management review for company pages), so a
- * server offers them once its app holds them. Mastodon and Bluesky need no
- * such grant, and are always read.
+ * LinkedIn's Community Management review for company pages; Google's
+ * access to the Business Profile APIs, whose quota is zero until Google
+ * grants it, for a location's reviews), so a server offers them once its
+ * app holds them. Mastodon and Bluesky need no such grant, and are always
+ * read.
  */
 export const OptionalInboxPlatformSchema = Schema.Literals([
   "facebook",
   "instagram",
   "youtube",
   "linkedin",
+  "googleBusiness",
 ]);
 
 export type OptionalInboxPlatform = typeof OptionalInboxPlatformSchema.Type;
@@ -79,3 +82,15 @@ export const linkedinCommentScopes = {
   read: "r_organization_social_feed",
   write: "w_organization_social_feed",
 } as const;
+
+/**
+ * The scope a Google Business Profile location's reviews take: the
+ * reference of `accounts.locations.reviews` (My Business API v4,
+ * developers.google.com/my-business/reference/rest/v4/accounts.locations.reviews,
+ * each method read 2026-11-14) names `business.manage` (or its deprecated
+ * `plus.business.manage`) for `list`, `get`, `updateReply` and
+ * `deleteReply`. Peal's Business Profile sign-in already asks it, for
+ * posting, so reading reviews asks nothing more.
+ */
+export const googleBusinessReviewScope =
+  "https://www.googleapis.com/auth/business.manage";

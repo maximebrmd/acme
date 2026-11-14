@@ -98,6 +98,7 @@ layer(StoreTest)("the review store", (it) => {
       Effect.gen(function* keeps() {
         const workspaceId = yield* freshWorkspace;
         const store = yield* ReviewStore;
+
         const thread = yield* locationOf(
           workspaceId,
           "2047-02-02T10:00:00.000Z"
@@ -178,6 +179,7 @@ layer(StoreTest)("the review store", (it) => {
       Effect.gen(function* journals() {
         const workspaceId = yield* freshWorkspace;
         const store = yield* ReviewStore;
+
         const thread = yield* locationOf(
           workspaceId,
           "2047-02-03T10:00:00.000Z"
@@ -305,6 +307,7 @@ layer(StoreTest)("the review store", (it) => {
         const workspaceId = yield* freshWorkspace;
         const store = yield* ReviewStore;
         const read = yield* locationOf(workspaceId, "1931-01-01T10:00:00.000Z");
+
         const unread = yield* locationOf(
           workspaceId,
           "1931-01-01T10:00:00.000Z"
