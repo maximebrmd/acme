@@ -1,0 +1,11 @@
+# zizmor's settings, which CI's `workflows` job reads.
+rules:
+  # A release waits three days before Dependabot proposes it, Dependabot's
+  # own default, which dependabot.yml states.
+  dependabot-cooldown:
+    config:
+      days: 3
+  # The `$/` form of a local action is too new for actionlint, which refuses
+  # it: CI's local actions keep `./`.
+  self-repository:
+    disable: true

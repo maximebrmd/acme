@@ -393,10 +393,11 @@ describe("compose.self-host.yaml", () => {
 
 const bunVersion = read("..", "..", "..", ".bun-version").trim();
 
-// The Node version CI runs, which builds and runs the web app.
+// The Node version CI runs, which builds and runs the web app: every job
+// sets it up through the workspace's setup action.
 const nodeVersion =
   /node-version: (?<version>\S+)/u.exec(
-    read("..", "..", "..", ".github", "workflows", "ci.yml")
+    read("..", "..", "..", ".github", "actions", "setup", "action.yml")
   )?.groups?.["version"] ?? "";
 
 const dockerfiles = [

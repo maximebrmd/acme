@@ -36,6 +36,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - id: tag
         run: bun packages/peal-sdk/scripts/release.ts "$GITHUB_REF_NAME"
 
@@ -55,10 +56,12 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun nx run peal-sdk-node:sdk:build
       # Trusted publishing, with a provenance statement linking the package
@@ -82,9 +85,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
+          package-manager-cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: 0.13.7
@@ -110,9 +115,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
+          package-manager-cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       # Builds the gem in the Ruby image scripts/languages.ts pins.
       - run: bun nx run peal-sdk-ruby:sdk:build
@@ -185,9 +192,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
+          package-manager-cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       # Packs the package in the .NET SDK image scripts/languages.ts pins.
       - run: bun nx run peal-sdk-dotnet:sdk:build
@@ -240,10 +249,14 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The token pushes this one tag, and stays out of .git/config.
       - run: |
           git tag "packages/peal-sdk/go/v${VERSION}" "$GITHUB_SHA"
-          git push origin "packages/peal-sdk/go/v${VERSION}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "packages/peal-sdk/go/v${VERSION}"
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.resolve.outputs.version }}
       # Asks Go's module proxy for the version, so pkg.go.dev lists it.
       - run: curl --fail --silent --show-error "https://proxy.golang.org/github.com/peal-social/peal/packages/peal-sdk/go/@v/v${VERSION}.info"
