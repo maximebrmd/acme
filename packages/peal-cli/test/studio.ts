@@ -150,6 +150,8 @@ import { rateCard } from "peal-contract/rate-card";
 
 import { adsGroupLive, adsWorld } from "./studio-ads.ts";
 import type { AdsWorld } from "./studio-ads.ts";
+import { makeArticles, studioArticlesLive } from "./studio-articles.ts";
+import type { ArticlesState } from "./studio-articles.ts";
 import {
   capabilitiesOn,
   describedPlatforms,
@@ -1418,6 +1420,7 @@ const inPerson = CurrentPrincipal.pipe(
 
 export interface Studio {
   readonly inbox: Ref.Ref<InboxState>;
+  readonly articles: Ref.Ref<ArticlesState>;
   readonly reviews: Ref.Ref<ReviewsState>;
   /** The API keys the server takes, beside the user's access token. */
   readonly keys: readonly StudioKey[];
@@ -1432,6 +1435,7 @@ export const makeStudio = (
   keys: readonly StudioKey[] = []
 ) =>
   Effect.all({
+    articles: makeArticles,
     inbox: makeInbox,
     reviews: makeReviews,
     state: Ref.make<StudioState>({
@@ -6027,6 +6031,7 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     studioInboxLive(studio.inbox),
     studioReviewsLive(studio.reviews),
+    studioArticlesLive(studio.articles),
     HttpApiBuilder.group(Api, "tags", (handlers) =>
       handlers.handleAll({
         create: ({ params, payload }) =>

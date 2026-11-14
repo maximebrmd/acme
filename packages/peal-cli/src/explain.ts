@@ -432,6 +432,22 @@ const reasonOf =
         refused(
           "Ads are off on this server, or the ad network is not set up on it: its operator turns them on (PEAL_ADS)."
         ),
+      ArticleChangeRefused: ({ code }) =>
+        refused(
+          code === "tokenExpired"
+            ? "The website refused Peal's application password: reconnect it with peal channels connect-website. Nothing changed."
+            : `The website refused the change (${code}): nothing changed.`
+        ),
+      ArticleNotFound: () =>
+        refused(
+          "The workspace has no such article: peal articles list shows them."
+        ),
+      ArticleRejected: ({ violations }) =>
+        refused(
+          `The article was refused: ${violations.map(({ _tag }) => _tag).join(", ")}. Nothing was saved.`
+        ),
+      ArticleStateConflict: ({ state }) =>
+        refused(`The article is ${state}, which does not allow this.`),
       AlreadyMember: () => refused("That address belongs to a member already."),
       AltTextTooLong: ({ maxLength }) =>
         refused(

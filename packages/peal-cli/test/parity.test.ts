@@ -33,7 +33,20 @@ const adSignIn =
 const adSignIns =
   "Sign-ins to an ad network are listed and removed where they are made, in the web app; peal ads accounts lists the ad accounts they connect.";
 
+const richText =
+  "An article's body is the web app editor's rich-text document: the command line writes plain text when it creates one, and its edits are the web app's, or the API's and the SDKs' for a program.";
+
 const coverage = {
+  "articles.create": by("articles create"),
+  "articles.delete": by("articles delete"),
+  "articles.get": by("articles show"),
+  "articles.list": by("articles list"),
+  "articles.retry": by("articles retry"),
+  "articles.schedule": by("articles schedule"),
+  "articles.unpublish": by("articles unpublish"),
+  "articles.unschedule": by("articles unschedule"),
+  "articles.update": exempt(richText),
+  "articles.updateOnSite": exempt(richText),
   "activity.list": by("activity list"),
   "ads.auditTrail": by("ads audit"),
   "ads.completeConnect": exempt(adSignIn),
