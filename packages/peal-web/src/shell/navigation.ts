@@ -25,6 +25,7 @@ export type Page =
   | "channels"
   | "drafts"
   | "feeds"
+  | "followUps"
   | "general"
   | "import"
   | "inbox"
@@ -167,6 +168,12 @@ const pages: Readonly<Record<Page, PageRule>> = {
     path: "/settings/recycling",
     section: "settings",
   },
+  followUps: {
+    may: needs("post:read"),
+    mode: "studio",
+    path: "/settings/follow-ups",
+    section: "settings",
+  },
   security: {
     may: anyone,
     mode: "studio",
@@ -224,6 +231,7 @@ const sectionPages: Readonly<Record<Section, readonly Page[]>> = {
     "channelSets",
     "queues",
     "recycling",
+    "followUps",
     "feeds",
     "assistant",
   ],

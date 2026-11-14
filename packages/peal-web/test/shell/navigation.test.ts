@@ -154,6 +154,7 @@ describe(navigationOf, () => {
       "tags",
       "signatures",
       "recycling",
+      "followUps",
       "feeds",
     ]);
     expect(
