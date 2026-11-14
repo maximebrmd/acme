@@ -9,6 +9,7 @@ import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
+import { ConnectSite } from "#channels/application/connect-site.ts";
 import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
@@ -34,6 +35,7 @@ import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
 import { PlatformAuthorizersLive } from "#channels/infrastructure/platforms/platform-authorizers.ts";
+import { WordPressSiteVerifierLive } from "#channels/infrastructure/platforms/wordpress/wordpress-site-verifier.ts";
 import { PublicConnectLinkAddresses } from "#channels/infrastructure/public-connect-link-addresses.ts";
 import { PublicDataDeletionLinks } from "#channels/infrastructure/public-data-deletion-links.ts";
 import { RandomConnectLinkTokens } from "#channels/infrastructure/random-connect-link-tokens.ts";
@@ -63,7 +65,8 @@ const ChannelEventsLive = engagementChannelEvents(
 const PlatformsLive = Layer.mergeAll(
   PlatformAuthorizersLive,
   OAuthClientDocumentsLive,
-  MetaSignedRequestsLive
+  MetaSignedRequestsLive,
+  WordPressSiteVerifierLive
 ).pipe(
   Layer.provide(ChannelPlatformsLive),
   Layer.provide(InboxPlatformsLive),
@@ -112,6 +115,7 @@ const UseCasesLive = Layer.mergeAll(
     Layer.provideMerge(ConnectLinks.layer),
     Layer.provideMerge(ConnectChannel.layer)
   ),
+  ConnectSite.layer,
   ChannelUsage.layer,
   DeletePlatformUserData.layer,
   DeauthorizePlatformUser.layer,

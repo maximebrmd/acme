@@ -1,5 +1,6 @@
 // What the server writes about a request never holds a credential: a
-// connect link's token, a review link's, a partner key, the token of a
+// connect link's token, a review link's, a partner key, a website's
+// application password, the token of a
 // link that applies a request to cancel, the value of a header a webhook
 // endpoint's deliveries carry, two-step verification's key, codes and
 // recovery codes, the image provider's key, or the key of a provider a
@@ -201,6 +202,25 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             body: { token: requestToken, workspaceId: customer.id },
           });
 
+          // A website's application password, refused before it leaves:
+          // the site is on a loopback address.
+          const sitePassword = "synthetic-site-password-that-opens-nothing";
+
+          const site = yield* app.request(
+            `/api/workspaces/${customer.id}/channels/websites`,
+            {
+              body: {
+                address: "127.0.0.1",
+                applicationPassword: sitePassword,
+                platform: "wordpress",
+                userName: "synthetic-editor",
+              },
+              headers: bearer(key),
+            }
+          );
+
+          assert.strictEqual(site.status, 422);
+
           // What an address holds is written, which is why no token goes
           // in one: this search would find it.
           const inAddress = "synthetic-marker-in-an-address";
@@ -221,6 +241,7 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             ["a partner key", key],
             ["a review link's token", reviewToken],
             ["a contract request's token", requestToken],
+            ["a website's application password", sitePassword],
           ] as const) {
             assert.notInclude(all, secret, name);
           }

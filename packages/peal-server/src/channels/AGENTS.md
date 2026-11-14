@@ -22,6 +22,31 @@
   the insert: `ChannelAllowance.counted` with the pool's count, which only
   a server that bills reads (billing's account-days). A new path that adds
   a channel calls it too; moving or reconnecting one adds none.
+- A channel connects a social network (`Platform`), whose channels take
+  posts, or a website (`SitePlatform`: `wordpress`), whose channels take
+  articles (`ChannelPlatform`, `#shared/domain/platform.ts`; the contract
+  copies all three). Only social channels reach posts, analytics, the
+  inbox, connect links and the channel directory: filter with
+  `isSocialPlatform` or `isSocialChannel` (`application/social-channels.ts`)
+  where a channel is read for them, in the query when it pages
+  (`DrizzleChannelDirectory`), so a website's row is never decoded as a
+  `Platform`. `ChannelAccess.withToken` and `account` answer a website's
+  channel `notFound`, `withSiteToken` a social one.
+- A website connects without a sign-in page (`ConnectSite`,
+  `POST …/channels/websites`): its address, a user and an application
+  password, checked on the site by `SiteVerifier`
+  (`platforms/wordpress/wordpress-site-verifier.ts`: discovery by the
+  home page's `Link` header of relation `https://api.w.org/`, HEAD,
+  redirects followed one guarded request at a time, `/wp-json/`
+  otherwise; the index's `wp/v2` namespace; `/wp/v2/users/me?context=edit`
+  with `publish_posts` and `upload_files`), every request through
+  `publicHttpClient` and the outbound guard. Refusals are `SiteRefused`
+  (`SiteNotConnected` in the contract). The channel's account id is the
+  API's root, its handle the home page without scheme, its token
+  `user:password` sealed by `TokenCipher` as any token (`nonExpiring`,
+  never renewed: a refused one marks the channel to reconnect), and it is
+  added through `channelRoomOf` (`application/channel-room.ts`), as every
+  channel is. Connecting the same site again reconnects its channel.
 - On a server that bills, an account of a platform whose calls are passed
   through at the platform's rates (X, on the `xApi` meter) is connected
   only on per-account pricing that pays: `ChannelAllowance.passedThrough`

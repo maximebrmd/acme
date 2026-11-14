@@ -695,6 +695,11 @@
     "tag": "SignedRequestRefused"
   },
   {
+    "code": "site_not_connected",
+    "status": 422,
+    "tag": "SiteNotConnected"
+  },
+  {
     "code": "spend_ceiling_exceeded",
     "status": 409,
     "tag": "SpendCeilingExceeded"

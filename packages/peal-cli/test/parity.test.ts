@@ -109,6 +109,7 @@ const coverage = {
   "channels.chooseAccounts": exempt(connecting),
   "channels.completeConnect": exempt(connecting),
   "channels.connect": exempt(connecting),
+  "channels.connectSite": by("channels connect-website"),
   "channels.disable": by("channels disable"),
   "channels.disconnect": exempt(
     "Disconnecting deletes a channel and fails its scheduled posts: a person does it, in the web app."

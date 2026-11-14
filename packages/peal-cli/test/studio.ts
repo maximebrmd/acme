@@ -2,6 +2,7 @@ import { DateTime, Effect, Layer, Option, Ref, Result, Stream } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
+  SiteNotConnected,
   AlreadyMember,
   Api,
   ApprovalChanged,
@@ -77,6 +78,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  Channel,
   Credential,
   CustomerHealth,
   ImageProvider,
@@ -3203,6 +3205,41 @@ export const studioGroupsLive = (studio: Studio) =>
         chooseAccounts: () => refusing,
         completeConnect: () => refusing,
         connect: () => refusing,
+        // A website connects at once: a password with "refused" in it
+        // stands for one the site refuses.
+        connectSite: ({ params, payload }) =>
+          Effect.gen(function* connectSite() {
+            yield* allowed("channel:connect");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            if (payload.applicationPassword.includes("refused")) {
+              return yield* new SiteNotConnected({
+                reason: "credentialsRefused",
+              });
+            }
+
+            yield* record(
+              studio,
+              `website:connect:${payload.address}:${payload.userName}:${payload.applicationPassword}`
+            );
+
+            const site: Channel = {
+              avatarUrl: null,
+              connection: null,
+              displayName: "Synthetic Garden Journal",
+              handle: payload.address.replace(/^https?:\/\//u, ""),
+              id: "0199a000-0000-7000-8000-000000005173",
+              label: null,
+              platform: payload.platform,
+              status: { _tag: "active" },
+              tokenExpiresAt: null,
+            };
+
+            return site;
+          }),
         disable: ({ params }) =>
           changingChannel(studio, params, turnedOff, "disable"),
         disconnect: () => refusing,

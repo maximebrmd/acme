@@ -22,6 +22,7 @@ import {
   SitePlatformSchema,
 } from "./platform.ts";
 import type { Platform } from "./platform.ts";
+import { SiteNotConnected } from "./site-not-connected.ts";
 import { UsageAllowanceReached } from "./usage-allowance-reached.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -324,6 +325,18 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         description:
           "Lists the platforms this server can connect accounts of, in Peal's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.",
         summary: "List connectable platforms",
+      })
+    ),
+    HttpApiEndpoint.post("connectSite", "/websites", {
+      error: [...connectErrors, SiteNotConnected],
+      params: workspace,
+      payload: ConnectSiteSchema,
+      success: ChannelSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Connects a website, to publish articles to it: a WordPress site, by its address, the login name of the user Peal publishes as and an application password made for Peal on that user's profile page. Peal finds the site's REST API, checks the user may publish posts and upload files, and keeps the password encrypted. The site must be on HTTPS at a public address (SiteNotConnected `addressNotAllowed`); one that has no WordPress REST API is `notWordPress`, a refused password `credentialsRefused`, a user who may not publish `cannotPublish`. A site that does not answer, or fails on its side, is PlatformUnreachable. A site the workspace has already is reconnected with the new password. A site counts as one channel: a new one needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.",
+        summary: "Connect a website",
       })
     ),
     HttpApiEndpoint.post("connect", "/connect/:platform", {

@@ -805,6 +805,21 @@ const reasonOf =
         refused(
           "The workspace has no short link with that id: peal short-links list shows them."
         ),
+      SiteNotConnected: ({ reason }) =>
+        refused(
+          `The website was not connected: ${
+            {
+              addressNotAllowed:
+                "Peal reaches websites over HTTPS, on the default port, at public addresses only",
+              cannotPublish:
+                "the user may not publish posts or upload files there: use an Author, an Editor or an Administrator",
+              credentialsRefused:
+                "the site refused the user name and the application password: check both, and that the site lets application passwords through (some hosts strip the Authorization header)",
+              notWordPress:
+                "the address leads to no WordPress REST API: give the site's home page",
+            }[reason]
+          }. Nothing was saved.`
+        ),
       SignatureNameTaken: () =>
         refused(
           "The workspace already has a signature of that name, whatever its case: nothing was changed. peal signatures list shows them."

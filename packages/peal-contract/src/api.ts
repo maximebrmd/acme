@@ -1686,6 +1686,13 @@ export { TooManyRequests } from "./too-many-requests.ts";
 
 export { Unauthenticated } from "./unauthenticated.ts";
 
+export {
+  SiteNotConnected,
+  SiteNotConnectedReasonSchema,
+} from "./site-not-connected.ts";
+
+export type { SiteNotConnectedReason } from "./site-not-connected.ts";
+
 export { UnknownChannels } from "./unknown-channels.ts";
 
 export { UnknownMedia } from "./unknown-media.ts";
