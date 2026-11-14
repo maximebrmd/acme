@@ -1380,22 +1380,24 @@ func (p *PostTags) MarshalJSON() ([]byte, error) {
 type AttemptResult string
 
 const (
-	AttemptResultPublished           AttemptResult = "published"
-	AttemptResultUnconfirmed         AttemptResult = "unconfirmed"
-	AttemptResultContentRejected     AttemptResult = "contentRejected"
-	AttemptResultChannelDisconnected AttemptResult = "channelDisconnected"
-	AttemptResultChannelDisabled     AttemptResult = "channelDisabled"
-	AttemptResultMediaRemoved        AttemptResult = "mediaRemoved"
-	AttemptResultMediaRejected       AttemptResult = "mediaRejected"
-	AttemptResultRateLimited         AttemptResult = "rateLimited"
-	AttemptResultTokenExpired        AttemptResult = "tokenExpired"
-	AttemptResultUnavailable         AttemptResult = "unavailable"
-	AttemptResultAppNotAudited       AttemptResult = "appNotAudited"
-	AttemptResultQuotaExceeded       AttemptResult = "quotaExceeded"
-	AttemptResultAppBillingLimit     AttemptResult = "appBillingLimit"
-	AttemptResultPlanLimit           AttemptResult = "planLimit"
-	AttemptResultPartsNotSent        AttemptResult = "partsNotSent"
-	AttemptResultRepliesNotAllowed   AttemptResult = "repliesNotAllowed"
+	AttemptResultPublished             AttemptResult = "published"
+	AttemptResultUnconfirmed           AttemptResult = "unconfirmed"
+	AttemptResultContentRejected       AttemptResult = "contentRejected"
+	AttemptResultChannelDisconnected   AttemptResult = "channelDisconnected"
+	AttemptResultChannelDisabled       AttemptResult = "channelDisabled"
+	AttemptResultMediaRemoved          AttemptResult = "mediaRemoved"
+	AttemptResultMediaRejected         AttemptResult = "mediaRejected"
+	AttemptResultRateLimited           AttemptResult = "rateLimited"
+	AttemptResultTokenExpired          AttemptResult = "tokenExpired"
+	AttemptResultUnavailable           AttemptResult = "unavailable"
+	AttemptResultAppNotAudited         AttemptResult = "appNotAudited"
+	AttemptResultQuotaExceeded         AttemptResult = "quotaExceeded"
+	AttemptResultAppBillingLimit       AttemptResult = "appBillingLimit"
+	AttemptResultPlanLimit             AttemptResult = "planLimit"
+	AttemptResultPartsNotSent          AttemptResult = "partsNotSent"
+	AttemptResultRepliesNotAllowed     AttemptResult = "repliesNotAllowed"
+	AttemptResultPaymentMethodRequired AttemptResult = "paymentMethodRequired"
+	AttemptResultXCeilingReached       AttemptResult = "xCeilingReached"
 )
 
 func NewAttemptResultFromString(s string) (AttemptResult, error) {
@@ -1432,6 +1434,10 @@ func NewAttemptResultFromString(s string) (AttemptResult, error) {
 		return AttemptResultPartsNotSent, nil
 	case "repliesNotAllowed":
 		return AttemptResultRepliesNotAllowed, nil
+	case "paymentMethodRequired":
+		return AttemptResultPaymentMethodRequired, nil
+	case "xCeilingReached":
+		return AttemptResultXCeilingReached, nil
 	}
 	var t AttemptResult
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

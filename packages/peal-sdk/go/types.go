@@ -1479,6 +1479,7 @@ const (
 	AllowanceReasonNotEnabled            AllowanceReason = "notEnabled"
 	AllowanceReasonPlanAllowance         AllowanceReason = "planAllowance"
 	AllowanceReasonPaymentFailed         AllowanceReason = "paymentFailed"
+	AllowanceReasonSpendCapReached       AllowanceReason = "spendCapReached"
 )
 
 func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
@@ -1493,6 +1494,8 @@ func NewAllowanceReasonFromString(s string) (AllowanceReason, error) {
 		return AllowanceReasonPlanAllowance, nil
 	case "paymentFailed":
 		return AllowanceReasonPaymentFailed, nil
+	case "spendCapReached":
+		return AllowanceReasonSpendCapReached, nil
 	}
 	var t AllowanceReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7350,22 +7353,24 @@ func (f *FacebookOptions) String() string {
 type FailureReason string
 
 const (
-	FailureReasonContentRejected     FailureReason = "contentRejected"
-	FailureReasonChannelDisconnected FailureReason = "channelDisconnected"
-	FailureReasonChannelDisabled     FailureReason = "channelDisabled"
-	FailureReasonMediaRemoved        FailureReason = "mediaRemoved"
-	FailureReasonMediaRejected       FailureReason = "mediaRejected"
-	FailureReasonMissed              FailureReason = "missed"
-	FailureReasonNotPublished        FailureReason = "notPublished"
-	FailureReasonRateLimited         FailureReason = "rateLimited"
-	FailureReasonTokenExpired        FailureReason = "tokenExpired"
-	FailureReasonUnavailable         FailureReason = "unavailable"
-	FailureReasonAppNotAudited       FailureReason = "appNotAudited"
-	FailureReasonQuotaExceeded       FailureReason = "quotaExceeded"
-	FailureReasonAppBillingLimit     FailureReason = "appBillingLimit"
-	FailureReasonPlanLimit           FailureReason = "planLimit"
-	FailureReasonPartsNotSent        FailureReason = "partsNotSent"
-	FailureReasonRepliesNotAllowed   FailureReason = "repliesNotAllowed"
+	FailureReasonContentRejected       FailureReason = "contentRejected"
+	FailureReasonChannelDisconnected   FailureReason = "channelDisconnected"
+	FailureReasonChannelDisabled       FailureReason = "channelDisabled"
+	FailureReasonMediaRemoved          FailureReason = "mediaRemoved"
+	FailureReasonMediaRejected         FailureReason = "mediaRejected"
+	FailureReasonMissed                FailureReason = "missed"
+	FailureReasonNotPublished          FailureReason = "notPublished"
+	FailureReasonRateLimited           FailureReason = "rateLimited"
+	FailureReasonTokenExpired          FailureReason = "tokenExpired"
+	FailureReasonUnavailable           FailureReason = "unavailable"
+	FailureReasonAppNotAudited         FailureReason = "appNotAudited"
+	FailureReasonQuotaExceeded         FailureReason = "quotaExceeded"
+	FailureReasonAppBillingLimit       FailureReason = "appBillingLimit"
+	FailureReasonPlanLimit             FailureReason = "planLimit"
+	FailureReasonPartsNotSent          FailureReason = "partsNotSent"
+	FailureReasonRepliesNotAllowed     FailureReason = "repliesNotAllowed"
+	FailureReasonPaymentMethodRequired FailureReason = "paymentMethodRequired"
+	FailureReasonXCeilingReached       FailureReason = "xCeilingReached"
 )
 
 func NewFailureReasonFromString(s string) (FailureReason, error) {
@@ -7402,6 +7407,10 @@ func NewFailureReasonFromString(s string) (FailureReason, error) {
 		return FailureReasonPartsNotSent, nil
 	case "repliesNotAllowed":
 		return FailureReasonRepliesNotAllowed, nil
+	case "paymentMethodRequired":
+		return FailureReasonPaymentMethodRequired, nil
+	case "xCeilingReached":
+		return FailureReasonXCeilingReached, nil
 	}
 	var t FailureReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

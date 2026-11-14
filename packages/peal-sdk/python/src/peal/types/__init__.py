@@ -561,6 +561,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_TrialEnding,
         NoticeEvent_WebhookDeliveriesFailing,
         NoticeEvent_WebhookEndpointDisabled,
+        NoticeEvent_XSpendCeiling,
     )
     from .notice_event_ad_boost_changed import NoticeEventAdBoostChanged
     from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
@@ -586,6 +587,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_trial_ending import NoticeEventTrialEnding
     from .notice_event_webhook_deliveries_failing import NoticeEventWebhookDeliveriesFailing
     from .notice_event_webhook_endpoint_disabled import NoticeEventWebhookEndpointDisabled
+    from .notice_event_x_spend_ceiling import NoticeEventXSpendCeiling
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
     from .notification_preferences_email import NotificationPreferencesEmail
@@ -976,6 +978,7 @@ if typing.TYPE_CHECKING:
     from .workspace_usage_report import WorkspaceUsageReport
     from .x_options import XOptions
     from .x_reply_settings import XReplySettings
+    from .x_usage import XUsage
     from .you_tube_license import YouTubeLicense
     from .you_tube_options import YouTubeOptions
     from .you_tube_playlist import YouTubePlaylist
@@ -1523,6 +1526,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventTrialEnding": ".notice_event_trial_ending",
     "NoticeEventWebhookDeliveriesFailing": ".notice_event_webhook_deliveries_failing",
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
+    "NoticeEventXSpendCeiling": ".notice_event_x_spend_ceiling",
     "NoticeEvent_AdBoostChanged": ".notice_event",
     "NoticeEvent_AdConnectionReconnectRequired": ".notice_event",
     "NoticeEvent_AllowanceReached": ".notice_event",
@@ -1546,6 +1550,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_TrialEnding": ".notice_event",
     "NoticeEvent_WebhookDeliveriesFailing": ".notice_event",
     "NoticeEvent_WebhookEndpointDisabled": ".notice_event",
+    "NoticeEvent_XSpendCeiling": ".notice_event",
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
     "NotificationPreferencesEmail": ".notification_preferences_email",
@@ -1933,6 +1938,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceUsageReport": ".workspace_usage_report",
     "XOptions": ".x_options",
     "XReplySettings": ".x_reply_settings",
+    "XUsage": ".x_usage",
     "YouTubeLicense": ".you_tube_license",
     "YouTubeOptions": ".you_tube_options",
     "YouTubePlaylist": ".you_tube_playlist",
@@ -2504,6 +2510,7 @@ __all__ = [
     "NoticeEventTrialEnding",
     "NoticeEventWebhookDeliveriesFailing",
     "NoticeEventWebhookEndpointDisabled",
+    "NoticeEventXSpendCeiling",
     "NoticeEvent_AdBoostChanged",
     "NoticeEvent_AdConnectionReconnectRequired",
     "NoticeEvent_AllowanceReached",
@@ -2527,6 +2534,7 @@ __all__ = [
     "NoticeEvent_TrialEnding",
     "NoticeEvent_WebhookDeliveriesFailing",
     "NoticeEvent_WebhookEndpointDisabled",
+    "NoticeEvent_XSpendCeiling",
     "NoticePage",
     "NotificationPreferences",
     "NotificationPreferencesEmail",
@@ -2914,6 +2922,7 @@ __all__ = [
     "WorkspaceUsageReport",
     "XOptions",
     "XReplySettings",
+    "XUsage",
     "YouTubeLicense",
     "YouTubeOptions",
     "YouTubePlaylist",

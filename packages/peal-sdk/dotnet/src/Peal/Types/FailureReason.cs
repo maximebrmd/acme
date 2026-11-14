@@ -40,6 +40,10 @@ public readonly record struct FailureReason : IStringEnum
 
     public static readonly FailureReason RepliesNotAllowed = new(Values.RepliesNotAllowed);
 
+    public static readonly FailureReason PaymentMethodRequired = new(Values.PaymentMethodRequired);
+
+    public static readonly FailureReason XCeilingReached = new(Values.XCeilingReached);
+
     public FailureReason(string value)
     {
         Value = value;
@@ -167,5 +171,9 @@ public readonly record struct FailureReason : IStringEnum
         public const string PartsNotSent = "partsNotSent";
 
         public const string RepliesNotAllowed = "repliesNotAllowed";
+
+        public const string PaymentMethodRequired = "paymentMethodRequired";
+
+        public const string XCeilingReached = "xCeilingReached";
     }
 }

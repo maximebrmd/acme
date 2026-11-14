@@ -12,6 +12,7 @@ module Peal
       NOT_ENABLED = "notEnabled"
       PLAN_ALLOWANCE = "planAllowance"
       PAYMENT_FAILED = "paymentFailed"
+      SPEND_CAP_REACHED = "spendCapReached"
     end
   end
 end

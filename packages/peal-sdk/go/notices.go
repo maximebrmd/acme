@@ -404,6 +404,7 @@ type NoticeEvent struct {
 	TrialEnding                   *NoticeEventTrialEnding
 	PaymentMethodNeeded           *NoticeEventPaymentMethodNeeded
 	AllowanceReached              *NoticeEventAllowanceReached
+	XSpendCeiling                 *NoticeEventXSpendCeiling
 	SubscriptionRenewing          *NoticeEventSubscriptionRenewing
 	SubscriptionCancelled         *NoticeEventSubscriptionCancelled
 	SubscriptionWithdrawn         *NoticeEventSubscriptionWithdrawn
@@ -520,6 +521,13 @@ func (n *NoticeEvent) GetAllowanceReached() *NoticeEventAllowanceReached {
 		return nil
 	}
 	return n.AllowanceReached
+}
+
+func (n *NoticeEvent) GetXSpendCeiling() *NoticeEventXSpendCeiling {
+	if n == nil {
+		return nil
+	}
+	return n.XSpendCeiling
 }
 
 func (n *NoticeEvent) GetSubscriptionRenewing() *NoticeEventSubscriptionRenewing {
@@ -681,6 +689,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.AllowanceReached = value
+	case "XSpendCeiling":
+		value := new(NoticeEventXSpendCeiling)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.XSpendCeiling = value
 	case "SubscriptionRenewing":
 		value := new(NoticeEventSubscriptionRenewing)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -786,6 +800,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.AllowanceReached != nil {
 		return internal.MarshalJSONWithExtraProperty(n.AllowanceReached, "_tag", "AllowanceReached")
 	}
+	if n.XSpendCeiling != nil {
+		return internal.MarshalJSONWithExtraProperty(n.XSpendCeiling, "_tag", "XSpendCeiling")
+	}
 	if n.SubscriptionRenewing != nil {
 		return internal.MarshalJSONWithExtraProperty(n.SubscriptionRenewing, "_tag", "SubscriptionRenewing")
 	}
@@ -834,6 +851,7 @@ type NoticeEventVisitor interface {
 	VisitTrialEnding(*NoticeEventTrialEnding) error
 	VisitPaymentMethodNeeded(*NoticeEventPaymentMethodNeeded) error
 	VisitAllowanceReached(*NoticeEventAllowanceReached) error
+	VisitXSpendCeiling(*NoticeEventXSpendCeiling) error
 	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
@@ -887,6 +905,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.AllowanceReached != nil {
 		return visitor.VisitAllowanceReached(n.AllowanceReached)
+	}
+	if n.XSpendCeiling != nil {
+		return visitor.VisitXSpendCeiling(n.XSpendCeiling)
 	}
 	if n.SubscriptionRenewing != nil {
 		return visitor.VisitSubscriptionRenewing(n.SubscriptionRenewing)
@@ -964,6 +985,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.AllowanceReached != nil {
 		fields = append(fields, "AllowanceReached")
+	}
+	if n.XSpendCeiling != nil {
+		fields = append(fields, "XSpendCeiling")
 	}
 	if n.SubscriptionRenewing != nil {
 		fields = append(fields, "SubscriptionRenewing")
@@ -3714,6 +3738,124 @@ func (n *NoticeEventWebhookEndpointDisabled) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventWebhookEndpointDisabled) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventXSpendCeilingFieldCeiling  = big.NewInt(1 << 0)
+	noticeEventXSpendCeilingFieldPercent  = big.NewInt(1 << 1)
+	noticeEventXSpendCeilingFieldResetsAt = big.NewInt(1 << 2)
+)
+
+type NoticeEventXSpendCeiling struct {
+	Ceiling  int    `json:"ceiling" url:"ceiling"`
+	Percent  int    `json:"percent" url:"percent"`
+	ResetsAt string `json:"resetsAt" url:"resetsAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventXSpendCeiling) GetCeiling() int {
+	if n == nil {
+		return 0
+	}
+	return n.Ceiling
+}
+
+func (n *NoticeEventXSpendCeiling) GetPercent() int {
+	if n == nil {
+		return 0
+	}
+	return n.Percent
+}
+
+func (n *NoticeEventXSpendCeiling) GetResetsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.ResetsAt
+}
+
+func (n *NoticeEventXSpendCeiling) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventXSpendCeiling) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetCeiling sets the Ceiling field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventXSpendCeiling) SetCeiling(ceiling int) {
+	n.Ceiling = ceiling
+	n.require(noticeEventXSpendCeilingFieldCeiling)
+}
+
+// SetPercent sets the Percent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventXSpendCeiling) SetPercent(percent int) {
+	n.Percent = percent
+	n.require(noticeEventXSpendCeilingFieldPercent)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventXSpendCeiling) SetResetsAt(resetsAt string) {
+	n.ResetsAt = resetsAt
+	n.require(noticeEventXSpendCeilingFieldResetsAt)
+}
+
+func (n *NoticeEventXSpendCeiling) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventXSpendCeiling
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventXSpendCeiling(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventXSpendCeiling) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventXSpendCeiling
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventXSpendCeiling) String() string {
 	if n == nil {
 		return "<nil>"
 	}

@@ -39,7 +39,12 @@ public final class FailureReason {
 
     public static final FailureReason RATE_LIMITED = new FailureReason(Value.RATE_LIMITED, "rateLimited");
 
+    public static final FailureReason X_CEILING_REACHED = new FailureReason(Value.X_CEILING_REACHED, "xCeilingReached");
+
     public static final FailureReason APP_BILLING_LIMIT = new FailureReason(Value.APP_BILLING_LIMIT, "appBillingLimit");
+
+    public static final FailureReason PAYMENT_METHOD_REQUIRED =
+            new FailureReason(Value.PAYMENT_METHOD_REQUIRED, "paymentMethodRequired");
 
     private final Value value;
 
@@ -103,8 +108,12 @@ public final class FailureReason {
                 return visitor.visitQuotaExceeded();
             case RATE_LIMITED:
                 return visitor.visitRateLimited();
+            case X_CEILING_REACHED:
+                return visitor.visitXCeilingReached();
             case APP_BILLING_LIMIT:
                 return visitor.visitAppBillingLimit();
+            case PAYMENT_METHOD_REQUIRED:
+                return visitor.visitPaymentMethodRequired();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -144,8 +153,12 @@ public final class FailureReason {
                 return QUOTA_EXCEEDED;
             case "rateLimited":
                 return RATE_LIMITED;
+            case "xCeilingReached":
+                return X_CEILING_REACHED;
             case "appBillingLimit":
                 return APP_BILLING_LIMIT;
+            case "paymentMethodRequired":
+                return PAYMENT_METHOD_REQUIRED;
             default:
                 return new FailureReason(Value.UNKNOWN, value);
         }
@@ -184,6 +197,10 @@ public final class FailureReason {
 
         REPLIES_NOT_ALLOWED,
 
+        PAYMENT_METHOD_REQUIRED,
+
+        X_CEILING_REACHED,
+
         UNKNOWN
     }
 
@@ -219,6 +236,10 @@ public final class FailureReason {
         T visitPartsNotSent();
 
         T visitRepliesNotAllowed();
+
+        T visitPaymentMethodRequired();
+
+        T visitXCeilingReached();
 
         T visitUnknown(String unknownType);
     }

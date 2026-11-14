@@ -17,6 +17,7 @@ export type NoticeEvent =
     | Peal.NoticeEvent.TrialEnding
     | Peal.NoticeEvent.PaymentMethodNeeded
     | Peal.NoticeEvent.AllowanceReached
+    | Peal.NoticeEvent.XSpendCeiling
     | Peal.NoticeEvent.SubscriptionRenewing
     | Peal.NoticeEvent.SubscriptionCancelled
     | Peal.NoticeEvent.SubscriptionWithdrawn
@@ -82,6 +83,10 @@ export namespace NoticeEvent {
 
     export interface AllowanceReached extends Peal.NoticeEventAllowanceReached {
         _tag: "AllowanceReached";
+    }
+
+    export interface XSpendCeiling extends Peal.NoticeEventXSpendCeiling {
+        _tag: "XSpendCeiling";
     }
 
     export interface SubscriptionRenewing extends Peal.NoticeEventSubscriptionRenewing {

@@ -273,6 +273,24 @@ class NoticeEvent_AllowanceReached(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_XSpendCeiling(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["XSpendCeiling"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "XSpendCeiling"
+    ceiling: int
+    percent: int
+    resets_at: typing_extensions.Annotated[str, FieldMetadata(alias="resetsAt"), pydantic.Field(alias="resetsAt")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_SubscriptionRenewing(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["SubscriptionRenewing"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -456,6 +474,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_TrialEnding,
         NoticeEvent_PaymentMethodNeeded,
         NoticeEvent_AllowanceReached,
+        NoticeEvent_XSpendCeiling,
         NoticeEvent_SubscriptionRenewing,
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,

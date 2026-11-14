@@ -117,6 +117,12 @@ class Billing extends JsonSerializableType
     public ?string $withdrawableUntil;
 
     /**
+     * @var ?XUsage $x
+     */
+    #[JsonProperty('x')]
+    public ?XUsage $x;
+
+    /**
      * @param array{
      *   accounts: BillingAccountsUsage,
      *   allowances: PlanAllowances,
@@ -136,6 +142,7 @@ class Billing extends JsonSerializableType
      *   trial?: ?TrialOffer,
      *   upcomingInvoice?: ?Money,
      *   withdrawableUntil?: ?string,
+     *   x?: ?XUsage,
      * } $values
      */
     public function __construct(
@@ -159,6 +166,7 @@ class Billing extends JsonSerializableType
         $this->usage = $values['usage'];
         $this->vatRate = $values['vatRate'];
         $this->withdrawableUntil = $values['withdrawableUntil'] ?? null;
+        $this->x = $values['x'] ?? null;
     }
 
     /**

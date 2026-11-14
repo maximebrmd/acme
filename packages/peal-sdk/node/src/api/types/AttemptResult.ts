@@ -16,6 +16,8 @@ export const AttemptResult = {
         AppBillingLimit: "appBillingLimit",
         PlanLimit: "planLimit",
         PartsNotSent: "partsNotSent",
-        RepliesNotAllowed: "repliesNotAllowed"
+        RepliesNotAllowed: "repliesNotAllowed",
+        PaymentMethodRequired: "paymentMethodRequired",
+        XCeilingReached: "xCeilingReached"
     } as const;
 export type AttemptResult = typeof AttemptResult[keyof typeof AttemptResult];

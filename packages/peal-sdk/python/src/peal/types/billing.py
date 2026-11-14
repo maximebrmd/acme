@@ -17,6 +17,7 @@ from .plan_offer import PlanOffer
 from .rate_card import RateCard
 from .trial_offer import TrialOffer
 from .usage import Usage
+from .x_usage import XUsage
 
 
 class Billing(UniversalBaseModel):
@@ -48,6 +49,7 @@ class Billing(UniversalBaseModel):
     withdrawable_until: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="withdrawableUntil"), pydantic.Field(alias="withdrawableUntil")
     ] = None
+    x: typing.Optional[XUsage] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
