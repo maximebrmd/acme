@@ -414,6 +414,40 @@ export const DrizzleArticleJournal = Layer.effect(
           ? yield* Effect.die("A journal row vanished after a conflict")
           : yield* callStartOf(row);
       }),
+      drop: (idempotencyKey) =>
+        db
+          .delete(articleCalls)
+          .where(
+            and(
+              eq(articleCalls.idempotencyKey, idempotencyKey),
+              isNull(articleCalls.finishedAt)
+            )
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      unfinishedBefore: (call) =>
+        db
+          .select()
+          .from(articleCalls)
+          .where(
+            and(
+              eq(articleCalls.articleId, call.articleId),
+              eq(articleCalls.round, call.round),
+              lt(articleCalls.attempt, call.attempt),
+              isNull(articleCalls.finishedAt)
+            )
+          )
+          .orderBy(articleCalls.attempt)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) =>
+              rows.map((row) => ({
+                committedAt: Option.fromNullOr(row.committedAt).pipe(
+                  Option.map(utc)
+                ),
+                idempotencyKey: row.idempotencyKey,
+              }))
+            )
+          ),
       found: (call) =>
         db
           .select()

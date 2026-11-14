@@ -18,6 +18,13 @@ export interface ArticleCall {
   readonly startedAt: DateTime.Utc;
 }
 
+/** A call that never wrote how it ended. */
+export interface UnfinishedCall {
+  readonly idempotencyKey: string;
+  /** When the post's call left, if it did: it may be on the site. */
+  readonly committedAt: Option.Option<DateTime.Utc>;
+}
+
 /** A file as the site keeps it: its id there, and its address. */
 export interface SiteFile {
   readonly id: number;
@@ -57,6 +64,20 @@ export class ArticleJournal extends Context.Service<
     readonly begin: (
       call: ArticleCall
     ) => Effect.Effect<ArticleCallStart, DatabaseError>;
+    /**
+     * The calls of the round's earlier attempts that never wrote how they
+     * ended, oldest first: one an attempt left when it gave its turn
+     * back, or a run that stopped.
+     */
+    readonly unfinishedBefore: (call: {
+      readonly articleId: ArticleId;
+      readonly attempt: number;
+      readonly round: number;
+    }) => Effect.Effect<readonly UnfinishedCall[], DatabaseError>;
+    /** Forgets a call that never reached the site. */
+    readonly drop: (
+      idempotencyKey: string
+    ) => Effect.Effect<void, DatabaseError>;
     /** What the journal holds of the call, without writing it down. */
     readonly found: (call: {
       readonly articleId: ArticleId;

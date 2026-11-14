@@ -224,12 +224,18 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   It calls the site directly, not through a channel's gate, but in the
   channel's turn (`ArticleSendTurns`, an advisory lock): the attempt and
   the journal's record of the post it made end before another attempt of
-  the channel looks for its own. A turn is never waited for (a send's
-  uploads may hold it many minutes): one taken, or none of the process's
-  two left, makes the attempt again a minute later, nothing written. An
-  attempt the journal says ended answers what it recorded, outside any
-  turn; one whose call may have reached the site is looked for before
-  the plan is checked.
+  the channel looks for its own. An attempt waits for its turn (one
+  taken, or none of the process's two left) by asking again every two to
+  five seconds, holding no connection, for 30 minutes, longer than an
+  attempt holds one; then it writes nothing and answers a retry a minute
+  later, and gives up a day past the article's time. Each attempt, once
+  in its turn, first takes up what an earlier attempt of the round left
+  unfinished: a call that never reached the site is dropped, and the post
+  of one that may have is looked for, never made again. An attempt the
+  journal says ended answers what it recorded, outside any turn; one
+  whose call may have reached the site is looked for before the plan is
+  checked. WordPress drops a featured image its library lost and answers
+  `featured_media` 0: the files are then sent once more, over that post.
 - WordPress's adapter (`platforms/wordpress/wordpress-articles.ts`)
   sends each file the article shows to `/wp/v2/media` (the bytes as the
   body, `Content-Disposition` naming the file, streamed), finds tags and
