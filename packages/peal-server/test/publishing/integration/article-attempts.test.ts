@@ -452,6 +452,9 @@ describe("an attempt at sending an article", () => {
           const actor = writer(workspaceId);
           const sent: ArticleId[] = [];
 
+          // All due at the same minute ahead, their jobs waiting by then.
+          const dueAt = DateTime.add(yield* DateTime.now, { minutes: 1 });
+
           for (let index = 0; index < 8; index += 1) {
             const site = yield* fakeWordPress();
             const channel = yield* siteChannel(workspaceId, site);
@@ -459,7 +462,7 @@ describe("an attempt at sending an article", () => {
             const article = yield* articles.create(
               actor,
               { channelId: channel.id, content: content() },
-              now
+              Option.some({ at: Option.some(dueAt), timeZone: zone })
             );
 
             sent.push(article.id);
