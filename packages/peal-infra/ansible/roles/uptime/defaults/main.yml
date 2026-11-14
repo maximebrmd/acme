@@ -106,3 +106,16 @@ uptime_certificate_failure_threshold: 3
 # (`bun install --frozen-lockfile` before uptime.yml). Outside uptime_root,
 # which only root reads, so a shared host's Caddy reads it too.
 uptime_brand_root: /srv/uptime-brand
+
+# The platform watch (README.md, "The platform watch"): a script of the
+# standard library's alone that reads the platforms' changelog pages and
+# feeds (uptime_platform_watch_sources, in group_vars/uptime) and posts what
+# changed to Slack. A systemd timer runs it every 6 hours, a random delay
+# after, as the gatus user, once SLACK_CHANGELOG_WEBHOOK_URL is set. Its
+# folder keeps the sources and, in state/, each one's last copy.
+uptime_platform_watch_bin: /usr/local/bin/peal-platform-watch
+uptime_platform_watch_python: /usr/bin/python3
+uptime_platform_watch_root: "{{ uptime_root }}/platform-watch"
+uptime_platform_watch_schedule: "*-*-* 00/6:00:00"
+uptime_platform_watch_delay: 1h
+uptime_platform_watch_sources: []

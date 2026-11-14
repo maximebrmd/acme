@@ -21,8 +21,9 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+from ansible.template import trust_as_template
 
-from conftest import INFRA
+from conftest import INFRA, ansible_render, render, role_file, run_tasks, settings, task
 
 SCRIPT = INFRA / "roles" / "uptime" / "files" / "platform_watch.py"
 
@@ -417,3 +418,194 @@ def test_the_script_refuses_to_run_without_its_webhook(tmp_path: Path) -> None:
 
     assert ran.returncode == 2
     assert "SLACK_CHANGELOG_WEBHOOK_URL" in ran.stderr
+
+
+# --- What the uptime role installs -------------------------------------------
+
+UPTIME = settings("uptime")
+DEFAULTS = role_file("uptime", "defaults")
+VARS = role_file("uptime", "vars")
+SOURCES = UPTIME["uptime_platform_watch_sources"]
+
+
+def test_the_inventory_s_sources_are_ones_the_script_reads(tmp_path: Path) -> None:
+    path = tmp_path / "sources.json"
+    path.write_text(json.dumps(SOURCES))
+
+    assert len(watch.load_sources(path)) == len(SOURCES) >= 14
+    assert {source["platform"] for source in SOURCES} == {
+        "Meta", "LinkedIn", "YouTube", "Google Business Profile", "TikTok", "Pinterest", "X",
+    }
+
+
+def _refused(sources: list[dict[str, Any]]) -> bool:
+    found = task("uptime", "Refuse platform watch sources the watch cannot read")
+    conditions = found["ansible.builtin.assert"]["that"]
+    return not all(ansible_render("{{ " + condition + " }}", uptime_platform_watch_sources=sources) for condition in conditions)
+
+
+def test_the_role_takes_the_inventory_s_sources() -> None:
+    assert not _refused(SOURCES)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        {"name": "A", "platform": "P", "url": "http://example.test/", "kind": "page"},
+        {"name": "A", "platform": "P", "url": "https://example.test/", "kind": "json"},
+        {"name": "A", "url": "https://example.test/", "kind": "page"},
+    ],
+)
+def test_the_role_refuses_a_source_the_script_cannot_read(source: dict[str, Any]) -> None:
+    assert _refused([source])
+
+
+def test_the_role_refuses_a_source_twice() -> None:
+    assert _refused(SOURCES[:1] * 2)
+
+
+def _watching(credentials: dict[str, str] | None, found: list[str] | None = None) -> bool:
+    names: dict[str, Any] = {
+        "uptime_set_credentials": trust_as_template(VARS["uptime_set_credentials"]),
+    }
+    if credentials is not None:
+        names["uptime_credentials"] = credentials
+    if found is not None:
+        names["uptime_optional_set"] = {"stdout_lines": found}
+    return ansible_render(VARS["uptime_platform_watch"], **names)
+
+
+def test_the_watch_runs_once_its_webhook_is_set() -> None:
+    assert _watching({"SLACK_CHANGELOG_WEBHOOK_URL": "https://hooks.slack.invalid/synthetic"}) is True
+    assert _watching(None, ["SLACK_CHANGELOG_WEBHOOK_URL"]) is True
+
+
+def test_the_watch_stays_off_without_its_webhook() -> None:
+    assert _watching({"SLACK_CHANGELOG_WEBHOOK_URL": ""}) is False
+    assert _watching({"TELEGRAM_BOT_TOKEN": "synthetic"}) is False
+    assert _watching(None, []) is False
+    assert _watching(None) is False
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Install the platform watch",
+        "Create the platform watch's folders",
+        "Give the platform watch its webhook",
+        "Write the platform watch's service and timer",
+    ],
+)
+def test_nothing_of_the_watch_is_installed_without_its_webhook(name: str) -> None:
+    when = task("uptime", name)["when"]
+
+    assert "uptime_platform_watch | bool" in (when if isinstance(when, list) else [when])
+
+
+def test_without_its_webhook_the_watch_is_stopped_and_taken_out() -> None:
+    stopped = task("uptime", "Stop the platform watch without its webhook")
+    removed = task("uptime", "Remove the platform watch without its webhook")
+
+    assert stopped["ansible.builtin.systemd_service"] == {"name": "peal-platform-watch.timer", "state": "stopped", "enabled": False}
+    assert "not (uptime_platform_watch | bool)" in stopped["when"]
+    assert removed["when"] == "not (uptime_platform_watch | bool)"
+    assert "{{ uptime_root }}/platform-watch.env" in removed["loop"]
+
+
+OFF_PATH = [
+    "Refuse platform watch sources the watch cannot read",
+    "Look for the platform watch's timer",
+    "Stop the platform watch without its webhook",
+    "Remove the platform watch without its webhook",
+    "Look for the platform watch's Python",
+    "Install the platform watch",
+    "Create the platform watch's folders",
+    "Write the platform watch's sources",
+    "Give the platform watch its webhook",
+    "Write the platform watch's service and timer",
+    "Start the platform watch's timer at boot",
+]
+
+
+@pytest.mark.parametrize("check", [False, True])
+def test_without_its_webhook_a_server_without_the_watch_is_left_as_it_is(tmp_path: Path, check: bool) -> None:
+    """Ansible itself, on this machine: nothing to stop, remove or install."""
+    recap = run_tasks(
+        tmp_path,
+        "uptime",
+        OFF_PATH,
+        check=check,
+        uptime_root=str(tmp_path / "uptime"),
+        uptime_platform_watch_root=str(tmp_path / "uptime" / "platform-watch"),
+        uptime_platform_watch_sources=SOURCES,
+        uptime_credentials={"TELEGRAM_BOT_TOKEN": "synthetic"},
+        **{name: VARS[name] for name in ("uptime_platform_watch", "uptime_set_credentials")},
+    )
+
+    assert recap["changed"] == 0
+    assert recap["failed"] == 0
+    assert not (tmp_path / "uptime").exists()
+
+
+def _unit(name: str) -> str:
+    template = (INFRA / "roles" / "uptime" / "templates" / f"{name}.j2").read_text()
+    names = {name: render(value, uptime_root="/srv/uptime") if isinstance(value, str) else value for name, value in DEFAULTS.items()}
+    return render(template, **names)
+
+
+def test_the_service_runs_as_gatus_with_its_webhook_in_its_environment_alone() -> None:
+    service = _unit("peal-platform-watch.service")
+    lines = dict(line.split("=", 1) for line in service.splitlines() if "=" in line and not line.startswith("#"))
+
+    assert lines["User"] == "gatus"
+    assert lines["Type"] == "oneshot"
+    assert lines["EnvironmentFile"] == "/srv/uptime/platform-watch.env"
+    assert lines["BindPaths"] == "/srv/uptime/platform-watch:/var/lib/peal-platform-watch"
+    assert lines["ExecStart"] == (
+        "/usr/bin/python3 -I /usr/local/bin/peal-platform-watch"
+        " --sources /var/lib/peal-platform-watch/sources.json --state /var/lib/peal-platform-watch/state"
+    )
+    assert "SLACK" not in lines["ExecStart"]
+    assert lines["NoNewPrivileges"] == "true"
+    assert lines["ProtectSystem"] == "strict"
+    assert lines["CapabilityBoundingSet"] == ""
+
+
+def test_the_timer_runs_every_6_hours_at_a_random_minute() -> None:
+    timer = _unit("peal-platform-watch.timer").splitlines()
+
+    assert "OnCalendar=*-*-* 00/6:00:00" in timer
+    assert "RandomizedDelaySec=1h" in timer
+    assert "Persistent=true" in timer
+    assert "WantedBy=timers.target" in timer
+
+
+def _give_webhook(root: Path) -> str:
+    found = task("uptime", "Give the platform watch its webhook")
+    script = render(found["ansible.builtin.shell"], uptime_root=str(root))
+    return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout
+
+
+def test_the_watch_s_file_holds_its_webhook_alone_for_root(tmp_path: Path) -> None:
+    (tmp_path / "credentials.env").write_text(
+        "TELEGRAM_BOT_TOKEN='synthetic-telegram'\n"
+        "SLACK_CHANGELOG_WEBHOOK_URL='https://hooks.slack.invalid/synthetic-changelog'\n"
+        "SLACK_ALERTS_WEBHOOK_URL='https://hooks.slack.invalid/synthetic-alerts'\n"
+    )
+
+    assert _give_webhook(tmp_path) == "changed\n"
+    assert _give_webhook(tmp_path) == ""
+    env = tmp_path / "platform-watch.env"
+    assert env.read_text() == "SLACK_CHANGELOG_WEBHOOK_URL='https://hooks.slack.invalid/synthetic-changelog'\n"
+    assert stat.S_IMODE(env.stat().st_mode) == 0o600
+    assert not (tmp_path / "platform-watch.env.new").exists()
+
+
+def test_the_watch_s_files_are_its_own() -> None:
+    folders = task("uptime", "Create the platform watch's folders")["loop"]
+    sources = task("uptime", "Write the platform watch's sources")["ansible.builtin.copy"]
+
+    assert {"path": "{{ uptime_platform_watch_root }}/state", "owner": "gatus", "mode": "0700"} in folders
+    assert {"path": "{{ uptime_platform_watch_root }}", "owner": "root", "mode": "0750"} in folders
+    assert (sources["owner"], sources["group"], sources["mode"]) == ("root", "gatus", "0640")
+    assert DEFAULTS["uptime_platform_watch_root"] == "{{ uptime_root }}/platform-watch"

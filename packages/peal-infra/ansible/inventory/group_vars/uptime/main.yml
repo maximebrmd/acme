@@ -1,7 +1,7 @@
 ---
 # The uptime server: a server at another European provider than production's
 # and the sandbox's, in another city, which checks their public endpoints
-# from outside and alerts on Telegram, and hears production's Grafana's
+# from outside and alerts on Telegram and Slack, and hears production's Grafana's
 # heartbeat. It shares nothing with them: no secret, no tunnel, no private
 # network, no provider. Its address is a placeholder until the server
 # exists.
@@ -93,3 +93,69 @@ uptime_environments:
     # Its alerts go to the sandbox's chat, not production's: with the bot
     # SANDBOX_TELEGRAM_BOT_TOKEN, to SANDBOX_TELEGRAM_CHAT_ID.
     telegram: true
+    # And on Slack, once SLACK_SANDBOX_ALERTS_WEBHOOK_URL is set, to the
+    # sandbox's channel (#alerts-sandbox), not production's.
+    slack: true
+
+# The platforms' changelog pages and feeds the platform watch reads every 6
+# hours, posting what changed to #platform-changelog once
+# SLACK_CHANGELOG_WEBHOOK_URL is set (README.md, "The platform watch"). A
+# page is compared with its copy from the last run, a feed (RSS 2.0 or
+# Atom) posts its new items; a new source's first run posts nothing.
+uptime_platform_watch_sources:
+  - name: Graph API changelog
+    platform: Meta
+    url: https://developers.facebook.com/docs/graph-api/changelog
+    kind: page
+  - name: Graph API versions
+    platform: Meta
+    url: https://developers.facebook.com/docs/graph-api/changelog/versions
+    kind: page
+  - name: Graph API out-of-cycle changes
+    platform: Meta
+    url: https://developers.facebook.com/docs/graph-api/changelog/out-of-cycle-changes
+    kind: page
+  - name: Instagram Platform changelog
+    platform: Meta
+    url: https://developers.facebook.com/docs/instagram-platform/changelog
+    kind: page
+  - name: Threads changelog
+    platform: Meta
+    url: https://developers.facebook.com/docs/threads/changelog
+    kind: page
+  - name: Marketing API changelog
+    platform: Meta
+    url: https://developers.facebook.com/docs/marketing-api/marketing-api-changelog
+    kind: page
+  - name: Meta for Developers blog
+    platform: Meta
+    url: https://developers.facebook.com/blog/feed/
+    kind: feed
+  - name: Marketing API recent changes
+    platform: LinkedIn
+    url: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/recent-changes
+    kind: page
+  - name: Breaking change policy
+    platform: LinkedIn
+    url: https://learn.microsoft.com/en-us/linkedin/shared/breaking-change-policy
+    kind: page
+  - name: Data API revision history
+    platform: YouTube
+    url: https://developers.google.com/youtube/v3/revision_history
+    kind: page
+  - name: Sunset dates
+    platform: Google Business Profile
+    url: https://developers.google.com/my-business/content/sunset-dates
+    kind: page
+  - name: Changelog
+    platform: TikTok
+    url: https://developers.tiktok.com/doc/changelog
+    kind: page
+  - name: Changelog
+    platform: Pinterest
+    url: https://developers.pinterest.com/docs/changelog/changelog/
+    kind: page
+  - name: API versioning
+    platform: X
+    url: https://docs.x.com/x-api/fundamentals/versioning
+    kind: page

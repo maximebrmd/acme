@@ -27,3 +27,14 @@ uptime_credentials:
   # it ends, or every check of the sandbox fails.
   SANDBOX_ACCESS_CLIENT_ID: REPLACE
   SANDBOX_ACCESS_CLIENT_SECRET: REPLACE
+  # Optional: Slack incoming webhooks of the "Peal Alerts" app, one per
+  # channel (README.md, "Slack"). Left empty, each feature stays off and
+  # nothing else changes. The same alerts as Telegram's, beside them:
+  # production's checks and the uptime server's own to #alerts-production,
+  # the sandbox's (slack: true in uptime_environments) to #alerts-sandbox,
+  # named after the environment, in upper case.
+  SLACK_ALERTS_WEBHOOK_URL: ""
+  SLACK_SANDBOX_ALERTS_WEBHOOK_URL: ""
+  # The platform watch's, to #platform-changelog: set, uptime.yml installs
+  # its timer.
+  SLACK_CHANGELOG_WEBHOOK_URL: ""
