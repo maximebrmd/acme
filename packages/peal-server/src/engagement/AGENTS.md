@@ -402,7 +402,15 @@
   channel's messages on: `switchChannel` refuses a channel whose read is
   not `available` (`MessageAbilityUnavailable`, `reconnect`), and the web
   app reconnects it with `messages=true`, the switch off meanwhile. A
-  channel without them is never called (`platform-messages.ts`).
+  channel without them is never called (`platform-messages.ts`): one whose
+  messages are on answers `MessagesUngranted` (its account was connected
+  again through `start`, which asks publishing's scopes only), and the
+  collection turns them off (`forgetChannelMessages`) and tells
+  `MessagesTurnedOff` (the channel, to `channel:connect`, emailed under
+  `channelReconnect`, once a box: keyed on its `createdAt`): the switch never stays on unread.
+  Scopes that still name the chat (or a Mastodon reading scope) in a form
+  `messageAbilitiesOf` does not take pause instead (`namesMessageScopes`):
+  a token refresh rewrites them, and is no reason to delete.
 - `CollectMessages` runs on `engagement.collect-messages` (minutes 1 and
   21, the free minutes `test/app/cron-schedules.test.ts` leaves; 8
   minutes a run, 8 channels at once, through the gates: `ReadMessages`):
@@ -414,7 +422,8 @@
   day. A listing that reached its end (`listedWhole`, non-empty) marks
   the kept conversations it did not list (`unlisted_at`), clears those it
   lists, and deletes those the whole listing before missed too, unless a
-  message to one is on its way (`dropUnlisted`): one listing alone never
+  message to one is on its way (`dropUnlisted`); a listing that stopped
+  short clears those it lists too (`clearUnlisted`): one listing alone never
   deletes, as a conversation moving up while it pages is on no page, and
   an empty one says nothing. Bluesky's listing ends at a page wholly older
   than what Peal keeps, as Mastodon's. One cut at its page cap
@@ -429,7 +438,8 @@
   asks after each kept status a whole read did not show
   (`GET /api/v1/statuses/:id`, at most 10, `keptOf`): gone, it is in
   `deleted`; still there (a branch detached by a deleted status), the
-  read is not `complete`. The record runs under the box's lock in one transaction,
+  read is not `complete`, as it is when the database does not give what
+  Peal keeps (`keptOf` answers none). The record runs under the box's lock in one transaction,
   and tells `message.received` (ids) and the `MessagesReceived` notice
   (the channel's handle and a count, once a conversation and UTC day, to
   `engagement:message`, emailed under `comments`) only for messages
@@ -468,8 +478,13 @@
   or 403 without a token error pauses the read, never marks the channel
   to reconnect. Neither adapter was run against the platform: before the
   setting is turned on anywhere, read and answer one conversation on a
-  test account of each, and Bluesky's granular chat scopes checked to be
-  granted as asked.
+  test account of each, Bluesky's granular chat scopes checked to be
+  granted as asked, and `listConvos` checked to list by latest message,
+  which its lexicon does not say and the early end rests on: listed by
+  any other activity (a reaction), a conversation below a page of older
+  ones would be missed by two whole listings, and deleted.
+  Check too that, after a forced token refresh on the Bluesky test
+  account, the channel's stored scopes still pass `grantsBlueskyChat`.
 - Sending (`EngagementMessages.send`, `engagement:message`, in
   `publishingPermissions`): the conversation, the channel able, the
   platform's `replyWindowOf` open (always, on these two), the text within
@@ -488,7 +503,11 @@
   the meters: `MetersContextLive` is built below the channels context in
   `src/app/server.ts` for that). Those rows are locked (`FOR UPDATE`)
   until the deletion commits, so a job that would begin one finds it
-  gone. The
+  gone. Each deletion of conversations (those four, `dropUnlisted` and the
+  purge, which takes its candidates' boxes by channel before it deletes)
+  takes the box first, and a message is journalled under its box
+  (`journalMessage`), so a send that commits meanwhile is listed and
+  given back, or finds its conversation gone: never deleted unseen. The
   gate claims the call first (`claimCall`).
 - Retention: each message is deleted `conversationsKeptFor` (30 days)
   after it was sent, a settled outgoing message (`sent`, `failed` or

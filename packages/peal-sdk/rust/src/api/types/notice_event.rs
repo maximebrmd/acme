@@ -96,6 +96,9 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    MessagesTurnedOff { channel: NoticeChannel },
+
+    #[non_exhaustive]
     ChannelReconnectRequired { channel: NoticeChannel },
 
     #[non_exhaustive]
@@ -329,6 +332,10 @@ impl NoticeEvent {
             conversation_id,
             count,
         }
+    }
+
+    pub fn messages_turned_off(channel: NoticeChannel) -> Self {
+        Self::MessagesTurnedOff { channel }
     }
 
     pub fn channel_reconnect_required(channel: NoticeChannel) -> Self {

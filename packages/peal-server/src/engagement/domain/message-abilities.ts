@@ -109,3 +109,19 @@ export const messageAbilitiesOf = (
     ),
   };
 };
+
+/**
+ * Whether the scopes still name what reading the platform's messages
+ * takes in some form, though `messageAbilitiesOf` does not read them as
+ * granted: the form changed (a token refresh may answer them otherwise),
+ * rather than the account granting none. Such a channel is paused, never
+ * has its messages turned off. A Bluesky account that names nothing of
+ * the chat, or a Mastodon one with no reading scope, granted none.
+ */
+export const namesMessageScopes = (
+  platform: Platform,
+  scopes: readonly string[]
+): boolean =>
+  platform === "bluesky"
+    ? scopes.some((scope) => scope.includes("chat.bsky"))
+    : scopes.some((scope) => scope === "read" || scope.startsWith("read:"));

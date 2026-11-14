@@ -292,17 +292,19 @@ export class CollectMessages extends Context.Service<
         // A listing that showed every conversation the platform has, back
         // to what Peal keeps, no longer shows those deleted there; an empty
         // one says nothing, as a platform that answers none may be wrong.
-        if (batch.listedWhole && batch.listed.length > 0) {
-          yield* store.dropUnlisted(box.channelId, batch.listed, now);
-        }
+        // One that stopped short still saw those it shows.
+        yield* batch.listedWhole && batch.listed.length > 0
+          ? store.dropUnlisted(box.channelId, batch.listed, now)
+          : store.clearUnlisted(box.channelId, batch.listed);
 
         // A read that halted is read again at the next run, from the
         // conversations it did not reach, which have not changed for Peal.
         yield* store.saveBox(recordBoxRead(current.value, latest, now, at));
       });
 
-      // A channel that left goes now, with what it held; one that cannot
-      // be read waits.
+      // A channel that left goes now, with what it held, as do the messages
+      // of one whose account no longer grants them; one that cannot be read
+      // waits.
       const putOff = (
         box: MessageBox,
         failure: MessagesReadFailure,
@@ -327,6 +329,16 @@ export class CollectMessages extends Context.Service<
         ) {
           return transaction(
             forgetChannelMessages(store, meters, box.channelId)
+          );
+        }
+
+        // Its account was signed in again without what reading takes: its
+        // messages are turned off, never left on unread, and members told.
+        if (failure._tag === "MessagesUngranted") {
+          return transaction(
+            forgetChannelMessages(store, meters, box.channelId).pipe(
+              Effect.andThen(outcomes.turnedOff(box))
+            )
           );
         }
 

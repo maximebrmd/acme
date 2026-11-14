@@ -440,13 +440,17 @@ export const mastodonMessages = Effect.fn("MastodonMessages.make")(
         .toSorted()
         .join(" ");
 
+      // What Peal keeps could not be had: nothing is taken for deleted.
       const checked =
         thread.complete && request.keptOf !== undefined
-          ? yield* unseenOf(
-              instance,
-              token,
-              yield* request.keptOf(conversation.id),
-              new Set(statuses.keys())
+          ? yield* request.keptOf(conversation.id).pipe(
+              Effect.flatMap(
+                Option.match({
+                  onNone: () => Effect.succeed({ deleted: [], whole: false }),
+                  onSome: (kept) =>
+                    unseenOf(instance, token, kept, new Set(statuses.keys())),
+                })
+              )
             )
           : { deleted: [], whole: thread.complete };
 

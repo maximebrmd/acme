@@ -655,6 +655,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_CommentsReceived,
         NoticeEvent_FeedStopped,
         NoticeEvent_MessagesReceived,
+        NoticeEvent_MessagesTurnedOff,
         NoticeEvent_PaymentMethodNeeded,
         NoticeEvent_PlansRetiring,
         NoticeEvent_PostApprovalRequested,
@@ -683,6 +684,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_comments_received import NoticeEventCommentsReceived
     from .notice_event_feed_stopped import NoticeEventFeedStopped
     from .notice_event_messages_received import NoticeEventMessagesReceived
+    from .notice_event_messages_turned_off import NoticeEventMessagesTurnedOff
     from .notice_event_payment_method_needed import NoticeEventPaymentMethodNeeded
     from .notice_event_plans_retiring import NoticeEventPlansRetiring
     from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
@@ -1744,6 +1746,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventCommentsReceived": ".notice_event_comments_received",
     "NoticeEventFeedStopped": ".notice_event_feed_stopped",
     "NoticeEventMessagesReceived": ".notice_event_messages_received",
+    "NoticeEventMessagesTurnedOff": ".notice_event_messages_turned_off",
     "NoticeEventPaymentMethodNeeded": ".notice_event_payment_method_needed",
     "NoticeEventPlansRetiring": ".notice_event_plans_retiring",
     "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
@@ -1770,6 +1773,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_CommentsReceived": ".notice_event",
     "NoticeEvent_FeedStopped": ".notice_event",
     "NoticeEvent_MessagesReceived": ".notice_event",
+    "NoticeEvent_MessagesTurnedOff": ".notice_event",
     "NoticeEvent_PaymentMethodNeeded": ".notice_event",
     "NoticeEvent_PlansRetiring": ".notice_event",
     "NoticeEvent_PostApprovalRequested": ".notice_event",
@@ -2848,6 +2852,7 @@ __all__ = [
     "NoticeEventCommentsReceived",
     "NoticeEventFeedStopped",
     "NoticeEventMessagesReceived",
+    "NoticeEventMessagesTurnedOff",
     "NoticeEventPaymentMethodNeeded",
     "NoticeEventPlansRetiring",
     "NoticeEventPostApprovalRequested",
@@ -2874,6 +2879,7 @@ __all__ = [
     "NoticeEvent_CommentsReceived",
     "NoticeEvent_FeedStopped",
     "NoticeEvent_MessagesReceived",
+    "NoticeEvent_MessagesTurnedOff",
     "NoticeEvent_PaymentMethodNeeded",
     "NoticeEvent_PlansRetiring",
     "NoticeEvent_PostApprovalRequested",

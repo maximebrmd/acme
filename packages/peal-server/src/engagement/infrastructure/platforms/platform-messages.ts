@@ -3,6 +3,7 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { MessageSender } from "#engagement/application/ports/message-sender.ts";
 import type { MessageSendRequest } from "#engagement/application/ports/message-sender.ts";
 import { MessageSource } from "#engagement/application/ports/message-source.ts";
@@ -11,6 +12,7 @@ import { MessageStore } from "#engagement/application/ports/message-store.ts";
 import { dueForCheck } from "#engagement/domain/conversation.ts";
 import {
   messageAbilitiesOf,
+  namesMessageScopes,
   readsMessagesOn,
 } from "#engagement/domain/message-abilities.ts";
 import type {
@@ -102,13 +104,18 @@ export const platformMessagesWith = (settings: {
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
-        // A channel connected before Peal asked what reading takes is
-        // never called: it is read once connected again.
+        // A channel whose account does not grant what reading takes is
+        // never called: its messages were turned on with it, so it was
+        // signed in again without it, and they are turned off. One whose
+        // scopes still name it in another form is paused instead: what a
+        // refresh answers is not a reason to delete.
         if (
           messageAbilitiesOf(account.platform, account.scopes, messages)
             .read !== "available"
         ) {
-          return yield* new ChannelUnreadable({ reason: "paused" });
+          return yield* namesMessageScopes(account.platform, account.scopes)
+            ? new ChannelUnreadable({ reason: "paused" })
+            : new MessagesUngranted();
         }
 
         const known = yield* store
@@ -127,17 +134,20 @@ export const platformMessagesWith = (settings: {
         );
 
         // What Peal keeps of a conversation, read when the adapter asks;
-        // none when the database does not answer, so nothing is deleted.
+        // unknown when the database does not answer, which makes the read
+        // not whole, so nothing is deleted.
         const keptOf = (platformConversationId: string) => {
           const id = byPlatformId.get(platformConversationId);
 
           return id === undefined
-            ? Effect.succeed([])
+            ? Effect.succeed(Option.some<readonly string[]>([]))
             : store.messagesOf(id).pipe(
                 Effect.map((kept) =>
-                  kept.map(({ platformMessageId }) => platformMessageId)
+                  Option.some<readonly string[]>(
+                    kept.map(({ platformMessageId }) => platformMessageId)
+                  )
                 ),
-                Effect.orElseSucceed((): readonly string[] => [])
+                Effect.orElseSucceed(() => Option.none<readonly string[]>())
               );
         };
 

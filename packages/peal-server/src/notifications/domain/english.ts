@@ -101,6 +101,13 @@ export const english: EmailCatalog = {
       "You receive this email because you answer messages in {workspaceName} on Peal, and chose to hear about the inbox by email. Choose which notifications you receive by email in your notification preferences.",
     subject: "A new message on {handle}",
   },
+  messagesTurnedOff: {
+    action: "Open the inbox",
+    body: "Peal turned off the direct messages of {handle} on {platform}, in {workspaceName}, and deleted the conversations it kept: the account was connected again without allowing its messages. To read them again, choose Read its messages for the channel in the inbox, then Allow, on Bluesky.",
+    ignore:
+      "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
+    subject: "Direct messages of {handle} turned off",
+  },
   contractNumber:
     "Contract number: {reference}. Give it in Cancel your contract or Withdraw from contract here, at the foot of every page, and your request is applied at once, without signing in.",
   contractRequest: {

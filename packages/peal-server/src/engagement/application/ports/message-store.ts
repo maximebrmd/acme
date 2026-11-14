@@ -261,6 +261,15 @@ export class MessageStore extends Context.Service<
       at: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
     /**
+     * Clears the miss of the box's conversations a listing showed
+     * (`listed`, their ids on the platform), whole or not: one seen since
+     * a whole listing missed it is not deleted by the next.
+     */
+    readonly clearUnlisted: (
+      channelId: ChannelId,
+      listed: readonly string[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Deletes the channel's switch, box, conversations and what they hold,
      * at once: the channel left, or its workspace turned its messages off.
      */

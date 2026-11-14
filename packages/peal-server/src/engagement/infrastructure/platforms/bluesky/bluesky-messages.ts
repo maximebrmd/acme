@@ -391,8 +391,10 @@ export const blueskyMessages = Effect.fn("BlueskyMessages.make")(
 
         cursor = Option.fromUndefinedOr(answer.cursor);
 
-        // The list runs from the latest activity: a page wholly older
+        // The list runs from the latest message: a page wholly older
         // than what Peal keeps ends what it may hold, as the last does.
+        // Its lexicon does not say so; check it on a test account before
+        // the setting is turned on (src/engagement/AGENTS.md).
         const pastKept = answer.convos.every(
           (listed) =>
             !Option.fromUndefinedOr(listed.lastMessage).pipe(

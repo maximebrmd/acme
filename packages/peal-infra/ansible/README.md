@@ -770,7 +770,13 @@ named after its Dockerfile) that the server does not have yet, and uploads
 them over SSH. An image the server has is never uploaded again, so Postgres's
 changes, and Postgres restarts, only when its Dockerfile does. The servers
 hold no repository or registry credentials, and only pushed commits can be
-released. Then, on the server:
+released. Before it builds anything, it refuses a commit that lacks a file
+the server's `host.env` names for the stack to mount (Grafana's contact
+points or heartbeat, under `packages/peal-docker`), as a commit older than
+the last `site.yml` may: Docker would mount an empty folder in its place,
+and Grafana would not start. Release a commit at least as recent as the
+last `site.yml`, or run `site.yml` from this commit first. Then, on the
+server:
 
 1. on a server that bills (`STRIPE_SECRET_KEY` in `credentials.env`), the
    new image compares Stripe's catalogue with the one it gives

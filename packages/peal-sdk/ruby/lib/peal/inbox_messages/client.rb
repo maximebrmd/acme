@@ -18,9 +18,9 @@ module Peal
       # conversation until its last message is that old; it deletes a channel's conversations at once when the channel
       # is disconnected or its messages turned off; a message the platform no longer shows within a day, and a
       # conversation once two whole listings in a row no longer show it, where Peal can read them whole (otherwise by
-      # the 30 days). Peal never starts a conversation: it answers those someone else began. Needs
-      # engagement:readMessages, which owners, admins and editors hold, an OAuth client only with the scope
-      # workspace:publish, and staff acting as a member never.
+      # the 30 days; a listing that comes back empty deletes nothing). Peal never starts a conversation: it answers
+      # those someone else began. Needs engagement:readMessages, which owners, admins and editors hold, an OAuth client
+      # only with the scope workspace:publish, and staff acting as a member never.
       #
       # @param request_options [Hash]
       # @param params [Hash]

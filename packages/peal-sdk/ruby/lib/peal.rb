@@ -1022,6 +1022,7 @@ module Peal
     autoload :NoticeEventCommentsReceived, ::File.join(__dir__, "peal/types/notice_event_comments_received")
     autoload :NoticeEventFeedStopped, ::File.join(__dir__, "peal/types/notice_event_feed_stopped")
     autoload :NoticeEventMessagesReceived, ::File.join(__dir__, "peal/types/notice_event_messages_received")
+    autoload :NoticeEventMessagesTurnedOff, ::File.join(__dir__, "peal/types/notice_event_messages_turned_off")
     autoload :NoticeEventPaymentMethodNeeded, ::File.join(__dir__, "peal/types/notice_event_payment_method_needed")
     autoload :NoticeEventPlansRetiring, ::File.join(__dir__, "peal/types/notice_event_plans_retiring")
     autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")
