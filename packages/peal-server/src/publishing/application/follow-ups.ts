@@ -18,6 +18,7 @@ import {
   mayAct,
   maxFollowUpsPerChannelDay,
 } from "#publishing/domain/follow-up-rule.ts";
+import type { FollowUpRuleId } from "#publishing/domain/follow-up-rule-id.ts";
 import type { FollowUpRule } from "#publishing/domain/follow-up-rule.ts";
 import {
   armFollowUp,
@@ -35,6 +36,7 @@ import type {
   FollowUpExpiryReason,
   FollowUpKind,
 } from "#publishing/domain/follow-up.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { isSettled, livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -101,6 +103,8 @@ export interface FollowUpRun {
   readonly left: number;
   /** Post-scoped rules that ended, all they armed being over. */
   readonly completed: number;
+  /** Channel-scoped rules that ended, their channel disconnected. */
+  readonly channelGone: number;
 }
 
 /** What a rule asks, as a channel's abilities read it. */
@@ -563,9 +567,80 @@ export class FollowUps extends Context.Service<
         return true;
       });
 
+      // A channel-scoped rule whose channel was disconnected, under its
+      // row's lock: it ends `channelGone`, giving up what it armed.
+      const endIfChannelGone = Effect.fn("FollowUps.endIfChannelGone")(
+        function* endIfChannelGone(candidate: FollowUpRule) {
+          if (candidate.scope._tag !== "channel") {
+            return false;
+          }
+
+          const gone = yield* credentials
+            .account(candidate.scope.channelId)
+            .pipe(
+              Effect.as(false),
+              Effect.catchTag("BadRequest", (refused) =>
+                Effect.succeed(
+                  refused.code === ownRefusalCodes.channelDisconnected
+                )
+              ),
+              Effect.orElseSucceed(() => false)
+            );
+
+          if (!gone) {
+            return false;
+          }
+
+          return yield* transaction(
+            Effect.gen(function* end() {
+              const now = yield* DateTime.now;
+              const locked = yield* store.lockRule(
+                candidate.workspaceId,
+                candidate.id
+              );
+
+              if (Option.isNone(locked) || !isOpen(locked.value)) {
+                return false;
+              }
+
+              const ended = endFollowUpRule(locked.value, "channelGone", now);
+
+              yield* store.updateRule(ended);
+              yield* cancelArmed(ended);
+
+              return true;
+            })
+          );
+        }
+      );
+
+      // Every channel-scoped rule, a page at a time: those whose channel
+      // left the workspace end.
+      const endChannelsGone = Effect.gen(function* endChannelsGone() {
+        let after = Option.none<FollowUpRuleId>();
+        let ended = 0;
+
+        for (;;) {
+          const page = yield* store.openChannelRules(after, armedPageSize);
+
+          for (const rule of page) {
+            if (yield* endIfChannelGone(rule)) {
+              ended += 1;
+            }
+          }
+
+          if (page.length < armedPageSize) {
+            return ended;
+          }
+
+          after = Option.fromUndefinedOr(page.at(-1)?.id);
+        }
+      });
+
       const runDue = Effect.gen(function* runDue() {
         const tally = {
           cancelled: 0,
+          channelGone: 0,
           completed: 0,
           expired: 0,
           left: 0,
@@ -627,6 +702,8 @@ export class FollowUps extends Context.Service<
             tally.completed += 1;
           }
         }
+
+        tally.channelGone = yield* endChannelsGone;
 
         for (const [outcome, count] of Object.entries(tally)) {
           yield* Metric.update(

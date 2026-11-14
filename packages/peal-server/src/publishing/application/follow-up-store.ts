@@ -152,5 +152,10 @@ export class FollowUpStore extends Context.Service<
     readonly settledPostRules: (
       limit: number
     ) => Effect.Effect<readonly FollowUpRule[], DatabaseError>;
+    /** Channel-scoped rules that have not ended, by id, after `after`. */
+    readonly openChannelRules: (
+      after: Option.Option<FollowUpRuleId>,
+      limit: number
+    ) => Effect.Effect<readonly FollowUpRule[], DatabaseError>;
   }
 >()("peal-server/publishing/application/FollowUpStore") {}

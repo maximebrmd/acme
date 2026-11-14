@@ -1,9 +1,10 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
+import type { CommentRuleEndReason } from "#engagement/domain/comment-rule-end-reason.ts";
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -379,6 +380,23 @@ export const DrizzleEngagementRecords = Layer.effect(
           .pipe(Effect.mapError(failed));
 
         yield* giveBackUnsent(unsent);
+
+        // The rules that answer the channel's comments end with it: they
+        // would hold one of the workspace's rules and answer nothing.
+        yield* db
+          .update(commentRules)
+          .set({
+            endedReason: "channelGone" satisfies CommentRuleEndReason,
+            status: "ended",
+            statusAt: DateTime.toDateUtc(at),
+          })
+          .where(
+            and(
+              eq(commentRules.channelId, channelId),
+              ne(commentRules.status, "ended")
+            )
+          )
+          .pipe(Effect.mapError(failed));
 
         // A location's reviews go at once, with their replies.
         if (platform === "googleBusiness") {

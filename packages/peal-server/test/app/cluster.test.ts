@@ -448,6 +448,7 @@ const PublishingCronWorkTest = Layer.mergeAll(
           ...followUps,
           runDue: Effect.succeed({
             cancelled: 0,
+            channelGone: 0,
             completed: 0,
             expired: 0,
             left: 0,

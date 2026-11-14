@@ -30,12 +30,14 @@ export const CommentRuleStatusSchema = Schema.Literals([
 export type CommentRuleStatus = typeof CommentRuleStatusSchema.Type;
 
 /**
- * Why a comment rule ended: a member stopped it (`stopped`), or whoever
- * started it can no longer answer comments (`starterGone`).
+ * Why a comment rule ended: a member stopped it (`stopped`), whoever
+ * started it can no longer answer comments (`starterGone`), or its
+ * channel was disconnected (`channelGone`).
  */
 export const CommentRuleEndReasonSchema = Schema.Literals([
   "stopped",
   "starterGone",
+  "channelGone",
 ]).annotate({ identifier: "CommentRuleEndReason" });
 
 /**

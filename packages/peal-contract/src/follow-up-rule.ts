@@ -53,13 +53,15 @@ export type FollowUpRuleStatus = typeof FollowUpRuleStatusSchema.Type;
 
 /**
  * Why a rule ended: a member stopped it (`stopped`), every follow-up it
- * armed on its post ended (`completed`), or whoever started it can no
- * longer publish (`starterGone`).
+ * armed on its post ended (`completed`), whoever started it can no
+ * longer publish (`starterGone`), or its channel was disconnected
+ * (`channelGone`).
  */
 export const FollowUpEndReasonSchema = Schema.Literals([
   "stopped",
   "completed",
   "starterGone",
+  "channelGone",
 ]).annotate({ identifier: "FollowUpEndReason" });
 
 export type FollowUpEndReason = typeof FollowUpEndReasonSchema.Type;

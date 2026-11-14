@@ -788,6 +788,60 @@ describe("follow-up rules", () => {
   );
 
   it.effect(
+    "end a channel's rule once the channel is disconnected, giving up what it armed",
+    () =>
+      onServer(
+        Effect.gen(function* channelGone() {
+          const workspaceId = yield* freshWorkspace;
+          const editor = actorIn(workspaceId);
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const bluesky = yield* connected(workspaceId, "bluesky");
+
+          const startOn = (channelId: typeof mastodon) =>
+            FollowUpRules.use((rules) =>
+              rules.start(editor, {
+                comment: Option.some("Thank you all for reading!"),
+                likes: 10,
+                repost: false,
+                scope: { _tag: "channel", channelId },
+              })
+            );
+
+          const leaving = yield* startOn(mastodon);
+          const staying = yield* startOn(bluesky);
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+          yield* FollowUps.use((followUps) => followUps.arm(target));
+
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`DELETE FROM channels.channels WHERE id = ${mastodon}`
+          ).pipe(Effect.orDie);
+
+          assert.strictEqual((yield* runDue).channelGone, 1);
+
+          const left = yield* ruleNow(workspaceId, leaving.rule.id);
+
+          assert.deepStrictEqual(
+            left.rule.status._tag === "ended" ? left.rule.status.reason : null,
+            "channelGone"
+          );
+          assert.isTrue(
+            left.followUps.length > 0 &&
+              left.followUps.every(({ status }) => status._tag === "cancelled")
+          );
+
+          const kept = yield* ruleNow(workspaceId, staying.rule.id);
+
+          assert.strictEqual(kept.rule.status._tag, "active");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "give up what a stopped rule armed, and fail a follow-up the platform refuses",
     () =>
       onServer(

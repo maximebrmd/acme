@@ -15,7 +15,9 @@ import { maxChannelRepliesPerDay } from "#engagement/domain/comment-rule.ts";
 import { receiveComment } from "#engagement/domain/comment.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { DrizzleCommentRuleStore } from "#engagement/infrastructure/drizzle-comment-rule-store.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { PublishingReplyLimits } from "#engagement/infrastructure/publishing-reply-limits.ts";
 import { UnreadComments } from "#publishing/container.ts";
@@ -74,6 +76,7 @@ const FakeChannels = Layer.succeed(
 
 const RulesTest = CommentRules.layer.pipe(
   Layer.provideMerge(EngagementReplies.layer),
+  Layer.provideMerge(DrizzleEngagementRecords),
   Layer.provideMerge(
     Layer.mergeAll(
       DrizzleCommentRuleStore,
@@ -335,6 +338,34 @@ describe("comment rules", () => {
         const stopped = yield* rules.get(actorIn(workspaceId), rule.rule.id);
 
         assert.strictEqual(stopped.rule.status._tag, "ended");
+      }).pipe(Effect.ensuring(forget(workspaceId)));
+    }).pipe(Effect.provide(RulesTest))
+  );
+
+  it.live("end a channel's rules when the channel is disconnected", () =>
+    Effect.gen(function* channelGone() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const thread = yield* threadOn(workspaceId, "mastodon");
+        const rules = yield* CommentRules;
+
+        const rule = yield* rules.start(actorIn(workspaceId), {
+          keywords: ["price"],
+          reply: "On our site.",
+          scope: { _tag: "channel", channelId: thread.channelId },
+        });
+
+        yield* EngagementRecords.use((records) =>
+          records.channelGone(thread.channelId, "mastodon", DateTime.nowUnsafe())
+        );
+
+        const ended = yield* rules.get(actorIn(workspaceId), rule.rule.id);
+
+        assert.deepStrictEqual(
+          ended.rule.status._tag === "ended" ? ended.rule.status.reason : null,
+          "channelGone"
+        );
       }).pipe(Effect.ensuring(forget(workspaceId)));
     }).pipe(Effect.provide(RulesTest))
   );

@@ -376,6 +376,22 @@ export const DrizzleFollowUpStore = Layer.effect(
           .from(followUpRules)
           .where(ruleInWorkspace(workspaceId, ruleId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstOf(toRule))),
+      openChannelRules: (after, limit) =>
+        db
+          .select()
+          .from(followUpRules)
+          .where(
+            and(
+              eq(followUpRules.scope, "channel"),
+              ne(followUpRules.status, "ended"),
+              ...Option.toArray(
+                after.pipe(Option.map((id) => gt(followUpRules.id, id)))
+              )
+            )
+          )
+          .orderBy(asc(followUpRules.id))
+          .limit(limit)
+          .pipe(Effect.mapError(failed), Effect.flatMap(rulesOf)),
       settledPostRules: (limit) =>
         db
           .select()
