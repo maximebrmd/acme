@@ -7,8 +7,8 @@ import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AvatarUrlSchema } from "./avatar-url.ts";
 import type { AvatarUrl } from "./avatar-url.ts";
-import { PlatformSchema } from "./platform.ts";
-import type { Platform } from "./platform.ts";
+import { ChannelPlatformSchema } from "./platform.ts";
+import type { ChannelPlatform } from "./platform.ts";
 
 /**
  * - `active`: posts go out.
@@ -57,7 +57,7 @@ export const ChannelLabelSchema = Schema.String.check(
   })
 );
 
-/** A social account connected to a workspace. */
+/** A social account, or a website, connected to a workspace. */
 export class Channel extends Schema.Class<Channel>(
   "peal-server/channels/domain/Channel"
 )({
@@ -80,7 +80,7 @@ export class Channel extends Schema.Class<Channel>(
   label: Schema.Option(ChannelLabelSchema).pipe(
     Schema.withConstructorDefault(Effect.succeed(Option.none()))
   ),
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
   // What the account allowed Peal to do, in the platform's own words.
   scopes: Schema.Array(Schema.NonEmptyString),
   status: ChannelStatusSchema,
@@ -111,7 +111,7 @@ export interface ConnectedAccount {
 export interface NewChannel extends ConnectedAccount {
   readonly accountId: string;
   readonly id: ChannelId;
-  readonly platform: Platform;
+  readonly platform: ChannelPlatform;
   readonly workspaceId: WorkspaceId;
 }
 

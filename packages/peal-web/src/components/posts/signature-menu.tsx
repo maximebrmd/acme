@@ -4,7 +4,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { SignatureIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Channel, Signature } from "peal-contract";
+import type { SocialChannel, Signature } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
@@ -24,7 +24,7 @@ import { workspaceSignatures } from "#signatures/atoms.ts";
 
 interface SignatureMenuViewProps {
   /** The channels the post goes to, each of which can have its own text. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** Whether the text can be changed now. */
   readonly disabled: boolean;
   /**

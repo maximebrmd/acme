@@ -8,7 +8,7 @@ import {
 
 import { AccountsNotMerged } from "./accounts-not-merged.ts";
 import { BillingAccountNotFound } from "./billing-account-not-found.ts";
-import { PlatformSchema } from "./platform.ts";
+import { ChannelPlatformSchema } from "./platform.ts";
 import { StaffAccess } from "./staff-access.ts";
 import { StaffReasonSchema } from "./staff.ts";
 
@@ -42,7 +42,7 @@ export const SharedPlatformAccountSchema = Schema.Struct({
     Schema.Struct({ accountId: Schema.String, workspaces: Schema.Int })
   ),
   // The account's own id on the platform, as its channels keep it.
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
   platformAccountId: Schema.String,
 }).annotate({ identifier: "SharedPlatformAccount" });
 

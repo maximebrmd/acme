@@ -3,7 +3,7 @@
 import { Match } from "effect";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Channel, TargetOptions } from "peal-contract";
+import type { SocialChannel, TargetOptions } from "peal-contract";
 import { maxPollChoices } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
@@ -40,7 +40,7 @@ interface PostPollProps {
   readonly optionsOn: (channelId: string) => TargetOptions | undefined;
   readonly poll: PollDraft | undefined;
   /** The channels the post goes to. */
-  readonly selected: readonly Channel[];
+  readonly selected: readonly SocialChannel[];
 }
 
 type Translate = ReturnType<typeof useTranslations<"Posts.Poll">>;

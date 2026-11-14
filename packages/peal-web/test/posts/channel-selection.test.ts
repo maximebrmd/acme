@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 
 import {
   connectedTargets,
@@ -7,9 +7,12 @@ import {
   offersEveryChannel,
 } from "#posts/channel-selection.ts";
 
-const active: Channel["status"] = { _tag: "active" };
+const active: SocialChannel["status"] = { _tag: "active" };
 
-const channel = (id: string, status: Channel["status"] = active): Channel => ({
+const channel = (
+  id: string,
+  status: SocialChannel["status"] = active
+): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,

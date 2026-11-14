@@ -89,6 +89,7 @@ export const channelAccessOf = (
         ChannelAccess,
         ChannelAccess.of({
           account: () => found,
+          withSiteToken: () => Effect.die("No website here"),
           withToken,
           workspaceOf: () => Effect.succeed(Option.none()),
         })

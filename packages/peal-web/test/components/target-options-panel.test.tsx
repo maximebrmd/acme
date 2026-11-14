@@ -5,7 +5,7 @@ import type { Locale } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
 import type {
   AccountStanding,
-  Channel,
+  SocialChannel,
   ContentViolation,
   Media,
   TikTokCreator,
@@ -33,9 +33,9 @@ import type { OptionValues, PostMediaKinds } from "#posts/target-options.ts";
 
 const channel = (
   id: string,
-  platform: Channel["platform"],
+  platform: SocialChannel["platform"],
   handle: string
-): Channel => ({
+): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,
@@ -825,7 +825,7 @@ const instagram = channel(
 
 const renderChannels = async (
   locale: Locale,
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   media: PostMediaKinds,
   values: OptionValues = {}
 ) =>

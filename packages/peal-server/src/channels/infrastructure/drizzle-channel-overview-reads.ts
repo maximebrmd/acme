@@ -1,10 +1,10 @@
-import { sql } from "drizzle-orm";
+import { and, inArray, sql } from "drizzle-orm";
 import { Effect, Layer, Schema } from "effect";
 
 import { ChannelOverviewReads } from "#channels/application/channel-overview-reads.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { PlatformSchema } from "#shared/domain/platform.ts";
+import { platforms, PlatformSchema } from "#shared/domain/platform.ts";
 import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -36,7 +36,13 @@ export const DrizzleChannelOverviewReads = Layer.effect(
         db
           .select({ channelId: channels.id, platform: channels.platform })
           .from(channels)
-          .where(anyUuid(channels.id, channelIds))
+          // An agenda names posts' channels, never a website's.
+          .where(
+            and(
+              anyUuid(channels.id, channelIds),
+              inArray(channels.platform, [...platforms])
+            )
+          )
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap((rows) => decodePlatforms(rows).pipe(Effect.orDie)),

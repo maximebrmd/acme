@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { maxChannelSetNameLength, maxChannelsPerSet } from "peal-contract";
-import type { Channel, ChannelSet } from "peal-contract";
+import type { SocialChannel, ChannelSet } from "peal-contract";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
@@ -42,7 +42,7 @@ export const ChannelSetFieldsView = ({
   onChange,
 }: {
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   readonly draft: ChannelSetDraft;
   readonly dropped: number;
@@ -137,7 +137,7 @@ export const ChannelSetItemView = ({
 }: {
   readonly actions?: ReactNode;
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly children?: ReactNode;
   /** The id of the set's name, which names its actions. */
   readonly nameId?: string;

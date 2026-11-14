@@ -3,7 +3,7 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Label } from "peal-ui/components/label";
 import {
@@ -79,7 +79,7 @@ export const BestTimesCard = ({
   timeZone,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly timeZone: string;
   readonly workspaceId: string;
 }) => {

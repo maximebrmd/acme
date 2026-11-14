@@ -1,7 +1,11 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
+import type {
+  AnalyticsSummary,
+  SocialChannel,
+  MetricTotals,
+} from "peal-contract";
 import {
   Table,
   TableBody,
@@ -33,7 +37,7 @@ const columnsOf = (summary: AnalyticsSummary): readonly Column[] =>
 
 interface ChannelTotalsProps {
   /** The workspace's channels, to name those of the summary. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly summary: AnalyticsSummary;
 }
 

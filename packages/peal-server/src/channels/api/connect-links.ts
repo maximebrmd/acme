@@ -25,6 +25,7 @@ import type { HostedOutcome } from "#channels/application/connect-links.ts";
 import type { HostedConnectFailed as HostedFailure } from "#channels/application/hosted-connect-failed.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
+import { isSocialPlatform } from "#shared/domain/platform.ts";
 
 import { cookieOf, nonceOf } from "./connect-link-cookie.ts";
 import { toConnectLinkView } from "./connect-link-view.ts";
@@ -143,11 +144,20 @@ const outcomeView = (outcome: HostedOutcome): HostedOutcomeView =>
   outcome._tag === "connected"
     ? {
         _tag: "connected",
-        channels: outcome.channels.map((channel) => ({
-          displayName: Option.getOrNull(channel.displayName),
-          handle: channel.handle,
-          platform: channel.platform,
-        })),
+        // A link connects accounts of a social network only.
+        channels: outcome.channels.flatMap((channel) => {
+          const { platform } = channel;
+
+          return isSocialPlatform(platform)
+            ? [
+                {
+                  displayName: Option.getOrNull(channel.displayName),
+                  handle: channel.handle,
+                  platform,
+                },
+              ]
+            : [];
+        }),
         returnTo: Option.getOrNull(outcome.returnTo),
       }
     : {

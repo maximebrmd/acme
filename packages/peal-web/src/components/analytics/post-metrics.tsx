@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
 import { countedPlatforms } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   Platform,
   PlatformCapabilities,
   Post,
@@ -24,7 +24,7 @@ import { browserTimeZone } from "#posts/zoned-time.ts";
 
 interface PostMetricsViewProps {
   readonly analytics: PostAnalytics;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /**
    * The platforms this server reads counts on, as its capabilities say
    * (`countedOn`): X only where its operator turned X reads on. Left out,
@@ -63,7 +63,7 @@ export const PostMetricsView = ({
   const format = useFormatter();
 
   // On LinkedIn, Peal reads the counts of company pages only.
-  const isCounted = ({ connection, platform }: Channel) =>
+  const isCounted = ({ connection, platform }: SocialChannel) =>
     countedHere.includes(platform) &&
     (platform !== "linkedin" || connection === "linkedinPage");
 
@@ -179,7 +179,7 @@ export const PostMetricsView = ({
 };
 
 interface PostMetricsProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly post: Post;
   readonly workspaceId: string;
 }

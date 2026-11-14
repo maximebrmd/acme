@@ -2,7 +2,8 @@ import { Effect, Layer, Option, Schema } from "effect";
 
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import { isSocialPlatform } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import { hasConnections } from "#shared/domain/channel-connection.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
@@ -70,11 +71,16 @@ export const registryOf = (
         : []
     );
 
+  // A website connects with no sign-in, so it has no authorizer.
   const forPlatform = (
-    platform: Platform,
+    platform: ChannelPlatform,
     connection: Option.Option<ChannelConnection> = Option.none()
-  ): Option.Option<PlatformAuthorizer> =>
-    Option.isSome(connection) && hasConnections(platform)
+  ): Option.Option<PlatformAuthorizer> => {
+    if (!isSocialPlatform(platform)) {
+      return Option.none();
+    }
+
+    return Option.isSome(connection) && hasConnections(platform)
       ? Option.fromUndefinedOr(
           configured.find(
             (authorizer) =>
@@ -83,9 +89,10 @@ export const registryOf = (
           )
         )
       : Option.fromUndefinedOr(byPlatform.get(platform));
+  };
 
   return PlatformAuthorizers.of({
-    every: (platform) =>
+    every: (platform: ChannelPlatform) =>
       configured.filter((authorizer) => authorizer.platform === platform),
     for: forPlatform,
     instagramConnections: connectionsOf(

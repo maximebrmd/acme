@@ -4,7 +4,11 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, ChannelSet, PlanLimitReached } from "peal-contract";
+import type {
+  SocialChannel,
+  ChannelSet,
+  PlanLimitReached,
+} from "peal-contract";
 import { useMemo, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,7 +42,7 @@ const ignore = () => {
   // Nothing is chosen before the page hydrates: the field is disabled.
 };
 
-const noChannels: readonly Channel[] = [];
+const noChannels: readonly SocialChannel[] = [];
 const noSets: readonly ChannelSet[] = [];
 
 // The plan's refusal among the rows, which the upgrade dialog offers a
@@ -168,7 +172,7 @@ const LoadedImport = ({ workspaceId }: { readonly workspaceId: string }) => {
     });
   };
 
-  const handleCopy = (channel: Channel) => {
+  const handleCopy = (channel: SocialChannel) => {
     void navigator.clipboard
       .writeText(channel.id)
       .then(() =>

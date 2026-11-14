@@ -2,7 +2,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   Tabs,
@@ -22,7 +22,9 @@ interface TextTabsProps {
    * What a channel's tab shows under its text of its own: its media of its
    * own, when the composer offers them.
    */
-  readonly renderChannelMedia?: ((channel: Channel) => ReactNode) | undefined;
+  readonly renderChannelMedia?:
+    | ((channel: SocialChannel) => ReactNode)
+    | undefined;
   /** Hears a text's editor take the focus. */
   readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** Hears the editor of the text for all channels made. */
@@ -33,12 +35,12 @@ interface TextTabsProps {
   readonly onText: (text: string) => void;
   readonly overrides: Readonly<Record<string, string>>;
   readonly readOnly: boolean;
-  readonly selected: readonly Channel[];
+  readonly selected: readonly SocialChannel[];
   readonly text: string;
 }
 
 interface OverrideEditorProps {
-  readonly channel: Channel;
+  readonly channel: SocialChannel;
   readonly onEditorFocus: TextTabsProps["onEditorFocus"];
   readonly onOverride: TextTabsProps["onOverride"];
   readonly onPasteFiles: TextTabsProps["onPasteFiles"];

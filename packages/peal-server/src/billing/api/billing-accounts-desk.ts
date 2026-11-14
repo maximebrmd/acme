@@ -17,13 +17,16 @@ import { BillingAccountIdSchema } from "#billing/domain/billing-account.ts";
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { PlatformSchema } from "#shared/domain/platform.ts";
+import { ChannelPlatformSchema } from "#shared/domain/platform.ts";
 
 // A cursor is a position, written so that staff keep it as it is.
 const CursorSchema = Schema.StringFromBase64Url.pipe(
   Schema.decodeTo(
     Schema.fromJsonString(
-      Schema.Struct({ accountId: Schema.String, platform: PlatformSchema })
+      Schema.Struct({
+        accountId: Schema.String,
+        platform: ChannelPlatformSchema,
+      })
     )
   )
 );

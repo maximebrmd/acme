@@ -11,7 +11,7 @@ import {
   weekdays,
 } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   ChannelSet,
   Queue,
   QueuePreview,
@@ -159,7 +159,7 @@ export const QueueFieldsView = ({
 }: {
   readonly channelSets: readonly ChannelSet[];
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   readonly draft: QueueDraft;
   readonly dropped: number;
@@ -439,7 +439,7 @@ export const QueueItemView = ({
 }: {
   readonly actions?: ReactNode;
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly children?: ReactNode;
   /** The id of the queue's name, which names its actions. */
   readonly nameId?: string;

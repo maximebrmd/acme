@@ -91,7 +91,7 @@ import type {
   Billing,
   BillingAccount,
   WorkspaceUsageReport,
-  Channel,
+  SocialChannel,
   ChannelOptions,
   ChannelPreview,
   ChannelSet,
@@ -276,7 +276,7 @@ export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
 
 export const pinterestId = "0190f3a0-0000-7000-8000-00000000c006";
 
-const channels: readonly Channel[] = [
+const channels: readonly SocialChannel[] = [
   {
     avatarUrl: null,
     connection: null,
@@ -1313,7 +1313,7 @@ export interface StudioState {
   readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
   /** The studio's channels as they are now: named, turned off or on. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** The workspace's channel sets, oldest first. */
   readonly channelSets: readonly StudioSet[];
   readonly comments: readonly ReviewComment[];
@@ -1500,7 +1500,7 @@ const channelsNow = (studio: Studio, workspaceId: string) =>
   );
 
 // How many of these channels are in each status.
-const countsOf = (found: readonly Channel[]) => ({
+const countsOf = (found: readonly SocialChannel[]) => ({
   active: found.filter(({ status }) => status._tag === "active").length,
   disabled: found.filter(({ status }) => status._tag === "disabled").length,
   refreshNeeded: found.filter(({ status }) => status._tag === "refreshNeeded")
@@ -1509,14 +1509,14 @@ const countsOf = (found: readonly Channel[]) => ({
 
 // Whether a channel's handle or one of its names holds the text, whatever
 // its case.
-const holds = (channel: Channel, text: string): boolean =>
+const holds = (channel: SocialChannel, text: string): boolean =>
   [channel.handle, channel.displayName ?? "", channel.label ?? ""].some(
     (written) => written.toLowerCase().includes(text.toLowerCase())
   );
 
 // A channel turned off keeps whether it must be reconnected, and has it
 // again once turned back on.
-const turnedOff = (channel: Channel): Channel =>
+const turnedOff = (channel: SocialChannel): SocialChannel =>
   channel.status._tag === "disabled"
     ? channel
     : {
@@ -1527,7 +1527,7 @@ const turnedOff = (channel: Channel): Channel =>
         },
       };
 
-const turnedOn = (channel: Channel): Channel =>
+const turnedOn = (channel: SocialChannel): SocialChannel =>
   channel.status._tag === "disabled"
     ? {
         ...channel,
@@ -1560,7 +1560,7 @@ const allowed = (permission: Permission) =>
 const changingChannel = (
   studio: Studio,
   params: { readonly channelId: string; readonly workspaceId: string },
-  change: (channel: Channel) => Channel,
+  change: (channel: SocialChannel) => SocialChannel,
   what: string
 ) =>
   Effect.gen(function* changing() {
@@ -2736,7 +2736,7 @@ const scheduleCheck = (payload: Pick<NewPost, "when">) => {
 // A part's text on a channel and what it holds, counted as its platform
 // counts it.
 const countsOn = (
-  channel: Channel,
+  channel: SocialChannel,
   part: Pick<PostContent, "media" | "overrides" | "text">
 ) => {
   const rules = platformRules[channel.platform];
@@ -2767,7 +2767,7 @@ const countsOn = (
 
 // What a post would be on one channel: its first part, then the others.
 const previewOn = (
-  channel: Channel,
+  channel: SocialChannel,
   postContent: PostContent,
   options: readonly ChannelOptions[]
 ): ChannelPreview => ({

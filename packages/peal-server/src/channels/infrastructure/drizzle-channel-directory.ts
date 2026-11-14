@@ -1,8 +1,8 @@
-import { asc, gt } from "drizzle-orm";
+import { and, asc, gt, inArray } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
 
 import { ChannelDirectory } from "#channels/application/channel-directory.ts";
-import { PlatformSchema } from "#channels/domain/platform.ts";
+import { platforms, PlatformSchema } from "#channels/domain/platform.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -36,10 +36,14 @@ export const DrizzleChannelDirectory = Layer.effect(
             workspaceId: channels.workspaceId,
           })
           .from(channels)
+          // Social channels only: a website's is followed by none of them.
           .where(
-            last.pipe(
-              Option.map((id) => gt(channels.id, id)),
-              Option.getOrUndefined
+            and(
+              inArray(channels.platform, [...platforms]),
+              last.pipe(
+                Option.map((id) => gt(channels.id, id)),
+                Option.getOrUndefined
+              )
             )
           )
           .orderBy(asc(channels.id))

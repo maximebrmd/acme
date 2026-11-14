@@ -3,14 +3,20 @@ import { OpenApi } from "effect/http-api";
 import {
   Api,
   ChannelConnectionSchema as ContractChannelConnectionSchema,
+  ChannelPlatformSchema as ContractChannelPlatformSchema,
   InstagramConnectionSchema as ContractConnectionSchema,
   LinkedInConnectionSchema as ContractLinkedInConnectionSchema,
   MetaAppSchema,
   PlatformSchema as ContractPlatformSchema,
+  SitePlatformSchema as ContractSitePlatformSchema,
 } from "peal-contract";
 
 import { MetaAppKindSchema } from "#channels/domain/data-deletion.ts";
-import { PlatformSchema } from "#channels/domain/platform.ts";
+import {
+  ChannelPlatformSchema,
+  PlatformSchema,
+  SitePlatformSchema,
+} from "#channels/domain/platform.ts";
 import { ChannelConnectionSchema } from "#shared/domain/channel-connection.ts";
 import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
 import { LinkedInConnectionSchema } from "#shared/domain/linkedin-connection.ts";
@@ -31,6 +37,15 @@ describe("the channels contract", () => {
         "/api/workspaces/{workspaceId}/channels/connect/{platform}"
       )
     ).toContain("402");
+  });
+
+  it("copies the server's websites, and what a channel connects to", () => {
+    expect(ContractSitePlatformSchema.literals).toStrictEqual(
+      SitePlatformSchema.literals
+    );
+    expect(ContractChannelPlatformSchema.literals).toStrictEqual(
+      ChannelPlatformSchema.literals
+    );
   });
 
   it("copies the server's platforms, Instagram's and LinkedIn's ways in and Meta's apps", () => {

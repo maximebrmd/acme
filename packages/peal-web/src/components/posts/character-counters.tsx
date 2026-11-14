@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 
 import { channelName } from "#channels/channel-name.ts";
@@ -23,7 +23,7 @@ const countsOf = (problem: ChannelProblem) => {
 
 interface CharacterCountersProps {
   readonly fits: readonly {
-    readonly channel: Channel;
+    readonly channel: SocialChannel;
     readonly fit: ChannelFit;
     /** How the post's images and videos fit, when it has any. */
     readonly media?: MediaFit;

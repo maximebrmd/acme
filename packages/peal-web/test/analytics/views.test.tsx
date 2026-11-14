@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type {
   AnalyticsDashboard,
   AnalyticsSummary,
-  Channel,
+  SocialChannel,
   DashboardTotals,
   Platform,
   PostAnalytics,
@@ -42,7 +42,7 @@ const render = async (
   );
 };
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,
@@ -250,7 +250,7 @@ describe(PostMetricsView, () => {
   });
 
   it("says counts are not available on the platforms Peal reads none on", async () => {
-    const linkedin: Channel = {
+    const linkedin: SocialChannel = {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c3",
@@ -259,7 +259,7 @@ describe(PostMetricsView, () => {
     };
 
     // A location: Google gives no count of a post.
-    const business: Channel = {
+    const business: SocialChannel = {
       ...channel,
       handle: "Example Bakery",
       id: "01900000-0000-7000-8000-0000000000c4",
@@ -289,7 +289,7 @@ describe(PostMetricsView, () => {
   });
 
   it("follows the server for the platforms it reads: X only where its operator turned it on", async () => {
-    const x: Channel = {
+    const x: SocialChannel = {
       ...channel,
       handle: "@alice_example",
       id: "01900000-0000-7000-8000-0000000000c7",
@@ -340,7 +340,7 @@ describe(PostMetricsView, () => {
   });
 
   it("promises counts on TikTok and YouTube, which Peal reads", async () => {
-    const tiktok: Channel = {
+    const tiktok: SocialChannel = {
       ...channel,
       handle: "@alice_example",
       id: "01900000-0000-7000-8000-0000000000c5",
@@ -348,7 +348,7 @@ describe(PostMetricsView, () => {
       platform: "tiktok",
     };
 
-    const youtube: Channel = {
+    const youtube: SocialChannel = {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c6",
@@ -370,7 +370,7 @@ describe(PostMetricsView, () => {
   });
 
   it("promises counts on a LinkedIn page, which Peal reads", async () => {
-    const page: Channel = {
+    const page: SocialChannel = {
       ...channel,
       connection: "linkedinPage",
       handle: "example-bakery",
@@ -393,7 +393,7 @@ describe(PostMetricsView, () => {
   });
 
   it("says so beside the counts of the channels Peal reads", async () => {
-    const linkedin: Channel = {
+    const linkedin: SocialChannel = {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c3",

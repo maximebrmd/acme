@@ -3,7 +3,7 @@ import type { DateTime } from "effect";
 
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
-import type { Platform } from "#shared/domain/platform.ts";
+import type { ChannelPlatform } from "#shared/domain/platform.ts";
 import type {
   ChannelHealth,
   ChannelState,
@@ -14,7 +14,7 @@ export interface OverseenChannel {
   readonly connection: Option.Option<ChannelConnection>;
   readonly handle: string;
   readonly id: ChannelId;
-  readonly platform: Platform;
+  readonly platform: ChannelPlatform;
   readonly status: ChannelState;
   readonly token:
     | { readonly _tag: "nonExpiring" }

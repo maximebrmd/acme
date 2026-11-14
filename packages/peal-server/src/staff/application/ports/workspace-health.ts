@@ -10,7 +10,7 @@ import type {
   WorkspaceId,
 } from "#shared/domain/ids.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
-import type { Platform } from "#shared/domain/platform.ts";
+import type { ChannelPlatform } from "#shared/domain/platform.ts";
 
 /** The subscription that buys a workspace its plan, as Stripe last told. */
 export interface StaffSubscription {
@@ -43,7 +43,7 @@ export interface ChannelHealth {
   readonly connection: Option.Option<ChannelConnection>;
   readonly handle: string;
   readonly id: ChannelId;
-  readonly platform: Platform;
+  readonly platform: ChannelPlatform;
   readonly status: ChannelState;
   readonly tokenExpiresAt: Option.Option<DateTime.Utc>;
   readonly workspaceId: WorkspaceId;

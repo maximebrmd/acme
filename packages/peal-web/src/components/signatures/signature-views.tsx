@@ -3,7 +3,7 @@
 import { Option } from "effect";
 import { useTranslations } from "next-intl";
 import { maxSignatureLength, maxSignatureNameLength } from "peal-contract";
-import type { Channel, Platform, Signature } from "peal-contract";
+import type { SocialChannel, Platform, Signature } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Input } from "peal-ui/components/input";
@@ -29,7 +29,7 @@ import type { SignatureDraft } from "#signatures/draft.ts";
 // signatures-settings.tsx.
 
 /** Writes what a signature is for: the workspace, a platform, a channel. */
-export const useScopeText = (channels: readonly Channel[]) => {
+export const useScopeText = (channels: readonly SocialChannel[]) => {
   const t = useTranslations("Signatures");
   const tPosts = useTranslations("Posts");
 
@@ -58,7 +58,7 @@ export const useScopeText = (channels: readonly Channel[]) => {
 // The platforms a signature can be for: those of the connected channels,
 // and the one the form already holds.
 const platformsOf = (
-  channels: readonly Channel[],
+  channels: readonly SocialChannel[],
   held: Platform | undefined
 ): readonly Platform[] => [
   ...new Set([
@@ -80,7 +80,7 @@ export const SignatureFieldsView = ({
   onChange,
 }: {
   /** The workspace's connected channels. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   readonly draft: SignatureDraft;
   readonly error: SavedItemError | null;
@@ -99,7 +99,7 @@ export const SignatureFieldsView = ({
   const platforms = platformsOf(channels, draft.platform);
   const channel = channels.find(({ id }) => id === draft.channelId);
 
-  const channelText = (shown: Channel) =>
+  const channelText = (shown: SocialChannel) =>
     tPosts("Composer.channelDetail", {
       handle: channelName(shown),
       platform: tPosts("platform", { platform: shown.platform }),
@@ -278,7 +278,7 @@ export const SignatureItemView = ({
   signature,
 }: {
   readonly actions?: ReactNode;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly children?: ReactNode;
   /** The id of the signature's name, which names its actions. */
   readonly nameId?: string;

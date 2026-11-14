@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
-import type { Channel, ChannelPreview } from "peal-contract";
+import type { SocialChannel, ChannelPreview } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { PostPreviewsView } from "#components/posts/post-previews-view.tsx";
@@ -9,7 +9,7 @@ import type { PreviewAnswer } from "#components/posts/post-previews-view.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import type { PreviewState } from "#posts/post-preview.ts";
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

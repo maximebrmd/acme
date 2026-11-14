@@ -9,7 +9,10 @@ import {
   Uuid7Schema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
-import { PlatformSchema } from "#shared/domain/platform.ts";
+import {
+  ChannelPlatformSchema,
+  PlatformSchema,
+} from "#shared/domain/platform.ts";
 
 import { WebhookEndpointIdSchema } from "./webhook-endpoint-id.ts";
 
@@ -61,10 +64,11 @@ const postOnChannel = {
   round: Schema.Int,
 };
 
+// A social network's channel, or a website's.
 const channel = {
   ...workspace,
   channelId: ChannelIdSchema,
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
 };
 
 const media = { ...workspace, mediaId: MediaAssetIdSchema };

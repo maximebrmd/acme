@@ -5,13 +5,14 @@ import { Cause, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   InboxComment,
   InboxModerationAction,
   InboxReply,
   InboxThreadDetail,
   Platform,
 } from "peal-contract";
+import { isSocialChannel } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import {
   AlertDialog,
@@ -487,7 +488,7 @@ const LoadedThread = ({
   onRefresh,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly detail: InboxThreadDetail;
   readonly mayReply: boolean;
   readonly onRefresh: () => void;
@@ -622,7 +623,11 @@ export const ThreadScreen = ({
 
   return (
     <LoadedThread
-      channels={AsyncResult.isSuccess(channels) ? channels.value : []}
+      channels={
+        AsyncResult.isSuccess(channels)
+          ? channels.value.filter(isSocialChannel)
+          : []
+      }
       detail={result.value}
       mayReply={mayReply}
       workspaceId={workspaceId}

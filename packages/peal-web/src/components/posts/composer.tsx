@@ -5,7 +5,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
 import type {
   ApprovalPolicy,
-  Channel,
+  SocialChannel,
   MediaAttachment,
   Permission,
   Post,
@@ -188,7 +188,7 @@ const savableUnless = (
 const ownMediaBlock = (
   t: Translate,
   list: ReturnType<typeof useFormatter>["list"],
-  selected: readonly Channel[],
+  selected: readonly SocialChannel[],
   waiting: readonly string[]
 ) =>
   waiting.length === 0
@@ -264,7 +264,7 @@ const startOf = (post: Post | undefined) => ({
 interface ComposerProps {
   /** Which of the workspace's posts wait for an approval; none while unknown. */
   readonly approvalPolicy: ApprovalPolicy | undefined;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly post: Post | undefined;
@@ -470,7 +470,7 @@ export const Composer = ({
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
 
-  const valuesOn = (channel: Channel): OptionValues =>
+  const valuesOn = (channel: SocialChannel): OptionValues =>
     optionValues[channel.id] ?? initialValues(channel.platform);
 
   const channelFits = selected.map((channel) => {

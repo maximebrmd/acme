@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
@@ -12,7 +12,7 @@ import { channelInitial, channelTitle } from "#channels/channel-name.ts";
 import { everyChannel, offersEveryChannel } from "#posts/channel-selection.ts";
 
 interface ChannelPickerProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly disabled: boolean;
   readonly onChange: (channelIds: readonly string[]) => void;
   readonly selected: readonly string[];

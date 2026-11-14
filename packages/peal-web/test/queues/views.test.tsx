@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option } from "effect";
 import { NextIntlClientProvider } from "next-intl";
-import type { Channel, Queue } from "peal-contract";
+import type { SocialChannel, Queue } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -32,7 +32,7 @@ const noop = () => {
   // Nothing changes while rendering to markup.
 };
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

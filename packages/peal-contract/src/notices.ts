@@ -14,7 +14,7 @@ import {
 } from "./billing-plans.ts";
 import { ExcessSchema } from "./billing.ts";
 import { Forbidden } from "./forbidden.ts";
-import { PlatformSchema } from "./platform.ts";
+import { ChannelPlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
 import { MeterSchema } from "./rate-card.ts";
 
@@ -32,7 +32,7 @@ export type WebhookTurnOffReason = typeof WebhookTurnOffReasonSchema.Type;
 /** The account a notice is about, as it was when the notice was made. */
 export const NoticeChannelSchema = Schema.Struct({
   handle: Schema.String,
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
 }).annotate({ identifier: "NoticeChannel" });
 
 export type NoticeChannel = typeof NoticeChannelSchema.Type;

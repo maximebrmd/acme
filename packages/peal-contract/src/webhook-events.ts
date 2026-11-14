@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-import { PlatformSchema } from "./platform.ts";
+import { ChannelPlatformSchema, PlatformSchema } from "./platform.ts";
 import {
   FailureReasonSchema,
   PostOutcomeSchema,
@@ -140,7 +140,7 @@ const postOnChannel = {
 const channel = {
   ...workspace,
   channelId: Schema.String,
-  platform: PlatformSchema,
+  platform: ChannelPlatformSchema,
 };
 
 const media = { ...workspace, mediaId: Schema.String };

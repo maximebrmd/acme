@@ -1,14 +1,14 @@
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
-import type { Channel } from "peal-contract";
+import type { SocialChannel } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { fitOn } from "#posts/character-count.ts";
 
-const channel = (platform: Channel["platform"]): Channel => ({
+const channel = (platform: SocialChannel["platform"]): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,

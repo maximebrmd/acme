@@ -105,7 +105,7 @@ const AllowedHostsSchema = Schema.String.pipe(
       )
     ),
     SchemaTransformation.transform({
-      decode: (value: string) =>
+      decode: (value: string): readonly string[] =>
         value
           .split(",")
           .map((host) => host.trim().toLowerCase())

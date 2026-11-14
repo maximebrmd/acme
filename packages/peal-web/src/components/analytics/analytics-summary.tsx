@@ -1,7 +1,11 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
+import type {
+  AnalyticsSummary,
+  SocialChannel,
+  MetricTotals,
+} from "peal-contract";
 
 import { isEmpty, shownKeys } from "#analytics/report.ts";
 import { ChannelTotals } from "#components/analytics/channel-totals.tsx";
@@ -17,7 +21,7 @@ const headline: readonly (keyof MetricTotals)[] = [
 ];
 
 interface AnalyticsSummaryViewProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly summary: AnalyticsSummary;
   readonly workspaceId: string;
 }

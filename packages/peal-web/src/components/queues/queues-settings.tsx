@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, ChannelSet, Queue } from "peal-contract";
+import type { SocialChannel, ChannelSet, Queue } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useId, useMemo, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
@@ -81,7 +81,7 @@ const EditForm = ({
   workspaceId,
 }: {
   readonly channelSets: readonly ChannelSet[];
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onClose: () => void;
   /** Saved, with whether its slots or its zone changed. */
   readonly onSaved: (retimed: boolean) => void;
@@ -160,7 +160,7 @@ const QueueRow = ({
   workspaceId,
 }: {
   readonly channelSets: readonly ChannelSet[];
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly mayManage: boolean;
   readonly mayReshuffle: boolean;
   readonly queue: Queue;
@@ -249,7 +249,7 @@ const CreateForm = ({
   workspaceId,
 }: {
   readonly channelSets: readonly ChannelSet[];
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Queues");

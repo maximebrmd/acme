@@ -8,7 +8,7 @@ import {
   queueHorizonDays,
 } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   ImportColumn,
   ImportRowResult,
   PostRefusal,
@@ -71,7 +71,7 @@ interface RefusalText {
 }
 
 /** A refused row's reason, and the content's violations when it has some. */
-const useRefusalText = (channels: readonly Channel[]) => {
+const useRefusalText = (channels: readonly SocialChannel[]) => {
   const t = useTranslations();
   const violation = useViolationText(channels);
 
@@ -192,7 +192,7 @@ export const ImportRowsTable = ({
   postLinks,
   rows,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   /** A link to each post the import made, by the post's id. */
   readonly postLinks: ReadonlyMap<string, ReactNode>;
   readonly rows: readonly ImportRowResult[];
@@ -335,7 +335,7 @@ export const ImportConfirm = ({
 };
 
 interface ImportStateViewProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onChooseAgain: () => void;
   readonly onConfirm: () => void;
   readonly onRetry: () => void;
@@ -523,8 +523,8 @@ export const ImportChannelsView = ({
   onCopy,
   sets,
 }: {
-  readonly channels: readonly Channel[];
-  readonly onCopy: (channel: Channel) => void;
+  readonly channels: readonly SocialChannel[];
+  readonly onCopy: (channel: SocialChannel) => void;
   /** The names of the workspace's channel sets. */
   readonly sets: readonly string[];
 }) => {

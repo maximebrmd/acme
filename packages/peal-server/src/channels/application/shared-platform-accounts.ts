@@ -3,12 +3,12 @@ import type { Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import type { Platform } from "#shared/domain/platform.ts";
+import type { ChannelPlatform } from "#shared/domain/platform.ts";
 
 /** A platform account, by its platform and its own id there. */
 export interface PlatformAccountKey {
   readonly accountId: string;
-  readonly platform: Platform;
+  readonly platform: ChannelPlatform;
 }
 
 /** A platform account connected in several workspaces, and which. */

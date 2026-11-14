@@ -9,7 +9,7 @@ import {
   inboxWindowDays,
 } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   InboxAbilityStanding,
   InboxAuthor,
   InboxComment,
@@ -70,7 +70,7 @@ export const useInboxErrorText = () => {
 export const useChannelName = () => {
   const t = useTranslations("Posts");
 
-  return (channel: Channel | undefined): string =>
+  return (channel: SocialChannel | undefined): string =>
     channel === undefined
       ? t("disconnectedChannel")
       : t("Composer.channelDetail", {
@@ -170,7 +170,7 @@ export const ThreadRowView = ({
   workspaceId,
 }: {
   /** The thread's channel, unless it was disconnected since. */
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly link: InboxLink;
   readonly thread: InboxThread;
   readonly workspaceId: string;
@@ -225,7 +225,7 @@ export const ThreadSummaryView = ({
   thread,
   workspaceId,
 }: {
-  readonly channel: Channel | undefined;
+  readonly channel: SocialChannel | undefined;
   readonly link: InboxLink;
   readonly thread: InboxThread;
   readonly workspaceId: string;

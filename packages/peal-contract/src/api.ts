@@ -940,6 +940,9 @@ export {
   ConnectCallbackSchema,
   ConnectChannelSchema,
   ConnectOutcomeSchema,
+  ConnectSiteSchema,
+  isSocialChannel,
+  maxSiteAddressLength,
 } from "./channels.ts";
 
 export type {
@@ -955,6 +958,8 @@ export type {
   ConnectCallback,
   ConnectChannel,
   ConnectOutcome,
+  ConnectSite,
+  SocialChannel,
 } from "./channels.ts";
 
 export {
@@ -1198,16 +1203,20 @@ export type { AllowanceReason } from "./usage-allowance-reached.ts";
 
 export {
   ChannelConnectionSchema,
+  ChannelPlatformSchema,
   InstagramConnectionSchema,
   LinkedInConnectionSchema,
   PlatformSchema,
+  SitePlatformSchema,
 } from "./platform.ts";
 
 export type {
   ChannelConnection,
+  ChannelPlatform,
   InstagramConnection,
   LinkedInConnection,
   Platform,
+  SitePlatform,
 } from "./platform.ts";
 
 export {

@@ -1,6 +1,7 @@
 import { DateTime, Effect, Layer, Match, Option } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { isSocialChannel } from "#channels/application/social-channels.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
@@ -43,7 +44,9 @@ const makeTelling = Effect.gen(function* makeTelling() {
   const refOf = Effect.fn("PostEvents.refOf")(function* refOf(
     target: PostTarget
   ) {
-    const channel = yield* channels.get(target.channelId);
+    const channel = (yield* channels.get(target.channelId)).pipe(
+      Option.filter(isSocialChannel)
+    );
 
     return {
       channelId: target.channelId,

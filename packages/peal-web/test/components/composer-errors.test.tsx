@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { PlanLimitReached, PostContentInvalid } from "peal-contract";
-import type { Channel, ContentViolation } from "peal-contract";
+import type { SocialChannel, ContentViolation } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "#components/posts/composer-errors.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 
-const bluesky: Channel = {
+const bluesky: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

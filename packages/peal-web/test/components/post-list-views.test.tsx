@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -15,7 +15,7 @@ import {
 import { loadMessages } from "#i18n/messages.ts";
 import { noFilters } from "#posts/post-list-filter.ts";
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

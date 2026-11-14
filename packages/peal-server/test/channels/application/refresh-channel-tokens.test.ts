@@ -30,7 +30,7 @@ import {
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { disable, markRefreshNeeded } from "#channels/domain/channel.ts";
 import type { Channel, TokenLifetime } from "#channels/domain/channel.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import { TokenPolicy, tokenPolicies } from "#channels/domain/token-policy.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
@@ -456,7 +456,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
           })
         );
 
-        const order = yield* Ref.make<readonly Platform[]>([]);
+        const order = yield* Ref.make<readonly ChannelPlatform[]>([]);
 
         const recording = (
           authorizer: PlatformAuthorizer

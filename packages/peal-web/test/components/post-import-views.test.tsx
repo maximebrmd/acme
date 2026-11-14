@@ -7,7 +7,7 @@ import {
   PostContentInvalid,
   UnknownChannels,
 } from "peal-contract";
-import type { Channel, ImportRowResult, Post } from "peal-contract";
+import type { SocialChannel, ImportRowResult, Post } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -22,7 +22,7 @@ import type { ImportState } from "#posts/import-state.ts";
 
 const message = "A synthetic refusal from the server";
 
-const channel: Channel = {
+const channel: SocialChannel = {
   avatarUrl: null,
   connection: null,
   displayName: null,

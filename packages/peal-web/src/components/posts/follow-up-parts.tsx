@@ -4,7 +4,7 @@ import type { Editor } from "@tiptap/core";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   ChannelOptions,
   MediaAttachment,
   Permission,
@@ -58,7 +58,7 @@ interface PartEditorProps {
   readonly permissions: readonly Permission[];
   /** Its place among the post's parts, the post itself being the first. */
   readonly position: number;
-  readonly selected: readonly Channel[];
+  readonly selected: readonly SocialChannel[];
   readonly workspaceId: string;
 }
 
@@ -310,13 +310,13 @@ interface FollowUpPartsProps {
   /** Hears a part's text take the focus: where an emoji chosen goes. */
   readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
   /** Whether this server sends the parts after the first on a platform. */
-  readonly offered: (channel: Channel) => boolean;
+  readonly offered: (channel: SocialChannel) => boolean;
   /** The options the post has on its channels. */
   readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
   readonly permissions: readonly Permission[];
   /** The channels the post goes to. */
-  readonly selected: readonly Channel[];
+  readonly selected: readonly SocialChannel[];
   readonly workspaceId: string;
 }
 
@@ -346,7 +346,7 @@ export const FollowUpParts = ({
   const added = useRef(0);
   const locked = disabled || !editable;
 
-  const takenOn = (channel: Channel) =>
+  const takenOn = (channel: SocialChannel) =>
     partsTaken(
       channel.platform,
       parts.length,

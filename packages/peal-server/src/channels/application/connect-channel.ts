@@ -14,8 +14,8 @@ import {
 } from "#channels/domain/connect-attempt.ts";
 import { choosableBy, offerChoice } from "#channels/domain/connect-choice.ts";
 import { InvalidConnectState } from "#channels/domain/invalid-connect-state.ts";
-import { platforms } from "#channels/domain/platform.ts";
-import type { Platform } from "#channels/domain/platform.ts";
+import { isSocialPlatform, platforms } from "#channels/domain/platform.ts";
+import type { ChannelPlatform, Platform } from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
@@ -276,7 +276,7 @@ export class ConnectChannel extends Context.Service<
       // The platform's authorizer, for Instagram the connection's: one the
       // server lacks the settings for is not configured.
       const authorizerFor = (
-        platform: Platform,
+        platform: ChannelPlatform,
         connection: Option.Option<ChannelConnection> = Option.none()
       ): Effect.Effect<PlatformAuthorizer, PlatformNotConnectable> =>
         Option.match(authorizers.for(platform, connection), {
@@ -285,8 +285,9 @@ export class ConnectChannel extends Context.Service<
               new PlatformNotConnectable({
                 platform,
                 reason:
-                  authorizers.unconfigured.has(platform) ||
-                  (hasConnections(platform) && Option.isSome(connection))
+                  isSocialPlatform(platform) &&
+                  (authorizers.unconfigured.has(platform) ||
+                    (hasConnections(platform) && Option.isSome(connection)))
                     ? "notConfigured"
                     : "notSupported",
               })

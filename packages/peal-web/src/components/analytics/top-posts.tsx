@@ -4,7 +4,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
-import type { Channel, TopPost } from "peal-contract";
+import type { SocialChannel, TopPost } from "peal-contract";
 
 import { channelName } from "#channels/channel-name.ts";
 import { MetricList } from "#components/analytics/metric-list.tsx";
@@ -33,7 +33,7 @@ const PostExcerpt = ({
 };
 
 interface TopPostsProps {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly posts: readonly TopPost[];
   readonly workspaceId: string;
 }

@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { defaultFeedTemplate } from "peal-contract";
 import type {
-  Channel,
+  SocialChannel,
   Feed,
   FeedChange,
   FeedPreview,
@@ -209,7 +209,7 @@ const EditForm = ({
   queues,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly feed: Feed;
   readonly mayQueue: boolean;
   readonly onDone: () => void;
@@ -295,7 +295,7 @@ const FeedRow = ({
   queues,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly feed: Feed;
   readonly highlighted: boolean;
   readonly mayChange: boolean;
@@ -354,7 +354,7 @@ const CreateForm = ({
   queues,
   workspaceId,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly mayQueue: boolean;
   readonly queues: readonly Queue[];
   readonly workspaceId: string;

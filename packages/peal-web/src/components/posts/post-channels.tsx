@@ -3,7 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { Exit } from "effect";
 import { useTranslations } from "next-intl";
-import type { Channel, Post } from "peal-contract";
+import type { SocialChannel, Post } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ interface PostChannelsViewProps {
   readonly busy: string | null;
   /** The member may take a channel off this post. */
   readonly canRemove: boolean;
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly onRemove: (targetId: string) => void;
   readonly post: Post;
 }
@@ -98,7 +98,7 @@ export const PostChannels = ({
   workspaceId,
   ...subject
 }: Omit<ComposerSubject, "post" | "saved"> & {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly post: Post;
   readonly workspaceId: string;
 }) => {

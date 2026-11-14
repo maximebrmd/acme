@@ -3,6 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { DateTime, Option } from "effect";
 import { useTranslations } from "next-intl";
+import { isSocialChannel } from "peal-contract";
 import type { Channel, ChannelStatus } from "peal-contract";
 import {
   AlertDialog,
@@ -92,7 +93,7 @@ export const ChannelRow = ({
 
       Option.match(failureOf(exit), {
         onNone: () => {
-          if (exit._tag === "Success") {
+          if (exit._tag === "Success" && isSocialChannel(channel)) {
             rememberConnection({ platform: channel.platform, workspaceId });
             globalThis.location.assign(exit.value.authorizationUrl);
           }

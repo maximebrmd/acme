@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type {
-  Channel,
+  SocialChannel,
   Post,
   PostTarget,
   PublicationAttempt,
@@ -14,7 +14,7 @@ import { loadMessages } from "#i18n/messages.ts";
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
-const channel = (id: string, handle: string): Channel => ({
+const channel = (id: string, handle: string): SocialChannel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,

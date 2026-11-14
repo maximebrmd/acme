@@ -7,7 +7,7 @@ import {
   PostSortSchema,
   PostStatusSchema,
 } from "peal-contract";
-import type { Channel, Post, Tag } from "peal-contract";
+import type { SocialChannel, Post, Tag } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
@@ -53,7 +53,7 @@ export const PostItemView = ({
   tags = noTags,
 }: {
   /** The workspace's channels, which name the post's. */
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly children: ReactNode;
   readonly post: Post;
   /** The post's tags, among the workspace's. */
@@ -211,7 +211,7 @@ export const PostListFiltersView = ({
   onChange,
   tags,
 }: {
-  readonly channels: readonly Channel[];
+  readonly channels: readonly SocialChannel[];
   readonly filters: PostListFilters;
   readonly onChange: (filters: PostListFilters) => void;
   readonly tags: readonly Tag[];
