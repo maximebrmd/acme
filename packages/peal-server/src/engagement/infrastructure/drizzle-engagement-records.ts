@@ -231,6 +231,14 @@ export const DrizzleEngagementRecords = Layer.effect(
             Effect.gen(function* erasing() {
               yield* shareFollowingLock(sql);
 
+              // Its boxes first, as a channel's deletion takes its box.
+              yield* sql`
+                SELECT 1 FROM engagement.message_boxes
+                WHERE workspace_id = ${workspaceId}::uuid
+                ORDER BY channel_id
+                FOR UPDATE
+              `;
+
               const found = yield* unsentWhere(
                 eq(outgoingMessages.workspaceId, workspaceId)
               );
@@ -356,6 +364,14 @@ export const DrizzleEngagementRecords = Layer.effect(
         const unsent = yield* sql
           .withTransaction(
             Effect.gen(function* deleting() {
+              // The box first, which a message being journalled holds: it
+              // is then found here, not deleted unseen.
+              yield* sql`
+                SELECT 1 FROM engagement.message_boxes
+                WHERE channel_id = ${channelId}::uuid
+                FOR UPDATE
+              `;
+
               const found = yield* unsentWhere(
                 eq(outgoingMessages.channelId, channelId)
               );

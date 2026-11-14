@@ -9,6 +9,7 @@ import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts
 import { CollectMessages } from "#engagement/application/collect-messages.ts";
 import { EngagementMessages } from "#engagement/application/engagement-messages.ts";
 import { MessageSettings } from "#engagement/application/message-settings.ts";
+import { MessagesUngranted } from "#engagement/application/messages-ungranted.ts";
 import { PurgeMessages } from "#engagement/application/purge-messages.ts";
 import { SendMessage } from "#engagement/application/send-message.ts";
 import { refreshConversation } from "#engagement/domain/conversation.ts";
@@ -289,6 +290,51 @@ describe("the messages' collection", () => {
   );
 
   it.effect(
+    "clears the miss of a conversation a halted listing shows, so a whole listing after does not delete it",
+    () => {
+      const world = worldWith();
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+      );
+
+      let run = messagedAt;
+
+      const collected = Effect.suspend(() => {
+        run = DateTime.addDuration(run, "2 hours");
+
+        return at(
+          CollectMessages.use((collect) => collect.run(run)),
+          run
+        );
+      });
+
+      return Effect.gen(function* sighted() {
+        // Missed by a whole listing: marked.
+        world.state.read = listing(["c9"]);
+        yield* collected;
+
+        // Shown by a listing that halted: seen, so no longer missed.
+        world.state.read = listing(["c1"], false);
+        yield* collected;
+
+        // Missed by the next whole listing: marked again, and kept.
+        world.state.read = listing(["c9"]);
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
+
+        // A whole listing that comes back empty deletes nothing, however
+        // often: the conversation goes by its time.
+        world.state.read = listing([]);
+        yield* collected;
+        yield* collected;
+        assert.strictEqual(world.state.conversations.size, 1);
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
     "keeps no message sent before what Peal keeps, and never tells one again",
     () => {
       const world = makeMessageWorld();
@@ -509,6 +555,42 @@ describe("the messages' collection", () => {
             world.state.boxes.get(channelId(2))?.nextReadAt,
             DateTime.addDuration(messagedAt, "30 minutes")
           );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "turns a channel's messages off, and says so, once its account no longer grants what reading them takes",
+    () => {
+      const world = worldWith("bluesky");
+
+      world.state.boxes.set(
+        channelId(1),
+        followBox({ channelId: channelId(1), workspaceId }, messagedAt)
+      );
+      world.state.switchedOn.set(channelId(1), {
+        channelId: channelId(1),
+        enabledAt: messagedAt,
+        enabledBy: Option.none(),
+        workspaceId,
+      });
+      // Signed in again without the chat's permissions.
+      world.state.read = () => Effect.fail(new MessagesUngranted());
+
+      return at(
+        Effect.gen(function* ungranted() {
+          const report = yield* CollectMessages.use((collect) =>
+            collect.run(messagedAt)
+          );
+
+          assert.strictEqual(report.deferred, 1);
+          assert.strictEqual(world.state.conversations.size, 0);
+          assert.isFalse(world.state.boxes.has(channelId(1)));
+          assert.isFalse(world.state.switchedOn.has(channelId(1)));
+          assert.deepStrictEqual(world.state.turnedOff, [
+            { channelId: channelId(1), workspaceId },
+          ]);
         })
       ).pipe(Effect.provide(world.layer));
     }

@@ -62,6 +62,70 @@
   become: false
   register: peal_release_checkout
 
+# host.env, which site.yml writes, names files of the release folder that
+# the stack mounts (Grafana's contact points and heartbeat, for one): a
+# commit older than the last site.yml may lack one, and Docker would then
+# mount an empty folder in its place, on which Grafana stops at start. The
+# settings whose value is a path in the release folder ('./…', relative to
+# the Compose file's folder, packages/peal-docker); paths and no secret,
+# read-only, so it runs in check mode too.
+- name: Read the release folder's files host.env names
+  ansible.builtin.shell: grep -Es "^[A-Z][A-Z0-9_]*=['\"]?\./" {{ peal_root }}/host.env || true
+  register: peal_release_host_files
+  changed_when: false
+  check_mode: false
+
+# Those the commit's Compose file mounts (`- ${NAME:-…}:…`) must be files
+# of the commit, read from Git rather than the checkout, which check mode
+# leaves as it was. A commit check mode has not fetched cannot be read, and
+# is reported instead.
+- name: Find the files host.env names that the release lacks
+  ansible.builtin.shell: |
+    set -euo pipefail
+    commit='{{ peal_release_checkout.after }}'
+    if ! git cat-file -e "$commit^{commit}" 2>/dev/null; then
+      echo unknown
+      exit 0
+    fi
+    compose="$(git show "$commit:packages/peal-docker/compose.production.yaml")"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      name="${line%%=*}"
+      value="${line#*=}"
+      value="${value#[\'\"]}"
+      value="${value%[\'\"]}"
+      grep -Eq "^[[:space:]]*- [\$][{]$name:-[^}]*[}]:" <<<"$compose" || continue
+      if [ "$(git cat-file -t "$commit:packages/peal-docker/${value#./}" 2>/dev/null)" != blob ]; then
+        echo "missing $value"
+      fi
+    done
+  args:
+    executable: /bin/bash
+    chdir: "{{ peal_release_local_dir }}/checkout"
+    stdin: "{{ peal_release_host_files.stdout }}"
+  register: peal_release_host_files_missing
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  check_mode: false
+
+- name: Stop before the stack would mount a file the release lacks
+  ansible.builtin.assert:
+    that: peal_release_host_files_missing.stdout_lines | select('match', 'missing ') | list | length == 0
+    fail_msg: >-
+      The release's commit lacks {{ peal_release_host_files_missing.stdout_lines
+      | select('match', 'missing ') | map('regex_replace', '^missing ', '') | join(', ') }}
+      that the server's host.env names; release a commit at least as recent
+      as the last site.yml, or run site.yml from this commit first.
+    quiet: true
+
+- name: Report the files host.env names that could not be checked
+  ansible.builtin.debug:
+    msg: >-
+      Check mode has not fetched {{ peal_release_checkout.after }}: the files
+      host.env names are checked against it when the release runs.
+  when: "'unknown' in peal_release_host_files_missing.stdout_lines"
+
 # Postgres's image is named after its Dockerfile, so it changes, and
 # Postgres restarts, only when that file does.
 - name: Read the Postgres image's Dockerfile

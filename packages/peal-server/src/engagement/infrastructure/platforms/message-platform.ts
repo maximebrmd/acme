@@ -22,10 +22,12 @@ export interface MessagesToRead {
    * The ids on the platform of the messages Peal keeps of a conversation,
    * by its id there: what a whole read that does not show one asks after,
    * where a deletion can make part of a thread look whole (Mastodon).
+   * None when the database did not answer: the read is then not whole,
+   * so nothing is taken for deleted.
    */
   readonly keptOf?: (
     platformConversationId: string
-  ) => Effect.Effect<readonly string[]>;
+  ) => Effect.Effect<Option.Option<readonly string[]>>;
 }
 
 /** A message about to go out, read from its journal row. */

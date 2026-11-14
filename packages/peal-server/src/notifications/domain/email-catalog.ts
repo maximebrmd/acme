@@ -108,6 +108,11 @@ export interface EmailCatalog {
    * `{platform}`: never who, nor what.
    */
   readonly messagesReceived: EmailMessages;
+  /**
+   * The direct messages of the channel `{handle}` on `{platform}` were
+   * turned off, its account no longer allowing them.
+   */
+  readonly messagesTurnedOff: EmailMessages;
   /** A channel's token expires at `{expiresAt}` and cannot be renewed. */
   readonly channelReconnectSoon: EmailMessages;
   /** Why a post did not go out, as `{reason}` in `postFailed`'s body. */

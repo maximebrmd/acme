@@ -1,8 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Layer, Option, Result } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { MessageOutcomes } from "#engagement/application/ports/message-outcomes.ts";
+import { followBox } from "#engagement/domain/message-box.ts";
 import {
   settleMessage,
   writeMessage,
@@ -13,9 +14,11 @@ import type { NoticeRequest } from "#notifications/application/notify.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { freshChannel } from "#test/channels/support.ts";
 import {
+  channelId,
   conversation,
   directMessage,
   memberId,
+  messageBox,
   messagedAt,
   outgoingMessageId,
   workspaceId,
@@ -156,4 +159,37 @@ describe("the direct messages' outcomes", () => {
       assert.notInclude(JSON.stringify(events), secret);
     }).pipe(Effect.provide(layer));
   });
+
+  it.effect(
+    "tell who may connect channels that a channel's messages were turned off, once each time they were on",
+    () => {
+      const { events, layer, notices } = told();
+      const first = messageBox();
+
+      // Turned on again an hour later the same day, and off again.
+      const again = followBox(
+        { channelId: channelId(1), workspaceId },
+        DateTime.addDuration(messagedAt, "1 hour")
+      );
+
+      return Effect.gen(function* turnedOff() {
+        yield* MessageOutcomes.use((outcomes) =>
+          Effect.all([outcomes.turnedOff(first), outcomes.turnedOff(again)])
+        );
+
+        assert.deepStrictEqual(notices[0]?.event, {
+          _tag: "MessagesTurnedOff",
+          channel: { handle: "@peal_example", platform: "mastodon" },
+        });
+        assert.deepStrictEqual(
+          notices.map(({ key }) => key),
+          [
+            `messages-off:${channelId(1)}:${DateTime.formatIso(first.createdAt)}`,
+            `messages-off:${channelId(1)}:${DateTime.formatIso(again.createdAt)}`,
+          ]
+        );
+        assert.lengthOf(events, 0);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 });
