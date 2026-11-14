@@ -76,6 +76,12 @@ export interface FakeWordPressOptions {
    * connection before it answers: an answer lost on the way.
    */
   readonly drop?: (request: FakeWordPressRequest) => boolean;
+  /**
+   * Whether the site's search reads names as they display, `&amp;` as
+   * `&`, as a search plugin may: it then finds a name WordPress stored
+   * encoded, and answers it encoded.
+   */
+  readonly searchesDisplayedNames?: boolean;
   /** Whether the site ignores `modified_after`, as WordPress before 5.7. */
   readonly beforeModifiedAfter?: boolean;
 }
@@ -264,9 +270,14 @@ export const fakeWordPress = (options: FakeWordPressOptions = {}) =>
           // A `LIKE` on the name as stored, whatever was searched for.
           const search = (request.query.get("search") ?? "").toLowerCase();
 
+          const searched = (name: string) =>
+            options.searchesDisplayedNames === true
+              ? name.replaceAll("&amp;", "&")
+              : name;
+
           return {
             body: [...terms].flatMap(([id, name]) =>
-              name.toLowerCase().includes(search)
+              searched(name).toLowerCase().includes(search)
                 ? [{ id, name, slug: name.toLowerCase() }]
                 : []
             ),

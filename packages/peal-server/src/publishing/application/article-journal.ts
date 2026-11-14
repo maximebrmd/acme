@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { ArticleId } from "#publishing/domain/article-id.ts";
 import type {
@@ -57,6 +57,12 @@ export class ArticleJournal extends Context.Service<
     readonly begin: (
       call: ArticleCall
     ) => Effect.Effect<ArticleCallStart, DatabaseError>;
+    /** What the journal holds of the call, without writing it down. */
+    readonly found: (call: {
+      readonly articleId: ArticleId;
+      readonly attempt: number;
+      readonly round: number;
+    }) => Effect.Effect<Option.Option<ArticleCallStart>, DatabaseError>;
     /**
      * The call that makes the post is about to leave: from now on, a run
      * that finds the call unfinished looks for the post rather than make

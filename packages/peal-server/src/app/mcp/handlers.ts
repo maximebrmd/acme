@@ -201,9 +201,31 @@ const BasicToolsLive = BasicTools.toLayer(
 
           const { counts, items } = yield* matching(Option.none());
 
+          // Without a platform asked, the counts leave the websites out,
+          // as the list does.
+          const websites =
+            platform === undefined
+              ? yield* listChannels
+                  .search(actor, {
+                    after: Option.none(),
+                    limit: 1,
+                    platform: Option.some("wordpress"),
+                    query: Option.fromUndefinedOr(search),
+                    status: Option.fromUndefinedOr(status),
+                  })
+                  .pipe(
+                    Effect.map((page) => page.counts),
+                    Effect.catchTags(readingFailures)
+                  )
+              : { active: 0, disabled: 0, refreshNeeded: 0 };
+
           return {
             channels: items.filter(isSocialChannel).map(toChannelView),
-            counts,
+            counts: {
+              active: counts.active - websites.active,
+              disabled: counts.disabled - websites.disabled,
+              refreshNeeded: counts.refreshNeeded - websites.refreshNeeded,
+            },
           };
         }),
       list_workspaces: () =>

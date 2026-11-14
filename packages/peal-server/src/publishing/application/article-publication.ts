@@ -1,4 +1,4 @@
-import { DateTime, Effect, Option, Schedule, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Schedule, Schema } from "effect";
 
 import type { ArticleId } from "#publishing/domain/article-id.ts";
 import { claimed, settled } from "#publishing/domain/article.ts";
@@ -103,6 +103,9 @@ const adapterFailed: AttemptOutcome = {
   reason: "adapterFailure",
 };
 
+// How long an attempt waits before it asks for a channel's turn again.
+const turnWait = Duration.minutes(1);
+
 // The workspace holds more channels or members than its plan allows.
 const planRefusal: AttemptOutcome = new BadRequest({
   code: ownRefusalCodes.planLimit,
@@ -144,72 +147,110 @@ export const articleAttemptRun = Effect.fn("Articles.attemptRun")(
       return gone;
     }
 
-    const now = yield* DateTime.now;
-
-    // A workspace over its plan sends nothing, as its posts do not.
-    const overPlan = yield* withinPlan(article.value.workspaceId).pipe(
-      Effect.as(false),
-      Effect.catchTag("PlanLimitReached", () => Effect.succeed(true))
-    );
-
-    if (overPlan) {
-      return decide(planRefusal, {
-        earlier: { rateLimited: 0, unavailable: 0 },
-        sinceScheduled: DateTime.distance(attempt.dueAt, now),
-        startedAt: now,
-      });
-    }
-
-    const start = yield* journal.begin({
+    const call = {
       articleId: attempt.articleId,
       attempt: attempt.attempt,
-      idempotencyKey: attempt.idempotencyKey,
       round: attempt.round,
-      startedAt: now,
-    });
-
-    // A run that stopped before the call that makes the post makes the
-    // attempt again, from now: nothing of it reached the site.
-    const startedAt =
-      start._tag === "started" || start._tag === "prepared"
-        ? now
-        : start.startedAt;
-
-    const request: SitePublishRequest = {
-      articleId: attempt.articleId,
-      committing: DateTime.now.pipe(
-        Effect.tap((at) => journal.committing(attempt.idempotencyKey, at))
-      ),
-      idempotencyKey: attempt.idempotencyKey,
-      startedAt: start._tag === "inFlight" ? start.committedAt : startedAt,
     };
+
+    // An attempt that ended answers what it recorded, as the first run
+    // decided: never sent again, whoever holds the channel's turn.
+    const recorded = yield* journal.found(call);
+
+    if (Option.isSome(recorded) && recorded.value._tag === "completed") {
+      const { finishedAt, outcome, startedAt } = recorded.value;
+
+      return decide(outcome, {
+        earlier: yield* journal.earlierRefusals(attempt),
+        sinceScheduled: DateTime.distance(attempt.dueAt, finishedAt),
+        startedAt,
+      });
+    }
 
     // The call, and the journal's record of how it ended, in the
     // channel's turn: no other attempt looks for its post on the site
     // before this one recorded it.
-    const { finishedAt, outcome } =
-      start._tag === "completed"
-        ? start
-        : yield* turns.inTurn(
-            article.value.channelId,
-            (start._tag === "inFlight"
-              ? publisher.resume(request)
-              : publisher.publish(request)
-            ).pipe(
-              Effect.catch((error) => Effect.succeed(error)),
-              Effect.catchDefect(() => Effect.succeed(adapterFailed)),
-              Effect.flatMap((ended: AttemptOutcome) =>
-                DateTime.now.pipe(
-                  Effect.tap((at) =>
-                    journal
-                      .finish(attempt.idempotencyKey, ended, at)
-                      .pipe(Effect.retry(outcomeWriteRetry))
-                  ),
-                  Effect.map((at) => ({ finishedAt: at, outcome: ended }))
-                )
-              )
+    const ended = yield* turns.inTurn(
+      article.value.channelId,
+      Effect.gen(function* inTurn() {
+        const now = yield* DateTime.now;
+
+        const start = yield* journal.begin({
+          ...call,
+          idempotencyKey: attempt.idempotencyKey,
+          startedAt: now,
+        });
+
+        if (start._tag === "completed") {
+          return start;
+        }
+
+        // A workspace over its plan sends nothing, as its posts do not;
+        // a call that may have reached the site is looked for whatever
+        // the plan, so a post there is never taken for a refusal.
+        const overPlan =
+          start._tag === "inFlight"
+            ? false
+            : yield* withinPlan(article.value.workspaceId).pipe(
+                Effect.as(false),
+                Effect.catchTag("PlanLimitReached", () => Effect.succeed(true))
+              );
+
+        if (overPlan) {
+          yield* journal
+            .finish(attempt.idempotencyKey, planRefusal, now)
+            .pipe(Effect.retry(outcomeWriteRetry));
+
+          return { finishedAt: now, outcome: planRefusal, startedAt: now };
+        }
+
+        // A run that stopped before the call that makes the post makes
+        // the attempt again, from now: nothing of it reached the site.
+        const startedAt =
+          start._tag === "started" || start._tag === "prepared"
+            ? now
+            : start.startedAt;
+
+        const request: SitePublishRequest = {
+          articleId: attempt.articleId,
+          committing: DateTime.now.pipe(
+            Effect.tap((at) => journal.committing(attempt.idempotencyKey, at))
+          ),
+          idempotencyKey: attempt.idempotencyKey,
+          startedAt: start._tag === "inFlight" ? start.committedAt : startedAt,
+        };
+
+        return yield* (
+          start._tag === "inFlight"
+            ? publisher.resume(request)
+            : publisher.publish(request)
+        ).pipe(
+          Effect.catch((error) => Effect.succeed(error)),
+          Effect.catchDefect(() => Effect.succeed(adapterFailed)),
+          Effect.flatMap((outcome: AttemptOutcome) =>
+            DateTime.now.pipe(
+              Effect.tap((at) =>
+                journal
+                  .finish(attempt.idempotencyKey, outcome, at)
+                  .pipe(Effect.retry(outcomeWriteRetry))
+              ),
+              Effect.map((finishedAt) => ({ finishedAt, outcome, startedAt }))
             )
-          );
+          )
+        );
+      })
+    );
+
+    // The turn is another attempt's, or the process holds as many as it
+    // may: nothing was written or sent, and the attempt is made again
+    // later.
+    if (Option.isNone(ended)) {
+      const busy: PublicationDecision = { _tag: "retry", delay: turnWait };
+
+      return busy;
+    }
+
+    const { finishedAt, outcome, startedAt } = ended.value;
 
     const earlier = yield* journal.earlierRefusals(attempt);
 

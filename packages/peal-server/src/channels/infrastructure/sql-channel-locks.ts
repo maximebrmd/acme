@@ -17,7 +17,7 @@ export const sqlChannelLocks = (heldAtOnce: number) =>
   Layer.effect(
     ChannelLocks,
     advisoryLocks("peal-server/channels/tokens", heldAtOnce).pipe(
-      Effect.map((withLock) =>
+      Effect.map(({ withLock }) =>
         ChannelLocks.of({
           withLock: (channelId, effect) => withLock(channelId, effect),
         })

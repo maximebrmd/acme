@@ -39,6 +39,7 @@ import type { TargetOptions } from "peal-contract";
 import { adsTools } from "#app/mcp/catalogue.ts";
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { markRefreshNeeded } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { ReviewStore } from "#engagement/application/ports/review-store.ts";
@@ -1401,14 +1402,22 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             platform: "threads",
           });
 
+          // A website to reconnect, which no tool lists or counts.
+          const website = markRefreshNeeded(
+            yield* freshChannel(workspaceId, { platform: "wordpress" }),
+            yield* DateTime.now
+          );
+
           yield* Effect.all([
             channels.insert(lasting, syntheticCredentials(lasting)),
             channels.insert(lapsed, syntheticCredentials(lapsed)),
+            channels.insert(website, syntheticCredentials(website)),
           ]);
           yield* Effect.addFinalizer(() =>
             Effect.all([
               channels.remove(workspaceId, lasting.id),
               channels.remove(workspaceId, lapsed.id),
+              channels.remove(workspaceId, website.id),
             ]).pipe(Effect.orDie)
           );
 
@@ -1510,7 +1519,27 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             all.channels.map(({ id }) => id),
             [fixture.channelId, fixture.youtubeId, lasting.id, lapsed.id]
           );
+          assert.notInclude(
+            all.channels.map(({ id }) => id),
+            website.id
+          );
           assert.isUndefined(all.counts);
+
+          // Searched by status, the website is neither listed nor counted.
+          const toReconnect = yield* reader.call(
+            "list_channels",
+            ChannelsJsonSchema,
+            { status: "refreshNeeded" }
+          );
+
+          assert.notInclude(
+            toReconnect.channels.map(({ id }) => id),
+            website.id
+          );
+          assert.strictEqual(
+            toReconnect.counts?.refreshNeeded,
+            toReconnect.channels.length
+          );
 
           // Back on: it posts again.
           const on = yield* writer.call("enable_channel", ChannelJsonSchema, {
