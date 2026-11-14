@@ -158,6 +158,8 @@ export const useViolationText = (
           count,
           maximum,
         }),
+      commentsTurnedOff: ({ channelId }) =>
+        t("violation.commentsTurnedOff", { channel: channelName(channelId) }),
       partsNeedReconnect: ({ channelId }) =>
         t("violation.partsNeedReconnect", { channel: channelName(channelId) }),
       pollChoiceCount: ({ channelId, count, maximum, minimum }) =>

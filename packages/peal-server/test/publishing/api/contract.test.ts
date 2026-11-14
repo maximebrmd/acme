@@ -243,6 +243,13 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     maximum: 20,
     platform: "instagram",
   },
+  commentsTurnedOff: {
+    _tag: "commentsTurnedOff",
+    channelId,
+    field: "madeForKids",
+    part: 1,
+    platform: "youtube",
+  },
   pollChoiceCount: {
     _tag: "pollChoiceCount",
     channelId,
@@ -350,6 +357,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   tooManyMedia: true,
   tooManyMentions: true,
   partsNeedReconnect: true,
+  commentsTurnedOff: true,
   pollChoiceCount: true,
   pollChoiceLength: true,
   pollDurationOutOfRange: true,

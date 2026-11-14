@@ -81,6 +81,13 @@ export const ContentViolationSchema = Schema.Union([
   // The part is a comment the channel's account has not let Peal post:
   // the channel must be connected again to grant the comment scope.
   Schema.TaggedStruct("partsNeedReconnect", onChannel),
+  // The part is a first comment the platform takes none of under this
+  // post, as the option `field` says (YouTube turns comments off on a
+  // video made for kids).
+  Schema.TaggedStruct("commentsTurnedOff", {
+    ...onChannel,
+    field: Schema.String,
+  }),
   // The post asks a poll, which Peal sends to none of the platform's posts.
   Schema.TaggedStruct("pollNotSupported", onChannel),
   // The poll has fewer or more choices than the platform takes.

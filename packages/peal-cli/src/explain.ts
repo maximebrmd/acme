@@ -197,6 +197,8 @@ const brokenRule = (violation: ContentViolation): string =>
       "options are given for a channel the post is not for",
     overrideWithoutChannel: () =>
       "a text is given for a channel the post is not for",
+    commentsTurnedOff: ({ field }) =>
+      `the platform takes no comment under this post (option ${field}): remove the first comment`,
     partsNeedReconnect: () =>
       "the account has not let Peal comment under its posts: reconnect the channel in the web app",
     pollChoiceCount: ({ count, maximum, minimum }) =>

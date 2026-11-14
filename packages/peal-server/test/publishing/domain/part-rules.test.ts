@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option, Result } from "effect";
 
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import {
   checkPublishable,
   partViolationsOn,
@@ -11,6 +12,7 @@ import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { maxFollowUps, PostPart } from "#publishing/domain/post-part.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
+import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -274,5 +276,63 @@ describe("a first comment", () => {
     expect(violationsOf(content, [profile])).toStrictEqual([
       { _tag: "tooManyParts", ...profile, count: 2, maximum: 1 },
     ]);
+  });
+});
+
+describe("a first comment on a video made for kids", () => {
+  it("is refused, as YouTube turns comments off on such videos", () => {
+    const content = thread("A video's description", part("The first comment"));
+
+    const refused = Option.match(
+      Result.getFailure(
+        checkPublishable(
+          content,
+          [youtube],
+          [],
+          [
+            new ChannelOptions({
+              channelId: youtube.channelId,
+              options: new YouTubeOptions({
+                madeForKids: true,
+                title: "A video",
+              }),
+            }),
+          ]
+        )
+      ),
+      { onNone: () => [], onSome: ({ violations }) => violations }
+    ).filter(({ _tag }) => _tag === "commentsTurnedOff");
+
+    expect(refused).toStrictEqual([
+      { _tag: "commentsTurnedOff", ...youtube, field: "madeForKids", part: 1 },
+    ]);
+  });
+
+  it("lets a comment through on a video not made for kids", () => {
+    const content = thread("A video's description", part("The first comment"));
+
+    const violations = Option.match(
+      Result.getFailure(
+        checkPublishable(
+          content,
+          [youtube],
+          [],
+          [
+            new ChannelOptions({
+              channelId: youtube.channelId,
+              options: new YouTubeOptions({
+                madeForKids: false,
+                title: "A video",
+              }),
+            }),
+          ]
+        )
+      ),
+      { onNone: () => [], onSome: (rejected) => rejected.violations }
+    );
+
+    expect(violations.some(({ _tag }) => _tag === "commentsTurnedOff")).toBe(
+      false
+    );
   });
 });

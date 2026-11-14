@@ -1098,6 +1098,7 @@
         "tooManyMedia": "{channel} : {count} images ou vidéos, {maximum} au plus.",
         "tooManyParts": "{channel} :{maximum, plural, =1 {cette plateforme prend une publication seule, sans rien à sa suite. Retirez les autres parties, ou publiez-les ailleurs} other {{count} parties, {maximum} au plus}}.",
         "partsNeedReconnect": "{channel} : le compte n’a pas autorisé Peal à commenter sous ses publications. Reconnectez le canal pour envoyer son premier commentaire.",
+        "commentsTurnedOff": "{channel} : une vidéo conçue pour les enfants ne prend aucun commentaire. Retirez le premier commentaire, ou laissez ce canal de côté.",
         "pollNotSupported": "{channel} : Peal n’envoie aucun sondage à cette plateforme. Retirez le sondage, ou laissez ce canal de côté.",
         "pollChoiceCount": "{channel} : {count} choix de sondage, de {minimum} à {maximum}.",
         "pollChoiceLength": "{channel} : {length, plural, =0 {le choix {choice} du sondage est vide} other {le choix {choice} du sondage a {length} caractères, {maximum} au plus}}.",

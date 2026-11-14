@@ -41,6 +41,7 @@ import {
 } from "./text-length.ts";
 import { ThreadsOptions } from "./threads-options.ts";
 import { TikTokOptions } from "./tiktok-options.ts";
+import { YouTubeOptions } from "./youtube-options.ts";
 
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
@@ -55,6 +56,8 @@ export interface ChannelOnPlatform {
 }
 
 const isThreads = Schema.is(ThreadsOptions);
+
+const isYouTube = Schema.is(YouTubeOptions);
 
 const isTikTok = Schema.is(TikTokOptions);
 
@@ -846,6 +849,28 @@ export const partViolationsOn = (
   // A comment holds text alone, within a comment's limits: its files are
   // refused by their count, and checked no further.
   const rules = partRulesFor(channel.platform, options);
+
+  // YouTube turns comments off on a video made for kids ("Set your
+  // channel or video's audience", support.google.com/youtube/answer/
+  // 9527654, read 2026-11-14): its first comment would fail once the video
+  // is live.
+  const madeForKids =
+    followUps?.kind === "comment" &&
+    options.pipe(
+      Option.filter(isYouTube),
+      Option.exists(({ madeForKids: forKids }) => forKids === true)
+    );
+
+  if (madeForKids) {
+    return [
+      {
+        _tag: "commentsTurnedOff",
+        ...channel,
+        field: "madeForKids",
+        part: 1,
+      },
+    ];
+  }
 
   return content.followUps.flatMap((_part, position) => {
     const alone = partAlone(content, position + 1);

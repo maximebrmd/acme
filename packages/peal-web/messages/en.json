@@ -1098,6 +1098,7 @@
         "tooManyMedia": "{channel}: {count} images or videos, at most {maximum}.",
         "tooManyParts": "{channel}: {maximum, plural, =1 {this platform takes a post alone, with nothing after it. Remove the other parts, or post them elsewhere} other {{count} parts, at most {maximum}}}.",
         "partsNeedReconnect": "{channel}: the account has not let Peal comment under its posts. Reconnect the channel to send its first comment.",
+        "commentsTurnedOff": "{channel}: a video made for kids takes no comment. Remove the first comment, or leave this channel out.",
         "pollNotSupported": "{channel}: Peal sends no poll to this platform. Remove the poll, or leave this channel out.",
         "pollChoiceCount": "{channel}: {count} poll choices, from {minimum} to {maximum}.",
         "pollChoiceLength": "{channel}: {length, plural, =0 {poll choice {choice} is empty} other {poll choice {choice} has {length} characters, at most {maximum}}}.",
