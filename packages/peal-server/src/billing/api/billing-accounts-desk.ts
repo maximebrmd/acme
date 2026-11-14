@@ -10,6 +10,7 @@ import type { StaffBillingAccount } from "peal-contract";
 
 import type { DeskAccount } from "#billing/application/billing-account-desk.ts";
 import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts";
+import { CreditProblemDesk } from "#billing/application/credit-problem-desk.ts";
 import { BillingAccountIdSchema } from "#billing/domain/billing-account.ts";
 import type { BillingAccountId } from "#billing/domain/billing-account.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -34,6 +35,9 @@ const decodeAccountId = Schema.decodeUnknownOption(BillingAccountIdSchema);
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const defaultPage = 50;
+
+// How many problems the console lists, newest first.
+const staffCreditProblems = 100;
 
 const notFound = () => Effect.fail(new BillingAccountNotFound());
 
@@ -83,8 +87,29 @@ export const BillingAccountsDeskHandlers = HttpApiBuilder.group(
   "billingAccountsDesk",
   Effect.fn(function* billingAccountsDeskHandlers(handlers) {
     const desk = yield* BillingAccountDesk;
+    const problems = yield* CreditProblemDesk;
 
     return handlers
+      .handle("creditProblems", () =>
+        problems.latest(staffCreditProblems).pipe(
+          Effect.orDie,
+          Effect.map((found) => ({
+            items: found.map((problem) => ({
+              amount: problem.amount,
+              code: Option.getOrNull(problem.code),
+              currency: problem.currency,
+              kind: problem.kind,
+              occurredAt: problem.occurredAt,
+              reason: Option.getOrNull(problem.reason),
+              refundId: Option.getOrNull(problem.refundId),
+              stripeSubscriptionId: Option.getOrNull(
+                problem.stripeSubscriptionId
+              ),
+              workspaceId: Option.getOrNull(problem.workspaceId),
+            })),
+          }))
+        )
+      )
       .handle("sharedChannels", ({ query }) =>
         Effect.gen(function* sharedChannels() {
           const after = yield* Option.match(

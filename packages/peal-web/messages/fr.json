@@ -3516,7 +3516,19 @@
       "detachHint": "L’espace de travail quitte ce compte pour celui de son plus ancien propriétaire, ce qui annule une fusion.",
       "detach": "Détacher",
       "detached": "L’espace de travail a été détaché.",
-      "mergedMark": "(fusionné par l’équipe)"
+      "mergedMark": "(fusionné par l’équipe)",
+      "creditProblems": {
+        "title": "Remboursements qui n’ont pas abouti",
+        "description": "Des sommes dues que Stripe n’a pas rendues : un avoir qu’il a refusé définitivement, ou un remboursement qu’il a signalé échoué. Réglez chacune à la main, dans le tableau de bord de Stripe ou autrement : le client a été informé que la somme lui revient.",
+        "empty": "Rien n’est dû.",
+        "at": "Quand",
+        "kind": "Quoi",
+        "amount": "Montant",
+        "stripe": "Chez Stripe",
+        "workspace": "Espace de travail",
+        "noWorkspace": "Effacé",
+        "kindName": "{kind, select, creditRefused {Avoir refusé} refundFailed {Remboursement échoué} other {{kind}}}"
+      }
     },
     "legal": {
       "title": "Réquisitions",

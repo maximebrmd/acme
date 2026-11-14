@@ -157,6 +157,9 @@ const workspaceRows = {
   // orders do.
   "billing.contract_requests": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE workspace_id = ${id}`,
+  // What Stripe did not give back: it stays for staff, without it.
+  "billing.credit_problems": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.credit_problems WHERE workspace_id = ${id}`,
   "billing.meter_reports": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.meter_reports WHERE holder_workspace_id = ${id}`,
   "billing.meter_usage": (sql, id) =>
@@ -646,6 +649,9 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
     VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
   yield* seedUsage(workspaceId, 2);
+  // A credit Stripe refused for good of a legacy plan it held.
+  yield* sql`INSERT INTO billing.credit_problems (key, kind, amount, currency, occurred_at, stripe_subscription_id, workspace_id)
+    VALUES (${`credit:sub_synthetic_erased_${workspaceId}:movedToRateCard`}, 'creditRefused', 950, 'eur', now(), ${`sub_synthetic_erased_${workspaceId}`}, ${workspaceId})`;
   // The rate limit staff raised for it.
   yield* sql`INSERT INTO activity.request_limits (workspace_id, requests_per_minute, set_at)
     VALUES (${workspaceId}, 1200, now())`;

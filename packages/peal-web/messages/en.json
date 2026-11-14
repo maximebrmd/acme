@@ -3516,7 +3516,19 @@
       "detachHint": "The workspace leaves this account for its oldest owner's, which undoes a merge.",
       "detach": "Detach",
       "detached": "The workspace was detached.",
-      "mergedMark": "(merged by staff)"
+      "mergedMark": "(merged by staff)",
+      "creditProblems": {
+        "title": "Refunds that did not go through",
+        "description": "Money owed back that Stripe did not give: a credit it refused for good, or a refund it reported failed. Settle each by hand, in Stripe's dashboard or another way: the customer was told the money goes back.",
+        "empty": "Nothing is owed back.",
+        "at": "When",
+        "kind": "What",
+        "amount": "Amount",
+        "stripe": "At Stripe",
+        "workspace": "Workspace",
+        "noWorkspace": "Erased",
+        "kindName": "{kind, select, creditRefused {Credit refused} refundFailed {Refund failed} other {{kind}}}"
+      }
     },
     "legal": {
       "title": "Legal requests",

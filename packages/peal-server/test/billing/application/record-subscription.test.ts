@@ -3,12 +3,15 @@ import { Context, DateTime, Effect, Layer, Metric, Option, Ref } from "effect";
 
 import { AccountDays } from "#billing/application/account-days.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
+import { CreditProblems } from "#billing/application/ports/credit-problems.ts";
+import type { CreditProblem } from "#billing/application/ports/credit-problems.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
 import { UsageBilling } from "#billing/application/ports/usage-billing.ts";
 import {
+  creditProblemsCount,
   duplicateSubscriptions,
   RecordSubscription,
   thresholdsUnset,
@@ -40,6 +43,7 @@ class RecordLog extends Context.Service<
   {
     readonly days: Ref.Ref<readonly string[]>;
     readonly held: Ref.Ref<readonly Subscription[]>;
+    readonly problems: Ref.Ref<readonly CreditProblem[]>;
     readonly stripe: Ref.Ref<readonly string[]>;
     readonly trials: Ref.Ref<readonly string[]>;
   }
@@ -50,6 +54,7 @@ const LogLive = Layer.effect(
   Effect.all({
     days: Ref.make<readonly string[]>([]),
     held: Ref.make<readonly Subscription[]>([]),
+    problems: Ref.make<readonly CreditProblem[]>([]),
     stripe: Ref.make<readonly string[]>([]),
     trials: Ref.make<readonly string[]>([]),
   })
@@ -94,10 +99,17 @@ const legacyInvoices = new Map<string, readonly PaidInvoice[]>([
     ],
   ],
   [
+    "sub_synthetic_refused_credit",
+    [paid("in_refused", 1900, "2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z")],
+  ],
+  [
     "sub_synthetic_yearly",
     [paid("in_year", 19_000, "2026-01-01T00:00:00Z", "2027-01-01T00:00:00Z")],
   ],
 ]);
+
+// When each subscription's latest event recorded happened.
+const lastEvents = new Map<string, DateTime.Utc>();
 
 const PortsInMemory = Layer.mergeAll(
   Layer.effect(
@@ -111,15 +123,28 @@ const PortsInMemory = Layer.mergeAll(
           ofWorkspaces: () => Effect.die("not read here"),
           markPaidInvoice: () => Effect.void,
           perAccount: () => Effect.succeed([]),
+          // An event older than the one kept changes nothing.
           record: (change) =>
-            Ref.update(held, (all) => [
-              ...all.filter(
-                ({ stripeSubscriptionId }) =>
-                  stripeSubscriptionId !==
-                  change.subscription.stripeSubscriptionId
-              ),
-              change.subscription,
-            ]).pipe(Effect.as("recorded" as const)),
+            Effect.suspend(() => {
+              const id = change.subscription.stripeSubscriptionId;
+              const kept = lastEvents.get(id);
+
+              if (
+                kept !== undefined &&
+                DateTime.isLessThan(change.occurredAt, kept)
+              ) {
+                return Effect.succeed("stale" as const);
+              }
+
+              lastEvents.set(id, change.occurredAt);
+
+              return Ref.update(held, (all) => [
+                ...all.filter(
+                  ({ stripeSubscriptionId }) => stripeSubscriptionId !== id
+                ),
+                change.subscription,
+              ]).pipe(Effect.as("recorded" as const));
+            }),
           remindable: () => Ref.get(held),
         })
       )
@@ -162,12 +187,21 @@ const PortsInMemory = Layer.mergeAll(
           cancelAt: () => Effect.void,
           cancelAtPeriodEnd: (_workspace, id) =>
             asked(`cancelAtPeriodEnd ${id}`),
-          credit: (_workspace, id, credits, reason) =>
-            asked(
-              `credit ${id} ${credits
-                .map(({ amount, invoiceId }) => `${invoiceId}:${amount}`)
-                .join(",")} ${reason._tag}`
-            ),
+          // Stripe refuses for good any credit of one subscription.
+          credit: (workspace, id, credits, reason) =>
+            id === "sub_synthetic_refused_credit"
+              ? Effect.fail(
+                  new StripeUnreachable({
+                    code: "credit_note_amount_too_large",
+                    permanent: true,
+                    workspaceId: workspace,
+                  })
+                )
+              : asked(
+                  `credit ${id} ${credits
+                    .map(({ amount, invoiceId }) => `${invoiceId}:${amount}`)
+                    .join(",")} ${reason._tag}`
+                ).pipe(Effect.as([])),
           endAtTrialEnd: (_workspace, id, end) =>
             asked(`endAtTrialEnd ${id} ${DateTime.formatIso(end)}`),
           endAndInvoice: (_workspace, id, reason) =>
@@ -224,6 +258,20 @@ const PortsInMemory = Layer.mergeAll(
       )
     )
   ),
+  Layer.effect(
+    CreditProblems,
+    RecordLog.use(({ problems }) =>
+      Effect.succeed(
+        CreditProblems.of({
+          latest: () => Ref.get(problems),
+          record: (problem) =>
+            Ref.update(problems, (all) => [...all, problem]).pipe(
+              Effect.as(true)
+            ),
+        })
+      )
+    )
+  ),
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
@@ -241,6 +289,10 @@ const reset = RecordLog.use((log) =>
   Effect.all([
     Ref.set(log.days, []),
     Ref.set(log.held, []),
+    Ref.set(log.problems, []),
+    Effect.sync(() => {
+      lastEvents.clear();
+    }),
     Ref.set(log.stripe, []),
     Ref.set(log.trials, []),
   ])
@@ -433,6 +485,109 @@ layer(RecordTest)("recording a subscription", (it) => {
           "credit sub_synthetic_yearly in_year:2394 movedToRateCard",
           "endNow sub_synthetic_yearly movedToRateCard",
         ]);
+      })
+  );
+
+  it.effect(
+    "ends a legacy plan whose credit Stripe refuses for good, records the refusal for staff and counts it",
+    () =>
+      Effect.gen(function* refused() {
+        const before = (yield* Metric.value(creditProblemsCount)).count;
+
+        yield* reset;
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_refused_credit",
+          trialEnd: Option.none(),
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
+        const outcome = yield* record({
+          plan: "payAsYouGo",
+          startedAt: Option.some(at("2026-11-16T00:00:00Z")),
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        });
+
+        assert.strictEqual(outcome, "recorded");
+        assert.include(
+          yield* askedOfStripe,
+          "endNow sub_synthetic_refused_credit movedToRateCard"
+        );
+
+        const problems = yield* RecordLog.use(({ problems: kept }) =>
+          Ref.get(kept)
+        );
+
+        assert.deepStrictEqual(
+          problems.map(({ code, key, kind, reason, workspaceId: of }) => [
+            key,
+            kind,
+            Option.getOrNull(code),
+            Option.getOrNull(reason),
+            Option.getOrNull(of),
+          ]),
+          [
+            [
+              "credit:sub_synthetic_refused_credit:movedToRateCard",
+              "creditRefused",
+              "credit_note_amount_too_large",
+              "movedToRateCard",
+              workspaceId,
+            ],
+          ]
+        );
+        assert.strictEqual(
+          (yield* Metric.value(creditProblemsCount)).count,
+          before + 1
+        );
+      })
+  );
+
+  it.effect(
+    "never moves a legacy plan on a late event of a per-account subscription that has ended since",
+    () =>
+      Effect.gen(function* late() {
+        yield* reset;
+        yield* record({
+          plan: "starter",
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_legacy",
+          trialEnd: Option.none(),
+        });
+
+        const perAccountEvent = {
+          plan: "payAsYouGo" as const,
+          startedBy: Option.none(),
+          stripeSubscriptionId: "sub_synthetic_accounts",
+          trialEnd: Option.none(),
+        };
+
+        // Its end is recorded first; its earlier activation comes late.
+        yield* record({
+          ...perAccountEvent,
+          occurredAt: at("2026-11-12T10:00:00Z"),
+          status: "canceled",
+        });
+        yield* RecordLog.use(({ stripe }) => Ref.set(stripe, []));
+
+        const outcome = yield* record({
+          ...perAccountEvent,
+          occurredAt: at("2026-11-10T10:00:00Z"),
+          status: "active",
+        });
+
+        assert.strictEqual(outcome, "stale");
+        assert.isFalse(
+          (yield* askedOfStripe).some((call) =>
+            call.includes("sub_synthetic_legacy")
+          )
+        );
       })
   );
 

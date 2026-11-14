@@ -14,6 +14,16 @@ export interface PaidInvoice {
   readonly invoiceId: string;
   /** Its lines: what each charged before tax, and from when. */
   readonly lines: readonly InvoiceLine[];
+  /**
+   * Its lines with the period each paid for, as Stripe gives them: a
+   * renewal may also carry an earlier period's prorations. None from a
+   * stand-in that lists no periods.
+   */
+  readonly linePeriods?: readonly {
+    readonly amount: number;
+    readonly end: DateTime.Utc;
+    readonly start: DateTime.Utc;
+  }[];
   readonly paid: Money;
   readonly periodEnd: Option.Option<DateTime.Utc>;
   readonly periodStart: Option.Option<DateTime.Utc>;
@@ -26,6 +36,18 @@ export interface InvoiceCredit {
 }
 
 /**
+ * What was credited of one invoice: what was asked, and what Stripe still
+ * let go back of it (what it took, less the credit notes and refunds made
+ * since), never more.
+ */
+export interface InvoiceCredited {
+  readonly asked: number;
+  readonly credited: number;
+  readonly currency: string;
+  readonly invoiceId: string;
+}
+
+/**
  * Why money goes back: a consumer's withdrawal, once per subscription; the
  * renewals a cancellation received before them should have stopped, once
  * per request; or the unused time of a legacy plan ended as it moved to
@@ -34,6 +56,7 @@ export interface InvoiceCredit {
 export type CreditReason =
   | { readonly _tag: "lateCancellation"; readonly requestKey: string }
   | { readonly _tag: "movedToRateCard" }
+  | { readonly _tag: "retirement" }
   | { readonly _tag: "withdrawal" };
 
 /** Why a subscription is ended at once. */
@@ -86,14 +109,16 @@ export class StripeContracts extends Context.Service<
      * invoice and the tax Stripe reports match the refund: once per
      * invoice for `reason` (a withdrawal's subscription, a cancellation's
      * request), however long after it is asked again, as each note
-     * carries its key and one found is not made again.
+     * carries its key and one found is not made again. Each is capped at
+     * what is still refundable of its invoice: what it took, less the
+     * credit notes made since and the refunds made outside them.
      */
     readonly credit: (
       workspaceId: WorkspaceId,
       subscriptionId: string,
       credits: readonly InvoiceCredit[],
       reason: CreditReason
-    ) => Effect.Effect<void, StripeUnreachable>;
+    ) => Effect.Effect<readonly InvoiceCredited[], StripeUnreachable>;
     /**
      * Sets a trial to end, cancelled, when its trial does, so it never
      * turns into a charge, even once a payment method was added. A

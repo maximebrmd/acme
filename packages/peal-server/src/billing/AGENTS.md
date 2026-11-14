@@ -325,17 +325,33 @@
   the first paid invoice.
 - A legacy subscriber moves by ordering per-account pricing (the billing
   page's "Move to per-account pricing": an order, then its own checkout).
-  Once that subscription is recorded paying, `RecordSubscription` ends
-  each legacy plan that entitles at once (`endNow`, `movedToRateCard`,
-  set to end with its period or not) after crediting its unused time
-  (`movedCredits`: each paid invoice's own period, to the second, at the
+  Once the per-account subscription's row (never the event's own status: a
+  stale or resent event moves nothing) is paying, `RecordSubscription`,
+  last of what an event does, ends each legacy plan that entitles at once
+  (`endNow`, `movedToRateCard`, set to end with its period or not) after
+  crediting its unused time (`movedCredits`: each paid invoice's lines over
+  their own periods, to the second, weighed by what each charged, at the
   moment per-account pricing started, so a retry computes the same; an
-  invoice whose lines give no period credits nothing) through a credit
-  note refunded to the card (`CreditReason` `movedToRateCard`, key
-  `moved-credit-<subscription>-<invoice>`, looked for before one is
-  made). Not the customer's balance, which Stripe's own proration would
-  use: the legacy plan was paid in euros, and a balance in euros pays no
-  dollar invoice.
+  invoice whose lines give no period is read over its own, one with
+  neither credits nothing) through a credit note refunded to the card
+  (`CreditReason` `movedToRateCard`, key
+  `moved-credit-<subscription>-<invoice>`, looked for before one is made).
+  `StripeContracts.credit` caps every note at what is still refundable of
+  its invoice (`amount_paid`, less `post_payment_credit_notes_amount`,
+  less its payments' refunds made outside a credit note). A credit Stripe
+  refuses for good is kept for staff (`CreditProblems`,
+  `billing.credit_problems`, key `credit:<subscription>:<reason>`), counted
+  (`peal.billing.credit_problems`, alert `peal-credit-problems`) and logged,
+  and the plan is ended all the same; only Stripe not answering makes the
+  webhook fail, so it comes back. A refund Stripe reports failed later
+  (`refund.failed`, from the same webhook: subscribe the endpoint to it) is
+  kept the same way (`CreditProblemDesk.refundFailed`, key `refund:<id>`).
+  Staff read both in the console (`billingAccountsDesk.creditProblems`,
+  "Refunds that did not go through") and settle them by hand; an erased
+  workspace leaves its rows without it, purged with the contract records.
+  Not the customer's balance, which Stripe's own proration would use: the
+  legacy plan was paid in euros, and a balance in euros pays no dollar
+  invoice.
 - Legacy plans are retired by the operator's command, `nx run
   peal-server:billing:retire-plans` (`src/retire-plans.ts`, in the image;
   `RetireLegacyPlans`, `RetirePlansLive`): it lists each legacy

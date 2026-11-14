@@ -537,3 +537,35 @@ export const xUsageSettings = billing.table("x_usage_settings", {
   setAt: instant("set_at").notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });
+
+/**
+ * Money Peal owes back and Stripe did not give: a credit Stripe refused
+ * for good (`creditRefused`, as a legacy plan moved or retired), or a
+ * refund Stripe reported failed later (`refundFailed`, from its
+ * `refund.failed` event). Staff read them in the console and settle each
+ * by hand (`settled_at`). Ids and amounts only; `key` makes each once. A
+ * workspace erased leaves its rows without it (`erased_at`), purged with
+ * the contract records.
+ */
+export const creditProblems = billing.table(
+  "credit_problems",
+  {
+    amount: integer("amount").notNull(),
+    // Stripe's error code for a refusal, or the refund's failure reason.
+    code: text("code"),
+    currency: text("currency").notNull(),
+    erasedAt: instant("erased_at"),
+    key: text("key").primaryKey(),
+    kind: text("kind").notNull(),
+    occurredAt: instant("occurred_at").notNull(),
+    // Why the money went back: movedToRateCard, retirement, withdrawal…
+    reason: text("reason"),
+    refundId: text("refund_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    workspaceId: uuid("workspace_id"),
+  },
+  (table) => [
+    index("credit_problems_occurred_at").on(table.occurredAt),
+    index("credit_problems_workspace").on(table.workspaceId),
+  ]
+);

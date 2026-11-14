@@ -13,7 +13,7 @@ import type { UserId } from "#shared/domain/ids.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { orders, withdrawals } from "./schema.ts";
+import { creditProblems, orders, withdrawals } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -97,7 +97,14 @@ export const DrizzleContractRecordsLive = Layer.effect(
           .where(lt(withdrawals.erasedAt, cutoff))
           .returning({ id: withdrawals.stripeSubscriptionId });
 
-        return purgedOrders.length + purgedWithdrawals.length;
+        const purgedProblems = yield* db
+          .delete(creditProblems)
+          .where(lt(creditProblems.erasedAt, cutoff))
+          .returning({ key: creditProblems.key });
+
+        return (
+          purgedOrders.length + purgedWithdrawals.length + purgedProblems.length
+        );
       }).pipe(
         Effect.mapError(failed),
         Effect.withSpan("ContractRecords.purge")

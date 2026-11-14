@@ -24,6 +24,7 @@ import type { PaidPlan } from "#shared/domain/plan.ts";
 import { AccountDays } from "./account-days.ts";
 import { BillingAccounts } from "./billing-accounts.ts";
 import { Checkouts } from "./ports/checkouts.ts";
+import { CreditProblems } from "./ports/credit-problems.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
@@ -75,6 +76,20 @@ export const duplicateSubscriptions = Metric.counter(
   {
     description:
       "Second per-account subscriptions of one billing account, ended when recorded",
+    incremental: true,
+  }
+);
+
+/**
+ * Money owed back that Stripe did not give (a credit it refused for good,
+ * a refund it reported failed), kept for staff: an alert rule reads it
+ * (peal-credit-problems).
+ */
+export const creditProblemsCount = Metric.counter(
+  "peal.billing.credit_problems",
+  {
+    description:
+      "Credits Stripe refused for good and refunds it reported failed, kept for staff to settle",
     incremental: true,
   }
 );
@@ -147,6 +162,7 @@ export class RecordSubscription extends Context.Service<
       const accounts = yield* BillingAccounts;
       const usage = yield* UsageBilling;
       const days = yield* AccountDays;
+      const problems = yield* CreditProblems;
 
       // A per-account subscription paid for the first time invoices at a
       // threshold until its first invoice is paid, which the reporter's
@@ -191,6 +207,96 @@ export class RecordSubscription extends Context.Service<
                 )
               );
           }
+        }
+      );
+
+      // Whether the subscription the event is about gives its plan as the
+      // database now holds it: a stale or resent event's status is not.
+      const storedOf = (recorded: Subscription) =>
+        subscriptions
+          .ofWorkspace(recorded.workspaceId)
+          .pipe(
+            Effect.map((held) =>
+              Option.fromUndefinedOr(
+                held.find(
+                  ({ stripeSubscriptionId }) =>
+                    stripeSubscriptionId === recorded.stripeSubscriptionId
+                )
+              )
+            )
+          );
+
+      const paidNow = (recorded: Subscription) =>
+        storedOf(recorded).pipe(
+          Effect.map(Option.exists(({ status }) => paidFor(status)))
+        );
+
+      const paysNow = (recorded: Subscription) =>
+        storedOf(recorded).pipe(
+          Effect.map(
+            Option.exists(
+              ({ plan, status }) => plan === "payAsYouGo" && paidFor(status)
+            )
+          )
+        );
+
+      // Credits a legacy plan's unused time after `at`, once per invoice.
+      // A credit Stripe refuses for good is kept for staff, counted for
+      // the alert, and never stops what follows.
+      const creditUnused = Effect.fn("RecordSubscription.creditUnused")(
+        function* creditUnused(
+          legacy: Subscription,
+          at: DateTime.Utc,
+          reason: { readonly _tag: "movedToRateCard" | "retirement" }
+        ) {
+          const { stripeSubscriptionId, workspaceId } = legacy;
+
+          const invoices = yield* stripe.paidInvoices(
+            workspaceId,
+            stripeSubscriptionId
+          );
+
+          const credits = movedCredits(invoices, at);
+
+          yield* stripe
+            .credit(workspaceId, stripeSubscriptionId, credits, reason)
+            .pipe(
+              Effect.catchIf(
+                ({ permanent }) => permanent,
+                (refused) =>
+                  Effect.gen(function* keptForStaff() {
+                    const fresh = yield* problems.record({
+                      amount: credits.reduce(
+                        (sum, { amount }) => sum + amount,
+                        0
+                      ),
+                      code: Option.fromUndefinedOr(refused.code),
+                      currency: invoices[0]?.paid.currency ?? "eur",
+                      key: `credit:${stripeSubscriptionId}:${reason._tag}`,
+                      kind: "creditRefused",
+                      occurredAt: yield* DateTime.now,
+                      reason: Option.some(reason._tag),
+                      refundId: Option.none(),
+                      stripeSubscriptionId: Option.some(stripeSubscriptionId),
+                      workspaceId: Option.some(workspaceId),
+                    });
+
+                    if (fresh) {
+                      yield* Metric.update(creditProblemsCount, 1);
+                    }
+
+                    yield* Effect.logError(
+                      "Stripe refused for good to credit a legacy plan's unused time: kept for staff"
+                    ).pipe(
+                      Effect.annotateLogs({
+                        code: refused.code ?? "",
+                        stripeSubscriptionId,
+                        workspaceId,
+                      })
+                    );
+                  })
+              )
+            );
         }
       );
 
@@ -311,8 +417,9 @@ export class RecordSubscription extends Context.Service<
           );
         }
 
-        // The paid plan ordered during the trial now runs: the trial ends.
-        if (outcome !== "ignored" && paidFor(recorded.status)) {
+        // The paid plan ordered during the trial now runs, as its row says:
+        // the trial ends.
+        if (outcome !== "ignored" && (yield* paidNow(recorded))) {
           const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
 
           yield* Effect.forEach(
@@ -327,67 +434,6 @@ export class RecordSubscription extends Context.Service<
                 stripeSubscriptionId,
                 "orderedDuringTrial"
               ),
-            { discard: true }
-          );
-        }
-
-        // Per-account pricing now runs: a legacy plan the workspace still
-        // pays for ends at once, set to end with its period or not, and
-        // the part of its period not supplied goes back to the payment
-        // method it was paid with, through a credit note on each invoice
-        // (its own currency: a legacy plan's euros cannot pay a dollar
-        // invoice from the customer's balance). Computed at the moment
-        // per-account pricing started, the same on every retry, each
-        // note under its key, so it is credited once; credited before it
-        // is ended, so an end Stripe refused leaves the credit to try again.
-        if (
-          outcome !== "ignored" &&
-          recorded.plan === "payAsYouGo" &&
-          paidFor(recorded.status)
-        ) {
-          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
-
-          const movedAt = Option.getOrElse(
-            recorded.startedAt,
-            () => occurredAt
-          );
-
-          yield* Effect.forEach(
-            held.filter(
-              (legacy) =>
-                legacy.plan !== "payAsYouGo" &&
-                legacy.status !== "trialing" &&
-                entitles(legacy)
-            ),
-            ({ stripeSubscriptionId }) =>
-              Effect.gen(function* moved() {
-                const invoices = yield* stripe.paidInvoices(
-                  recorded.workspaceId,
-                  stripeSubscriptionId
-                );
-
-                yield* stripe.credit(
-                  recorded.workspaceId,
-                  stripeSubscriptionId,
-                  movedCredits(invoices, movedAt),
-                  { _tag: "movedToRateCard" }
-                );
-
-                yield* stripe.endNow(
-                  recorded.workspaceId,
-                  stripeSubscriptionId,
-                  "movedToRateCard"
-                );
-
-                yield* Effect.logInfo(
-                  "Ended a legacy plan moved to per-account pricing, its unused time credited"
-                ).pipe(
-                  Effect.annotateLogs({
-                    stripeSubscriptionId,
-                    workspaceId: recorded.workspaceId,
-                  })
-                );
-              }),
             { discard: true }
           );
         }
@@ -445,6 +491,61 @@ export class RecordSubscription extends Context.Service<
         // ends it joins its payer's account.
         if (outcome !== "ignored") {
           yield* accounts.subscriptionChanged(recorded.workspaceId);
+        }
+
+        // Per-account pricing now runs, as the subscription's row says (a
+        // late or resent event's own status never moves anything): a
+        // legacy plan the workspace still pays for ends at once, set to
+        // end with its period or not, and the part of its period not
+        // supplied goes back to the payment method it was paid with,
+        // through a credit note on each invoice (its own currency: a legacy
+        // plan's euros cannot pay a dollar invoice), never more than is
+        // still refundable of it. Computed at the moment per-account
+        // pricing started, the same on every retry, each note under its
+        // key, so it is credited once. A credit Stripe refuses for good is
+        // kept for staff and counted, and the plan is ended all the same:
+        // it must stop charging. Last, so a Stripe that does not answer
+        // holds back nothing else of the event.
+        if (outcome !== "ignored" && (yield* paysNow(recorded))) {
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          const movedAt = Option.getOrElse(
+            recorded.startedAt,
+            () => occurredAt
+          );
+
+          yield* Effect.forEach(
+            held.filter(
+              (legacy) =>
+                legacy.plan !== "payAsYouGo" &&
+                legacy.status !== "trialing" &&
+                entitles(legacy)
+            ),
+            (legacy) =>
+              Effect.gen(function* moved() {
+                const { stripeSubscriptionId } = legacy;
+
+                yield* creditUnused(legacy, movedAt, {
+                  _tag: "movedToRateCard",
+                });
+
+                yield* stripe.endNow(
+                  recorded.workspaceId,
+                  stripeSubscriptionId,
+                  "movedToRateCard"
+                );
+
+                yield* Effect.logInfo(
+                  "Ended a legacy plan moved to per-account pricing, its unused time credited"
+                ).pipe(
+                  Effect.annotateLogs({
+                    stripeSubscriptionId,
+                    workspaceId: recorded.workspaceId,
+                  })
+                );
+              }),
+            { discard: true }
+          );
         }
 
         yield* Effect.logInfo("Recorded a subscription event").pipe(

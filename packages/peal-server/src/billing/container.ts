@@ -11,6 +11,7 @@ import { CancelSubscription } from "#billing/application/cancel-subscription.ts"
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { ConfirmContractRequest } from "#billing/application/confirm-contract-request.ts";
 import { ContractRequestDesk } from "#billing/application/contract-request-desk.ts";
+import { CreditProblemDesk } from "#billing/application/credit-problem-desk.ts";
 import { GraceWarningLive } from "#billing/application/grace-warning.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
@@ -52,6 +53,7 @@ import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-acco
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
+import { DrizzleCreditProblemsLive } from "#billing/infrastructure/drizzle-credit-problems.ts";
 import { DrizzleMeterUsageStoreLive } from "#billing/infrastructure/drizzle-meter-usage-store.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
@@ -85,6 +87,7 @@ const RecordsLive = Layer.mergeAll(
   KeyedContractReferencesLive,
   DrizzleSubscriptionsLive,
   DrizzlePlanRetirementsLive,
+  DrizzleCreditProblemsLive,
   DrizzleOrdersLive,
   DrizzleTrialsLive,
   DrizzleMeteredPostLedgerLive,
@@ -179,6 +182,8 @@ export const BillingLive = Layer.mergeAll(
   ApiStandings.layer.pipe(Layer.provide(WorkspaceEntitlements.layerShared)),
   AccountPlanPoolsLive,
   RecordSubscription.layer,
+  // Money owed back that Stripe did not give, for the webhook and staff.
+  CreditProblemDesk.layer,
   CheckoutOrders.layer,
   BillingRecords.layer,
   MeteredPosts.layer,

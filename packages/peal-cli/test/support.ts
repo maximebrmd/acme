@@ -390,6 +390,7 @@ const ContractRequestsLive = Layer.mergeAll(
   HttpApiBuilder.group(Api, "billingAccountsDesk", (handlers) =>
     handlers.handleAll({
       account: () => notStaff,
+      creditProblems: () => notStaff,
       detach: () => notStaff,
       merge: () => notStaff,
       requirePaymentMethod: () => notStaff,

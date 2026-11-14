@@ -1128,6 +1128,38 @@ groups:
                     type: gt
                     params: [0]
 
+      - uid: peal-credit-problems
+        title: A credit or a refund Peal owes did not go through
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Stripe refused for good a credit of a legacy plan's unused time, or reported a refund failed (peal.billing.credit_problems). The customer was told the money goes back, and Stripe will not send it. The staff console lists each under Billing accounts, "Refunds that did not go through", with its Stripe ids and code; settle it by hand in Stripe's dashboard or another way. The legacy plan was ended all the same.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The hour's increase, a restart's included, and a series born in the last five minutes counted whole: one present five minutes ago is not new, so a gap in the telemetry an hour ago is not read as a birth.
+              expr: (sum(increase(peal_billing_credit_problems_total[1h])) or vector(0)) + (sum(peal_billing_credit_problems_total unless peal_billing_credit_problems_total offset 1h unless peal_billing_credit_problems_total offset 5m) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-meter-errors
         title: Stripe could not count meter events it took
         condition: B

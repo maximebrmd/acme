@@ -446,12 +446,14 @@ export {
   SharedPlatformAccountPageSchema,
   SharedPlatformAccountSchema,
   StaffBillingAccountSchema,
+  StaffCreditProblemSchema,
 } from "./billing-accounts-desk.ts";
 
 export type {
   SharedPlatformAccount,
   SharedPlatformAccountPage,
   StaffBillingAccount,
+  StaffCreditProblem,
 } from "./billing-accounts-desk.ts";
 
 export {

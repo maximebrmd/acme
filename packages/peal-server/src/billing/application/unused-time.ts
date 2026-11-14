@@ -1,5 +1,4 @@
-import { Option } from "effect";
-import type { DateTime } from "effect";
+import { DateTime, Option } from "effect";
 
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { refundOf } from "#billing/domain/withdrawal.ts";
@@ -48,26 +47,69 @@ export const unusedCredits = (
     };
   });
 
+// The part of a period not supplied at `at`, between 0 and 1.
+const unusedShare = (
+  start: DateTime.Utc,
+  end: DateTime.Utc,
+  at: DateTime.Utc
+): number => {
+  const length = DateTime.toEpochMillis(end) - DateTime.toEpochMillis(start);
+
+  if (length <= 0) {
+    return 0;
+  }
+
+  const left = DateTime.toEpochMillis(end) - DateTime.toEpochMillis(at);
+
+  return Math.min(Math.max(left / length, 0), 1);
+};
+
 /**
- * What a legacy plan moved to per-account pricing at `at` is credited of
- * each paid invoice: the part of the period that invoice paid for, read
- * from its own lines, not supplied yet. Unlike a withdrawal, which looks
- * at the 14 days after the start, a move may come years after it: an
- * invoice whose lines say no period gives nothing rather than all, and
- * staff look at it.
+ * What a legacy plan that ends at `at` (moved to per-account pricing, or
+ * retired) is credited of each paid invoice: each line's own period not
+ * supplied yet, to the second, weighed by what the line charged, as a
+ * share of what the invoice took (its tax included), rounded down and
+ * never more than it took. A renewal that also carries an earlier
+ * period's prorations is so credited line by line, not over the joined
+ * span. An invoice whose lines give no period is read over its own
+ * period; one with neither gives nothing rather than all, as a move may
+ * come years after the start, and staff look at it. Stripe caps each at
+ * what is still refundable.
  */
 export const movedCredits = (
   invoices: readonly PaidInvoice[],
   at: DateTime.Utc
 ): readonly InvoiceCredit[] =>
-  invoices.map((invoice) => ({
-    amount: Option.match(
-      Option.all({ end: invoice.periodEnd, start: invoice.periodStart }),
-      {
-        onNone: () => 0,
-        onSome: ({ end, start }) =>
-          refundOf({ end, paid: invoice.paid.amount, start }, at),
-      }
-    ),
-    invoiceId: invoice.invoiceId,
-  }));
+  invoices.map((invoice) => {
+    const paid = invoice.paid.amount;
+    const lines = invoice.linePeriods ?? [];
+
+    const charged = lines.reduce((sum, { amount }) => sum + amount, 0);
+
+    if (lines.length > 0 && charged > 0) {
+      const unused = lines.reduce(
+        (sum, { amount, end, start }) =>
+          sum + amount * unusedShare(start, end, at),
+        0
+      );
+
+      return {
+        amount: Math.min(
+          paid,
+          Math.max(0, Math.floor((paid * unused) / charged))
+        ),
+        invoiceId: invoice.invoiceId,
+      };
+    }
+
+    return {
+      amount: Option.match(
+        Option.all({ end: invoice.periodEnd, start: invoice.periodStart }),
+        {
+          onNone: () => 0,
+          onSome: ({ end, start }) => refundOf({ end, paid, start }, at),
+        }
+      ),
+      invoiceId: invoice.invoiceId,
+    };
+  });

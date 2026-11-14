@@ -358,7 +358,7 @@ const PortsInMemory = Layer.mergeAll(
             asked(
               workspace,
               `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
-            ),
+            ).pipe(Effect.as([])),
           endAtTrialEnd: () => Effect.void,
           endAndInvoice: (workspace, id, reason) =>
             asked(workspace, `endAndInvoice ${id} ${reason}`),

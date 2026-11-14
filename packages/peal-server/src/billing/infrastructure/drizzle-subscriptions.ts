@@ -31,6 +31,7 @@ import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import {
+  creditProblems,
   orders,
   stripeEvents,
   subscriptions,
@@ -205,6 +206,12 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           .update(withdrawals)
           .set({ erasedAt, workspaceId: null })
           .where(eq(withdrawals.workspaceId, workspaceId));
+
+        // What Peal still owes stays for staff, by its Stripe ids.
+        yield* db
+          .update(creditProblems)
+          .set({ erasedAt, workspaceId: null })
+          .where(eq(creditProblems.workspaceId, workspaceId));
 
         yield* db
           .delete(subscriptions)

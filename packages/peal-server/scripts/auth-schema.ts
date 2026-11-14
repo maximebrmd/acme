@@ -58,6 +58,7 @@ const auth = makeAuth({
     payerOf: async () => await Promise.resolve(null),
     resetPassword: ignore,
     signUp: async () => await Promise.resolve(true),
+    refundFailed: nothing,
     subscriptionChanged: nothing,
     twoStep: {
       lockedOut: async () => await Promise.resolve(false),

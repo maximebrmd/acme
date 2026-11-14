@@ -17,6 +17,7 @@ import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ContractRecords } from "#billing/application/ports/contract-records.ts";
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
+import { CreditProblems } from "#billing/application/ports/credit-problems.ts";
 import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { MeterUsageStore } from "#billing/application/ports/meter-usage-store.ts";
 import { PlanPools } from "#billing/application/ports/plan-pools.ts";
@@ -742,3 +743,6 @@ export const NoMetersTest = Layer.succeed(
     xUsage: () => Effect.succeedNone,
   })
 );
+
+/** No credit refused: any record of one dies. */
+export const NoCreditProblemsTest = Layer.mock(CreditProblems, {});

@@ -12,6 +12,8 @@ import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 export class StripeUnreachable extends Schema.TaggedError<StripeUnreachable>()(
   "StripeUnreachable",
   {
+    // Stripe's error code, when it refused the request itself.
+    code: Schema.optionalKey(Schema.String),
     permanent: Schema.Boolean.pipe(
       Schema.withConstructorDefault(Effect.succeed(false))
     ),

@@ -87,17 +87,124 @@ const paidInvoices = [
 const verificationOf = (customer: string) =>
   customer === "cus_business" ? "verified" : "pending";
 
-// One invoice was credited for a late cancellation, some time ago.
+// One invoice was credited for a late cancellation, some time ago, and
+// another for goodwill, refunded.
+const notes = new Map<string, readonly JsonValue[]>([
+  [
+    "in_refunded",
+    [
+      {
+        amount: 400,
+        id: "cn_goodwill",
+        metadata: {},
+        object: "credit_note",
+        refunds: [{ amount_refunded: 400, refund: "re_from_note" }],
+      },
+    ],
+  ],
+  [
+    "in_synthetic",
+    [
+      {
+        id: "cn_earlier",
+        metadata: { key: "late-cancellation-credit-request-1-in_synthetic" },
+        object: "credit_note",
+      },
+    ],
+  ],
+]);
+
 const notesOf = (invoice: string | null) =>
-  invoice === "in_synthetic"
-    ? [
-        {
-          id: "cn_earlier",
-          metadata: { key: "late-cancellation-credit-request-1-in_synthetic" },
-          object: "credit_note",
-        },
-      ]
-    : [];
+  invoice === null ? [] : (notes.get(invoice) ?? []);
+
+// Each invoice as retrieved: `in_refunded` took 1900, 400 of which a credit
+// note gave back since, and 500 a refund made in Stripe's dashboard,
+// outside any credit note; the note's own refund shows among the
+// payment's too.
+const retrieved = (invoice: string): JsonValue =>
+  invoice === "in_refunded"
+    ? {
+        amount_paid: 1900,
+        currency: "eur",
+        id: invoice,
+        object: "invoice",
+        post_payment_credit_notes_amount: 400,
+      }
+    : {
+        ...paidInvoices.find(({ id }) => id === invoice),
+        id: invoice,
+        object: "invoice",
+        post_payment_credit_notes_amount: 0,
+      };
+
+// What paid `in_refunded`, and what was refunded of it.
+const refundsAnswer = (request: {
+  readonly path: string;
+  readonly query: URLSearchParams;
+}) => {
+  if (request.path === "/v1/invoice_payments") {
+    return list(
+      request.query.get("invoice") === "in_refunded"
+        ? [
+            {
+              id: "inpay_synthetic",
+              object: "invoice_payment",
+              payment: {
+                payment_intent: "pi_synthetic",
+                type: "payment_intent",
+              },
+            },
+          ]
+        : [],
+      request.path
+    );
+  }
+
+  return list(
+    request.query.get("payment_intent") === "pi_synthetic"
+      ? [
+          {
+            amount: 400,
+            id: "re_from_note",
+            object: "refund",
+            status: "succeeded",
+          },
+          {
+            amount: 500,
+            id: "re_by_hand",
+            object: "refund",
+            status: "succeeded",
+          },
+          { amount: 300, id: "re_failed", object: "refund", status: "failed" },
+        ]
+      : [],
+    request.path
+  );
+};
+
+// What the cap on a credit reads: the invoice retrieved, its payments and
+// their refunds.
+const refundableAnswer = (request: {
+  readonly method: string;
+  readonly path: string;
+  readonly query: URLSearchParams;
+}): PlatformAnswer | undefined => {
+  if (request.method !== "GET") {
+    return undefined;
+  }
+
+  const invoice = /^\/v1\/invoices\/(?<id>in_[^/]+)$/u.exec(request.path)
+    ?.groups?.["id"];
+
+  if (invoice !== undefined) {
+    return json(retrieved(invoice));
+  }
+
+  return request.path === "/v1/invoice_payments" ||
+    request.path === "/v1/refunds"
+    ? refundsAnswer(request)
+    : undefined;
+};
 
 const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
   platformServer((request): PlatformAnswer => {
@@ -132,16 +239,20 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
       );
     }
 
+    const refundable = refundableAnswer(request);
+
+    if (refundable !== undefined) {
+      return refundable;
+    }
+
     if (method === "POST" && path === "/v1/invoices/create_preview") {
       return json({ currency: "eur", object: "invoice", total: 9000 });
     }
 
-    if (method === "POST" && path === "/v1/credit_notes") {
-      return json({ id: "cn_synthetic", object: "credit_note" });
-    }
-
-    if (method === "GET" && path === "/v1/credit_notes") {
-      return list(notesOf(query.get("invoice")), path);
+    if (path === "/v1/credit_notes") {
+      return method === "POST"
+        ? json({ id: "cn_synthetic", object: "credit_note" })
+        : list(notesOf(query.get("invoice")), path);
     }
 
     const subscription = /^\/v1\/subscriptions\/(?<id>[^/]+)$/u.exec(path)
@@ -236,6 +347,13 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
         assert.deepStrictEqual(invoices, [
           {
             invoiceId: "in_proration",
+            linePeriods: [
+              {
+                amount: 1250,
+                end: DateTime.makeUnsafe(1_796_083_200_000),
+                start: DateTime.makeUnsafe(1_794_009_600_000),
+              },
+            ],
             lines: [
               { amount: 1250, start: DateTime.makeUnsafe(1_794_009_600_000) },
             ],
@@ -245,6 +363,7 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
           },
           {
             invoiceId: "in_synthetic",
+            linePeriods: [],
             lines: [],
             paid: { amount: 900, currency: "eur" },
             periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
@@ -315,7 +434,16 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
         );
         yield* contracts.endNow(workspaceId, "sub_paid", "movedToRateCard");
 
-        const [, creditNote, ended] = stripe.requests();
+        const creditNote = stripe
+          .requests()
+          .find(
+            ({ method, path }) =>
+              method === "POST" && path === "/v1/credit_notes"
+          );
+
+        const ended = stripe
+          .requests()
+          .find(({ method }) => method === "DELETE");
 
         const form = new URLSearchParams(
           creditNote === undefined ? "" : textOf(creditNote)
@@ -343,6 +471,46 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
           "Moved to per-account pricing on Peal: its unused time is credited"
         );
         assert.strictEqual(ended?.query.get("prorate"), "false");
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "never credit more than is still refundable of an invoice, after earlier credit notes and refunds",
+    () =>
+      Effect.gen(function* capped() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        // 1900 paid, 400 credited, 500 refunded by hand: 1000 is left.
+        const credited = yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 1500, invoiceId: "in_refunded" }],
+          { _tag: "movedToRateCard" }
+        );
+
+        assert.deepStrictEqual(credited, [
+          {
+            asked: 1500,
+            credited: 1000,
+            currency: "eur",
+            invoiceId: "in_refunded",
+          },
+        ]);
+
+        const note = stripe
+          .requests()
+          .find(
+            ({ method, path }) =>
+              method === "POST" && path === "/v1/credit_notes"
+          );
+
+        const form = new URLSearchParams(
+          note === undefined ? "" : textOf(note)
+        );
+
+        assert.strictEqual(form.get("amount"), "1000");
+        assert.strictEqual(form.get("refund_amount"), "1000");
       }).pipe(Effect.scoped)
   );
 
