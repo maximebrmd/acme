@@ -16,17 +16,17 @@ export const WorkflowFollowUpJobs = Layer.effect(
     const engine = yield* WorkflowEngine.WorkflowEngine;
 
     return FollowUpJobs.of({
-      cancel: (followUpId) =>
-        SendFollowUpV1.executionId({ followUpId }).pipe(
+      cancel: (followUpId, attempt) =>
+        SendFollowUpV1.executionId({ attempt, followUpId }).pipe(
           Effect.flatMap((executionId) =>
             SendFollowUpV1.interrupt(executionId)
           ),
           Effect.provideService(WorkflowEngine.WorkflowEngine, engine),
           Effect.orDie
         ),
-      start: (followUpId) =>
+      start: (followUpId, attempt) =>
         SendFollowUpV1.execute(
-          { followUpId },
+          { attempt, followUpId },
           { detached: true, discard: true }
         ).pipe(
           Effect.provideService(WorkflowEngine.WorkflowEngine, engine),

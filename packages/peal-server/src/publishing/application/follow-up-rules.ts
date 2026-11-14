@@ -14,6 +14,7 @@ import {
 } from "#publishing/domain/follow-up-rule.ts";
 import type {
   FollowUpChange,
+  FollowUpChanger,
   FollowUpRule,
   FollowUpRuleStatus,
   FollowUpScope,
@@ -25,7 +26,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, UserId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { storableText } from "#shared/domain/platform-text.ts";
 
@@ -43,6 +44,18 @@ import { mayChangeStarted, notImpersonating, starterOf } from "./started-by.ts";
 import { TooManyFollowUpRules } from "./too-many-follow-up-rules.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 import { findInWorkspace } from "./workspace-posts.ts";
+
+/**
+ * Who approves a rule by changing it: a person who may approve posts,
+ * never an application, a key or staff acting as them.
+ */
+const approverOf = (actor: Actor): Option.Option<UserId> =>
+  actor.subject._tag === "user" &&
+  actor.subject.clientId === undefined &&
+  Option.isNone(actor.subject.impersonatedBy) &&
+  can(actor, "post:approve")
+    ? Option.some(actor.subject.userId)
+    : Option.none();
 
 /** How many of a rule's follow-ups its view shows, newest first. */
 export const followUpsShown = 20;
@@ -441,7 +454,14 @@ export class FollowUpRules extends Context.Service<
           });
         }
 
-        const needsApproval = yield* gate.holds(actor);
+        // Staff acting as a member never rewrites what goes out as them.
+        yield* notImpersonating(actor);
+
+        const changer = {
+          approver: approverOf(actor),
+          held: yield* gate.holds(actor),
+        } satisfies FollowUpChanger;
+
         const now = yield* DateTime.now;
 
         const changed = yield* transaction(
@@ -454,7 +474,7 @@ export class FollowUpRules extends Context.Service<
               changeFollowUpRule(
                 rule,
                 changeOf(request, comment.value),
-                needsApproval,
+                changer,
                 now
               )
             );

@@ -8,6 +8,7 @@ CREATE TABLE "engagement"."comment_rule_matches" (
 );
 --> statement-breakpoint
 CREATE TABLE "engagement"."comment_rules" (
+	"answers_from" timestamp with time zone NOT NULL,
 	"channel_id" uuid,
 	"created_at" timestamp with time zone NOT NULL,
 	"ended_reason" text,
@@ -45,6 +46,7 @@ CREATE TABLE "publishing"."follow_up_rules" (
 --> statement-breakpoint
 CREATE TABLE "publishing"."follow_ups" (
 	"armed_at" timestamp with time zone NOT NULL,
+	"attempt" integer DEFAULT 0 NOT NULL,
 	"call_claimed_at" timestamp with time zone,
 	"channel_id" uuid NOT NULL,
 	"id" uuid PRIMARY KEY,

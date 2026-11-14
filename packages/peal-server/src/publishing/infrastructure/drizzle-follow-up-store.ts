@@ -102,6 +102,7 @@ const toFollowUp = (row: FollowUpRow) =>
 
     return yield* decodeFollowUp({
       armedAt: utc(row.armedAt),
+      attempt: row.attempt,
       channelId: row.channelId,
       id: row.id,
       kind: row.kind,
@@ -159,6 +160,7 @@ const triggeredAtOf = (status: FollowUpStatus) =>
   "triggeredAt" in status ? date(status.triggeredAt) : null;
 
 const stateColumns = (followUp: FollowUp) => ({
+  attempt: followUp.attempt,
   state: encodeStatus(followUp.status),
   status: followUp.status._tag,
   triggeredAt: triggeredAtOf(followUp.status),

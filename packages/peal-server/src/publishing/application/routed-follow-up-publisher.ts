@@ -1,6 +1,7 @@
 import { DateTime, Effect, Layer, Option } from "effect";
 
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import type { FollowUp } from "#publishing/domain/follow-up.ts";
 import { livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
@@ -62,6 +63,11 @@ const livePartsIds = (
     ? Effect.succeed({ last: last.value, root: root.value })
     : Effect.fail(noReplyTarget);
 };
+
+// The key a platform is given: the follow-up's own, and its attempt's
+// after the first, as an attempt after a refusal is a new call.
+const keyOf = (followUp: FollowUp) =>
+  followUp.attempt <= 1 ? followUp.id : `${followUp.id}:${String(followUp.attempt)}`;
 
 // What the platform answered, as it is kept.
 const storable = <R>(
@@ -147,7 +153,7 @@ export const RoutedFollowUpPublisher = Layer.effect(
           Effect.succeed({
             accountId: account.accountId,
             channelId: followUp.channelId,
-            idempotencyKey: followUp.id,
+            idempotencyKey: keyOf(followUp),
             media: [],
             options: target.options,
             part: livePartsOf(target).length,
@@ -162,7 +168,7 @@ export const RoutedFollowUpPublisher = Layer.effect(
     const repostOf = ({ account, followUp, ids, startedAt }: Prepared) => ({
       accountId: account.accountId,
       channelId: followUp.channelId,
-      idempotencyKey: followUp.id,
+      idempotencyKey: keyOf(followUp),
       platformPostId: ids.root,
       startedAt,
       workspaceId: followUp.workspaceId,

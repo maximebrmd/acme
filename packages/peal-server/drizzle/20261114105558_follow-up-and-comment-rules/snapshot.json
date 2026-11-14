@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "7387ec6f-00bd-42b4-a31e-b443e1835ebc",
+  "id": "f00819ac-4f22-4821-890c-d6150cc50771",
   "prevIds": [
     "0f406c84-447d-45d0-ac3f-0a9933564aba"
   ],
@@ -583,6 +583,22 @@
       "row": {
         "schema": "engagement",
         "table": "comment_rules",
+        "name": "answers_from",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "comment_rules",
         "name": "channel_id",
         "type": "uuid",
         "typeSchema": null,
@@ -1037,6 +1053,22 @@
         "notNull": true,
         "dimensions": 0,
         "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "publishing",
+        "table": "follow_ups",
+        "name": "attempt",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
         "generated": null,
         "identity": null,
         "entityType": "columns"

@@ -66,6 +66,12 @@ const newRule = (more: Partial<NewFollowUpRule> = {}): NewFollowUpRule => ({
 
 const now = utc("2026-06-15T07:00:00Z");
 
+// Who changes a rule: held by the approval policy, a member who approves
+// posts, or neither.
+const held = { approver: Option.none(), held: true } as const;
+const approving = { approver: Option.some(approver), held: false } as const;
+const unheld = { approver: Option.none(), held: false } as const;
+
 const armed = (): FollowUp =>
   armFollowUp(
     {
@@ -127,7 +133,7 @@ describe("a follow-up rule", () => {
     );
 
     const threshold = Result.getOrThrow(
-      changeFollowUpRule(approved, { likes: 10, paused: true }, true, now)
+      changeFollowUpRule(approved, { likes: 10, paused: true }, held, now)
     );
 
     expect(threshold.approval._tag).toBe("approved");
@@ -138,18 +144,41 @@ describe("a follow-up rule", () => {
       changeFollowUpRule(
         approved,
         { comment: Option.some("Another text") },
-        true,
+        held,
         now
       )
     );
 
     expect(text.approval._tag).toBe("pending");
 
-    const byOneWhoPublishes = Result.getOrThrow(
-      changeFollowUpRule(approved, { repost: true }, false, now)
+    // Changed by a member who approves posts: approved by them.
+    const byApprover = Result.getOrThrow(
+      changeFollowUpRule(approved, { repost: true }, approving, now)
     );
 
-    expect(byOneWhoPublishes.approval._tag).toBe("notNeeded");
+    expect(byApprover.approval).toStrictEqual({
+      _tag: "approved",
+      approvedAt: now,
+      approvedBy: approver,
+    });
+
+    // By anyone else not held, such as a key: it waits again, as its
+    // starter's posts would.
+    expect(
+      Result.getOrThrow(
+        changeFollowUpRule(approved, { repost: true }, unheld, now)
+      ).approval._tag
+    ).toBe("pending");
+  });
+
+  it("can be approved when it comes to need it, whatever it was", () => {
+    const rule = startFollowUpRule(newRule(), now);
+
+    expect(rule.approval._tag).toBe("notNeeded");
+    expect(
+      Result.getOrThrow(approveFollowUpRule(rule, approver, later(1))).approval
+        ._tag
+    ).toBe("approved");
   });
 
   it("changes no more once ended", () => {
@@ -160,7 +189,7 @@ describe("a follow-up rule", () => {
     );
 
     expect(
-      Result.isFailure(changeFollowUpRule(stopped, { likes: 2 }, false, now))
+      Result.isFailure(changeFollowUpRule(stopped, { likes: 2 }, unheld, now))
     ).toBeTruthy();
     expect(
       endFollowUpRule(stopped, "completed", later(1)).status

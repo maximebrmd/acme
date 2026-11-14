@@ -210,17 +210,37 @@ const pausedAs = (
   return status._tag === "paused" ? status : { _tag: "paused", pausedAt: now };
 };
 
+/** Who changes a rule, as its approval reads them. */
+export interface FollowUpChanger {
+  /** A member, in person, who approves posts: none otherwise. */
+  readonly approver: Option.Option<UserId>;
+  /** Whether the approval policy holds their posts. */
+  readonly held: boolean;
+}
+
+// What a change of what the rule sends makes of its approval: approved by
+// a member who approves posts and is not held, waiting otherwise, as the
+// rule acts as its starter, whose posts may be held whoever changes it.
+const approvalAfter = (
+  changer: FollowUpChanger,
+  now: DateTime.Utc
+): FollowUpApproval =>
+  Option.match(changer.held ? Option.none() : changer.approver, {
+    onNone: () => ({ _tag: "pending" }),
+    onSome: (approvedBy) => ({ _tag: "approved", approvedAt: now, approvedBy }),
+  });
+
 /**
  * The rule as a member changed it. What it sends changing (its comment, or
- * whether it reposts) needs an approval again where the one who changed it
- * waits for approvals (`needsApproval`); otherwise it needs none, as they
- * may publish it themselves. A threshold changed, or a pause, keeps the
+ * whether it reposts) is approved by whoever changed it when they approve
+ * posts in person and the policy does not hold them, and waits for an
+ * approval otherwise (`approvalAfter`). A threshold changed, or a pause, keeps the
  * approval as it was. An ended rule changes no more.
  */
 export const changeFollowUpRule = (
   rule: FollowUpRule,
   change: FollowUpChange,
-  needsApproval: boolean,
+  changer: FollowUpChanger,
   now: DateTime.Utc
 ): Result.Result<FollowUpRule, FollowUpRuleEnded> =>
   Result.map(ended(rule), (open) => {
@@ -229,11 +249,7 @@ export const changeFollowUpRule = (
 
     const sends =
       !sameText(comment, open.comment) || repost !== open.repost
-        ? {
-            approval: needsApproval
-              ? ({ _tag: "pending" } as const)
-              : ({ _tag: "notNeeded" } as const),
-          }
+        ? { approval: approvalAfter(changer, now) }
         : {};
 
     const status = pausedAs(open.status, change.paused, now);
@@ -248,8 +264,9 @@ export const changeFollowUpRule = (
   });
 
 /**
- * The rule approved by `by` at `now`. One already approved, or that needs
- * none, stays as it is; an ended rule changes no more.
+ * The rule approved by `by` at `now`, whatever its approval was: one that
+ * needed none may come to need one, when the policy starts holding its
+ * starter's posts. An ended rule changes no more.
  */
 export const approveFollowUpRule = (
   rule: FollowUpRule,
@@ -257,7 +274,7 @@ export const approveFollowUpRule = (
   now: DateTime.Utc
 ): Result.Result<FollowUpRule, FollowUpRuleEnded> =>
   Result.map(ended(rule), (open) =>
-    open.approval._tag === "pending"
+    open.approval._tag !== "approved"
       ? changed(open, {
           approval: { _tag: "approved", approvedAt: now, approvedBy: by },
         })

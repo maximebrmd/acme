@@ -10,13 +10,20 @@ import type { FollowUpId } from "#publishing/domain/follow-up-id.ts";
 export class FollowUpJobs extends Context.Service<
   FollowUpJobs,
   {
-    readonly start: (followUpId: FollowUpId) => Effect.Effect<void>;
+    /** Starts the job of the follow-up's `attempt`: one job an attempt. */
+    readonly start: (
+      followUpId: FollowUpId,
+      attempt: number
+    ) => Effect.Effect<void>;
     /**
      * Stops the follow-up's job for good: in a transaction, with what
      * hands it over, so the job cannot wake after. A job that has ended
      * is left as it is.
      */
-    readonly cancel: (followUpId: FollowUpId) => Effect.Effect<void>;
+    readonly cancel: (
+      followUpId: FollowUpId,
+      attempt: number
+    ) => Effect.Effect<void>;
   }
 >()("peal-server/publishing/application/FollowUpJobs") {
   /** For tests that send nothing: no job starts. */

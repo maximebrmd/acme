@@ -18,13 +18,14 @@ export const FollowUpSendResultSchema = Schema.Literals([
 ]);
 
 /**
- * Carries out one follow-up, which the transaction that triggered it
- * started. One execution per follow-up, so starting it again does nothing
- * more.
+ * Carries out one attempt of a follow-up, which the transaction that
+ * triggered it started: one execution per follow-up and attempt, so
+ * starting it again does nothing more, and an attempt after the platform
+ * put the follow-up off is a new one.
  */
 export const SendFollowUpV1 = Workflow.make("SendFollowUpV1", {
-  idempotencyKey: ({ followUpId }) => followUpId,
-  payload: { followUpId: FollowUpIdSchema },
+  idempotencyKey: ({ attempt, followUpId }) => `${followUpId}:${String(attempt)}`,
+  payload: { attempt: Schema.Int, followUpId: FollowUpIdSchema },
 });
 
 // A database blip must not strand the follow-up: the step retries for
@@ -36,9 +37,11 @@ const databaseRetry = Schedule.min([
 ]);
 
 export const SendFollowUpV1Live = SendFollowUpV1.toLayer(
-  Effect.fn("SendFollowUpV1")(function* sendFollowUp({ followUpId }) {
+  Effect.fn("SendFollowUpV1")(function* sendFollowUp({ attempt, followUpId }) {
     const result = yield* Activity.make({
-      execute: SendFollowUp.use((sending) => sending.run(followUpId)).pipe(
+      execute: SendFollowUp.use((sending) =>
+        sending.run(followUpId, attempt)
+      ).pipe(
         Effect.retry({ schedule: databaseRetry, times: 10 }),
         Effect.catchTag("DatabaseError", (failed) =>
           Effect.logError(

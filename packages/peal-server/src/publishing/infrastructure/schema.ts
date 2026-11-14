@@ -787,6 +787,7 @@ export const followUps = publishing.table(
   "follow_ups",
   {
     armedAt: instant("armed_at").notNull(),
+    attempt: integer("attempt").notNull().default(0),
     callClaimedAt: instant("call_claimed_at"),
     channelId: uuid("channel_id").notNull(),
     id: uuid("id").primaryKey(),

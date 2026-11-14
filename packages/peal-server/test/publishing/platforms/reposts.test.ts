@@ -20,6 +20,7 @@ import {
   blueskyDid,
   fakeBluesky,
 } from "#test/publishing/fakes/fake-bluesky.ts";
+import { json } from "#test/publishing/fakes/platform-server.ts";
 import {
   fakeMastodonInstance,
   mastodonAccountId,
@@ -261,6 +262,28 @@ describe("reposting on Bluesky", () => {
 
       assert.strictEqual(refused._tag, "BadRequest");
       assert.deepStrictEqual(pds.records(), []);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("takes a server's error on the create for a repost that may be made", () =>
+    Effect.gen(function* serverError() {
+      const { bluesky, client, pds } = yield* onPds();
+
+      const postId = yield* idOf(
+        yield* client.publish(yield* outgoing({ accountId: blueskyDid }))
+      );
+
+      pds.script("POST /xrpc/com.atproto.repo.createRecord", [
+        json({ error: "InternalServerError" }, 500),
+      ]);
+
+      const made = yield* bluesky.repost(repostOf(blueskyDid, postId));
+
+      // Never a refusal that arms it again under another key.
+      assert.deepStrictEqual(made, {
+        _tag: "unconfirmed",
+        reason: "noResponse",
+      });
     }).pipe(Effect.scoped)
   );
 });

@@ -118,7 +118,8 @@ const liveSince = (target: PostTarget): Option.Option<DateTime.Utc> =>
 // Why a window passed without it going out.
 const expiryOf = (
   { rule }: ArmedFollowUp,
-  likes: Option.Option<number>
+  likes: Option.Option<number>,
+  starterHeld: boolean
 ): FollowUpExpiryReason => {
   if (rule.status._tag === "paused") {
     return "paused";
@@ -128,7 +129,9 @@ const expiryOf = (
     return "belowThreshold";
   }
 
-  return rule.approval._tag === "pending" ? "notApproved" : "dailyLimit";
+  return rule.approval._tag === "pending" || !mayAct(rule, starterHeld)
+    ? "notApproved"
+    : "dailyLimit";
 };
 
 /**
@@ -474,7 +477,7 @@ export class FollowUps extends Context.Service<
           return "skipped" satisfies Step;
         }
 
-        yield* jobs.start(followUp.id);
+        yield* jobs.start(followUp.id, triggered.success.attempt);
 
         return "triggered" satisfies Step;
       });
@@ -484,10 +487,16 @@ export class FollowUps extends Context.Service<
         likes: Option.Option<number>
       ) {
         const now = yield* DateTime.now;
+        const starter = yield* actors.of(armed.rule);
+
+        // A starter whose posts the policy holds now waits for an
+        // approval, whatever the rule's was when it started.
+        const starterHeld =
+          starter._tag === "acting" && (yield* gate.holds(starter.actor));
 
         const expired = expireFollowUp(
           armed.followUp,
-          expiryOf(armed, likes),
+          expiryOf(armed, likes, starterHeld),
           now
         );
 
@@ -635,7 +644,9 @@ export class FollowUps extends Context.Service<
                 .advance(next.success, followUp)
                 .pipe(
                   Effect.tap((written) =>
-                    written ? jobs.cancel(followUp.id) : Effect.void
+                    written
+                      ? jobs.cancel(followUp.id, followUp.attempt)
+                      : Effect.void
                   )
                 )
             ));

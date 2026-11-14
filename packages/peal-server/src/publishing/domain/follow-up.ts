@@ -123,6 +123,9 @@ export class FollowUp extends Schema.Class<FollowUp>(
   "peal-server/publishing/domain/FollowUp"
 )({
   armedAt: Schema.DateTimeUtc,
+  // How many times its threshold set it out: each its own job and its own
+  // call, so one armed again after the platform put it off goes out.
+  attempt: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   channelId: ChannelIdSchema,
   id: FollowUpIdSchema,
   kind: FollowUpKindSchema,
@@ -138,6 +141,7 @@ type Transition = Result.Result<FollowUp, InvalidFollowUpTransition>;
 const withStatus = (followUp: FollowUp, status: FollowUpStatus): FollowUp =>
   new FollowUp({
     armedAt: followUp.armedAt,
+    attempt: followUp.attempt,
     channelId: followUp.channelId,
     id: followUp.id,
     kind: followUp.kind,
@@ -174,6 +178,7 @@ export interface Arming {
 export const armFollowUp = (arming: Arming, now: DateTime.Utc): FollowUp =>
   new FollowUp({
     armedAt: now,
+    attempt: 0,
     channelId: arming.channelId,
     id: arming.id,
     kind: arming.kind,
@@ -197,7 +202,7 @@ export const triggerFollowUp = (
 ): Transition =>
   followUp.status._tag === "armed" && !isPast(followUp, now)
     ? Result.succeed(
-        withStatus(followUp, {
+        withStatus(new FollowUp({ ...followUp, attempt: followUp.attempt + 1 }), {
           _tag: "sending",
           attemptedAt: Option.none(),
           likes,

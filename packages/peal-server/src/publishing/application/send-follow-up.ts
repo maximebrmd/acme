@@ -46,7 +46,8 @@ export class SendFollowUp extends Context.Service<
   SendFollowUp,
   {
     readonly run: (
-      followUpId: FollowUpId
+      followUpId: FollowUpId,
+      attempt: number
     ) => Effect.Effect<FollowUpSendResult, DatabaseError>;
   }
 >()("peal-server/publishing/application/SendFollowUp") {
@@ -100,11 +101,17 @@ export class SendFollowUp extends Context.Service<
         );
 
       const run = Effect.fn("SendFollowUp.run")(function* run(
-        followUpId: FollowUpId
+        followUpId: FollowUpId,
+        attempt: number
       ) {
         const found = yield* store.followUp(followUpId);
 
-        if (Option.isNone(found) || found.value.status._tag !== "sending") {
+        // Another attempt's job, or one that ended: nothing to send.
+        if (
+          Option.isNone(found) ||
+          found.value.status._tag !== "sending" ||
+          found.value.attempt !== attempt
+        ) {
           return "superseded" as const;
         }
 

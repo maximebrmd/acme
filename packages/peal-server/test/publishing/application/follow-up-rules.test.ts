@@ -24,9 +24,10 @@ import { FollowUpRuleIdSchema } from "#publishing/domain/follow-up-rule-id.ts";
 import { DrizzleFollowUpStore } from "#publishing/infrastructure/drizzle-follow-up-store.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
-import { can } from "#shared/domain/access.ts";
+import { Actor, can } from "#shared/domain/access.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -58,6 +59,7 @@ import {
   attachableMedia,
   contentOf,
   postAllowance,
+  syntheticUser,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -260,6 +262,69 @@ const connected = (workspaceId: WorkspaceId, platform: Platform) =>
 
 describe("follow-up rules", () => {
   it.effect(
+    "send a follow-up armed again after the platform put it off",
+    () =>
+      onServer(
+        Effect.gen(function* rearmed() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(actorIn(workspaceId), onPost(postId, { repost: false }))
+          );
+
+          // Unreachable once, then answering.
+          const refusals = yield* Ref.make(1);
+
+          yield* followUpsAnswer((request) =>
+            Ref.getAndUpdate(refusals, (left) => left - 1).pipe(
+              Effect.flatMap((left) =>
+                left > 0
+                  ? Effect.fail(new PlatformUnavailable())
+                  : Effect.succeed<PublishResult>({
+                      _tag: "published",
+                      platformPostId: PlatformPostIdSchema.make(
+                        `reply-${request.followUpId}`
+                      ),
+                    })
+              )
+            )
+          );
+
+          yield* likesOf(target.id, 10);
+          assert.strictEqual((yield* runDue).triggered, 1);
+
+          yield* eventually(
+            "the follow-up is armed again",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.every(({ status }) => status._tag === "armed")
+              )
+            )
+          );
+
+          assert.strictEqual((yield* runDue).triggered, 1);
+
+          yield* eventually(
+            "the follow-up went out",
+            ruleNow(workspaceId, started.rule.id).pipe(
+              Effect.map(({ followUps }) =>
+                followUps.every(({ status }) => status._tag === "sent")
+              )
+            )
+          );
+
+          assert.strictEqual((yield* followUpCalls).length, 2);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "follow a post up once it has enough likes, once",
     () =>
       onServer(
@@ -455,6 +520,130 @@ describe("follow-up rules", () => {
           );
 
           assert.strictEqual(approved.rule.approval._tag, "approved");
+          assert.strictEqual((yield* runDue).triggered, 1);
+        }),
+        HoldingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "wait for an approval once the policy holds the starter, and expire as not approved",
+    () =>
+      onServer(
+        Effect.gen(function* comesToNeed() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const first = yield* published(workspaceId, [mastodon]);
+          const second = yield* published(workspaceId, [mastodon], "Later.");
+          const editor = actorIn(workspaceId);
+
+          const approving = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, onPost(first, { repost: false }))
+          );
+
+          const lapsing = yield* FollowUpRules.use((rules) =>
+            rules.start(editor, onPost(second, { repost: false }))
+          );
+
+          assert.strictEqual(approving.rule.approval._tag, "notNeeded");
+
+          // The policy now holds the starter's posts.
+          yield* startersAre(() => ({
+            _tag: "acting",
+            actor: actorIn(workspaceId, permissionsFor("contributor")),
+          }));
+
+          for (const postId of [first, second]) {
+            const [target] = yield* targetsOf(postId);
+
+            assert.isDefined(target);
+            yield* likesOf(target.id, 50);
+          }
+
+          assert.strictEqual((yield* runDue).triggered, 0);
+
+          const approved = yield* FollowUpRules.use((rules) =>
+            rules.approve(editor, approving.rule.id)
+          );
+
+          assert.strictEqual(approved.rule.approval._tag, "approved");
+          assert.strictEqual((yield* runDue).triggered, 1);
+
+          // A week later, the one nobody approved lapses as waiting for it.
+          yield* TestClock.adjust("8 days");
+          yield* runDue;
+
+          const lapsed = yield* ruleNow(workspaceId, lapsing.rule.id);
+          const [followUp] = lapsed.followUps;
+
+          assert.isDefined(followUp);
+          assert.deepStrictEqual(
+            followUp.status._tag === "expired"
+              ? followUp.status.reason
+              : followUp.status._tag,
+            "notApproved"
+          );
+        }),
+        HoldingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "approve a held starter's rule by an approver's change, never by staff acting as them",
+    () =>
+      onServer(
+        Effect.gen(function* changedByApprover() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connected(workspaceId, "mastodon");
+          const postId = yield* published(workspaceId, [mastodon]);
+          const [target] = yield* targetsOf(postId);
+
+          assert.isDefined(target);
+
+          const contributor = actorIn(
+            workspaceId,
+            permissionsFor("contributor")
+          );
+
+          yield* startersAre(() => ({ _tag: "acting", actor: contributor }));
+
+          const started = yield* FollowUpRules.use((rules) =>
+            rules.start(contributor, onPost(postId, { repost: false }))
+          );
+
+          const editor = actorIn(workspaceId);
+
+          const impersonating = new Actor({
+            permissions: editor.permissions,
+            subject: {
+              _tag: "user",
+              impersonatedBy: Option.some(
+                UserIdSchema.make("1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b")
+              ),
+              userId: syntheticUser,
+            },
+            workspaceId,
+          });
+
+          const refused = yield* FollowUpRules.use((rules) =>
+            rules.change(impersonating, started.rule.id, {
+              comment: Option.some("Written by staff."),
+            })
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "MissingPermission");
+
+          const changed = yield* FollowUpRules.use((rules) =>
+            rules.change(editor, started.rule.id, {
+              comment: Option.some("Thank you, all of you!"),
+            })
+          );
+
+          assert.strictEqual(changed.rule.approval._tag, "approved");
+
+          yield* likesOf(target.id, 50);
           assert.strictEqual((yield* runDue).triggered, 1);
         }),
         HoldingServer
