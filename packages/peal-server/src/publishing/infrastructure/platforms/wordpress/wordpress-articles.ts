@@ -182,8 +182,18 @@ const signed = (
   request: HttpClientRequest.HttpClientRequest
 ) => request.pipe(withSiteCredential(token.credential));
 
-const postRoute = (token: SiteToken, platformPostId: string) =>
-  routeUrl(token.root, `/wp/v2/posts/${encodeURIComponent(platformPostId)}`);
+// The post's own route; `answered` asks for its id and address alone, not
+// the content the site would send back whole.
+const postRoute = (
+  token: SiteToken,
+  platformPostId: string,
+  answered: boolean
+) =>
+  routeUrl(
+    token.root,
+    `/wp/v2/posts/${encodeURIComponent(platformPostId)}`,
+    answered ? { _fields: "id,link" } : {}
+  );
 
 const published = (post: {
   readonly id: number;
@@ -218,8 +228,7 @@ export const WordPressSitePublisherLive = Layer.effect(
       client: Client,
       token: SiteToken,
       article: Article,
-      mediaId: MediaAssetId,
-      altText: Option.Option<string>
+      mediaId: MediaAssetId
     ) {
       const described = yield* library.describe(article.workspaceId, mediaId);
 
@@ -232,11 +241,9 @@ export const WordPressSitePublisherLive = Layer.effect(
             signed(
               token,
               HttpClientRequest.post(
+                // Its id and address are all Peal reads of the answer.
                 routeUrl(token.root, "/wp/v2/media", {
-                  ...Option.match(altText, {
-                    onNone: () => ({}),
-                    onSome: (alt) => ({ alt_text: alt }),
-                  }),
+                  _fields: "id,source_url",
                 })
               ).pipe(
                 HttpClientRequest.setHeader(
@@ -316,13 +323,7 @@ export const WordPressSitePublisherLive = Layer.effect(
       let featured: number | undefined;
 
       for (const mediaId of articleMediaOf(content)) {
-        const uploaded = yield* upload(
-          uploads,
-          token,
-          article,
-          mediaId,
-          Option.none()
-        );
+        const uploaded = yield* upload(uploads, token, article, mediaId);
 
         images.set(mediaId, uploaded.source_url);
 
@@ -462,7 +463,7 @@ export const WordPressSitePublisherLive = Layer.effect(
               signed(
                 token,
                 HttpClientRequest.post(
-                  routeUrl(token.root, "/wp/v2/posts")
+                  routeUrl(token.root, "/wp/v2/posts", { _fields: "id,link" })
                 ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
               )
             )
@@ -516,7 +517,7 @@ export const WordPressSitePublisherLive = Layer.effect(
           api,
           signed(
             token,
-            HttpClientRequest.delete(postRoute(token, platformPostId))
+            HttpClientRequest.delete(postRoute(token, platformPostId, false))
           )
         ).pipe(
           Effect.flatMap((response) =>
@@ -557,9 +558,9 @@ export const WordPressSitePublisherLive = Layer.effect(
             api,
             signed(
               token,
-              HttpClientRequest.post(postRoute(token, platformPostId)).pipe(
-                HttpClientRequest.bodyJsonUnsafe(fields)
-              )
+              HttpClientRequest.post(
+                postRoute(token, platformPostId, true)
+              ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
             )
           ).pipe(Effect.flatMap(sentJson(PostSchema, [200])));
         })
