@@ -351,7 +351,13 @@ and no socket, for tests.
   counts the target, and fails a missed post's claim on it): roll back
   only once no post still to go out has either, with the recycling rules
   whose source gives a channel media of its own paused and the drafts
-  that do left alone (the runbook's third check).
+  that do left alone (the runbook's third check). Polls and first
+  comments did too: `posts.poll` (the release before ignores it, so the
+  post goes out without its poll) and a first comment in `follow_ups` on
+  Facebook Pages, Instagram, LinkedIn or YouTube (the release before's
+  router refuses it as a part too many, after the post went live): roll
+  back past them only once no post still to go out has either, with the
+  drafts and recycling sources asking a poll dealt with.
 
 ### Metrics and alerts
 

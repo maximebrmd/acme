@@ -43,6 +43,7 @@ import social.peal.resources.posts.requests.DiscardPostsRequest;
 import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.DuplicatePostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
+import social.peal.resources.posts.requests.LeaveOutRestPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
 import social.peal.resources.posts.requests.LivePostEdit;
 import social.peal.resources.posts.requests.NewPost;
@@ -2182,6 +2183,118 @@ public class RawPostsClient {
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
                 .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Post.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 404:
+                        throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 409:
+                        throw new ConflictError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public PealClientHttpResponse<Post> leaveOutRest(String workspaceId, String postId, String targetId) {
+        return leaveOutRest(
+                workspaceId,
+                postId,
+                targetId,
+                LeaveOutRestPostsRequest.builder().build());
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public PealClientHttpResponse<Post> leaveOutRest(
+            String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        return leaveOutRest(
+                workspaceId,
+                postId,
+                targetId,
+                LeaveOutRestPostsRequest.builder().build(),
+                requestOptions);
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public PealClientHttpResponse<Post> leaveOutRest(
+            String workspaceId, String postId, String targetId, LeaveOutRestPostsRequest request) {
+        return leaveOutRest(workspaceId, postId, targetId, request, null);
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public PealClientHttpResponse<Post> leaveOutRest(
+            String workspaceId,
+            String postId,
+            String targetId,
+            LeaveOutRestPostsRequest request,
+            RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("posts")
+                .addPathSegment(PathSegments.validate(postId))
+                .addPathSegments("targets")
+                .addPathSegment(PathSegments.validate(targetId))
+                .addPathSegments("leave-out-rest");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "POST",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null,
+                                RequestBody.create("", null)))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
         OkHttpClient client = clientOptions.httpClient();
         if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
             client = clientOptions.httpClientWithTimeout(requestOptions);

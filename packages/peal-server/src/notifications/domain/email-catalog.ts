@@ -140,6 +140,16 @@ export interface EmailCatalog {
    * `{workspaceName}`.
    */
   readonly postFailed: EmailMessages;
+  /**
+   * A post of `{workspaceName}` is live on `{channel}`, and its first
+   * comment did not go out, for `{reason}`.
+   */
+  readonly firstCommentFailed: EmailMessages;
+  /**
+   * A post of `{workspaceName}` is live on `{channel}`, and the parts after
+   * its first did not go out, for `{reason}`.
+   */
+  readonly laterPartsFailed: EmailMessages;
   /** A post of `{workspaceName}` went live on `{channel}`. */
   readonly postPublished: EmailMessages;
   /** Whether a post of `{workspaceName}` went live on `{channel}` is unknown. */

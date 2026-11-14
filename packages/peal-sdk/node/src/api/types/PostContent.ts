@@ -6,5 +6,6 @@ export interface PostContent {
     followUps?: Peal.PostPart[] | undefined;
     media: Peal.MediaAttachment[];
     overrides: Peal.TextOverride[];
+    poll?: (Peal.Poll | null) | undefined;
     text: string;
 }

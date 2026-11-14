@@ -22,6 +22,7 @@ import type {
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { postFormatOf } from "#publishing/domain/post-format.ts";
+import { withFirstComments } from "#publishing/infrastructure/platforms/first-comment.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -44,6 +45,7 @@ import {
   withText,
 } from "./graph-calls.ts";
 import type { GraphAuth, MetaHttp } from "./graph-calls.ts";
+import { facebookCommentCalls } from "./meta-first-comment.ts";
 
 // From the Pages API's "Posts" page and the Page Feed, Photos and Videos
 // references: text goes to /feed, one photo to /photos with its URL, several
@@ -368,10 +370,23 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
         onSome: (format) => (format === "reel" ? reel : story),
       });
 
-    return {
+    const posts: PlatformClient = {
       platform: "facebook",
       publish: (post) => clientOf(post).publish(post),
       resume: (post) => clientOf(post).resume(post),
-    } satisfies PlatformClient;
+    };
+
+    // A first comment goes under the post's own id, a feed post's: a
+    // format takes no parts.
+    return withFirstComments(
+      posts,
+      facebookCommentCalls({
+        api,
+        calls,
+        node: (_on, id, edge) =>
+          graphUrl(hosts, `/${encodeURIComponent(id)}/${edge}`),
+      }),
+      timing
+    );
   }
 );

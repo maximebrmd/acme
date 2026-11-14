@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -29,6 +30,8 @@ public final class PostReview {
 
     private final List<ReviewedMedia> media;
 
+    private final Optional<Poll> poll;
+
     private final Map<String, Object> additionalProperties;
 
     private PostReview(
@@ -36,11 +39,13 @@ public final class PostReview {
             List<ReviewedChannel> channels,
             List<ReviewComment> comments,
             List<ReviewedMedia> media,
+            Optional<Poll> poll,
             Map<String, Object> additionalProperties) {
         this.approvals = approvals;
         this.channels = channels;
         this.comments = comments;
         this.media = media;
+        this.poll = poll;
         this.additionalProperties = additionalProperties;
     }
 
@@ -64,6 +69,11 @@ public final class PostReview {
         return media;
     }
 
+    @JsonProperty("poll")
+    public Optional<Poll> getPoll() {
+        return poll;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -79,12 +89,13 @@ public final class PostReview {
         return approvals.equals(other.approvals)
                 && channels.equals(other.channels)
                 && comments.equals(other.comments)
-                && media.equals(other.media);
+                && media.equals(other.media)
+                && poll.equals(other.poll);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.approvals, this.channels, this.comments, this.media);
+        return Objects.hash(this.approvals, this.channels, this.comments, this.media, this.poll);
     }
 
     @java.lang.Override
@@ -106,6 +117,8 @@ public final class PostReview {
 
         private List<ReviewedMedia> media = new ArrayList<>();
 
+        private Optional<Poll> poll = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -115,6 +128,7 @@ public final class PostReview {
             channels(other.getChannels());
             comments(other.getComments());
             media(other.getMedia());
+            poll(other.getPoll());
             return this;
         }
 
@@ -202,8 +216,19 @@ public final class PostReview {
             return this;
         }
 
+        @JsonSetter(value = "poll", nulls = Nulls.SKIP)
+        public Builder poll(Optional<Poll> poll) {
+            this.poll = poll;
+            return this;
+        }
+
+        public Builder poll(Poll poll) {
+            this.poll = Optional.ofNullable(poll);
+            return this;
+        }
+
         public PostReview build() {
-            return new PostReview(approvals, channels, comments, media, additionalProperties);
+            return new PostReview(approvals, channels, comments, media, poll, additionalProperties);
         }
 
         @JsonAnySetter
@@ -211,7 +236,8 @@ public final class PostReview {
             if (key.equalsIgnoreCase("approvals")
                     || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("comments")
-                    || key.equalsIgnoreCase("media")) {
+                    || key.equalsIgnoreCase("media")
+                    || key.equalsIgnoreCase("poll")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -9,16 +9,23 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = FollowUpCapabilities.Builder.class)
 public final class FollowUpCapabilities {
+    private final Optional<FollowUpCapabilitiesCommentNeeds> commentNeeds;
+
+    private final Optional<List<TextLimit>> commentTextLimits;
+
     private final FollowUpCapabilitiesKind kind;
 
     private final int maxCount;
@@ -26,10 +33,26 @@ public final class FollowUpCapabilities {
     private final Map<String, Object> additionalProperties;
 
     private FollowUpCapabilities(
-            FollowUpCapabilitiesKind kind, int maxCount, Map<String, Object> additionalProperties) {
+            Optional<FollowUpCapabilitiesCommentNeeds> commentNeeds,
+            Optional<List<TextLimit>> commentTextLimits,
+            FollowUpCapabilitiesKind kind,
+            int maxCount,
+            Map<String, Object> additionalProperties) {
+        this.commentNeeds = commentNeeds;
+        this.commentTextLimits = commentTextLimits;
         this.kind = kind;
         this.maxCount = maxCount;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("commentNeeds")
+    public Optional<FollowUpCapabilitiesCommentNeeds> getCommentNeeds() {
+        return commentNeeds;
+    }
+
+    @JsonProperty("commentTextLimits")
+    public Optional<List<TextLimit>> getCommentTextLimits() {
+        return commentTextLimits;
     }
 
     @JsonProperty("kind")
@@ -54,12 +77,15 @@ public final class FollowUpCapabilities {
     }
 
     private boolean equalTo(FollowUpCapabilities other) {
-        return kind.equals(other.kind) && maxCount == other.maxCount;
+        return commentNeeds.equals(other.commentNeeds)
+                && commentTextLimits.equals(other.commentTextLimits)
+                && kind.equals(other.kind)
+                && maxCount == other.maxCount;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.kind, this.maxCount);
+        return Objects.hash(this.commentNeeds, this.commentTextLimits, this.kind, this.maxCount);
     }
 
     @java.lang.Override
@@ -87,6 +113,14 @@ public final class FollowUpCapabilities {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage commentNeeds(Optional<FollowUpCapabilitiesCommentNeeds> commentNeeds);
+
+        _FinalStage commentNeeds(FollowUpCapabilitiesCommentNeeds commentNeeds);
+
+        _FinalStage commentTextLimits(Optional<List<TextLimit>> commentTextLimits);
+
+        _FinalStage commentTextLimits(List<TextLimit> commentTextLimits);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -95,12 +129,18 @@ public final class FollowUpCapabilities {
 
         private int maxCount;
 
+        private Optional<List<TextLimit>> commentTextLimits = Optional.empty();
+
+        private Optional<FollowUpCapabilitiesCommentNeeds> commentNeeds = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(FollowUpCapabilities other) {
+            commentNeeds(other.getCommentNeeds());
+            commentTextLimits(other.getCommentTextLimits());
             kind(other.getKind());
             maxCount(other.getMaxCount());
             return this;
@@ -121,13 +161,42 @@ public final class FollowUpCapabilities {
         }
 
         @java.lang.Override
+        public _FinalStage commentTextLimits(List<TextLimit> commentTextLimits) {
+            this.commentTextLimits = Optional.ofNullable(commentTextLimits);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "commentTextLimits", nulls = Nulls.SKIP)
+        public _FinalStage commentTextLimits(Optional<List<TextLimit>> commentTextLimits) {
+            this.commentTextLimits = commentTextLimits;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage commentNeeds(FollowUpCapabilitiesCommentNeeds commentNeeds) {
+            this.commentNeeds = Optional.ofNullable(commentNeeds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "commentNeeds", nulls = Nulls.SKIP)
+        public _FinalStage commentNeeds(Optional<FollowUpCapabilitiesCommentNeeds> commentNeeds) {
+            this.commentNeeds = commentNeeds;
+            return this;
+        }
+
+        @java.lang.Override
         public FollowUpCapabilities build() {
-            return new FollowUpCapabilities(kind, maxCount, additionalProperties);
+            return new FollowUpCapabilities(commentNeeds, commentTextLimits, kind, maxCount, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("kind") || key.equalsIgnoreCase("maxCount")) {
+            if (key.equalsIgnoreCase("commentNeeds")
+                    || key.equalsIgnoreCase("commentTextLimits")
+                    || key.equalsIgnoreCase("kind")
+                    || key.equalsIgnoreCase("maxCount")) {
                 return;
             }
             this.additionalProperties.put(key, value);

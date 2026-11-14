@@ -1107,6 +1107,15 @@
         "textTooLong": "{channel}: {length} of {maximum} {unit, select, utf8Bytes {bytes} other {characters}}.",
         "tooManyMedia": "{channel}: {count} images or videos, at most {maximum}.",
         "tooManyParts": "{channel}: {maximum, plural, =1 {this platform takes a post alone, with nothing after it. Remove the other parts, or post them elsewhere} other {{count} parts, at most {maximum}}}.",
+        "partsNeedReconnect": "{channel}: the account has not let Peal comment under its posts. Reconnect the channel to send its first comment.",
+        "commentsTurnedOff": "{channel}: a video made for kids takes no comment. Remove the first comment, or leave this channel out.",
+        "pollNotSupported": "{channel}: Peal sends no poll to this platform. Remove the poll, or leave this channel out.",
+        "pollChoiceCount": "{channel}: {count} poll choices, from {minimum} to {maximum}.",
+        "pollChoiceLength": "{channel}: {length, plural, =0 {poll choice {choice} is empty} other {poll choice {choice} has {length} characters, at most {maximum}}}.",
+        "pollChoiceRepeated": "{channel}: poll choice {choice} says the same as one before it.",
+        "pollDurationOutOfRange": "{channel}: the poll stays open {durationMinutes} minutes, from {minimumMinutes} to {maximumMinutes}.",
+        "pollMultipleChoice": "{channel}: readers pick one choice of a poll there, not several.",
+        "pollWithMedia": "{channel}: a poll goes out with no image or video.",
         "mediaRequired": "{channel}: needs an image or a video.",
         "tooManyHashtags": "{channel}: {count} hashtags, at most {maximum}.",
         "tooManyMentions": "{channel}: {count} mentions, at most {maximum}.",
@@ -1155,8 +1164,8 @@
       "publishNowSkipped": "Not on {channels}, turned off or to be reconnected."
     },
     "Parts": {
-      "legend": "Thread",
-      "hint": "Add the parts that follow the post. On the platforms with threads, each goes out as a reply to the part before it, in order, and nothing is sent after a part that failed.",
+      "legend": "Thread and first comment",
+      "hint": "Add the parts that follow the post. On the platforms with threads, each goes out as a reply to the part before it, in order, and nothing is sent after a part that failed. On Facebook Pages, Instagram, LinkedIn pages and YouTube, where this server sends them, the one part after the post is a first comment, posted under it once it is live: text alone.",
       "partTitle": "Part {position}",
       "textPlaceholder": "What this part says",
       "textHint": "The text of part {position}, for all channels.",
@@ -1172,7 +1181,32 @@
       "mediaLegend": "Images and videos of part {position}",
       "alone": "{channel}: this platform takes a post alone, with nothing after it. Remove the parts, or leave this channel out: the post would be refused there.",
       "tooMany": "{channel}: at most {maximum} parts after the first.",
+      "comment": "{channel}: the part after the post goes out as a first comment under it, once the post is live.",
+      "commentAdministrator": "{channel}: the part after the post goes out as a first comment under it, once the post is live. LinkedIn takes it only from the page's administrator: a content administrator who connected the page cannot comment.",
       "full": "A post has {maximum} parts after its first at most."
+    },
+    "Poll": {
+      "legend": "Poll",
+      "hint": "Ask a poll with the post, its text being the question: X, Mastodon and Threads take one, with no image or video.",
+      "add": "Add a poll",
+      "remove": "Remove the poll",
+      "question": "The post's text is the question. Each choice is a readers' answer.",
+      "choiceLabel": "Choice {position}",
+      "choicePlaceholder": "Choice {position}",
+      "removeChoice": "Remove choice {position}",
+      "addChoice": "Add a choice",
+      "durationLabel": "Open for",
+      "durationValue": "{minutes, select, 5 {5 minutes} 15 {15 minutes} 30 {30 minutes} 60 {1 hour} 360 {6 hours} 720 {12 hours} 1440 {1 day} 4320 {3 days} 10080 {7 days} other {{minutes} minutes}}",
+      "multipleLabel": "Readers may pick several choices",
+      "shown": "Open for {duration}{multiple, select, yes {; readers may pick several} other {}}.",
+      "notSupported": "{channel}: Peal sends no poll to this platform. Remove the poll, or leave this channel out.",
+      "choiceCount": "{channel}: from {minimum} to {maximum} choices.",
+      "choiceEmpty": "{channel}: choice {choice} is empty.",
+      "choiceTooLong": "{channel}: choice {choice} has {length} characters, at most {maximum}.",
+      "choiceRepeated": "{channel}: choice {choice} says the same as one before it.",
+      "duration": "{channel}: open from {minimum} to {maximum} minutes.",
+      "multipleChoice": "{channel}: readers pick one choice there, not several.",
+      "withMedia": "{channel}: a poll goes out with no image or video. Remove the media, or the poll."
     },
     "Options": {
       "section": "Platform options",
@@ -1753,7 +1787,11 @@
       "conflict": "The post changed meanwhile: reload it to see where it is."
     },
     "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio.",
-    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image."
+    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image.",
+    "partsLeftOut": "Published without what did not go out after its first part: a member left it out.",
+    "leaveOutComment": "Publish without the first comment",
+    "leaveOutRest": "Publish without the rest",
+    "leftOut": "Published on {channel} without what did not go out."
   },
   "Media": {
     "page": {
@@ -2012,6 +2050,8 @@
     "event": {
       "PostPublished": "A post of {workspace} is live on {channel}.",
       "PostFailed": "A post of {workspace} did not go out on {channel}: {reason}",
+      "FirstCommentFailed": "A post of {workspace} is live on {channel}, but its first comment did not go out: {reason}",
+      "LaterPartsFailed": "A post of {workspace} is live on {channel}, but the parts after its first did not go out: {reason}",
       "PostUnconfirmed": "A post of {workspace} may have gone out on {channel}. Check the platform before you post it again.",
       "PostApprovalRequested": "A post of {workspace} waits for an approval, to go out on {scheduledAt, date, long} at {scheduledAt, time, short}.",
       "PostApproved": "{by, select, visitor {A reviewer} application {An application} other {A member}} approved a post of {workspace}. It is scheduled.",
@@ -2038,7 +2078,7 @@
       "AllowanceReached": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {assistant requests} assistantImages {assistant images} other {units}} its month includes without a payment method. No more go out until {resetsAt}, unless a payment method is added; reading and publishing go on.",
       "XSpendCeiling": "{percent, select, 100 {{workspace}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax: posts to X fail without being sent, and X's counts are not read, until {resetsAt}, unless the ceiling is raised.} other {{workspace}'s billing account spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's rates. Past it, posts to X and the reading of X's counts stop until {resetsAt}.}}"
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} paymentMethodRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.} xCeilingReached {it would have passed the billing account’s monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance stayed used up (its uploads, or on YouTube the quota a first comment also spends), for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} paymentMethodRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.} xCeilingReached {it would have passed the billing account’s monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} ads {Open the ads} recycling {Open the repeating posts} feeds {Open the feeds} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",

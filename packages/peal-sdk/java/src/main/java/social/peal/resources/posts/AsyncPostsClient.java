@@ -18,6 +18,7 @@ import social.peal.resources.posts.requests.DiscardPostsRequest;
 import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.DuplicatePostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
+import social.peal.resources.posts.requests.LeaveOutRestPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
 import social.peal.resources.posts.requests.LivePostEdit;
 import social.peal.resources.posts.requests.NewPost;
@@ -1066,6 +1067,73 @@ public class AsyncPostsClient {
             RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
                 this.rawClient.confirm(workspaceId, postId, targetId, request, requestOptions);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public CompletableFuture<Post> leaveOutRest(String workspaceId, String postId, String targetId) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.leaveOutRest(workspaceId, postId, targetId);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public CompletableFuture<Post> leaveOutRest(
+            String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.leaveOutRest(workspaceId, postId, targetId, requestOptions);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public CompletableFuture<Post> leaveOutRest(
+            String workspaceId, String postId, String targetId, LeaveOutRestPostsRequest request) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.leaveOutRest(workspaceId, postId, targetId, request);
+        CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (<code>parts.live</code>); it becomes <code>published</code>, as that part, with <code>partsLeftOut</code>, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     */
+    public CompletableFuture<Post> leaveOutRest(
+            String workspaceId,
+            String postId,
+            String targetId,
+            LeaveOutRestPostsRequest request,
+            RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
+                this.rawClient.leaveOutRest(workspaceId, postId, targetId, request, requestOptions);
         CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {

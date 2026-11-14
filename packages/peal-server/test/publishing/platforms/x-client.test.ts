@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { XOptions } from "#publishing/domain/x-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -959,6 +960,41 @@ describe("an X post's options", () => {
           .pipe(Effect.flip),
         new BadRequest({ code: "http403" })
       );
+    }).pipe(Effect.scoped)
+  );
+});
+
+describe("a poll on X", () => {
+  it.live("goes with the post, as X's options and minutes", () =>
+    Effect.gen(function* poll() {
+      const { client, x } = yield* onX();
+
+      const result = yield* client.publish(
+        yield* post({
+          poll: Option.some(
+            new Poll({ choices: ["Tea", "Coffee"], durationMinutes: 1440 })
+          ),
+          text: "Which one?",
+        })
+      );
+
+      const [published] = x.posts();
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(published?.poll, {
+        durationMinutes: 1440,
+        options: ["Tea", "Coffee"],
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("is left out of a post without one", () =>
+    Effect.gen(function* none() {
+      const { client, x } = yield* onX();
+
+      yield* client.publish(yield* post({ text: "No question" }));
+
+      assert.strictEqual(x.posts()[0]?.poll, null);
     }).pipe(Effect.scoped)
   );
 });

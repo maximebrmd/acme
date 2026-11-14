@@ -1258,6 +1258,49 @@ class PostsClient:
         )
         return _response.data
 
+    def leave_out_rest(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.posts.leave_out_rest(
+            workspace_id="workspaceId",
+            post_id="postId",
+            target_id="targetId",
+        )
+        """
+        _response = self._raw_client.leave_out_rest(workspace_id, post_id, target_id, request_options=request_options)
+        return _response.data
+
     def unpublish_target(
         self,
         workspace_id: str,
@@ -2873,6 +2916,59 @@ class AsyncPostsClient:
         """
         _response = await self._raw_client.confirm(
             workspace_id, post_id, target_id, request=request, request_options=request_options
+        )
+        return _response.data
+
+    async def leave_out_rest(
+        self,
+        workspace_id: str,
+        post_id: str,
+        target_id: str,
+        *,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        target_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.posts.leave_out_rest(
+                workspace_id="workspaceId",
+                post_id="postId",
+                target_id="targetId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.leave_out_rest(
+            workspace_id, post_id, target_id, request_options=request_options
         )
         return _response.data
 

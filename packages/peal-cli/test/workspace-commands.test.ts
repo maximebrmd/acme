@@ -598,7 +598,7 @@ describe("peal posts", () => {
       assert.include(shown, quotaTargetId);
       assert.include(
         shown,
-        "failed: quotaExceeded (the platform's daily upload allowance stayed spent: post it again after it resets)"
+        "failed: quotaExceeded (the platform's daily allowance (its uploads, or YouTube's quota a first comment spends too) stayed spent: post it again after it resets)"
       );
       assert.include(
         shown,
@@ -644,6 +644,27 @@ describe("peal posts", () => {
         `repost:${failedTargetId}`,
       ]);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "leaves out what did not go out only once a target's post is live",
+    () =>
+      Effect.gen(function* leavesOut() {
+        const session = yield* signedIn();
+
+        // The failed target's post did not go out at all: nothing is live.
+        assert.include(
+          yield* session.refused([
+            "posts",
+            "leave-out-rest",
+            finishedId,
+            failedTargetId,
+            ...inStudio,
+          ]),
+          "on that channel"
+        );
+        assert.deepStrictEqual(yield* changes(session.studio), []);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
   it.effect(

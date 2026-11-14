@@ -13,12 +13,14 @@ if typing.TYPE_CHECKING:
         AccountRestriction_OptionFixed,
         AccountRestriction_OptionNeedsReconnect,
         AccountRestriction_OptionValues,
+        AccountRestriction_PartsNeedReconnect,
         AccountRestriction_VideoDuration,
     )
     from .account_restriction_media_types_refused import AccountRestrictionMediaTypesRefused
     from .account_restriction_option_fixed import AccountRestrictionOptionFixed
     from .account_restriction_option_needs_reconnect import AccountRestrictionOptionNeedsReconnect
     from .account_restriction_option_values import AccountRestrictionOptionValues
+    from .account_restriction_parts_need_reconnect import AccountRestrictionPartsNeedReconnect
     from .account_restriction_video_duration import AccountRestrictionVideoDuration
     from .account_standing import (
         AccountStanding,
@@ -241,6 +243,7 @@ if typing.TYPE_CHECKING:
         ContentViolation,
         ContentViolation_AltTextTooLong,
         ContentViolation_AspectRatioUnsupported,
+        ContentViolation_CommentsTurnedOff,
         ContentViolation_Empty,
         ContentViolation_ForbiddenCharacters,
         ContentViolation_MediaRequired,
@@ -255,6 +258,14 @@ if typing.TYPE_CHECKING:
         ContentViolation_OptionsForOtherPlatform,
         ContentViolation_OptionsWithoutChannel,
         ContentViolation_OverrideWithoutChannel,
+        ContentViolation_PartsNeedReconnect,
+        ContentViolation_PollChoiceCount,
+        ContentViolation_PollChoiceLength,
+        ContentViolation_PollChoiceRepeated,
+        ContentViolation_PollDurationOutOfRange,
+        ContentViolation_PollMultipleChoice,
+        ContentViolation_PollNotSupported,
+        ContentViolation_PollWithMedia,
         ContentViolation_SideOutOfRange,
         ContentViolation_TextTooLong,
         ContentViolation_TooManyHashtags,
@@ -271,6 +282,7 @@ if typing.TYPE_CHECKING:
     from .content_violation_aspect_ratio_unsupported import ContentViolationAspectRatioUnsupported
     from .content_violation_aspect_ratio_unsupported_maximum import ContentViolationAspectRatioUnsupportedMaximum
     from .content_violation_aspect_ratio_unsupported_minimum import ContentViolationAspectRatioUnsupportedMinimum
+    from .content_violation_comments_turned_off import ContentViolationCommentsTurnedOff
     from .content_violation_empty import ContentViolationEmpty
     from .content_violation_forbidden_characters import ContentViolationForbiddenCharacters
     from .content_violation_media_required import ContentViolationMediaRequired
@@ -285,6 +297,14 @@ if typing.TYPE_CHECKING:
     from .content_violation_options_for_other_platform import ContentViolationOptionsForOtherPlatform
     from .content_violation_options_without_channel import ContentViolationOptionsWithoutChannel
     from .content_violation_override_without_channel import ContentViolationOverrideWithoutChannel
+    from .content_violation_parts_need_reconnect import ContentViolationPartsNeedReconnect
+    from .content_violation_poll_choice_count import ContentViolationPollChoiceCount
+    from .content_violation_poll_choice_length import ContentViolationPollChoiceLength
+    from .content_violation_poll_choice_repeated import ContentViolationPollChoiceRepeated
+    from .content_violation_poll_duration_out_of_range import ContentViolationPollDurationOutOfRange
+    from .content_violation_poll_multiple_choice import ContentViolationPollMultipleChoice
+    from .content_violation_poll_not_supported import ContentViolationPollNotSupported
+    from .content_violation_poll_with_media import ContentViolationPollWithMedia
     from .content_violation_side_out_of_range import ContentViolationSideOutOfRange
     from .content_violation_text_too_long import ContentViolationTextTooLong
     from .content_violation_too_many_hashtags import ContentViolationTooManyHashtags
@@ -364,6 +384,7 @@ if typing.TYPE_CHECKING:
     from .field_description import FieldDescription
     from .field_type import FieldType
     from .follow_up_capabilities import FollowUpCapabilities
+    from .follow_up_capabilities_comment_needs import FollowUpCapabilitiesCommentNeeds
     from .follow_up_capabilities_kind import FollowUpCapabilitiesKind
     from .follower_change import FollowerChange
     from .forbidden_encoded import ForbiddenEncoded
@@ -662,6 +683,9 @@ if typing.TYPE_CHECKING:
     from .platform_rate_limited_encoded import PlatformRateLimitedEncoded
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
+    from .poll import Poll
+    from .poll_capabilities import PollCapabilities
+    from .poll_capabilities_duration_minutes import PollCapabilitiesDurationMinutes
     from .post import Post
     from .post_ad_performance import PostAdPerformance
     from .post_ad_performance_paid_item import PostAdPerformancePaidItem
@@ -684,6 +708,7 @@ if typing.TYPE_CHECKING:
     from .post_outcome import PostOutcome
     from .post_page import PostPage
     from .post_part import PostPart
+    from .post_parts_not_sent import PostPartsNotSent
     from .post_refusal import (
         PostRefusal,
         PostRefusal_ChannelSetNotFound,
@@ -991,11 +1016,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AccountRestrictionOptionFixed": ".account_restriction_option_fixed",
     "AccountRestrictionOptionNeedsReconnect": ".account_restriction_option_needs_reconnect",
     "AccountRestrictionOptionValues": ".account_restriction_option_values",
+    "AccountRestrictionPartsNeedReconnect": ".account_restriction_parts_need_reconnect",
     "AccountRestrictionVideoDuration": ".account_restriction_video_duration",
     "AccountRestriction_MediaTypesRefused": ".account_restriction",
     "AccountRestriction_OptionFixed": ".account_restriction",
     "AccountRestriction_OptionNeedsReconnect": ".account_restriction",
     "AccountRestriction_OptionValues": ".account_restriction",
+    "AccountRestriction_PartsNeedReconnect": ".account_restriction",
     "AccountRestriction_VideoDuration": ".account_restriction",
     "AccountStanding": ".account_standing",
     "AccountStandingRead": ".account_standing_read",
@@ -1218,6 +1245,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolationAspectRatioUnsupported": ".content_violation_aspect_ratio_unsupported",
     "ContentViolationAspectRatioUnsupportedMaximum": ".content_violation_aspect_ratio_unsupported_maximum",
     "ContentViolationAspectRatioUnsupportedMinimum": ".content_violation_aspect_ratio_unsupported_minimum",
+    "ContentViolationCommentsTurnedOff": ".content_violation_comments_turned_off",
     "ContentViolationEmpty": ".content_violation_empty",
     "ContentViolationForbiddenCharacters": ".content_violation_forbidden_characters",
     "ContentViolationMediaRequired": ".content_violation_media_required",
@@ -1232,6 +1260,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolationOptionsForOtherPlatform": ".content_violation_options_for_other_platform",
     "ContentViolationOptionsWithoutChannel": ".content_violation_options_without_channel",
     "ContentViolationOverrideWithoutChannel": ".content_violation_override_without_channel",
+    "ContentViolationPartsNeedReconnect": ".content_violation_parts_need_reconnect",
+    "ContentViolationPollChoiceCount": ".content_violation_poll_choice_count",
+    "ContentViolationPollChoiceLength": ".content_violation_poll_choice_length",
+    "ContentViolationPollChoiceRepeated": ".content_violation_poll_choice_repeated",
+    "ContentViolationPollDurationOutOfRange": ".content_violation_poll_duration_out_of_range",
+    "ContentViolationPollMultipleChoice": ".content_violation_poll_multiple_choice",
+    "ContentViolationPollNotSupported": ".content_violation_poll_not_supported",
+    "ContentViolationPollWithMedia": ".content_violation_poll_with_media",
     "ContentViolationSideOutOfRange": ".content_violation_side_out_of_range",
     "ContentViolationTextTooLong": ".content_violation_text_too_long",
     "ContentViolationTooManyHashtags": ".content_violation_too_many_hashtags",
@@ -1245,6 +1281,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolationVideoTooShort": ".content_violation_video_too_short",
     "ContentViolation_AltTextTooLong": ".content_violation",
     "ContentViolation_AspectRatioUnsupported": ".content_violation",
+    "ContentViolation_CommentsTurnedOff": ".content_violation",
     "ContentViolation_Empty": ".content_violation",
     "ContentViolation_ForbiddenCharacters": ".content_violation",
     "ContentViolation_MediaRequired": ".content_violation",
@@ -1259,6 +1296,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolation_OptionsForOtherPlatform": ".content_violation",
     "ContentViolation_OptionsWithoutChannel": ".content_violation",
     "ContentViolation_OverrideWithoutChannel": ".content_violation",
+    "ContentViolation_PartsNeedReconnect": ".content_violation",
+    "ContentViolation_PollChoiceCount": ".content_violation",
+    "ContentViolation_PollChoiceLength": ".content_violation",
+    "ContentViolation_PollChoiceRepeated": ".content_violation",
+    "ContentViolation_PollDurationOutOfRange": ".content_violation",
+    "ContentViolation_PollMultipleChoice": ".content_violation",
+    "ContentViolation_PollNotSupported": ".content_violation",
+    "ContentViolation_PollWithMedia": ".content_violation",
     "ContentViolation_SideOutOfRange": ".content_violation",
     "ContentViolation_TextTooLong": ".content_violation",
     "ContentViolation_TooManyHashtags": ".content_violation",
@@ -1339,6 +1384,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FieldDescription": ".field_description",
     "FieldType": ".field_type",
     "FollowUpCapabilities": ".follow_up_capabilities",
+    "FollowUpCapabilitiesCommentNeeds": ".follow_up_capabilities_comment_needs",
     "FollowUpCapabilitiesKind": ".follow_up_capabilities_kind",
     "FollowerChange": ".follower_change",
     "ForbiddenEncoded": ".forbidden_encoded",
@@ -1621,6 +1667,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlatformRateLimitedEncoded": ".platform_rate_limited_encoded",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
+    "Poll": ".poll",
+    "PollCapabilities": ".poll_capabilities",
+    "PollCapabilitiesDurationMinutes": ".poll_capabilities_duration_minutes",
     "Post": ".post",
     "PostAdPerformance": ".post_ad_performance",
     "PostAdPerformancePaidItem": ".post_ad_performance_paid_item",
@@ -1643,6 +1692,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostOutcome": ".post_outcome",
     "PostPage": ".post_page",
     "PostPart": ".post_part",
+    "PostPartsNotSent": ".post_parts_not_sent",
     "PostRefusal": ".post_refusal",
     "PostRefusal_ChannelSetNotFound": ".post_refusal",
     "PostRefusal_DuplicatePost": ".post_refusal",
@@ -1975,11 +2025,13 @@ __all__ = [
     "AccountRestrictionOptionFixed",
     "AccountRestrictionOptionNeedsReconnect",
     "AccountRestrictionOptionValues",
+    "AccountRestrictionPartsNeedReconnect",
     "AccountRestrictionVideoDuration",
     "AccountRestriction_MediaTypesRefused",
     "AccountRestriction_OptionFixed",
     "AccountRestriction_OptionNeedsReconnect",
     "AccountRestriction_OptionValues",
+    "AccountRestriction_PartsNeedReconnect",
     "AccountRestriction_VideoDuration",
     "AccountStanding",
     "AccountStandingRead",
@@ -2202,6 +2254,7 @@ __all__ = [
     "ContentViolationAspectRatioUnsupported",
     "ContentViolationAspectRatioUnsupportedMaximum",
     "ContentViolationAspectRatioUnsupportedMinimum",
+    "ContentViolationCommentsTurnedOff",
     "ContentViolationEmpty",
     "ContentViolationForbiddenCharacters",
     "ContentViolationMediaRequired",
@@ -2216,6 +2269,14 @@ __all__ = [
     "ContentViolationOptionsForOtherPlatform",
     "ContentViolationOptionsWithoutChannel",
     "ContentViolationOverrideWithoutChannel",
+    "ContentViolationPartsNeedReconnect",
+    "ContentViolationPollChoiceCount",
+    "ContentViolationPollChoiceLength",
+    "ContentViolationPollChoiceRepeated",
+    "ContentViolationPollDurationOutOfRange",
+    "ContentViolationPollMultipleChoice",
+    "ContentViolationPollNotSupported",
+    "ContentViolationPollWithMedia",
     "ContentViolationSideOutOfRange",
     "ContentViolationTextTooLong",
     "ContentViolationTooManyHashtags",
@@ -2229,6 +2290,7 @@ __all__ = [
     "ContentViolationVideoTooShort",
     "ContentViolation_AltTextTooLong",
     "ContentViolation_AspectRatioUnsupported",
+    "ContentViolation_CommentsTurnedOff",
     "ContentViolation_Empty",
     "ContentViolation_ForbiddenCharacters",
     "ContentViolation_MediaRequired",
@@ -2243,6 +2305,14 @@ __all__ = [
     "ContentViolation_OptionsForOtherPlatform",
     "ContentViolation_OptionsWithoutChannel",
     "ContentViolation_OverrideWithoutChannel",
+    "ContentViolation_PartsNeedReconnect",
+    "ContentViolation_PollChoiceCount",
+    "ContentViolation_PollChoiceLength",
+    "ContentViolation_PollChoiceRepeated",
+    "ContentViolation_PollDurationOutOfRange",
+    "ContentViolation_PollMultipleChoice",
+    "ContentViolation_PollNotSupported",
+    "ContentViolation_PollWithMedia",
     "ContentViolation_SideOutOfRange",
     "ContentViolation_TextTooLong",
     "ContentViolation_TooManyHashtags",
@@ -2323,6 +2393,7 @@ __all__ = [
     "FieldDescription",
     "FieldType",
     "FollowUpCapabilities",
+    "FollowUpCapabilitiesCommentNeeds",
     "FollowUpCapabilitiesKind",
     "FollowerChange",
     "ForbiddenEncoded",
@@ -2605,6 +2676,9 @@ __all__ = [
     "PlatformRateLimitedEncoded",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
+    "Poll",
+    "PollCapabilities",
+    "PollCapabilitiesDurationMinutes",
     "Post",
     "PostAdPerformance",
     "PostAdPerformancePaidItem",
@@ -2627,6 +2701,7 @@ __all__ = [
     "PostOutcome",
     "PostPage",
     "PostPart",
+    "PostPartsNotSent",
     "PostRefusal",
     "PostRefusal_ChannelSetNotFound",
     "PostRefusal_DuplicatePost",

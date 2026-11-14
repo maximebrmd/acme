@@ -31,6 +31,10 @@ import {
   channelIdsOf,
   channelsFlag,
   followUpsOf,
+  pollChoiceFlag,
+  pollMinutesFlag,
+  pollMultipleFlag,
+  pollOf,
   optionsFlag,
   optionsOf,
   thenDelayFlag,
@@ -363,9 +367,12 @@ export const post = Command.make(
       'What the post sets on a channel whose platform asks for more, as peal drafts save takes it: JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A channel on which it gives none takes the options of a set it names, then the channel\'s default options (peal channels defaults).'
     ),
     parts: thenFlag(
-      "A part that follows the post, text alone: a reply in a thread where the platform has threads (peal channels capabilities says where). Repeat it for several, in order. A platform that takes a post alone refuses the post."
+      "A part that follows the post, text alone: a reply in a thread where the platform has threads, a first comment under the post where it takes comments (Facebook Pages, Instagram, LinkedIn pages, YouTube, one at most, where the server turned it on: peal channels capabilities says where). Repeat it for several, in order. A platform that takes a post alone refuses the post."
     ),
     partsDelay: thenDelayFlag,
+    pollChoices: pollChoiceFlag,
+    pollMinutes: pollMinutesFlag,
+    pollMultiple: pollMultipleFlag,
     queue: Flag.String("queue").pipe(
       Flag.withMetavar("<name-or-id>"),
       Flag.withDescription(
@@ -407,6 +414,12 @@ export const post = Command.make(
     const { channelIds, options, when: asked } = yield* planned(input);
     const followUps = yield* followUpsOf(input.parts, input.partsDelay);
 
+    const poll = yield* pollOf({
+      choices: input.pollChoices,
+      minutes: input.pollMinutes,
+      multiple: input.pollMultiple,
+    });
+
     const withMedia = (
       media: readonly MediaAttachment[],
       tagIds: readonly string[] = [],
@@ -415,7 +428,16 @@ export const post = Command.make(
     ) => {
       const written: NewPost = {
         channelIds,
-        content: { followUps, media, overrides: [], text: input.text },
+        content: Option.match(poll, {
+          onNone: () => ({ followUps, media, overrides: [], text: input.text }),
+          onSome: (question) => ({
+            followUps,
+            media,
+            overrides: [],
+            poll: question,
+            text: input.text,
+          }),
+        }),
         options,
         when,
         ...presets,

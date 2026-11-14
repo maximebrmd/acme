@@ -78,6 +78,12 @@ export interface PostRecord {
     readonly altText: string | null;
     readonly mediaId: string;
   }[];
+  /** The poll it asks with its first part; left out without one. */
+  readonly poll?: {
+    readonly choices: readonly string[];
+    readonly durationMinutes: number;
+    readonly multipleChoice: boolean;
+  };
   readonly scheduledAt: DateTime.Utc | null;
   /** How it was last scheduled; null on a draft, or when not kept. */
   readonly scheduledVia: PostOriginRecord | null;

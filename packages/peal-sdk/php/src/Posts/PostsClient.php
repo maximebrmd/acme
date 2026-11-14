@@ -1580,6 +1580,66 @@ class PostsClient
     }
 
     /**
+     * Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+     *
+     * Example:
+     * ```php
+     * $client->posts->leaveOutRest(
+     *     'workspaceId',
+     *     'postId',
+     *     'targetId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $postId
+     * @param string $targetId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Post
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function leaveOutRest(string $workspaceId, string $postId, string $targetId, ?array $options = null): ?Post
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/{$postId}/targets/{$targetId}/leave-out-rest",
+                    method: HttpMethod::POST,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Post::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
      * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (`alreadyGone`), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is `failed` with its `code` and asking again deletes the parts left. `wait` waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status `published` with its `removedAt` (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' `livePost` say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear `post.unpublished` or `post.unpublish_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
      *
      * Example:

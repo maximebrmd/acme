@@ -70,11 +70,20 @@ export type ReviewedStatus =
   | "published"
   | "scheduled";
 
+/** A poll a post asks, as its reviewers see it. */
+export interface ReviewedPoll {
+  readonly choices: readonly string[];
+  readonly durationMinutes: number;
+  readonly multipleChoice: boolean;
+}
+
 /** A post as its reviewers see it, and nothing else of its workspace. */
 export interface ReviewedPost {
   readonly authorId: Option.Option<UserId>;
   readonly channels: readonly ReviewedChannel[];
   readonly media: readonly ReviewedMedia[];
+  /** The poll it asks with its first part: an approval covers it. */
+  readonly poll: Option.Option<ReviewedPoll>;
   readonly postId: PostId;
   /** Its time, once it has one. */
   readonly schedule: Option.Option<{

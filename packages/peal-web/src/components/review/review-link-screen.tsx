@@ -213,6 +213,7 @@ const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
         failure={failure === null ? null : failureText(t, failure)}
         identityComplete={named}
         media={page.media}
+        poll={page.poll}
         onComment={onComment}
       />
       {page.access === "approve" ? (

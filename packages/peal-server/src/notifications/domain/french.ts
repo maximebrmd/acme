@@ -184,7 +184,7 @@ export const french: EmailCatalog = {
     planLimit:
       "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:
-      "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
+      "l’allocation quotidienne de la plateforme est restée épuisée (ses mises en ligne, ou sur YouTube le quota que dépense aussi un premier commentaire), pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
       "la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.",
     repliesNotAllowed:
@@ -287,6 +287,20 @@ export const french: EmailCatalog = {
     ignore:
       "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Nouveau commentaire sur une publication",
+  },
+  firstCommentFailed: {
+    action: "Ouvrir la publication",
+    body: "Une publication de {workspaceName} est en ligne sur {channel}, mais son premier commentaire n’est pas parti : {reason} La publication elle-même reste en ligne : depuis Peal, renvoyez le commentaire, ou gardez la publication sans lui.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Un premier commentaire n’est pas parti sur {channel}",
+  },
+  laterPartsFailed: {
+    action: "Ouvrir la publication",
+    body: "Une publication de {workspaceName} est en ligne sur {channel}, mais les parties après la première ne sont pas parties : {reason} La publication elle-même reste en ligne : renvoyez la suite depuis Peal.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "La suite d’un fil n’est pas partie sur {channel}",
   },
   postFailed: {
     action: "Ouvrir la publication",

@@ -240,6 +240,186 @@ class ContentViolation_TooManyParts(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class ContentViolation_PartsNeedReconnect(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["partsNeedReconnect"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "partsNeedReconnect"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_CommentsTurnedOff(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["commentsTurnedOff"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "commentsTurnedOff"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    field: str
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollNotSupported(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollNotSupported"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollNotSupported"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollChoiceCount(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollChoiceCount"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollChoiceCount"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    count: int
+    maximum: int
+    minimum: int
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollChoiceLength(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollChoiceLength"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollChoiceLength"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    choice: int
+    length: int
+    maximum: int
+    unit: TextUnit
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollChoiceRepeated(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollChoiceRepeated"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollChoiceRepeated"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    choice: int
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollDurationOutOfRange(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollDurationOutOfRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollDurationOutOfRange"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    duration_minutes: typing_extensions.Annotated[
+        int, FieldMetadata(alias="durationMinutes"), pydantic.Field(alias="durationMinutes")
+    ]
+    maximum_minutes: typing_extensions.Annotated[
+        int, FieldMetadata(alias="maximumMinutes"), pydantic.Field(alias="maximumMinutes")
+    ]
+    minimum_minutes: typing_extensions.Annotated[
+        int, FieldMetadata(alias="minimumMinutes"), pydantic.Field(alias="minimumMinutes")
+    ]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollMultipleChoice(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollMultipleChoice"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollMultipleChoice"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_PollWithMedia(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pollWithMedia"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pollWithMedia"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class ContentViolation_MediaRequired(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["mediaRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -565,6 +745,15 @@ ContentViolation = typing_extensions.Annotated[
         ContentViolation_ForbiddenCharacters,
         ContentViolation_TooManyMedia,
         ContentViolation_TooManyParts,
+        ContentViolation_PartsNeedReconnect,
+        ContentViolation_CommentsTurnedOff,
+        ContentViolation_PollNotSupported,
+        ContentViolation_PollChoiceCount,
+        ContentViolation_PollChoiceLength,
+        ContentViolation_PollChoiceRepeated,
+        ContentViolation_PollDurationOutOfRange,
+        ContentViolation_PollMultipleChoice,
+        ContentViolation_PollWithMedia,
         ContentViolation_MediaRequired,
         ContentViolation_TooManyHashtags,
         ContentViolation_TooManyMentions,

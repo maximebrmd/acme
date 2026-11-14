@@ -203,6 +203,15 @@ export const channelsView = (
     })
   );
 
+/** The poll the post asks, only when it asks one. */
+export const pollView = ({ poll }: ReviewedPost) =>
+  Option.match(poll, {
+    onNone: () => ({}),
+    onSome: ({ choices, durationMinutes, multipleChoice }) => ({
+      poll: { choices, durationMinutes, multipleChoice },
+    }),
+  });
+
 /**
  * The files the post shows, each with where it is read from when it can be
  * shown. Without `shown`, files are named by their id and alt text alone.
@@ -230,6 +239,7 @@ export const threadView = (
       commentView(comment, textsOf(thread.post.channels), context)
     ),
     media: mediaView(thread.post, shown),
+    ...pollView(thread.post),
   };
 };
 
@@ -255,6 +265,7 @@ export const pageView = (page: LinkPage): PageView | undefined => {
     ),
     expiresAt: link.expiresAt,
     media: mediaView(post, page.previews),
+    ...pollView(post),
     schedule: post.schedule.pipe(
       Option.map(({ at, timeZone }) => ({ at, timeZone })),
       Option.getOrNull

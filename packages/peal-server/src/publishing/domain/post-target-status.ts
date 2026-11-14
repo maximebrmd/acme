@@ -87,6 +87,10 @@ const PublishedSchema = Schema.TaggedStruct("published", {
   // The platform made it private, although it was asked to show it to more
   // people (YouTube, for an API project or a channel it restricts).
   keptPrivate: Schema.optionalKey(Schema.Boolean),
+  // A member published it without the parts that did not go out after its
+  // first (a first comment, the rest of a thread): it is the parts that
+  // are live (`./post-target.ts`, `withoutRest`).
+  partsLeftOut: Schema.optionalKey(Schema.Boolean),
   permalink: Schema.Option(Schema.String),
   // None when the user confirmed an unconfirmed post by hand.
   platformPostId: Schema.Option(PlatformPostIdSchema),

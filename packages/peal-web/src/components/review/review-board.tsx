@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { NewComment, ReviewComment } from "peal-contract";
+import type { NewComment, Poll, ReviewComment } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
@@ -37,6 +37,8 @@ interface ReviewBoardProps {
   readonly onResolve?:
     | ((commentId: string, resolved: boolean) => Promise<void>)
     | undefined;
+  /** The poll the post asks, which an approval covers. */
+  readonly poll?: Poll | undefined;
 }
 
 // What the answer form and the resolve button of one thread do.
@@ -133,6 +135,7 @@ export const ReviewBoard = ({
   media,
   onComment,
   onResolve,
+  poll,
 }: ReviewBoardProps) => {
   const t = useTranslations("Review");
   const [chosen, forget] = useChosenWords();
@@ -156,7 +159,7 @@ export const ReviewBoard = ({
         <p className="text-muted-foreground text-sm">
           {t(canComment ? "preview.hintSelect" : "preview.hint")}
         </p>
-        <ChannelPreviewsView channels={channels} media={media} />
+        <ChannelPreviewsView channels={channels} media={media} poll={poll} />
       </section>
       <section
         aria-labelledby="review-comments-title"

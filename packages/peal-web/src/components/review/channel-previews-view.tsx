@@ -2,8 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import type { TargetOptions } from "peal-contract";
+import type { Poll, TargetOptions } from "peal-contract";
 
+import { PollView } from "#components/posts/poll-view.tsx";
 import { PreviewedText } from "#components/review/previewed-text.tsx";
 import { shownOptionsOf } from "#review/shown-options.ts";
 import type { ShownOption } from "#review/shown-options.ts";
@@ -200,9 +201,12 @@ const PartsView = ({ parts }: { readonly parts: readonly PreviewedPart[] }) => {
 export const ChannelPreviewsView = ({
   channels,
   media,
+  poll,
 }: {
   readonly channels: readonly PreviewedChannel[];
   readonly media: readonly PreviewedMedia[];
+  /** The poll the post asks with its first part, which an approval covers. */
+  readonly poll?: Poll | undefined;
 }) => {
   const t = useTranslations("Review");
 
@@ -256,6 +260,7 @@ export const ChannelPreviewsView = ({
           </li>
         ))}
       </ul>
+      {poll === undefined ? null : <PollView poll={poll} />}
       {media.length === 0 ? null : (
         <section
           aria-label={t("preview.mediaLabel")}

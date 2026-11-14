@@ -50,6 +50,7 @@ import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
 import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostPoll } from "#components/posts/post-poll.tsx";
 import { PostPreviews } from "#components/posts/post-previews.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import {
@@ -89,8 +90,10 @@ import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
 import type { AttachedMedia } from "#posts/media-fit.ts";
 import { oneAtATime } from "#posts/one-at-a-time.ts";
-import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
+import { followUpsOf, partsFitOn, partsOf } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { pollContentOf, pollFitsOn, pollOf } from "#posts/poll.ts";
+import type { PollDraft } from "#posts/poll.ts";
 import { publishNowOf, whereItGoes } from "#posts/publish-now.ts";
 import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
@@ -101,6 +104,7 @@ import {
   valuesOfPost,
 } from "#posts/target-options.ts";
 import type { OptionValues, ValuesByChannel } from "#posts/target-options.ts";
+import { usePartsOffered } from "#posts/use-parts-offered.ts";
 import { usePostRequests } from "#posts/use-post-requests.ts";
 import {
   browserTimeZone,
@@ -159,11 +163,13 @@ const withOverride = (
 const contentOf = (
   composed: ByChannel,
   media: readonly MediaAttachment[],
-  parts: readonly PartDraft[]
+  parts: readonly PartDraft[],
+  poll: PollDraft | undefined
 ): PostContent => ({
   followUps: followUpsOf(parts, composed.channelIds),
   media,
   overrides: overridesFrom(composed),
+  ...pollContentOf(poll),
   text: composed.text,
 });
 
@@ -327,6 +333,11 @@ export const Composer = ({
     partsOf(post?.content)
   );
 
+  // The poll it asks with its first part, if any.
+  const [poll, setPoll] = useState<PollDraft | undefined>(() => pollOf(post));
+
+  const partsOffered = usePartsOffered(workspaceId);
+
   const [channelIds, setChannelIds] = useState<readonly string[]>(() =>
     connectedTargets(post, channels)
   );
@@ -377,7 +388,7 @@ export const Composer = ({
   );
 
   const composed: ByChannel = { channelIds, channelMedia, overrides, text };
-  const content = contentOf(composed, media, parts);
+  const content = contentOf(composed, media, parts, poll);
   const waitingForText = mediaWaitingForText(composed);
 
   const attached = useAttachedMedia(workspaceId, media);
@@ -483,24 +494,12 @@ export const Composer = ({
     };
   });
 
-  // Whether every channel takes the parts that follow: their number, and
-  // each one's text, as the server will check them. Their images and
-  // videos are checked where they are shown, and again by the server.
-  const partsFit = selected.every(
-    ({ id, platform }) =>
-      partsTaken(platform, parts.length, optionsOfChannel(id))._tag ===
-        "taken" &&
-      parts.every((part) =>
-        fits(
-          fitOn(
-            platform,
-            partTextOn(part, id),
-            part.media.length,
-            optionsOfChannel(id)
-          )
-        )
-      )
-  );
+  // Whether every channel takes the parts that follow and the poll, as
+  // the server will check them.
+  const partsFit = [
+    partsFitOn(selected, parts, optionsOfChannel, partsOffered),
+    pollFitsOn(selected, poll, (id) => attachedOn(id).length, optionsOfChannel),
+  ].every(Boolean);
 
   const formatted = (at: DateTime.Utc, timeZone?: string) =>
     format.dateTime(DateTime.toDate(at), {
@@ -1055,9 +1054,20 @@ export const Composer = ({
             <AiLabelsNotice labels={aiLabels} />
           </fieldset>
           <Separator />
+          <PostPoll
+            disabled={locked}
+            editable={canWrite}
+            mediaOn={(id) => attachedOn(id).length}
+            optionsOn={optionsOfChannel}
+            poll={poll}
+            selected={selected}
+            onChange={setPoll}
+          />
+          <Separator />
           <FollowUpParts
             disabled={locked}
             editable={canWrite}
+            offered={partsOffered}
             options={options}
             parts={parts}
             permissions={permissions}

@@ -27,6 +27,12 @@ class PostContent extends JsonSerializableType
     public array $overrides;
 
     /**
+     * @var ?Poll $poll
+     */
+    #[JsonProperty('poll')]
+    public ?Poll $poll;
+
+    /**
      * @var string $text
      */
     #[JsonProperty('text')]
@@ -38,6 +44,7 @@ class PostContent extends JsonSerializableType
      *   overrides: array<TextOverride>,
      *   text: string,
      *   followUps?: ?array<PostPart>,
+     *   poll?: ?Poll,
      * } $values
      */
     public function __construct(
@@ -46,6 +53,7 @@ class PostContent extends JsonSerializableType
         $this->followUps = $values['followUps'] ?? null;
         $this->media = $values['media'];
         $this->overrides = $values['overrides'];
+        $this->poll = $values['poll'] ?? null;
         $this->text = $values['text'];
     }
 

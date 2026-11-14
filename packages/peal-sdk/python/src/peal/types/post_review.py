@@ -5,6 +5,7 @@ import typing
 import pydantic
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from .approval_request import ApprovalRequest
+from .poll import Poll
 from .review_comment import ReviewComment
 from .reviewed_channel import ReviewedChannel
 from .reviewed_media import ReviewedMedia
@@ -15,6 +16,7 @@ class PostReview(UniversalBaseModel):
     channels: typing.List[ReviewedChannel]
     comments: typing.List[ReviewComment]
     media: typing.List[ReviewedMedia]
+    poll: typing.Optional[Poll] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

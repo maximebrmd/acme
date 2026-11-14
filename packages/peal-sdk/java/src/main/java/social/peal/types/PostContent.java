@@ -5,6 +5,7 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -29,6 +32,8 @@ public final class PostContent {
 
     private final List<TextOverride> overrides;
 
+    private final Optional<Poll> poll;
+
     private final String text;
 
     private final Map<String, Object> additionalProperties;
@@ -37,11 +42,13 @@ public final class PostContent {
             Optional<List<PostPart>> followUps,
             List<MediaAttachment> media,
             List<TextOverride> overrides,
+            Optional<Poll> poll,
             String text,
             Map<String, Object> additionalProperties) {
         this.followUps = followUps;
         this.media = media;
         this.overrides = overrides;
+        this.poll = poll;
         this.text = text;
         this.additionalProperties = additionalProperties;
     }
@@ -61,9 +68,23 @@ public final class PostContent {
         return overrides;
     }
 
+    @JsonIgnore
+    public Optional<Poll> getPoll() {
+        if (poll == null) {
+            return Optional.empty();
+        }
+        return poll;
+    }
+
     @JsonProperty("text")
     public String getText() {
         return text;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("poll")
+    private Optional<Poll> _getPoll() {
+        return poll;
     }
 
     @java.lang.Override
@@ -81,12 +102,13 @@ public final class PostContent {
         return followUps.equals(other.followUps)
                 && media.equals(other.media)
                 && overrides.equals(other.overrides)
+                && poll.equals(other.poll)
                 && text.equals(other.text);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.followUps, this.media, this.overrides, this.text);
+        return Objects.hash(this.followUps, this.media, this.overrides, this.poll, this.text);
     }
 
     @java.lang.Override
@@ -126,11 +148,19 @@ public final class PostContent {
         _FinalStage addOverrides(TextOverride overrides);
 
         _FinalStage addAllOverrides(List<TextOverride> overrides);
+
+        _FinalStage poll(Optional<Poll> poll);
+
+        _FinalStage poll(Poll poll);
+
+        _FinalStage poll(Nullable<Poll> poll);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements TextStage, _FinalStage {
         private String text;
+
+        private Optional<Poll> poll = Optional.empty();
 
         private List<TextOverride> overrides = new ArrayList<>();
 
@@ -147,6 +177,7 @@ public final class PostContent {
             followUps(other.getFollowUps());
             media(other.getMedia());
             overrides(other.getOverrides());
+            poll(other.getPoll());
             text(other.getText());
             return this;
         }
@@ -155,6 +186,31 @@ public final class PostContent {
         @JsonSetter("text")
         public _FinalStage text(@NotNull String text) {
             this.text = Objects.requireNonNull(text, "text must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage poll(Nullable<Poll> poll) {
+            if (poll.isNull()) {
+                this.poll = null;
+            } else if (poll.isEmpty()) {
+                this.poll = Optional.empty();
+            } else {
+                this.poll = Optional.of(poll.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage poll(Poll poll) {
+            this.poll = Optional.ofNullable(poll);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "poll", nulls = Nulls.SKIP)
+        public _FinalStage poll(Optional<Poll> poll) {
+            this.poll = poll;
             return this;
         }
 
@@ -221,7 +277,7 @@ public final class PostContent {
 
         @java.lang.Override
         public PostContent build() {
-            return new PostContent(followUps, media, overrides, text, additionalProperties);
+            return new PostContent(followUps, media, overrides, poll, text, additionalProperties);
         }
 
         @JsonAnySetter
@@ -229,6 +285,7 @@ public final class PostContent {
             if (key.equalsIgnoreCase("followUps")
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("overrides")
+                    || key.equalsIgnoreCase("poll")
                     || key.equalsIgnoreCase("text")) {
                 return;
             }

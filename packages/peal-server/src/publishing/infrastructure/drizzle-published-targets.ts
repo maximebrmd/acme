@@ -65,12 +65,27 @@ const formatColumn = sql<string>`coalesce(${postTargets.options}->>'format', 'fe
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+// The first part's id and address: a published target's own, or, for a
+// target of first comments whose comment did not go out, its first live
+// part's (`live_parts`, whose options are encoded as tagged values).
+const platformPostIdColumn = sql<
+  string | null
+>`coalesce(${postTargets.platformPostId}, ${postTargets.liveParts}->0->'platformPostId'->>'value')`;
+
+const permalinkColumn = sql<
+  string | null
+>`coalesce(${postTargets.permalink}, ${postTargets.liveParts}->0->'permalink'->>'value')`;
+
+// Listed: published, or a target of first comments whose post is live,
+// whatever became of its comment.
+const listed = sql`(${postTargets.status} = 'published' OR (${postTargets.firstComment} AND jsonb_array_length(${postTargets.liveParts}) > 0))`;
+
 const columns = {
   authorId: posts.authorId,
   channelId: postTargets.channelId,
   format: formatColumn,
-  permalink: postTargets.permalink,
-  platformPostId: postTargets.platformPostId,
+  permalink: permalinkColumn,
+  platformPostId: platformPostIdColumn,
   postId: postTargets.postId,
   publishedAt: postTargets.listedAt,
   targetId: postTargets.id,
@@ -96,8 +111,8 @@ export const DrizzlePublishedTargets = Layer.effect(
         .innerJoin(posts, eq(posts.id, postTargets.postId))
         .where(
           and(
-            eq(postTargets.status, "published"),
-            isNotNull(postTargets.platformPostId),
+            listed,
+            isNotNull(platformPostIdColumn),
             isNotNull(postTargets.listedAt),
             isNull(postTargets.removedAt),
             without.length === 0
@@ -131,8 +146,8 @@ export const DrizzlePublishedTargets = Layer.effect(
         .where(
           and(
             eq(posts.workspaceId, workspaceId),
-            eq(postTargets.status, "published"),
-            isNotNull(postTargets.platformPostId),
+            listed,
+            isNotNull(platformPostIdColumn),
             isNotNull(postTargets.listedAt),
             isNull(postTargets.removedAt),
             where
@@ -150,7 +165,7 @@ export const DrizzlePublishedTargets = Layer.effect(
           ? Effect.succeed([])
           : within(
               workspaceId,
-              inArray(postTargets.platformPostId, [...platformPostIds])
+              inArray(platformPostIdColumn, [...platformPostIds])
             ),
       from,
       ofPost: (workspaceId, postId) =>

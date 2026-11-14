@@ -13,7 +13,11 @@ import { lookupsOn } from "./lookup.ts";
 import type { LookupDescription, LookupName } from "./lookup.ts";
 import { maxAltTextLength } from "./media-attachment.ts";
 import type { OptionConstraint } from "./option-constraint.ts";
-import { formatRulesOn, platformRules } from "./platform-rules.ts";
+import {
+  followUpsThrough,
+  formatRulesOn,
+  platformRules,
+} from "./platform-rules.ts";
 import type { PlatformRules, TextLimit } from "./platform-rules.ts";
 import { maxMediaPerPost } from "./post-content.ts";
 import { PostFormatSchema } from "./post-format.ts";
@@ -196,7 +200,13 @@ export const capabilitiesOf = (
   // False where the operator turned the platform's later parts off.
   takesParts = true
 ): PlatformCapabilities => {
-  const rules = takesParts
+  // A channel takes the parts its way in takes: a LinkedIn profile none.
+  const offersParts =
+    takesParts &&
+    (connection === undefined ||
+      followUpsThrough(platform, connection) !== undefined);
+
+  const rules = offersParts
     ? platformRules[platform]
     : withoutParts(platformRules[platform]);
 

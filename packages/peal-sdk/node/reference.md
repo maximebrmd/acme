@@ -2739,6 +2739,73 @@ await client.posts.confirm({
 </dl>
 </details>
 
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client/Client.ts">leaveOutRest</a>({ ...params }) -> Peal.Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```typescript
+await client.posts.leaveOutRest({
+    workspaceId: "workspaceId",
+    postId: "postId",
+    targetId: "targetId"
+});
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `Peal.LeaveOutRestPostsRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requestOptions:** `PostsClient.RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.<a href="/src/api/resources/posts/client/Client.ts">unpublishTarget</a>({ ...params }) -> Peal.LivePostChange</code></summary>
 <dl>
 <dd>

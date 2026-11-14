@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 public final class NoticeEventPostFailed {
     private final Optional<NoticeChannel> channel;
 
+    private final Optional<PostPartsNotSent> notSent;
+
     private final String postId;
 
     private final FailureReason reason;
@@ -34,10 +36,12 @@ public final class NoticeEventPostFailed {
 
     private NoticeEventPostFailed(
             Optional<NoticeChannel> channel,
+            Optional<PostPartsNotSent> notSent,
             String postId,
             FailureReason reason,
             Map<String, Object> additionalProperties) {
         this.channel = channel;
+        this.notSent = notSent;
         this.postId = postId;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
@@ -49,6 +53,11 @@ public final class NoticeEventPostFailed {
             return Optional.empty();
         }
         return channel;
+    }
+
+    @JsonProperty("notSent")
+    public Optional<PostPartsNotSent> getNotSent() {
+        return notSent;
     }
 
     @JsonProperty("postId")
@@ -79,12 +88,15 @@ public final class NoticeEventPostFailed {
     }
 
     private boolean equalTo(NoticeEventPostFailed other) {
-        return channel.equals(other.channel) && postId.equals(other.postId) && reason.equals(other.reason);
+        return channel.equals(other.channel)
+                && notSent.equals(other.notSent)
+                && postId.equals(other.postId)
+                && reason.equals(other.reason);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channel, this.postId, this.reason);
+        return Objects.hash(this.channel, this.notSent, this.postId, this.reason);
     }
 
     @java.lang.Override
@@ -118,6 +130,10 @@ public final class NoticeEventPostFailed {
         _FinalStage channel(NoticeChannel channel);
 
         _FinalStage channel(Nullable<NoticeChannel> channel);
+
+        _FinalStage notSent(Optional<PostPartsNotSent> notSent);
+
+        _FinalStage notSent(PostPartsNotSent notSent);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -125,6 +141,8 @@ public final class NoticeEventPostFailed {
         private String postId;
 
         private FailureReason reason;
+
+        private Optional<PostPartsNotSent> notSent = Optional.empty();
 
         private Optional<NoticeChannel> channel = Optional.empty();
 
@@ -135,6 +153,7 @@ public final class NoticeEventPostFailed {
         @java.lang.Override
         public Builder from(NoticeEventPostFailed other) {
             channel(other.getChannel());
+            notSent(other.getNotSent());
             postId(other.getPostId());
             reason(other.getReason());
             return this;
@@ -151,6 +170,19 @@ public final class NoticeEventPostFailed {
         @JsonSetter("reason")
         public _FinalStage reason(@NotNull FailureReason reason) {
             this.reason = Objects.requireNonNull(reason, "reason must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage notSent(PostPartsNotSent notSent) {
+            this.notSent = Optional.ofNullable(notSent);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "notSent", nulls = Nulls.SKIP)
+        public _FinalStage notSent(Optional<PostPartsNotSent> notSent) {
+            this.notSent = notSent;
             return this;
         }
 
@@ -181,12 +213,15 @@ public final class NoticeEventPostFailed {
 
         @java.lang.Override
         public NoticeEventPostFailed build() {
-            return new NoticeEventPostFailed(channel, postId, reason, additionalProperties);
+            return new NoticeEventPostFailed(channel, notSent, postId, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channel") || key.equalsIgnoreCase("postId") || key.equalsIgnoreCase("reason")) {
+            if (key.equalsIgnoreCase("channel")
+                    || key.equalsIgnoreCase("notSent")
+                    || key.equalsIgnoreCase("postId")
+                    || key.equalsIgnoreCase("reason")) {
                 return;
             }
             this.additionalProperties.put(key, value);

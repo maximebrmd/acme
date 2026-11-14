@@ -14,6 +14,7 @@ export const TargetActionSchema = Schema.Literals([
   "repost",
   "recordPart",
   "drop",
+  "leaveOutRest",
 ]);
 
 export type TargetAction = typeof TargetActionSchema.Type;

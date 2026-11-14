@@ -26,7 +26,10 @@ import { ChannelGrants } from "#publishing/application/channel-grants.ts";
 import { CountedPlatforms } from "#publishing/application/counted-platforms.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
-import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
+import {
+  CurrentThreadedPlatforms,
+  threadedPlatformsWith,
+} from "#publishing/application/threaded-platforms.ts";
 import type { CreatorFailure } from "#publishing/application/tiktok-creators.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { livePostSupport } from "#publishing/domain/live-post-support.ts";
@@ -41,6 +44,7 @@ import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { platforms } from "#shared/domain/platform.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -115,7 +119,10 @@ const clientWith = (
   member: Member,
   read: Effect.Effect<TikTokPosting, CreatorFailure> = ready,
   // What the operator set of later parts (X_THREADS).
-  threaded: (platform: string) => boolean = () => true
+  threaded: (platform: Platform) => boolean = threadedPlatformsWith(
+    true,
+    new Set()
+  ).takesParts
 ) =>
   HttpApiTest.groups(Api, ["capabilities"]).pipe(
     Effect.provide(
@@ -299,7 +306,7 @@ describe("the platforms' capabilities endpoint", () => {
         const client = yield* clientWith(
           viewer,
           ready,
-          (platform) => platform !== "x"
+          threadedPlatformsWith(false, new Set()).takesParts
         );
 
         const all = yield* client.capabilities.platforms({
@@ -311,6 +318,84 @@ describe("the platforms' capabilities endpoint", () => {
             followUps === null ? [] : [platform]
           ),
           ["bluesky", "mastodon"]
+        );
+      })
+  );
+
+  it.effect("describes the poll each platform takes, where it takes one", () =>
+    Effect.gen(function* polls() {
+      const client = yield* clientWith(viewer, ready);
+
+      const all = yield* client.capabilities.platforms({
+        params: { workspaceId },
+      });
+
+      assert.deepStrictEqual(
+        all.flatMap(({ platform, poll }) =>
+          poll === undefined ? [] : [[platform, poll.durationMinutes]]
+        ),
+        [
+          ["x", { maximum: 10_080, minimum: 5 }],
+          ["mastodon", { maximum: 43_829, minimum: 5 }],
+          ["threads", null],
+        ]
+      );
+      assert.deepStrictEqual(
+        all.find(({ platform }) => platform === "mastodon")?.poll,
+        {
+          choiceLimit: { maximum: 50, unit: "codePoints" },
+          durationMinutes: { maximum: 43_829, minimum: 5 },
+          maxChoices: 4,
+          minChoices: 2,
+          multipleChoice: true,
+        }
+      );
+    })
+  );
+
+  it.effect(
+    "offers a first comment where the inbox reads the platform's comments",
+    () =>
+      Effect.gen(function* firstComments() {
+        const client = yield* clientWith(
+          viewer,
+          ready,
+          threadedPlatformsWith(
+            true,
+            new Set(["facebook", "youtube", "linkedin"])
+          ).takesParts
+        );
+
+        const all = yield* client.capabilities.platforms({
+          params: { workspaceId },
+        });
+
+        assert.deepStrictEqual(
+          all.flatMap(({ followUps, platform }) =>
+            followUps === null ? [] : [[platform, followUps.kind]]
+          ),
+          [
+            ["x", "thread"],
+            ["linkedin", "comment"],
+            ["bluesky", "thread"],
+            ["mastodon", "thread"],
+            ["facebook", "comment"],
+            ["youtube", "comment"],
+          ]
+        );
+        // A LinkedIn page comments through its administrator.
+        assert.strictEqual(
+          all.find(({ platform }) => platform === "linkedin")?.followUps
+            ?.commentNeeds,
+          "pageAdministrator"
+        );
+        assert.deepStrictEqual(
+          all.find(({ platform }) => platform === "youtube")?.followUps,
+          {
+            commentTextLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
+            kind: "comment",
+            maxCount: 1,
+          }
         );
       })
   );

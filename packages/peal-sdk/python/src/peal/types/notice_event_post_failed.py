@@ -8,10 +8,14 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .failure_reason import FailureReason
 from .notice_channel import NoticeChannel
+from .post_parts_not_sent import PostPartsNotSent
 
 
 class NoticeEventPostFailed(UniversalBaseModel):
     channel: typing.Optional[NoticeChannel] = None
+    not_sent: typing_extensions.Annotated[
+        typing.Optional[PostPartsNotSent], FieldMetadata(alias="notSent"), pydantic.Field(alias="notSent")
+    ] = None
     post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
     reason: FailureReason
 

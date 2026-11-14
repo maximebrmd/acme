@@ -82,10 +82,17 @@ describe("threads, analytics and the inbox", { serial: true }, () => {
     await screen.getByRole("checkbox", handle).check();
     await screen.getByRole("textbox", "Text for all channels").fill(first);
 
-    const thread = screen.getByRole("region", "Thread");
+    const thread = screen.getByRole("region", "Thread and first comment");
 
     await thread.getByRole("button", "Add a part").tap();
     await thread.getByRole("textbox", "Part 2").fill(second);
+
+    // The post asks a poll, which Mastodon takes.
+    const poll = screen.getByRole("region", "Poll");
+
+    await poll.getByRole("button", "Add a poll").tap();
+    await poll.getByRole("textbox", "Choice 1").fill("Mornings");
+    await poll.getByRole("textbox", "Choice 2").fill("Evenings");
     await screen.getByRole("button", "Save as draft").tap();
 
     await expect(screen.getByText("Draft saved.")).toBeVisible();
@@ -101,8 +108,13 @@ describe("threads, analytics and the inbox", { serial: true }, () => {
       screen.getByRole("textbox", "Text for all channels")
     ).toHaveText(first);
     await expect(
-      screen.getByRole("region", "Thread").getByRole("textbox", "Part 2")
+      screen
+        .getByRole("region", "Thread and first comment")
+        .getByRole("textbox", "Part 2")
     ).toHaveText(second);
+    await expect(
+      screen.getByRole("region", "Poll").getByRole("textbox", "Choice 2")
+    ).toHaveValue("Evenings");
 
     // Nothing goes out: the draft is discarded.
     await screen.getByRole("button", "Discard the draft").tap();

@@ -9,7 +9,7 @@ import type {
   MediaAttachment,
   Permission,
 } from "peal-contract";
-import { maxFollowUps } from "peal-contract/post-text";
+import { maxFollowUps, partRulesFor } from "peal-contract/post-text";
 import { Button } from "peal-ui/components/button";
 import { Label } from "peal-ui/components/label";
 import {
@@ -122,11 +122,13 @@ const PartEditor = ({
   const fits = selected.map((channel) => ({
     channel,
     // Counted as it goes out there: the channel's own text when it has one.
+    // As a comment where the platform's parts are comments.
     fit: fitOn(
       channel.platform,
       partTextOn(part, channel.id),
       part.media.length,
-      optionsOn(channel.id)
+      optionsOn(channel.id),
+      partRulesFor(channel.platform, optionsOn(channel.id))
     ),
     media: mediaFitOn(channel.platform, attached, optionsOn(channel.id)),
   }));
@@ -307,6 +309,8 @@ interface FollowUpPartsProps {
   readonly onChange: SetParts;
   /** Hears a part's text take the focus: where an emoji chosen goes. */
   readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
+  /** Whether this server sends the parts after the first on a platform. */
+  readonly offered: (channel: Channel) => boolean;
   /** The options the post has on its channels. */
   readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
@@ -318,7 +322,8 @@ interface FollowUpPartsProps {
 
 /**
  * The parts that follow the post: a thread where the platform has threads,
- * each part a reply to the one before it. Parts are added at the end,
+ * each part a reply to the one before it, and a first comment under the
+ * post where its parts are comments (each channel is named). Parts are added at the end,
  * moved, and removed; each has its text, its counter on every channel, its
  * images and videos, and the wait before it. A channel whose platform takes
  * a post alone is named: scheduling would refuse the post there.
@@ -327,6 +332,7 @@ export const FollowUpParts = ({
   disabled,
   editable,
   onChange,
+  offered,
   onEditorFocus,
   options,
   parts,
@@ -340,14 +346,25 @@ export const FollowUpParts = ({
   const added = useRef(0);
   const locked = disabled || !editable;
 
-  const refusing = selected.flatMap((channel) => {
-    const taken = partsTaken(
+  const takenOn = (channel: Channel) =>
+    partsTaken(
       channel.platform,
       parts.length,
-      options.find(({ channelId }) => channelId === channel.id)?.options
+      options.find(({ channelId }) => channelId === channel.id)?.options,
+      offered(channel)
     );
 
+  const refusing = selected.flatMap((channel) => {
+    const taken = takenOn(channel);
+
     return taken._tag === "taken" ? [] : [{ channel, taken }];
+  });
+
+  // The channels where the part after the post is a first comment.
+  const commenting = selected.filter((channel) => {
+    const taken = takenOn(channel);
+
+    return taken._tag === "taken" && taken.kind === "comment";
   });
 
   return (
@@ -375,6 +392,27 @@ export const FollowUpParts = ({
             />
           ))}
         </ol>
+      )}
+      {commenting.length === 0 ? null : (
+        <ul className="text-muted-foreground flex flex-col gap-1 text-sm">
+          {commenting.map((channel) => (
+            <li key={channel.id}>
+              {t(
+                channel.platform === "linkedin"
+                  ? "commentAdministrator"
+                  : "comment",
+                {
+                  channel: tComposer("channelDetail", {
+                    handle: channel.handle,
+                    platform: tPosts("platform", {
+                      platform: channel.platform,
+                    }),
+                  }),
+                }
+              )}
+            </li>
+          ))}
+        </ul>
       )}
       {refusing.length === 0 ? null : (
         <ul className="text-destructive flex flex-col gap-1 text-sm">

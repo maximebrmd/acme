@@ -92,9 +92,16 @@ export const NoticeEventSchema = Schema.Union([
     permalink: Schema.NullOr(Schema.String),
     postId: Schema.String,
   }),
-  // The post did not go out on the channel, for `reason`.
+  // The post did not go out on the channel, for `reason`. With `notSent`,
+  // the post itself is live there and only what followed did not go out:
+  // its first comment, or the parts after its first in a thread.
   Schema.TaggedStruct("PostFailed", {
     channel: Schema.NullOr(NoticeChannelSchema),
+    notSent: Schema.optionalKey(
+      Schema.Literals(["firstComment", "laterParts"]).annotate({
+        identifier: "PostPartsNotSent",
+      })
+    ),
     postId: Schema.String,
     reason: FailureReasonSchema,
   }),

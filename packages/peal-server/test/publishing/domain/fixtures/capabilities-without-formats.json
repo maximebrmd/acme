@@ -65,6 +65,20 @@
     ],
     "platform": "x",
     "rules": {
+      "poll": {
+        "choiceLimit": {
+          "maximum": 25,
+          "unit": "codePoints"
+        },
+        "duration": {
+          "_tag": "range",
+          "maximumMinutes": 10080,
+          "minimumMinutes": 5
+        },
+        "maxChoices": 4,
+        "minChoices": 2,
+        "multipleChoice": false
+      },
       "followUps": {
         "kind": "thread",
         "maximum": 24
@@ -214,6 +228,19 @@
     ],
     "platform": "linkedin",
     "rules": {
+      "followUps": {
+        "comment": {
+          "needs": "pageAdministrator",
+          "textLimits": [
+            {
+              "maximum": 3000,
+              "unit": "codePoints"
+            }
+          ]
+        },
+        "kind": "comment",
+        "maximum": 1
+      },
       "maxMedia": 20,
       "media": {
         "formats": {
@@ -475,6 +502,20 @@
     ],
     "platform": "mastodon",
     "rules": {
+      "poll": {
+        "choiceLimit": {
+          "maximum": 50,
+          "unit": "codePoints"
+        },
+        "duration": {
+          "_tag": "range",
+          "maximumMinutes": 43829,
+          "minimumMinutes": 5
+        },
+        "maxChoices": 4,
+        "minChoices": 2,
+        "multipleChoice": true
+      },
       "followUps": {
         "kind": "thread",
         "maximum": 24
@@ -587,6 +628,18 @@
     ],
     "platform": "threads",
     "rules": {
+      "poll": {
+        "choiceLimit": {
+          "maximum": 25,
+          "unit": "codePoints"
+        },
+        "duration": {
+          "_tag": "platformDecides"
+        },
+        "maxChoices": 4,
+        "minChoices": 2,
+        "multipleChoice": false
+      },
       "maxLinks": 5,
       "maxMedia": 20,
       "media": {
@@ -1000,6 +1053,18 @@
     ],
     "platform": "youtube",
     "rules": {
+      "followUps": {
+        "comment": {
+          "textLimits": [
+            {
+              "maximum": 5000,
+              "unit": "utf8Bytes"
+            }
+          ]
+        },
+        "kind": "comment",
+        "maximum": 1
+      },
       "forbiddenCharacters": ["<", ">"],
       "maxMedia": 1,
       "media": {

@@ -2354,6 +2354,67 @@ await client.Posts.ConfirmAsync(
 </dl>
 </details>
 
+<details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">LeaveOutRestAsync</a>(LeaveOutRestPostsRequest { ... }) -> WithRawResponseTask&lt;Post&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. The target must be failed or unconfirmed with its first part live (`parts.live`); it becomes `published`, as that part, with `partsLeftOut`, and the post's outcome follows. Its notifications are marked read. Anything else is TargetStatusConflict. Needs post:schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Posts.LeaveOutRestAsync(
+    new LeaveOutRestPostsRequest
+    {
+        WorkspaceId = "workspaceId",
+        PostId = "postId",
+        TargetId = "targetId",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `LeaveOutRestPostsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">UnpublishTargetAsync</a>(UnpublishTargetPostsRequest { ... }) -> WithRawResponseTask&lt;LivePostChange&gt;</code></summary>
 <dl>
 <dd>

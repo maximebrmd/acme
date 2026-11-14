@@ -788,6 +788,34 @@ func TestPostsConfirmWithWireMock(
 	VerifyRequestCount(t, "TestPostsConfirmWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/targets/targetId/confirm", nil, 1)
 }
 
+func TestPostsLeaveOutRestWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.LeaveOutRestPostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+		TargetID:    "targetId",
+	}
+	_, invocationErr := client.Posts.LeaveOutRest(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsLeaveOutRestWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsLeaveOutRestWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/targets/targetId/leave-out-rest", nil, 1)
+}
+
 func TestPostsUnpublishTargetWithWireMock(
 	t *testing.T,
 ) {

@@ -3507,6 +3507,14 @@ func TestSettersNoticeEventPostFailed(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetNotSent", func(t *testing.T) {
+		obj := &NoticeEventPostFailed{}
+		var fernTestValueNotSent *PostPartsNotSent
+		obj.SetNotSent(fernTestValueNotSent)
+		assert.Equal(t, fernTestValueNotSent, obj.NotSent)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPostID", func(t *testing.T) {
 		obj := &NoticeEventPostFailed{}
 		var fernTestValuePostID string
@@ -3557,6 +3565,39 @@ func TestGettersNoticeEventPostFailed(t *testing.T) {
 			}
 		}()
 		_ = obj.GetChannel() // Should return zero value
+	})
+
+	t.Run("GetNotSent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventPostFailed{}
+		var expected *PostPartsNotSent
+		obj.NotSent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetNotSent(), "getter should return the property value")
+	})
+
+	t.Run("GetNotSent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventPostFailed{}
+		obj.NotSent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetNotSent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetNotSent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventPostFailed
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetNotSent() // Should return zero value
 	})
 
 	t.Run("GetPostID", func(t *testing.T) {
@@ -3616,6 +3657,37 @@ func TestSettersMarkExplicitNoticeEventPostFailed(t *testing.T) {
 
 		// Act
 		obj.SetChannel(fernTestValueChannel)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetNotSent_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventPostFailed{}
+		var fernTestValueNotSent *PostPartsNotSent
+
+		// Act
+		obj.SetNotSent(fernTestValueNotSent)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -7857,6 +7929,35 @@ func TestEnumNoticeEventAdBoostChangedChange(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewNoticeEventAdBoostChangedChangeFromString("started")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumPostPartsNotSent(t *testing.T) {
+	t.Run("NewFromString_firstComment", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPostPartsNotSentFromString("firstComment")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PostPartsNotSent("firstComment"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_laterParts", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPostPartsNotSentFromString("laterParts")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PostPartsNotSent("laterParts"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewPostPartsNotSentFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewPostPartsNotSentFromString("firstComment")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

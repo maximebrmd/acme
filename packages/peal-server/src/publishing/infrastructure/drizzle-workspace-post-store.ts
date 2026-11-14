@@ -3,6 +3,7 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import { WorkspacePostStore } from "#publishing/application/workspace-post-store.ts";
+import { Poll } from "#publishing/domain/poll.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
 import { PostStatusNameSchema } from "#publishing/domain/post-status.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -68,6 +69,8 @@ const OverridesSchema = Schema.Array(
 const decodeOverrides = Schema.decodeUnknownEffect(OverridesSchema);
 
 // The parts after the first, as the post repository writes them.
+const decodePoll = Schema.decodeUnknownEffect(Schema.NullOr(Poll));
+
 const decodeFollowUps = Schema.decodeUnknownEffect(
   Schema.Array(
     Schema.Struct({
@@ -177,7 +180,9 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     )
   );
 
-  const record: PostRecord = {
+  const poll = yield* decodePoll(row.poll).pipe(Effect.orDie);
+
+  const withoutPoll: PostRecord = {
     createdVia: yield* originRecord(row, "createdVia"),
     followUps: followUps.map((part) => ({
       delaySeconds: part.delaySeconds,
@@ -211,6 +216,18 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     textOverrides: exportedOverrides(overrides),
     timeZone: row.scheduleZone,
   };
+
+  const record: PostRecord =
+    poll === null
+      ? withoutPoll
+      : {
+          ...withoutPoll,
+          poll: {
+            choices: poll.choices,
+            durationMinutes: poll.durationMinutes,
+            multipleChoice: poll.multipleChoice,
+          },
+        };
 
   return record;
 });

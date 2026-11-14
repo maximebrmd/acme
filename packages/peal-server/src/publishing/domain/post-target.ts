@@ -398,6 +398,35 @@ export const confirmPublished = (
 };
 
 /**
+ * A member gives up the parts that did not go out after the target's
+ * first (a first comment refused for good, the rest of a thread): a failed
+ * or unconfirmed target whose first part is live is published as the
+ * parts that are, when its first went out, noted `partsLeftOut`. One whose
+ * post did not go out, or that settled otherwise, is refused.
+ */
+export const withoutRest = (target: PostTarget): Transition => {
+  const { status } = target;
+  const [first] = target.liveParts;
+
+  if (
+    first === undefined ||
+    (status._tag !== "failed" && status._tag !== "unconfirmed")
+  ) {
+    return rejected(target, "leaveOutRest");
+  }
+
+  return Result.succeed(
+    withStatus(target, {
+      _tag: "published",
+      partsLeftOut: true,
+      permalink: first.permalink,
+      platformPostId: first.platformPostId,
+      publishedAt: first.publishedAt,
+    })
+  );
+};
+
+/**
  * Whether a member may send the target again, in a new round: one that
  * failed or is unconfirmed, unless the round could only stop where this
  * one did. A round sends from the part after the last that is live, as a

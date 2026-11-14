@@ -7,6 +7,15 @@ import { formatMoney } from "#ads/money.ts";
 import { useSize } from "#billing/size.ts";
 
 /** What a notice says, and where the reader acts on it. */
+
+// A failed post's notice, by what did not go out: the post, or only what
+// followed it there.
+const failedKeys = {
+  firstComment: "event.FirstCommentFailed",
+  laterParts: "event.LaterPartsFailed",
+  none: "event.PostFailed",
+} as const;
+
 export interface NoticeText {
   /** The page the notice links to, under the locale's prefix. */
   readonly href: string;
@@ -159,10 +168,10 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         post(postId, t("event.PostChangesRequested", { by, workspace })),
       PostCommented: ({ by, postId }) =>
         post(postId, t("event.PostCommented", { by, workspace })),
-      PostFailed: ({ postId, reason }) =>
+      PostFailed: ({ notSent, postId, reason }) =>
         post(
           postId,
-          t("event.PostFailed", {
+          t(failedKeys[notSent ?? "none"], {
             channel,
             reason: t("reason", { reason }),
             workspace,

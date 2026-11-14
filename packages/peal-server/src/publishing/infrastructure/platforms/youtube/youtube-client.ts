@@ -40,6 +40,7 @@ import {
   fromByte,
   inParts,
 } from "#publishing/infrastructure/platforms/byte-parts.ts";
+import { withFirstComments } from "#publishing/infrastructure/platforms/first-comment.ts";
 import {
   codeOf,
   unanswered,
@@ -61,6 +62,7 @@ import {
   untilQuotaReset,
 } from "#shared/infrastructure/platforms/youtube-quota-day.ts";
 
+import { youtubeCommentCalls } from "./youtube-first-comment.ts";
 import { refusalOf } from "./youtube-refusal.ts";
 import type { Refused } from "./youtube-refusal.ts";
 import { defaultDailyThumbnails } from "./youtube-settings.ts";
@@ -1214,6 +1216,11 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
       prepare,
     };
 
-    return sequenced(steps, timing);
+    // A first comment goes under the video, as the channel.
+    return withFirstComments(
+      sequenced(steps, timing),
+      youtubeCommentCalls({ api, apiUrl, credentials, refused }),
+      timing
+    );
   }
 );

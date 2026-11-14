@@ -140,7 +140,7 @@ export const GetPost = Tool.make("get_post", {
 
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
-  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels (an override's \`media\` gives that channel its own files instead of the post's), the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, Instagram, Facebook, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\`, refused when scheduled on the others. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once. ${shortened}`,
+  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels (an override's \`media\` gives that channel its own files instead of the post's), the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, Instagram, Facebook, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\` of kind \`thread\`, a first comment under the post on those of kind \`comment\` (one, text alone), refused when scheduled on the others. \`content.poll\` asks a poll with the post (its \`choices\`, \`durationMinutes\`, \`multipleChoice\`; the text is the question) where the capabilities give \`poll\`, refused elsewhere. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once. ${shortened}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
@@ -228,6 +228,19 @@ export const RepostTarget = Tool.make("repost_target", {
     changing({ destructive: false, idempotent: false, openWorld: true })
   )
   .annotate(Tool.Title, "Repost on a channel");
+
+export const LeaveOutRest = Tool.make("leave_out_rest", {
+  dependencies: [CurrentMember],
+  description:
+    "Publishes the post on one channel without the parts that did not go out after its first: a first comment the platform refused, or the rest of a thread. Only a failed or unconfirmed target whose first part is live (`parts.live`) is taken; it becomes published as that part, with `partsLeftOut`. Nothing is sent. Ask the user first: the comment will not be sent from Peal any more. Needs the scope workspace:publish.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId, targetId }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: false, openWorld: false })
+  )
+  .annotate(Tool.Title, "Publish a channel without its first comment");
 
 export const ConfirmTarget = Tool.make("confirm_target", {
   dependencies: [CurrentMember],
@@ -561,7 +574,7 @@ export const RemovePostTarget = Tool.make("remove_post_target", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the parts that follow it (\`content.followUps\`: a thread where the platform has threads, each part sent in order, after its \`delaySeconds\`, and never after a part that failed), the options of the channels whose platform asks for more (YouTube, TikTok), the workspace's tags it is filed under (\`tagIds\`), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${takesSaved} A set none of whose channels is left, with no other channel, is refused. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${shortened} An edit of a live post (edit_published_post) sends the text as written. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the parts that follow it (\`content.followUps\`: a thread where the platform has threads, each part sent in order, after its \`delaySeconds\`, and never after a part that failed), the options of the channels whose platform asks for more (YouTube, TikTok), the workspace's tags it is filed under (\`tagIds\`), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. Where get_channel_capabilities gives \`followUps\` of kind \`comment\`, the one part after the first is a first comment under the post, and \`content.poll\` asks a poll with the post where it gives \`poll\`. ${takesSaved} A set none of whose channels is left, with no other channel, is refused. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${shortened} An edit of a live post (edit_published_post) sends the text as written. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
@@ -753,6 +766,7 @@ export const PostTools = Toolkit.make(
   CancelPost,
   RemovePostTarget,
   RepostTarget,
+  LeaveOutRest,
   ConfirmTarget,
   UnpublishPost,
   EditPublishedPost,

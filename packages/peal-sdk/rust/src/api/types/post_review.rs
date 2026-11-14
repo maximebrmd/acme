@@ -10,6 +10,8 @@ pub struct PostReview {
     pub comments: Vec<ReviewComment>,
     #[serde(default)]
     pub media: Vec<ReviewedMedia>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub poll: Option<Poll>,
 }
 
 impl PostReview {
@@ -25,6 +27,7 @@ pub struct PostReviewBuilder {
     channels: Option<Vec<ReviewedChannel>>,
     comments: Option<Vec<ReviewComment>>,
     media: Option<Vec<ReviewedMedia>>,
+    poll: Option<Poll>,
 }
 
 impl PostReviewBuilder {
@@ -48,6 +51,11 @@ impl PostReviewBuilder {
         self
     }
 
+    pub fn poll(mut self, value: Poll) -> Self {
+        self.poll = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`PostReview`].
     /// This method will fail if any of the following fields are not set:
     /// - [`approvals`](PostReviewBuilder::approvals)
@@ -68,6 +76,7 @@ impl PostReviewBuilder {
             media: self
                 .media
                 .ok_or_else(|| BuildError::missing_field("media"))?,
+            poll: self.poll,
         })
     }
 }

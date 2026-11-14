@@ -25,6 +25,7 @@ import type {
   FormatLimits,
   MediaRules,
   PlatformRules,
+  PollRules,
 } from "#publishing/domain/platform-rules.ts";
 
 // Absent values are null in what clients read.
@@ -45,6 +46,28 @@ const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
   type: field.type,
   values: field.values,
 });
+
+// The parts after the first, with a comment's own text limits where they
+// are comments.
+const followUpsView = ({ followUps }: PlatformRules) => {
+  if (followUps === undefined) {
+    return null;
+  }
+
+  const described = { kind: followUps.kind, maxCount: followUps.maximum };
+
+  const { comment } = followUps;
+
+  if (comment === undefined) {
+    return described;
+  }
+
+  const limited = { ...described, commentTextLimits: comment.textLimits };
+
+  return comment.needs === undefined
+    ? limited
+    : { ...limited, commentNeeds: comment.needs };
+};
 
 /**
  * A lookup as the contract describes it, to the API and the MCP tools
@@ -118,6 +141,21 @@ const mediaView = (
   required: rules.mediaRequired,
 });
 
+// The poll the platform takes, as the contract describes it.
+const pollView = (poll: PollRules) => ({
+  choiceLimit: poll.choiceLimit,
+  durationMinutes:
+    poll.duration._tag === "range"
+      ? {
+          maximum: poll.duration.maximumMinutes,
+          minimum: poll.duration.minimumMinutes,
+        }
+      : null,
+  maxChoices: poll.maxChoices,
+  minChoices: poll.minChoices,
+  multipleChoice: poll.multipleChoice,
+});
+
 const isPostCount = Schema.is(Schema.Literals(postCountNames));
 
 const isAccountNumber = Schema.is(Schema.Literals(accountNumberNames));
@@ -137,10 +175,7 @@ export const platformCapabilitiesView = (
       perPost: capabilities.countsPosts,
       postCounts: capabilities.counted.post.filter(isPostCount),
     },
-    followUps:
-      rules.followUps === undefined
-        ? null
-        : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
+    followUps: followUpsView(rules),
     livePost: livePostView(capabilities.livePost),
     lookups: capabilities.lookups.map(lookupDescriptionView),
     media: mediaView(rules, capabilities),
@@ -161,10 +196,13 @@ export const platformCapabilitiesView = (
 
   const formats = capabilities.postFormats;
 
+  const polled =
+    rules.poll === undefined ? view : { ...view, poll: pollView(rules.poll) };
+
   return formats === undefined
-    ? view
+    ? polled
     : {
-        ...view,
+        ...polled,
         postFormats: formats.map((format) => ({
           description: format.description,
           media: mediaView(format.rules, format),
