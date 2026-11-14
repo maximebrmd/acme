@@ -135,7 +135,11 @@ export const mcpAuthentication = ({
 
           // The same count as the API's: a credential has one limit,
           // wherever it sends its requests.
-          const limited = yield* pastLimit(limits, principal);
+          const limited = yield* pastLimit(
+            limits,
+            principal,
+            Option.some(workspaceId)
+          );
 
           if (Option.isSome(limited)) {
             return jsonRpcError(

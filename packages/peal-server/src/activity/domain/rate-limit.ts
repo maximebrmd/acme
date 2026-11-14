@@ -67,6 +67,13 @@ export interface WorkspaceLimitFacts {
   readonly paying: boolean;
 }
 
+/**
+ * The free tier's policy: the rate card's limit, never more than the
+ * setting a payer gets, on a server set lower than it.
+ */
+export const freePolicy = (terms: StandingTerms): RateLimitPolicy =>
+  policyNamed("free", Math.min(terms.withoutPaymentMethod, terms.setting));
+
 // The order policies of the same limit are taken in.
 const preference: Readonly<Record<PolicyName, number>> = {
   default: 0,
@@ -80,9 +87,7 @@ const policyOfWorkspace = (
 ): RateLimitPolicy =>
   Option.match(override, {
     onNone: () =>
-      paying
-        ? policyNamed("default", terms.setting)
-        : policyNamed("free", terms.withoutPaymentMethod),
+      paying ? policyNamed("default", terms.setting) : freePolicy(terms),
     onSome: (limit) => policyNamed("override", limit),
   });
 
@@ -112,7 +117,7 @@ export const policyOfWorkspaces = (
     }
   }
 
-  return chosen ?? policyNamed("free", terms.withoutPaymentMethod);
+  return chosen ?? freePolicy(terms);
 };
 
 /**

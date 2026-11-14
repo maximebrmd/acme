@@ -10,7 +10,8 @@ export const BilledRequestStandings = Layer.effect(
     const standings = yield* ApiStandings;
 
     return RequestStandings.of({
-      paying: standings.paying,
+      ofPayer: standings.ofPayer,
+      ofWorkspaces: standings.ofWorkspaces,
       withoutPaymentMethod: standings.withoutPaymentMethod,
     });
   })

@@ -1,6 +1,7 @@
 import type { Option } from "effect";
 import { Context, Effect, Layer } from "effect";
 
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 /** Where a credential stands against the rate limit, this request counted. */
@@ -30,8 +31,13 @@ export interface RequestStanding {
 export class RequestLimits extends Context.Service<
   RequestLimits,
   {
+    /**
+     * `actingIn` is the workspace the request acts in, when it names one:
+     * the limit staff set for it applies to a token bound to none.
+     */
     readonly admit: (
-      principal: Principal
+      principal: Principal,
+      actingIn: Option.Option<WorkspaceId>
     ) => Effect.Effect<Option.Option<RequestStanding>>;
   }
 >()("peal-server/workspace/application/RequestLimits") {

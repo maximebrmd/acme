@@ -68,9 +68,9 @@ export class RequestLimitSettings extends Context.Service<
           return unbilled;
         }
 
-        const paying = (yield* standings.paying([workspaceId])).has(
-          workspaceId
-        );
+        const paying =
+          (yield* standings.ofWorkspaces([workspaceId])).get(workspaceId)
+            ?.paying ?? false;
 
         const override = Option.fromUndefinedOr(
           (yield* overrides.of([workspaceId])).get(workspaceId)

@@ -7,10 +7,8 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import type { LimitHolder } from "#activity/application/request-limiter.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { PartnerStore } from "#workspace/application/partner-store.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
-import { Account } from "#workspace/domain/account.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
 import {
   PartnerIdSchema,
@@ -28,13 +26,6 @@ const other = WorkspaceIdSchema.make("00000000-0000-4000-8000-0000000000a3");
 const userId = UserIdSchema.make("00000000-0000-4000-8000-0000000000b1");
 const partnerId = PartnerIdSchema.make("0190f3a0-0000-7000-8000-0000000000c1");
 
-const membership = (id: typeof own) => ({
-  id,
-  name: "Synthetic",
-  role: "owner",
-  slug: `synthetic-${id.slice(-2)}`,
-});
-
 const Fakes = Layer.mergeAll(
   Layer.mock(PartnerStore, {
     get: () =>
@@ -51,28 +42,10 @@ const Fakes = Layer.mergeAll(
           })
         )
       ),
-  }),
-  Layer.mock(MemberDirectory, {
-    account: () =>
-      Effect.succeed(
-        Option.some(
-          new Account({
-            ban: Option.none(),
-            email: "limits@example.com",
-            emailVerified: true,
-            id: userId,
-            image: Option.none(),
-            locale: "en",
-            name: "Synthetic",
-            twoStepEnabled: false,
-            workspaces: [membership(own), membership(other)],
-          })
-        )
-      ),
   })
 );
 
-// The holder each principal is admitted under, and its workspaces.
+// The holder each principal is admitted under, acting in `own`.
 const holderOf = (principal: Principal) =>
   Effect.gen(function* handedHolder() {
     let handed: LimitHolder | undefined;
@@ -103,13 +76,22 @@ const holderOf = (principal: Principal) =>
       )
     );
 
-    yield* limits.admit(principal);
+    yield* limits.admit(principal, Option.some(own));
 
     if (handed === undefined) {
       return yield* Effect.die("The limiter was not asked");
     }
 
-    return { key: handed.key, workspaces: yield* handed.workspaces };
+    const found: LimitHolder = handed;
+
+    return found._tag === "payer"
+      ? {
+          actingIn: found.actingIn,
+          key: found.key,
+          tag: found._tag,
+          userId: found.userId,
+        }
+      : { key: found.key, tag: found._tag, workspace: yield* found.workspace };
   });
 
 describe("whose standing decides a credential's limit", () => {
@@ -123,7 +105,11 @@ describe("whose standing decides a credential's limit", () => {
             workspaceId: own,
           })
         ),
-        { key: `workspace:${own}`, workspaces: [own] }
+        {
+          key: `workspace:${own}`,
+          tag: "workspace",
+          workspace: Option.some(own),
+        }
       );
     })
   );
@@ -141,13 +127,17 @@ describe("whose standing decides a credential's limit", () => {
             scopes: [],
           })
         ),
-        { key: `partner:${partnerId}`, workspaces: [home] }
+        {
+          key: `partner:${partnerId}`,
+          tag: "workspace",
+          workspace: Option.some(home),
+        }
       );
     })
   );
 
   it.effect(
-    "an application's bound workspace, or else every workspace of its user",
+    "an application's bound workspace, or else its user as a payer, in the workspace it acts in",
     () =>
       Effect.gen(function* oauth() {
         assert.deepStrictEqual(
@@ -157,12 +147,16 @@ describe("whose standing decides a credential's limit", () => {
               oauth: Option.some({
                 clientId: "synthetic-client",
                 scopes: ["workspace:read"],
-                workspaceId: Option.some(own),
+                workspaceId: Option.some(other),
               }),
               userId,
             })
           ),
-          { key: `workspace:${own}`, workspaces: [own] }
+          {
+            key: `workspace:${other}`,
+            tag: "workspace",
+            workspace: Option.some(other),
+          }
         );
 
         assert.deepStrictEqual(
@@ -177,7 +171,12 @@ describe("whose standing decides a credential's limit", () => {
               userId,
             })
           ),
-          { key: `user:${userId}`, workspaces: [own, other] }
+          {
+            actingIn: Option.some(own),
+            key: `user:${userId}@${own}`,
+            tag: "payer",
+            userId,
+          }
         );
       })
   );

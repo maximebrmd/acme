@@ -219,7 +219,13 @@ export const AuthenticationLive = Layer.effect(
 
           // A key or an application past its limit is told so before
           // anything is handled.
-          const limited = yield* pastLimit(limits, principal);
+          const limited = yield* pastLimit(
+            limits,
+            principal,
+            Option.fromNullishOr(
+              (yield* HttpRouter.params)["workspaceId"]
+            ).pipe(Option.flatMap(decodeWorkspaceId))
+          );
 
           if (Option.isSome(limited)) {
             return tooManyRequests(limited.value);

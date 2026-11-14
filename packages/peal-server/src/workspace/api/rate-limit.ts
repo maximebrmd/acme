@@ -3,6 +3,7 @@ import { HttpServerResponse } from "effect/http";
 import { TooManyRequests } from "peal-contract";
 
 import { setAnswerHeader } from "#shared/api/answer-headers.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type {
   RequestLimits,
   RequestStanding,
@@ -85,9 +86,10 @@ export const tooManyRequests = (
  */
 export const pastLimit = (
   limits: RequestLimits["Service"],
-  principal: Principal
+  principal: Principal,
+  actingIn: Option.Option<WorkspaceId>
 ): Effect.Effect<Option.Option<RequestStanding>> =>
-  limits.admit(principal).pipe(
+  limits.admit(principal, actingIn).pipe(
     Effect.tap(
       Option.match({
         onNone: () => Effect.void,

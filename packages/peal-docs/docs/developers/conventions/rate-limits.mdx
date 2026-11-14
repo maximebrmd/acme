@@ -16,6 +16,8 @@ A credential may send a number of requests a minute, counted in one-minute windo
 | An application                         | For each member it acts for, whichever of its access tokens it sends |
 | A session of the web app               | Not counted                                                          |
 
+On a server that bills, a billing account without a payment method counts all its credentials together ([By billing account](#standing)).
+
 - The count is shared between the API and the [MCP endpoint](/developers/mcp).
 - It is kept in fixed windows of one minute that start on the minute.
 - On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets the number, {{api-with-en}} unless set ([Environment variables](/self-hosting/environment-variables#core)).
@@ -30,7 +32,8 @@ On a server that bills, as Peal Cloud does, the number depends on the [billing a
 | `default`  | {{api-with-en}}, the server's setting | It has one ([A payment method](/guides/workspace/billing#payment-method)), or a plan priced by channels |
 | `override` | What Peal set for the workspace       | On request, {{api-on-request-en}} usually: write to us                                                  |
 
-- An API key counts by its workspace's account, a partner key by its partner's home workspace's, and an application by the workspace its token is bound to, or else, as the command line's, the most generous of its member's workspaces.
+- An API key takes its workspace's account, a partner key its partner's home workspace's, and an application the workspace its token is bound to. A token bound to no workspace, as the command line's, takes the account its member pays for (the free tier when they pay for none), and the limit Peal set for the workspace a request names, if any.
+- On the `free` policy, every key, partner key and application of a billing account shares one count: more credentials send no more. With a payment method, each credential counts on its own.
 - A payment method added raises the limit within a minute.
 - A server that does not bill applies its one setting to every credential.
 

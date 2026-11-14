@@ -16,6 +16,8 @@ Un moyen d’authentification peut envoyer un certain nombre de requêtes par mi
 | Une application                             | Pour chaque membre au nom duquel elle agit, quel que soit celui de ses jetons d’accès qu’elle envoie |
 | Une session de l’application web            | Pas comptée                                                                                          |
 
+Sur un serveur qui facture, un compte de facturation sans moyen de paiement compte tous ses moyens d’authentification ensemble ([Selon le compte de facturation](#standing)).
+
 - Le compte est commun à l’API et au [point d’accès MCP](/developers/mcp).
 - Il est tenu par fenêtres fixes d’une minute, qui commencent à la minute ronde.
 - Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe ce nombre, {{api-with-fr}} par défaut ([Variables d’environnement](/self-hosting/environment-variables#core)).
@@ -30,7 +32,8 @@ Sur un serveur qui facture, comme Peal Cloud, le nombre dépend du [compte de fa
 | `default`  | {{api-with-fr}}, le réglage du serveur      | Il en a un ([Un moyen de paiement](/guides/workspace/billing#payment-method)), ou un abonnement par paliers de canaux |
 | `override` | Ce que Peal a fixé pour l’espace de travail | Sur demande, {{api-on-request-fr}} en général : écrivez-nous                                                          |
 
-- Une clé d’API compte selon le compte de son espace de travail, une clé partenaire selon celui de l’espace principal de son partenaire, et une application selon l’espace de travail auquel son jeton est lié, sinon, comme la ligne de commande, le plus favorable des espaces de travail de son membre.
+- Une clé d’API prend le compte de son espace de travail, une clé partenaire celui de l’espace principal de son partenaire, et une application l’espace de travail auquel son jeton est lié. Un jeton lié à aucun espace de travail, comme celui de la ligne de commande, prend le compte que son membre paie (l’offre gratuite s’il n’en paie aucun), et la limite que Peal a fixée pour l’espace de travail qu’une requête nomme, s’il y en a une.
+- Sous la règle `free`, toutes les clés, clés partenaires et applications d’un compte de facturation partagent un seul compte : davantage de moyens d’authentification n’envoient pas davantage. Avec un moyen de paiement, chacun compte seul.
 - Un moyen de paiement ajouté relève la limite dans la minute.
 - Un serveur qui ne facture pas applique son seul réglage à tous.
 

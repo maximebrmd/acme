@@ -32,8 +32,9 @@ const LimiterTest = RequestLimiter.layer.pipe(
 
 // On a server that does not bill, no holder is read.
 const unbilledHolder: LimitHolder = {
+  _tag: "workspace",
   key: "workspace:unread",
-  workspaces: Effect.die("A server that does not bill reads no holder"),
+  workspace: Effect.die("A server that does not bill reads no holder"),
 };
 
 // A credential no other test counts for.
