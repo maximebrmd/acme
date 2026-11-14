@@ -2086,7 +2086,8 @@
       "RecyclingEnded": "A post of {workspace} no longer repeats: {reason, select, sourceGone {the post it repeats was deleted.} sourceWithdrawn {the post it repeats was cancelled or taken back to draft: schedule it again, then resume.} starterGone {whoever started it can no longer schedule posts there.} noChannels {none of its channels is connected any more.} contentRejected {a platform refuses what the next post would say.} planLimit {the plan has no room left for posts that month.} queueGone {its queue was deleted.} other {its queue has no free slot.}}",
       "FeedStopped": "A feed of {workspace} no longer makes posts: {reason, select, gone {its site says it is gone for good.} notAFeed {for seven days, its address gave something that is not a feed.} queueGone {the queue it puts posts on was deleted.} starterGone {whoever added it can no longer make posts there. Whoever resumes it takes it over.} other {it could not be read for seven days.}}",
       "AllowanceReached": "{workspace}'s billing account used the {allowed, number} {meter, select, outboundMessages {inbox messages} managedAds {managed ads} assistantRequests {assistant requests} assistantImages {assistant images} other {units}} its month includes without a payment method. No more go out until {resetsAt}, unless a payment method is added; reading and publishing go on.",
-      "XSpendCeiling": "{percent, select, 100 {{workspace}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax: posts to X fail without being sent, and X's counts are not read, until {resetsAt}, unless the ceiling is raised.} other {{workspace}'s billing account spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's rates. Past it, posts to X and the reading of X's counts stop until {resetsAt}.}}"
+      "XSpendCeiling": "{percent, select, 100 {{workspace}'s billing account reached its monthly ceiling for X, {ceiling} excluding tax: posts to X fail without being sent, and X's counts are not read, until {resetsAt}, unless the ceiling is raised.} other {{workspace}'s billing account spent {percent}% of its monthly ceiling for X, {ceiling} excluding tax, at X's rates. Past it, posts to X and the reading of X's counts stop until {resetsAt}.}}",
+      "PlansRetiring": "Plans priced by channels are retired: the {plan} plan of {workspace} ends on {endsAt, date, long}, and nothing after that day is charged; the unused part of what was paid for beyond it is refunded. Move to per-account pricing on the billing page before then to end it at once, refunded the same way; otherwise the workspace is on the free tier from that day."
     },
     "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance stayed used up (its uploads, or on YouTube the quota a first comment also spends), for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} paymentMethodRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s billing account has no payment method. Nothing was sent. Add one on the billing page, then post it again.} xCeilingReached {it would have passed the billing account’s monthly ceiling for X, or what it may be billed before its first invoice is paid. Nothing was sent. Raise the ceiling on the billing page, or post it again next month.} paymentFailed {X bills each post, which Peal passes on at X’s rates, and the billing account’s last payment failed. Nothing was sent. Update the payment method from the billing page, then post it again.} perAccountPricingRequired {X bills each post, which Peal passes on at X’s rates, and the workspace’s plan is one from before per-account pricing, which bills no use of X. Nothing was sent. Move to per-account pricing on the billing page, then post it again.} xThreadCut {the thread was cut: its first parts are live, and X’s meter refused the next one, as the billing account cannot be billed for it now (the billing page says why). Once it can, send the rest again, or keep the live parts as the post.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} ads {Open the ads} recycling {Open the repeating posts} feeds {Open the feeds} other {Open the channels}}",
@@ -2360,6 +2361,11 @@
         "failed": "The change was not saved. Try again."
       },
       "usedOfMoney": "{used} of {most}"
+    },
+    "move": {
+      "title": "Move to per-account pricing",
+      "description": "{plan} is priced by tiers of channels and no longer sold. Ordering per-account pricing opens its own checkout: once per-account pricing starts, the {plan} plan ends at once, and its unused time is refunded to the payment method it was paid with. The accounts are then billed by the day, at the rates below.",
+      "trial": "{plan} is priced by tiers of channels and no longer sold. Ordering per-account pricing opens its own checkout, and ends the trial once per-account pricing starts: nothing is charged for the trial."
     }
   },
   "BillingAccount": {
@@ -2478,7 +2484,7 @@
     "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
     "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
     "trial": "{workspace} is in its trial: ordering starts per-account pricing, and ends the trial once Stripe confirms it. Nothing is charged for the trial.",
-    "legacyMove": "{workspace} is on {plan}, priced by channels. Moving gives no credit for its unused time yet: it stays paid until its period ends, while the accounts are billed per account from the move.",
+    "legacyMove": "{workspace} is on {plan}, priced by channels. Once per-account pricing starts, the plan ends at once and its unused time is refunded to the payment method it was paid with; the accounts are billed per account from then.",
     "contact": "Write to us",
     "orRemove": "{limit, select, channels {Or disconnect a channel to make room.} members {Or remove a member, or revoke a pending invitation, to make room.} scheduledPosts {Or pick another month, or cancel a post of that month.} assistantRequests {Or ask again tomorrow.} mediaStorage {Or delete media to make room.} other {}}",
     "askManagers": "Owners and admins of {workspace} add its payment method: {names}.",
@@ -3355,7 +3361,8 @@
       "twoStepOff": "Two-step verification is off on this account: there is nothing to reset.",
       "unknown": "That did not work. Try again.",
       "verified": "This address is confirmed already.",
-      "workspaceGone": "This workspace no longer exists, or a partner owns it."
+      "workspaceGone": "This workspace no longer exists, or a partner owns it.",
+      "billingOff": "This server does not bill: every key sends under its setting."
     },
     "workspaces": {
       "title": "Workspaces",
@@ -3433,7 +3440,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} setRequestLimit {Set a workspace’s rate limit} settleCreditProblem {Marked a refund settled} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -3514,7 +3521,23 @@
       "detachHint": "The workspace leaves this account for its oldest owner's, which undoes a merge.",
       "detach": "Detach",
       "detached": "The workspace was detached.",
-      "mergedMark": "(merged by staff)"
+      "mergedMark": "(merged by staff)",
+      "creditProblems": {
+        "title": "Refunds that did not go through",
+        "description": "Money owed back that Stripe did not give: a credit it refused for good, or a refund it reported failed. Settle each by hand, in Stripe's dashboard or another way: the customer was told the money goes back.",
+        "empty": "Nothing is owed back.",
+        "at": "When",
+        "kind": "What",
+        "amount": "Amount",
+        "stripe": "At Stripe",
+        "workspace": "Workspace",
+        "noWorkspace": "Erased",
+        "kindName": "{kind, select, creditRefused {Credit refused} refundFailed {Refund failed} other {{kind}}}",
+        "settled": "Settled",
+        "settle": "Mark settled",
+        "reason": "How it was settled",
+        "settledToast": "Marked settled."
+      }
     },
     "legal": {
       "title": "Legal requests",
@@ -3637,6 +3660,21 @@
       "allHint": "Turns off every short link of this workspace still on, as when it is reported for abuse: each then answers 410. Recorded once in the audit log, with the reason.",
       "disableAll": "Turn them all off",
       "allDisabled": "{count, plural, =0 {No short link was still on.} one {# short link turned off.} other {# short links turned off.}}"
+    },
+    "requestLimit": {
+      "title": "API rate limit",
+      "description": "How many requests a minute each key of the workspace, and each application acting in it, may send.",
+      "current": "{requestsPerMinute, number} requests a minute: {policy, select, default {the server’s setting} free {a billing account without a payment method} override {set by staff for this workspace} other {{policy}}}.",
+      "setOn": "Set on",
+      "unbilled": "This server does not bill: every key sends under its setting, and no workspace has a limit of its own.",
+      "hint": "A limit of the workspace’s own replaces its standing’s within a minute, whatever its billing account pays. Removing it gives the standing’s back.",
+      "limit": "Requests a minute",
+      "limitHint": "From 1 to {most, number}. {offered, number} is what is offered on request.",
+      "save": "Set the limit",
+      "saving": "Saving…",
+      "saved": "The workspace’s limit is set.",
+      "remove": "Remove its own limit",
+      "removed": "The workspace sends under its standing’s limit again."
     }
   },
   "Impersonation": {

@@ -436,6 +436,13 @@ export const french: EmailCatalog = {
     subject:
       "Ajoutez un moyen de paiement à {workspaceName} avant le {graceUntil}",
   },
+  plansRetiring: {
+    action: "Passer au tarif par compte",
+    body: "Les formules tarifées par paliers de canaux sont retirées, dont {plan}. La formule {plan} de {workspaceName} prend fin le {endsAt}, et rien n’est facturé au-delà de ce jour : la part non utilisée de ce qui a été payé au-delà est remboursée sur le moyen de paiement qui l’a réglée, et une période renouvelée avant ce jour n’est facturée que jusqu’à lui. D’ici là, vous pouvez passer au tarif par compte sur la page de facturation, par une commande qui lui est propre : la formule prend alors fin aussitôt, sa part non utilisée remboursée de la même façon. Sinon, l’espace de travail passe à l’offre gratuite ce jour-là, avec ses premiers comptes gratuits ; s’il en compte davantage, il ne publie plus rien tant qu’un moyen de paiement n’est pas ajouté ou que moins de comptes ne sont gardés.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "La formule {plan} de {workspaceName} prend fin le {endsAt}",
+  },
   allowanceReached: {
     action: "Ajouter un moyen de paiement",
     body: "{workspaceName} a utilisé les {allowed} {meter} que son compte de facturation inclut ce mois-ci sans moyen de paiement. Jusqu’au {resetsAt}, le compteur s’arrête : plus aucun message n’est envoyé et aucune nouvelle publicité n’est suivie ; la lecture, la publication et tout le reste continuent. Ajoutez un moyen de paiement sur la page de facturation pour continuer dès maintenant : ce qui est utilisé au-delà de l’inclus est alors facturé au prix de la grille tarifaire.",

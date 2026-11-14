@@ -177,11 +177,15 @@ and no socket, for tests.
   through `#shared/api/partner-key.ts` (`partnerKeyOnly`,
   `withoutPartnerScope`, `partnerClosed`), in the same words.
 - Bearer credentials are rate limited (`RequestLimits`, backed by the
-  activity context's `RequestLimiter`): `PEAL_API_REQUESTS_PER_MINUTE` (600)
-  per API key, and per OAuth client and user (`limitSubjectOf`: a key counts
-  by its id, whatever it belongs to), in fixed one-minute windows, one upsert
-  per request on `activity.request_counts` under the subject's SHA-256, the
-  same count for the API and the MCP endpoint; sessions are not counted. Every
+  activity context's `RequestLimiter`): on a server that does not bill,
+  `PEAL_API_REQUESTS_PER_MINUTE` (600) per API key, and per OAuth client
+  and user (`limitSubjectOf`: a key counts by its id, whatever it belongs
+  to); on one that bills, by the billing account's standing, the free tier
+  counted per account (the activity guide says how), in fixed one-minute
+  windows, one upsert per request on `activity.request_counts` under the
+  subject's SHA-256, the same count for the API and the MCP endpoint;
+  sessions are not counted. `RequestLimits.admit` takes the workspace the
+  request names (`:workspaceId`, or the MCP connection's). Every
   such answer carries `RateLimit-Policy` and `RateLimit` (the IETF draft's
   structured fields); past the limit `Authentication` answers
   `TooManyRequests` (429, `Retry-After`) as a response, not a failure, which

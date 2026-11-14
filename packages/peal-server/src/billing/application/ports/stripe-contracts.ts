@@ -14,24 +14,56 @@ export interface PaidInvoice {
   readonly invoiceId: string;
   /** Its lines: what each charged before tax, and from when. */
   readonly lines: readonly InvoiceLine[];
+  /**
+   * Its lines with the period each paid for, as Stripe gives them: a
+   * renewal may also carry an earlier period's prorations. None from a
+   * stand-in that lists no periods.
+   */
+  readonly linePeriods?: readonly {
+    readonly amount: number;
+    readonly end: DateTime.Utc;
+    readonly start: DateTime.Utc;
+  }[];
   readonly paid: Money;
   readonly periodEnd: Option.Option<DateTime.Utc>;
   readonly periodStart: Option.Option<DateTime.Utc>;
 }
 
-/** What goes back to the consumer of one paid invoice, in its currency. */
+/**
+ * What goes back to the consumer of one paid invoice, in its currency:
+ * `amount`, or, with `share`, that share (0 to 1) of what is still
+ * refundable of it, never more than `amount`.
+ */
 export interface InvoiceCredit {
   readonly amount: number;
   readonly invoiceId: string;
+  readonly share?: number;
 }
 
 /**
- * Why money goes back: a consumer's withdrawal, once per subscription, or
- * the renewals a cancellation received before them should have stopped,
- * once per request.
+ * What was credited of one invoice: what was asked, and what Stripe still
+ * let go back of it (what it took, less the credit notes and refunds made
+ * since), never more.
+ */
+export interface InvoiceCredited {
+  readonly asked: number;
+  readonly credited: number;
+  readonly currency: string;
+  readonly invoiceId: string;
+  /** Stripe's code, when it refused this invoice's credit for good. */
+  readonly refused: Option.Option<string>;
+}
+
+/**
+ * Why money goes back: a consumer's withdrawal, once per subscription; the
+ * renewals a cancellation received before them should have stopped, once
+ * per request; or the unused time of a legacy plan ended as it moved to
+ * per-account pricing, once per subscription.
  */
 export type CreditReason =
   | { readonly _tag: "lateCancellation"; readonly requestKey: string }
+  | { readonly _tag: "movedToRateCard" }
+  | { readonly _tag: "retirement" }
   | { readonly _tag: "withdrawal" };
 
 /** Why a subscription is ended at once. */
@@ -41,6 +73,9 @@ export type EndReason =
   | "duplicateTrial"
   // A second per-account subscription of one billing account.
   | "duplicateSubscription"
+  // A legacy plan ended as per-account pricing started, its unused time
+  // credited.
+  | "movedToRateCard"
   | "orderedDuringTrial"
   | "trialCancelled"
   | "withdrawn";
@@ -81,13 +116,31 @@ export class StripeContracts extends Context.Service<
      * invoice and the tax Stripe reports match the refund: once per
      * invoice for `reason` (a withdrawal's subscription, a cancellation's
      * request), however long after it is asked again, as each note
-     * carries its key and one found is not made again.
+     * carries its key and one found is not made again. Each is capped at
+     * what is still refundable of its invoice: what it took, less the
+     * credit notes made since and the refunds made outside them. A legacy
+     * plan's end, by a move or its retirement, shares one key per invoice,
+     * so it is credited once. An invoice Stripe refuses for good is said
+     * (`refused`) and the others go on; only Stripe not answering fails.
      */
     readonly credit: (
       workspaceId: WorkspaceId,
       subscriptionId: string,
       credits: readonly InvoiceCredit[],
       reason: CreditReason
+    ) => Effect.Effect<readonly InvoiceCredited[], StripeUnreachable>;
+    /**
+     * Sets a retired legacy plan to end at `at`: within the period paid
+     * for without proration (its unused part is credited by a credit note
+     * once it ends), in a later one charging the period it renews into
+     * only up to `at` (`prorate`), as Stripe does there anyway. Asked again
+     * for the same day, the same request.
+     */
+    readonly retireAt: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      at: DateTime.Utc,
+      prorate: boolean
     ) => Effect.Effect<void, StripeUnreachable>;
     /**
      * Sets a trial to end, cancelled, when its trial does, so it never

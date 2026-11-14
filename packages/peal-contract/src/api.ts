@@ -447,12 +447,14 @@ export {
   SharedPlatformAccountPageSchema,
   SharedPlatformAccountSchema,
   StaffBillingAccountSchema,
+  StaffCreditProblemSchema,
 } from "./billing-accounts-desk.ts";
 
 export type {
   SharedPlatformAccount,
   SharedPlatformAccountPage,
   StaffBillingAccount,
+  StaffCreditProblem,
 } from "./billing-accounts-desk.ts";
 
 export {
@@ -1583,6 +1585,7 @@ export type {
 export { ScheduleInPast } from "./schedule-in-past.ts";
 
 export {
+  maxRequestLimitPerMinute,
   maxStaffReasonLength,
   StaffActionSchema,
   StaffApi,
@@ -1596,6 +1599,8 @@ export {
   staffPageSize,
   StaffReasonPayloadSchema,
   StaffReasonSchema,
+  StaffRequestLimitPayloadSchema,
+  StaffRequestLimitSchema,
   StaffSessionSchema,
   staffShortLinkPageSize,
   StaffShortLinkPageSchema,
@@ -1621,6 +1626,7 @@ export type {
   StaffPartner,
   StaffPostCounts,
   StaffReasonPayload,
+  StaffRequestLimit,
   StaffSession,
   StaffShortLink,
   StaffShortLinkPage,

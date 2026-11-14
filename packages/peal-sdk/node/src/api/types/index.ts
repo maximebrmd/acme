@@ -424,6 +424,7 @@ export * from "./NoticeEventCommentsReceived.js";
 export * from "./NoticeEventFeedStopped.js";
 export * from "./NoticeEventMessagesReceived.js";
 export * from "./NoticeEventPaymentMethodNeeded.js";
+export * from "./NoticeEventPlansRetiring.js";
 export * from "./NoticeEventPostApprovalRequested.js";
 export * from "./NoticeEventPostApproved.js";
 export * from "./NoticeEventPostChangesRequested.js";

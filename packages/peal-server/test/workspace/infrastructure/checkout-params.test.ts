@@ -36,6 +36,9 @@ const answering = (answer: CheckoutAnswer): BillingHooks => ({
     await Promise.resolve();
   },
   payerOf: async () => await Promise.resolve(null),
+  refundFailed: async () => {
+    await Promise.resolve();
+  },
   subscriptionChanged: async () => {
     await Promise.resolve();
   },

@@ -60,6 +60,14 @@ export const StaffActionSchema = Schema.Literals([
   // Took a workspace (the event's) out of its billing account, back to
   // its oldest owner's: undoes a merge.
   "detachBillingWorkspace",
+  // Gave the event's workspace an API rate limit of its own (`activity`
+  // context), in place of its standing's: the object ids hold it
+  // (`requestsPerMinute`), `standing` when staff removed it.
+  "setRequestLimit",
+  // Marked a credit Stripe refused, or a refund it reported failed, as
+  // settled by hand (`billing` context): the object ids hold its Stripe
+  // subscription or refund.
+  "settleCreditProblem",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

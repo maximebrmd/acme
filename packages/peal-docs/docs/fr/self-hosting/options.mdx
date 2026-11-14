@@ -88,8 +88,9 @@ Une limite s’applique quand on ajoute quelque chose : un espace de travail pas
   <Step title="Ajouter le webhook">
     Ajoutez un webhook vers `PUBLIC_URL/api/auth/stripe/webhook` avec les
     événements `customer.subscription.created`,
-    `customer.subscription.updated`, `customer.subscription.deleted` et
-    `checkout.session.completed`, et définissez `STRIPE_WEBHOOK_SECRET` à son
+    `customer.subscription.updated`, `customer.subscription.deleted`,
+    `checkout.session.completed` et `refund.failed` (le dernier signale à
+    l’équipe un remboursement échoué), et définissez `STRIPE_WEBHOOK_SECRET` à son
     secret de signature. Laissez ce chemin ouvert à Stripe si quelque chose
     protège le reste de `/api/auth`.
   </Step>

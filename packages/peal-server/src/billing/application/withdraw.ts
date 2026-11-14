@@ -10,9 +10,8 @@ import type { RequestIntent } from "#billing/domain/contract-request.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
 import { currency } from "#billing/domain/prices.ts";
-import type { Subscription } from "#billing/domain/subscription.ts";
 import { WithdrawalUnavailable } from "#billing/domain/withdrawal-unavailable.ts";
-import { mayWithdraw, refundOf } from "#billing/domain/withdrawal.ts";
+import { mayWithdraw } from "#billing/domain/withdrawal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -22,6 +21,7 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { refusedAsFailure } from "./credited.ts";
 import { contractAt, subscriptionNamed } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
@@ -31,6 +31,7 @@ import type { InvoiceCredit, PaidInvoice } from "./ports/stripe-contracts.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
 import { Withdrawals } from "./ports/withdrawals.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
+import { unusedCredits as creditsAt } from "./unused-time.ts";
 
 /** What withdrawing would do now, for the member to confirm. */
 export interface WithdrawalPreview {
@@ -84,43 +85,6 @@ type ReceivedFailure =
   | WithdrawalUnavailable;
 
 type WithdrawalFailure = ReceivedFailure | MissingPermission | PersonRequired;
-
-// What goes back of each paid invoice at `at`: the part of the period it
-// paid for not supplied yet, that period read from its lines, or else the
-// subscription's current one. Without either, all of it goes back.
-// Per-account pricing bills in arrears: what it was paid was for usage
-// supplied, so nothing goes back, whatever its lines say.
-const creditsAt = (
-  invoices: readonly PaidInvoice[],
-  subscription: Subscription,
-  at: DateTime.Utc
-): readonly InvoiceCredit[] =>
-  invoices.map((invoice) => {
-    if (subscription.plan === "payAsYouGo") {
-      return { amount: 0, invoiceId: invoice.invoiceId };
-    }
-
-    const period = Option.all({
-      end: invoice.periodEnd,
-      start: invoice.periodStart,
-    }).pipe(
-      Option.orElse(() =>
-        Option.all({
-          end: subscription.currentPeriodEnd,
-          start: subscription.currentPeriodStart,
-        })
-      )
-    );
-
-    return {
-      amount: Option.match(period, {
-        onNone: () => invoice.paid.amount,
-        onSome: ({ end, start }) =>
-          refundOf({ end, paid: invoice.paid.amount, start }, at),
-      }),
-      invoiceId: invoice.invoiceId,
-    };
-  });
 
 const totalOf = (
   invoices: readonly PaidInvoice[],
@@ -314,12 +278,14 @@ export class Withdraw extends Context.Service<
         // Computed at the time recorded: tried again, each invoice gets the
         // same credit, under the same key.
         if (recorded.refunded.amount > 0) {
-          yield* stripe.credit(
-            workspaceId,
-            id,
-            creditsAt(found.invoices, subscription, recorded.requestedAt),
-            { _tag: "withdrawal" }
-          );
+          yield* stripe
+            .credit(
+              workspaceId,
+              id,
+              creditsAt(found.invoices, subscription, recorded.requestedAt),
+              { _tag: "withdrawal" }
+            )
+            .pipe(Effect.flatMap(refusedAsFailure(workspaceId)));
         }
 
         // Per-account pricing bills the month past: its usage to now is

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { buttonVariants } from "peal-ui/components/button";
 
 import { BillingAccountDetails } from "#components/staff/billing-account-details.tsx";
+import { CreditProblemsTable } from "#components/staff/credit-problems-table.tsx";
 import { SearchForm } from "#components/staff/search-form.tsx";
 import { SharedChannelsTable } from "#components/staff/shared-channels-table.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -37,6 +38,8 @@ const BillingAccountsPage = async ({
     desk.sharedChannels({ query: after === undefined ? {} : { after } })
   );
 
+  const problems = await accountsDeskRead((desk) => desk.creditProblems());
+
   const found =
     query === undefined
       ? Option.none()
@@ -68,6 +71,13 @@ const BillingAccountsPage = async ({
         <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">{t("creditProblems.title")}</h2>
+        <p className="text-muted-foreground text-sm">
+          {t("creditProblems.description")}
+        </p>
+        <CreditProblemsTable items={problems.items} />
+      </section>
       <SearchForm label={t("lookup")} pathname={pathname} query={query} />
       {shown}
       <section className="flex flex-col gap-3">

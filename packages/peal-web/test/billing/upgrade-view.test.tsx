@@ -273,14 +273,14 @@ describe(UpgradeView, () => {
     ).toStrictEqual([]);
   });
 
-  it("tells a legacy plan's member that moving gives no credit yet", async () => {
+  it("tells a legacy plan's member that moving ends it and refunds its unused time", async () => {
     const html = await render("en", {
       reason: { ...third, allowed: 5, plan: "starter", used: 5 },
     });
 
     expect(html).toContain("The Starter plan of Studio Nord allows 5 channels");
     expect(html).toContain(
-      "Moving gives no credit for its unused time yet: it stays paid until its period ends"
+      "Once per-account pricing starts, the plan ends at once and its unused time is refunded"
     );
   });
 

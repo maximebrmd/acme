@@ -26992,18 +26992,22 @@ var (
 	tooManyRequestsEncodedFieldMessage           = big.NewInt(1 << 2)
 	tooManyRequestsEncodedFieldRequestID         = big.NewInt(1 << 3)
 	tooManyRequestsEncodedFieldLimit             = big.NewInt(1 << 4)
-	tooManyRequestsEncodedFieldRetryAfterSeconds = big.NewInt(1 << 5)
-	tooManyRequestsEncodedFieldWindowSeconds     = big.NewInt(1 << 6)
+	tooManyRequestsEncodedFieldPolicy            = big.NewInt(1 << 5)
+	tooManyRequestsEncodedFieldRetryAfterSeconds = big.NewInt(1 << 6)
+	tooManyRequestsEncodedFieldWindowSeconds     = big.NewInt(1 << 7)
+	tooManyRequestsEncodedFieldWithPaymentMethod = big.NewInt(1 << 8)
 )
 
 type TooManyRequestsEncoded struct {
-	Tag               TooManyRequestsEncodedTag `json:"_tag" url:"_tag"`
-	Code              *string                   `json:"code,omitempty" url:"code,omitempty"`
-	Message           *string                   `json:"message,omitempty" url:"message,omitempty"`
-	RequestID         *string                   `json:"requestId,omitempty" url:"requestId,omitempty"`
-	Limit             int                       `json:"limit" url:"limit"`
-	RetryAfterSeconds int                       `json:"retryAfterSeconds" url:"retryAfterSeconds"`
-	WindowSeconds     int                       `json:"windowSeconds" url:"windowSeconds"`
+	Tag               TooManyRequestsEncodedTag     `json:"_tag" url:"_tag"`
+	Code              *string                       `json:"code,omitempty" url:"code,omitempty"`
+	Message           *string                       `json:"message,omitempty" url:"message,omitempty"`
+	RequestID         *string                       `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Limit             int                           `json:"limit" url:"limit"`
+	Policy            *TooManyRequestsEncodedPolicy `json:"policy,omitempty" url:"policy,omitempty"`
+	RetryAfterSeconds int                           `json:"retryAfterSeconds" url:"retryAfterSeconds"`
+	WindowSeconds     int                           `json:"windowSeconds" url:"windowSeconds"`
+	WithPaymentMethod *int                          `json:"withPaymentMethod,omitempty" url:"withPaymentMethod,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -27047,6 +27051,13 @@ func (t *TooManyRequestsEncoded) GetLimit() int {
 	return t.Limit
 }
 
+func (t *TooManyRequestsEncoded) GetPolicy() *TooManyRequestsEncodedPolicy {
+	if t == nil {
+		return nil
+	}
+	return t.Policy
+}
+
 func (t *TooManyRequestsEncoded) GetRetryAfterSeconds() int {
 	if t == nil {
 		return 0
@@ -27059,6 +27070,13 @@ func (t *TooManyRequestsEncoded) GetWindowSeconds() int {
 		return 0
 	}
 	return t.WindowSeconds
+}
+
+func (t *TooManyRequestsEncoded) GetWithPaymentMethod() *int {
+	if t == nil {
+		return nil
+	}
+	return t.WithPaymentMethod
 }
 
 func (t *TooManyRequestsEncoded) GetExtraProperties() map[string]interface{} {
@@ -27112,6 +27130,13 @@ func (t *TooManyRequestsEncoded) SetLimit(limit int) {
 	t.require(tooManyRequestsEncodedFieldLimit)
 }
 
+// SetPolicy sets the Policy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRequestsEncoded) SetPolicy(policy *TooManyRequestsEncodedPolicy) {
+	t.Policy = policy
+	t.require(tooManyRequestsEncodedFieldPolicy)
+}
+
 // SetRetryAfterSeconds sets the RetryAfterSeconds field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (t *TooManyRequestsEncoded) SetRetryAfterSeconds(retryAfterSeconds int) {
@@ -27124,6 +27149,13 @@ func (t *TooManyRequestsEncoded) SetRetryAfterSeconds(retryAfterSeconds int) {
 func (t *TooManyRequestsEncoded) SetWindowSeconds(windowSeconds int) {
 	t.WindowSeconds = windowSeconds
 	t.require(tooManyRequestsEncodedFieldWindowSeconds)
+}
+
+// SetWithPaymentMethod sets the WithPaymentMethod field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyRequestsEncoded) SetWithPaymentMethod(withPaymentMethod *int) {
+	t.WithPaymentMethod = withPaymentMethod
+	t.require(tooManyRequestsEncodedFieldWithPaymentMethod)
 }
 
 func (t *TooManyRequestsEncoded) UnmarshalJSON(data []byte) error {
@@ -27166,6 +27198,31 @@ func (t *TooManyRequestsEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", t)
+}
+
+type TooManyRequestsEncodedPolicy string
+
+const (
+	TooManyRequestsEncodedPolicyDefault  TooManyRequestsEncodedPolicy = "default"
+	TooManyRequestsEncodedPolicyFree     TooManyRequestsEncodedPolicy = "free"
+	TooManyRequestsEncodedPolicyOverride TooManyRequestsEncodedPolicy = "override"
+)
+
+func NewTooManyRequestsEncodedPolicyFromString(s string) (TooManyRequestsEncodedPolicy, error) {
+	switch s {
+	case "default":
+		return TooManyRequestsEncodedPolicyDefault, nil
+	case "free":
+		return TooManyRequestsEncodedPolicyFree, nil
+	case "override":
+		return TooManyRequestsEncodedPolicyOverride, nil
+	}
+	var t TooManyRequestsEncodedPolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TooManyRequestsEncodedPolicy) Ptr() *TooManyRequestsEncodedPolicy {
+	return &t
 }
 
 type TooManyRequestsEncodedTag string

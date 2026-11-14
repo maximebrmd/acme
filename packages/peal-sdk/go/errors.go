@@ -255,7 +255,7 @@ func (s *ServiceUnavailableError) GetBody() any {
 	return s.Body
 }
 
-// This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.
+// This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left. `policy` says which limit applied: on a server that bills, a billing account without a payment method sends fewer (`free`), and `withPaymentMethod` is what a payment method gives.
 type TooManyRequestsError struct {
 	*core.APIError
 	Body any

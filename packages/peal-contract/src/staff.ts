@@ -6,6 +6,7 @@ import {
   OpenApi,
 } from "effect/http-api";
 
+import { BillingNotEnabled } from "./billing-not-enabled.ts";
 import { PlanSchema } from "./billing-plans.ts";
 import { BillingSubscriptionSchema } from "./billing.ts";
 import { ChannelStatusSchema } from "./channels.ts";
@@ -73,7 +74,13 @@ export const StaffReasonSchema = Schema.Trim.check(
  * (`requirePaymentMethod`) and its free tier given back
  * (`restoreFreeTier`), the accounts' ids among the object ids; and a
  * workspace detached from its billing account (`detachBillingWorkspace`),
- * the account's id among the object ids and the workspace as the event's.
+ * the account's id among the object ids and the workspace as the event's;
+ * and a workspace given an API rate limit of its own, or its standing's
+ * again (`setRequestLimit`), the limit (`requestsPerMinute`, `standing`
+ * once removed) among the object ids; and a credit Stripe refused or a
+ * refund it reported failed, marked settled by hand
+ * (`settleCreditProblem`), its subscription or refund among the object
+ * ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -96,6 +103,8 @@ export const StaffActionSchema = Schema.Literals([
   "requirePaymentMethod",
   "restoreFreeTier",
   "detachBillingWorkspace",
+  "setRequestLimit",
+  "settleCreditProblem",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -474,6 +483,42 @@ export const StaffShortLinksDisabledSchema = Schema.Struct({
   disabled: Schema.Int,
 }).annotate({ identifier: "StaffShortLinksDisabled" });
 
+/** The most requests a minute staff may give a workspace of its own. */
+export const maxRequestLimitPerMinute = 10_000;
+
+/**
+ * A workspace's API rate limit, as staff read it: what its keys and the
+ * applications acting in it send under now (`policy`: the server's
+ * setting, `free` for a billing account without a payment method, or
+ * `override`), and the limit staff set for it, if they did. On a server
+ * that does not bill (`bills` false), the setting is everyone's.
+ */
+export const StaffRequestLimitSchema = Schema.Struct({
+  bills: Schema.Boolean,
+  override: Schema.NullOr(
+    Schema.Struct({
+      requestsPerMinute: Schema.Int,
+      setAt: Schema.DateTimeUtc,
+    })
+  ),
+  // Whether its billing account pays: a payment method, or a legacy plan.
+  paying: Schema.Boolean,
+  policy: Schema.Literals(["default", "free", "override"]),
+  requestsPerMinute: Schema.Int,
+}).annotate({ identifier: "StaffRequestLimit" });
+
+export type StaffRequestLimit = typeof StaffRequestLimitSchema.Type;
+
+/** A workspace's own rate limit to set, or null for its standing's again. */
+export const StaffRequestLimitPayloadSchema = Schema.Struct({
+  reason: StaffReasonSchema,
+  requestsPerMinute: Schema.NullOr(
+    Schema.Int.check(
+      Schema.isBetween({ maximum: maxRequestLimitPerMinute, minimum: 1 })
+    )
+  ),
+}).annotate({ identifier: "StaffRequestLimitPayload" });
+
 /**
  * The staff console, for the people who run the server: accounts,
  * workspaces, the system's health, and the audit log of what staff did.
@@ -662,6 +707,36 @@ export class StaffApi extends HttpApiGroup.make("staff")
         description:
           "Turns off every short link of the workspace that is still on, as when it is reported for abuse: each answers 410. Recorded once in the audit log, with the reason and how many, before it is done.",
         summary: "Turn off a workspace's short links",
+      })
+    ),
+    HttpApiEndpoint.get(
+      "workspaceRequestLimit",
+      "/workspaces/:workspaceId/request-limit",
+      {
+        error: WorkspaceNotFound,
+        params: { workspaceId: Schema.String },
+        success: StaffRequestLimitSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers with the API rate limit the workspace's keys, and the applications acting in it, send under now: the server's setting, the free tier's for a billing account without a payment method, or the limit staff set for it.",
+        summary: "Get a workspace's rate limit",
+      })
+    ),
+    HttpApiEndpoint.post(
+      "setWorkspaceRequestLimit",
+      "/workspaces/:workspaceId/request-limit",
+      {
+        error: [WorkspaceNotFound, BillingNotEnabled],
+        params: { workspaceId: Schema.String },
+        payload: StaffRequestLimitPayloadSchema,
+        success: StaffRequestLimitSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description: `Gives the workspace an API rate limit of its own, from 1 to ${String(maxRequestLimitPerMinute)} requests a minute, in place of its standing's (1,200 is what is offered on request), or its standing's again with \`requestsPerMinute\` null. Its keys send under it within a minute. A server that does not bill answers \`BillingNotEnabled\`: the setting is everyone's there. Recorded in the audit log, with the limit and the reason, before it is done.`,
+        summary: "Set a workspace's rate limit",
       })
     ),
     HttpApiEndpoint.get("system", "/system", {

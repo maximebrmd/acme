@@ -132,6 +132,7 @@ import {
 } from "#shortlinks/container.ts";
 import {
   BillingAccountAuditLive,
+  CreditProblemAuditLive,
   ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
@@ -248,7 +249,8 @@ const BillingContextsLive = BillingLive.pipe(
 // The request counts and the workspaces' activity logs, which name the
 // keys and applications behind requests as the workspace context does.
 const ActivityContextLive = ActivityLive.pipe(
-  Layer.provide(CredentialNamesLive)
+  Layer.provide(CredentialNamesLive),
+  Layer.provide(BillingContextsLive)
 );
 
 // Webhooks, whose signing secrets the channels context's cipher encrypts.
@@ -571,7 +573,8 @@ const BillingAccountsDeskContextLive = BillingAccountsDeskLive.pipe(
       SharedPlatformAccountsLive,
       PartnerOwnershipLive,
       WorkspaceOwnersLive,
-      BillingAccountAuditLive
+      BillingAccountAuditLive,
+      CreditProblemAuditLive
     )
   )
 );

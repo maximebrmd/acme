@@ -31,9 +31,13 @@ public final class TooManyRequestsEncoded {
 
     private final int limit;
 
+    private final Optional<TooManyRequestsEncodedPolicy> policy;
+
     private final int retryAfterSeconds;
 
     private final int windowSeconds;
+
+    private final Optional<Integer> withPaymentMethod;
 
     private final Map<String, Object> additionalProperties;
 
@@ -43,16 +47,20 @@ public final class TooManyRequestsEncoded {
             Optional<String> message,
             Optional<String> requestId,
             int limit,
+            Optional<TooManyRequestsEncodedPolicy> policy,
             int retryAfterSeconds,
             int windowSeconds,
+            Optional<Integer> withPaymentMethod,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.limit = limit;
+        this.policy = policy;
         this.retryAfterSeconds = retryAfterSeconds;
         this.windowSeconds = windowSeconds;
+        this.withPaymentMethod = withPaymentMethod;
         this.additionalProperties = additionalProperties;
     }
 
@@ -81,6 +89,11 @@ public final class TooManyRequestsEncoded {
         return limit;
     }
 
+    @JsonProperty("policy")
+    public Optional<TooManyRequestsEncodedPolicy> getPolicy() {
+        return policy;
+    }
+
     @JsonProperty("retryAfterSeconds")
     public int getRetryAfterSeconds() {
         return retryAfterSeconds;
@@ -89,6 +102,11 @@ public final class TooManyRequestsEncoded {
     @JsonProperty("windowSeconds")
     public int getWindowSeconds() {
         return windowSeconds;
+    }
+
+    @JsonProperty("withPaymentMethod")
+    public Optional<Integer> getWithPaymentMethod() {
+        return withPaymentMethod;
     }
 
     @java.lang.Override
@@ -108,8 +126,10 @@ public final class TooManyRequestsEncoded {
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && limit == other.limit
+                && policy.equals(other.policy)
                 && retryAfterSeconds == other.retryAfterSeconds
-                && windowSeconds == other.windowSeconds;
+                && windowSeconds == other.windowSeconds
+                && withPaymentMethod.equals(other.withPaymentMethod);
     }
 
     @java.lang.Override
@@ -120,8 +140,10 @@ public final class TooManyRequestsEncoded {
                 this.message,
                 this.requestId,
                 this.limit,
+                this.policy,
                 this.retryAfterSeconds,
-                this.windowSeconds);
+                this.windowSeconds,
+                this.withPaymentMethod);
     }
 
     @java.lang.Override
@@ -169,6 +191,14 @@ public final class TooManyRequestsEncoded {
         _FinalStage requestId(Optional<String> requestId);
 
         _FinalStage requestId(String requestId);
+
+        _FinalStage policy(Optional<TooManyRequestsEncodedPolicy> policy);
+
+        _FinalStage policy(TooManyRequestsEncodedPolicy policy);
+
+        _FinalStage withPaymentMethod(Optional<Integer> withPaymentMethod);
+
+        _FinalStage withPaymentMethod(Integer withPaymentMethod);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -181,6 +211,10 @@ public final class TooManyRequestsEncoded {
         private int retryAfterSeconds;
 
         private int windowSeconds;
+
+        private Optional<Integer> withPaymentMethod = Optional.empty();
+
+        private Optional<TooManyRequestsEncodedPolicy> policy = Optional.empty();
 
         private Optional<String> requestId = Optional.empty();
 
@@ -199,8 +233,10 @@ public final class TooManyRequestsEncoded {
             message(other.getMessage());
             requestId(other.getRequestId());
             limit(other.getLimit());
+            policy(other.getPolicy());
             retryAfterSeconds(other.getRetryAfterSeconds());
             windowSeconds(other.getWindowSeconds());
+            withPaymentMethod(other.getWithPaymentMethod());
             return this;
         }
 
@@ -229,6 +265,32 @@ public final class TooManyRequestsEncoded {
         @JsonSetter("windowSeconds")
         public _FinalStage windowSeconds(int windowSeconds) {
             this.windowSeconds = windowSeconds;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage withPaymentMethod(Integer withPaymentMethod) {
+            this.withPaymentMethod = Optional.ofNullable(withPaymentMethod);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "withPaymentMethod", nulls = Nulls.SKIP)
+        public _FinalStage withPaymentMethod(Optional<Integer> withPaymentMethod) {
+            this.withPaymentMethod = withPaymentMethod;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage policy(TooManyRequestsEncodedPolicy policy) {
+            this.policy = Optional.ofNullable(policy);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "policy", nulls = Nulls.SKIP)
+        public _FinalStage policy(Optional<TooManyRequestsEncodedPolicy> policy) {
+            this.policy = policy;
             return this;
         }
 
@@ -274,7 +336,16 @@ public final class TooManyRequestsEncoded {
         @java.lang.Override
         public TooManyRequestsEncoded build() {
             return new TooManyRequestsEncoded(
-                    tag, code, message, requestId, limit, retryAfterSeconds, windowSeconds, additionalProperties);
+                    tag,
+                    code,
+                    message,
+                    requestId,
+                    limit,
+                    policy,
+                    retryAfterSeconds,
+                    windowSeconds,
+                    withPaymentMethod,
+                    additionalProperties);
         }
 
         @JsonAnySetter
@@ -284,8 +355,10 @@ public final class TooManyRequestsEncoded {
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("limit")
+                    || key.equalsIgnoreCase("policy")
                     || key.equalsIgnoreCase("retryAfterSeconds")
-                    || key.equalsIgnoreCase("windowSeconds")) {
+                    || key.equalsIgnoreCase("windowSeconds")
+                    || key.equalsIgnoreCase("withPaymentMethod")) {
                 return;
             }
             this.additionalProperties.put(key, value);

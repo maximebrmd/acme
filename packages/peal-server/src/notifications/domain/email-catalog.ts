@@ -192,6 +192,11 @@ export interface EmailCatalog {
    */
   readonly paymentMethodNeeded: EmailMessages;
   /**
+   * `{workspaceName}`'s legacy `{plan}` is retired: it ends at `{endsAt}`
+   * unless the workspace moves to per-account pricing before.
+   */
+  readonly plansRetiring: EmailMessages;
+  /**
    * `{workspaceName}`'s billing account, without a payment method, used
    * the `{allowed}` `{meter}` its month includes, until `{resetsAt}`.
    */

@@ -49823,6 +49823,14 @@ func TestSettersTooManyRequestsEncoded(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetPolicy", func(t *testing.T) {
+		obj := &TooManyRequestsEncoded{}
+		var fernTestValuePolicy *TooManyRequestsEncodedPolicy
+		obj.SetPolicy(fernTestValuePolicy)
+		assert.Equal(t, fernTestValuePolicy, obj.Policy)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetRetryAfterSeconds", func(t *testing.T) {
 		obj := &TooManyRequestsEncoded{}
 		var fernTestValueRetryAfterSeconds int
@@ -49836,6 +49844,14 @@ func TestSettersTooManyRequestsEncoded(t *testing.T) {
 		var fernTestValueWindowSeconds int
 		obj.SetWindowSeconds(fernTestValueWindowSeconds)
 		assert.Equal(t, fernTestValueWindowSeconds, obj.WindowSeconds)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetWithPaymentMethod", func(t *testing.T) {
+		obj := &TooManyRequestsEncoded{}
+		var fernTestValueWithPaymentMethod *int
+		obj.SetWithPaymentMethod(fernTestValueWithPaymentMethod)
+		assert.Equal(t, fernTestValueWithPaymentMethod, obj.WithPaymentMethod)
 		assert.NotNil(t, obj.explicitFields)
 	})
 
@@ -49987,6 +50003,39 @@ func TestGettersTooManyRequestsEncoded(t *testing.T) {
 		_ = obj.GetLimit() // Should return zero value
 	})
 
+	t.Run("GetPolicy", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		var expected *TooManyRequestsEncodedPolicy
+		obj.Policy = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPolicy(), "getter should return the property value")
+	})
+
+	t.Run("GetPolicy_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		obj.Policy = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPolicy(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPolicy_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *TooManyRequestsEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPolicy() // Should return zero value
+	})
+
 	t.Run("GetRetryAfterSeconds", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -50031,6 +50080,39 @@ func TestGettersTooManyRequestsEncoded(t *testing.T) {
 			}
 		}()
 		_ = obj.GetWindowSeconds() // Should return zero value
+	})
+
+	t.Run("GetWithPaymentMethod", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		var expected *int
+		obj.WithPaymentMethod = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetWithPaymentMethod(), "getter should return the property value")
+	})
+
+	t.Run("GetWithPaymentMethod_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		obj.WithPaymentMethod = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetWithPaymentMethod(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetWithPaymentMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *TooManyRequestsEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetWithPaymentMethod() // Should return zero value
 	})
 
 }
@@ -50191,6 +50273,37 @@ func TestSettersMarkExplicitTooManyRequestsEncoded(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetPolicy_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		var fernTestValuePolicy *TooManyRequestsEncodedPolicy
+
+		// Act
+		obj.SetPolicy(fernTestValuePolicy)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetRetryAfterSeconds_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -50230,6 +50343,37 @@ func TestSettersMarkExplicitTooManyRequestsEncoded(t *testing.T) {
 
 		// Act
 		obj.SetWindowSeconds(fernTestValueWindowSeconds)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetWithPaymentMethod_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TooManyRequestsEncoded{}
+		var fernTestValueWithPaymentMethod *int
+
+		// Act
+		obj.SetWithPaymentMethod(fernTestValueWithPaymentMethod)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -73545,6 +73689,42 @@ func TestEnumTooManyFeedsEncodedTag(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewTooManyFeedsEncodedTagFromString("TooManyFeeds")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumTooManyRequestsEncodedPolicy(t *testing.T) {
+	t.Run("NewFromString_default", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewTooManyRequestsEncodedPolicyFromString("default")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, TooManyRequestsEncodedPolicy("default"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_free", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewTooManyRequestsEncodedPolicyFromString("free")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, TooManyRequestsEncodedPolicy("free"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_override", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewTooManyRequestsEncodedPolicyFromString("override")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, TooManyRequestsEncodedPolicy("override"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewTooManyRequestsEncodedPolicyFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewTooManyRequestsEncodedPolicyFromString("default")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

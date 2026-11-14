@@ -457,10 +457,36 @@ describe(BillingView, () => {
         "2 of 5",
       ])
     ).toStrictEqual([]);
-    expect(html).not.toContain("Order with obligation to pay");
     // It has a payment method, and its plan is not priced by the day.
     expect(html).not.toContain("With a payment method, the month so far");
     expect(html).not.toContain("account-days so far");
+  });
+
+  it("offers a legacy plan's billing managers the move to per-account pricing, behind the order box", async () => {
+    const english = await render("en", { billing: onStarter });
+
+    expect(
+      missing(english, [
+        "Move to per-account pricing",
+        "the Starter plan ends at once, and its unused time is refunded to the payment method it was paid with",
+        "Order with obligation to pay",
+      ])
+    ).toStrictEqual([]);
+
+    const french = await render("fr", { billing: onStarter });
+
+    expect(
+      missing(french, [
+        "Passer au tarif par compte",
+        "la formule Starter prend fin aussitôt, et sa part non utilisée est remboursée",
+        "Commander avec obligation de paiement",
+      ])
+    ).toStrictEqual([]);
+
+    // A member who does not manage billing is told who does.
+    const viewer = await render("en", { billing: onStarter, canManage: false });
+
+    expect(viewer).not.toContain("Order with obligation to pay");
   });
 
   it("asks to confirm a cancellation in the law's words, then says when it ends", async () => {

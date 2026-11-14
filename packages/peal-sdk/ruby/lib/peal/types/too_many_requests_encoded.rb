@@ -15,9 +15,13 @@ module Peal
 
       field :limit, -> { Integer }, optional: false, nullable: false
 
+      field :policy, -> { Peal::Types::TooManyRequestsEncodedPolicy }, optional: true, nullable: false
+
       field :retry_after_seconds, -> { Integer }, optional: false, nullable: false, api_name: "retryAfterSeconds"
 
       field :window_seconds, -> { Integer }, optional: false, nullable: false, api_name: "windowSeconds"
+
+      field :with_payment_method, -> { Integer }, optional: true, nullable: false, api_name: "withPaymentMethod"
     end
   end
 end

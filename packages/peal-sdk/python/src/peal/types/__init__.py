@@ -600,6 +600,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_FeedStopped,
         NoticeEvent_MessagesReceived,
         NoticeEvent_PaymentMethodNeeded,
+        NoticeEvent_PlansRetiring,
         NoticeEvent_PostApprovalRequested,
         NoticeEvent_PostApproved,
         NoticeEvent_PostChangesRequested,
@@ -627,6 +628,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_feed_stopped import NoticeEventFeedStopped
     from .notice_event_messages_received import NoticeEventMessagesReceived
     from .notice_event_payment_method_needed import NoticeEventPaymentMethodNeeded
+    from .notice_event_plans_retiring import NoticeEventPlansRetiring
     from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
     from .notice_event_post_approved import NoticeEventPostApproved
     from .notice_event_post_changes_requested import NoticeEventPostChangesRequested
@@ -952,6 +954,7 @@ if typing.TYPE_CHECKING:
     from .too_many_queues_encoded import TooManyQueuesEncoded
     from .too_many_recycling_rules_encoded import TooManyRecyclingRulesEncoded
     from .too_many_requests_encoded import TooManyRequestsEncoded
+    from .too_many_requests_encoded_policy import TooManyRequestsEncodedPolicy
     from .too_many_requests_encoded_tag import TooManyRequestsEncodedTag
     from .too_many_requests_error_body import (
         TooManyRequestsErrorBody,
@@ -1630,6 +1633,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventFeedStopped": ".notice_event_feed_stopped",
     "NoticeEventMessagesReceived": ".notice_event_messages_received",
     "NoticeEventPaymentMethodNeeded": ".notice_event_payment_method_needed",
+    "NoticeEventPlansRetiring": ".notice_event_plans_retiring",
     "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
     "NoticeEventPostApproved": ".notice_event_post_approved",
     "NoticeEventPostChangesRequested": ".notice_event_post_changes_requested",
@@ -1655,6 +1659,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_FeedStopped": ".notice_event",
     "NoticeEvent_MessagesReceived": ".notice_event",
     "NoticeEvent_PaymentMethodNeeded": ".notice_event",
+    "NoticeEvent_PlansRetiring": ".notice_event",
     "NoticeEvent_PostApprovalRequested": ".notice_event",
     "NoticeEvent_PostApproved": ".notice_event",
     "NoticeEvent_PostChangesRequested": ".notice_event",
@@ -1975,6 +1980,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TooManyQueuesEncoded": ".too_many_queues_encoded",
     "TooManyRecyclingRulesEncoded": ".too_many_recycling_rules_encoded",
     "TooManyRequestsEncoded": ".too_many_requests_encoded",
+    "TooManyRequestsEncodedPolicy": ".too_many_requests_encoded_policy",
     "TooManyRequestsEncodedTag": ".too_many_requests_encoded_tag",
     "TooManyRequestsErrorBody": ".too_many_requests_error_body",
     "TooManyRequestsErrorBody_FeedReadsLimited": ".too_many_requests_error_body",
@@ -2675,6 +2681,7 @@ __all__ = [
     "NoticeEventFeedStopped",
     "NoticeEventMessagesReceived",
     "NoticeEventPaymentMethodNeeded",
+    "NoticeEventPlansRetiring",
     "NoticeEventPostApprovalRequested",
     "NoticeEventPostApproved",
     "NoticeEventPostChangesRequested",
@@ -2700,6 +2707,7 @@ __all__ = [
     "NoticeEvent_FeedStopped",
     "NoticeEvent_MessagesReceived",
     "NoticeEvent_PaymentMethodNeeded",
+    "NoticeEvent_PlansRetiring",
     "NoticeEvent_PostApprovalRequested",
     "NoticeEvent_PostApproved",
     "NoticeEvent_PostChangesRequested",
@@ -3020,6 +3028,7 @@ __all__ = [
     "TooManyQueuesEncoded",
     "TooManyRecyclingRulesEncoded",
     "TooManyRequestsEncoded",
+    "TooManyRequestsEncodedPolicy",
     "TooManyRequestsEncodedTag",
     "TooManyRequestsErrorBody",
     "TooManyRequestsErrorBody_FeedReadsLimited",

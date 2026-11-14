@@ -3,6 +3,7 @@ import { HttpServerResponse } from "effect/http";
 import { TooManyRequests } from "peal-contract";
 
 import { setAnswerHeader } from "#shared/api/answer-headers.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type {
   RequestLimits,
   RequestStanding,
@@ -37,6 +38,20 @@ export const limitHeaders = (
 const encodeRefusal = Schema.encodeSync(TooManyRequests);
 
 /**
+ * What a refusal says in words: when it was the limit of a billing
+ * account without a payment method, what one gives instead.
+ */
+export const refusalMessage = (standing: RequestStanding): string => {
+  const limited = `This credential may send ${String(standing.limit)} requests every ${String(standing.windowSeconds)} seconds, and sent more: nothing was done. Try again in ${String(standing.resetAfterSeconds)} seconds.`;
+
+  return Option.match(standing.withPaymentMethod, {
+    onNone: () => limited,
+    onSome: (raised) =>
+      `${limited} Its billing account has no payment method: adding one on the billing page raises the limit to ${String(raised)} requests a minute.`,
+  });
+};
+
+/**
  * The answer to a request past the limit: `TooManyRequests`, as the
  * contract encodes it. An answer, not a failure: Authentication tries each
  * of its schemes in turn, and a failure of the bearer token's would be
@@ -49,8 +64,16 @@ export const tooManyRequests = (
     encodeRefusal(
       new TooManyRequests({
         limit: standing.limit,
+        policy: standing.policy,
         retryAfterSeconds: standing.resetAfterSeconds,
         windowSeconds: standing.windowSeconds,
+        ...Option.match(standing.withPaymentMethod, {
+          onNone: () => ({}),
+          onSome: (withPaymentMethod) => ({
+            message: refusalMessage(standing),
+            withPaymentMethod,
+          }),
+        }),
       })
     ),
     { status: 429 }
@@ -63,9 +86,10 @@ export const tooManyRequests = (
  */
 export const pastLimit = (
   limits: RequestLimits["Service"],
-  principal: Principal
+  principal: Principal,
+  actingIn: Option.Option<WorkspaceId>
 ): Effect.Effect<Option.Option<RequestStanding>> =>
-  limits.admit(principal).pipe(
+  limits.admit(principal, actingIn).pipe(
     Effect.tap(
       Option.match({
         onNone: () => Effect.void,

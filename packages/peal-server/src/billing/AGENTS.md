@@ -323,9 +323,85 @@
   (`peal.billing.threshold_unset`, alert `peal-threshold-unset`) and the
   subscription recorded all the same; the daily step lifts both after
   the first paid invoice.
-- Until T10's move, a legacy subscriber who orders per-account pricing
-  is billed both until the legacy plan's period ends (it is set to end
-  then, without credit): no server bills a legacy plan today.
+- A legacy subscriber moves by ordering per-account pricing (the billing
+  page's "Move to per-account pricing": an order, then its own checkout).
+  Once the per-account subscription's row (never the event's own status: a
+  stale or resent event moves nothing) is paying, `RecordSubscription`,
+  last of what an event does, ends each legacy plan that entitles at once
+  (`endNow`, `movedToRateCard`, set to end with its period or not) after
+  crediting its unused time (`movedCredits`: each paid invoice's lines over
+  their own periods, to the second, weighed by what each charged, at the
+  moment per-account pricing started, so a retry computes the same; an
+  invoice whose lines give no period is read over its own, one with
+  neither credits nothing) through a credit note refunded to the card
+  (`CreditReason` `movedToRateCard`, key
+  `legacy-end-credit-<subscription>-<invoice>`, which a retirement's credit
+  shares, so a plan ending both ways is credited once; looked for before
+  one is made). The credit is the line-weighted unused share
+  (`InvoiceCredit.share`) of what is still refundable of the invoice
+  (`amount_paid`, less `post_payment_credit_notes_amount`, less its
+  payments' refunds made outside a credit note), so a goodwill refund made
+  since is not given twice; every other credit is capped at that. Each
+  invoice is credited on its own: one Stripe refuses for good is answered
+  `refused` and the others go on (a withdrawal or a late cancellation
+  still turns it into its permanent failure, left to staff:
+  `refusedAsFailure`). A refused one is kept for staff (`CreditProblems`,
+  `billing.credit_problems`, key `credit:<subscription>:<invoice>`), counted
+  (`peal.billing.credit_problems`, alert `peal-credit-problems`) and logged,
+  and the plan is ended all the same; only Stripe not answering makes the
+  webhook fail, so it comes back. A refund Stripe reports failed later
+  (`refund.failed`, from the same webhook: subscribe the endpoint to it) is
+  kept the same way (`CreditProblemDesk.refundFailed`, key `refund:<id>`).
+  Staff read both in the console (`billingAccountsDesk.creditProblems`,
+  "Refunds that did not go through"), settle them by hand and mark them
+  settled (`settleCreditProblem`, `SettleCreditProblem`: the audit log's
+  `settleCreditProblem` first, then `settled_at`, once); an erased
+  workspace leaves its rows without it, purged with the contract records.
+  Not the customer's balance, which Stripe's own proration would use: the
+  legacy plan was paid in euros, and a balance in euros pays no dollar
+  invoice.
+- Legacy plans are retired by the operator's command, `nx run
+  peal-server:billing:retire-plans` (`src/retire-plans.ts`, in the image;
+  `RetireLegacyPlans`, `RetirePlansLive`): it lists each legacy
+  subscription that may still give its plan with what retiring does
+  (`Retirement`), changing nothing. `--apply` takes each on its own: the
+  day asked is kept first (`retirement_requested_for`, with the end of the
+  period it had paid for, `retirement_paid_until`, and `retired_at`), then
+  Stripe (`StripeContracts.retireAt`: `cancel_at` the day, prorated only
+  when the day falls after what it had paid for, `chargesRenewal`, key
+  `retire-<subscription>-<seconds>`), and only once Stripe took it the day
+  is confirmed (`retires_at`); one that fails is `failed`, the others go
+  on, the command exits 1, and a run again takes it up from the day kept,
+  without asking Stripe when Stripe holds it already (`endsOnDay`): never
+  read as the subscriber's own end. The hourly reminders confirm such a
+  retirement too, and count the ones Stripe does not hold
+  (`peal.billing.retirements.unconfirmed`, alert
+  `peal-retirements-unconfirmed`). The day
+  is `retirementDay(noticeAt)` (`domain/plan-retirement.ts`): the first
+  midnight UTC 30 days (`retirementNotice`) or more after `noticeAt`, a
+  day after the run (`retirementTelling`), whatever the plan's period.
+  The hourly `SendBillingReminders` tells each once (`PlansRetiring`,
+  always emailed, key `plans-retiring:<subscription>`, then
+  `retirement_told_at`), moving the day later at Stripe first when the
+  notice would give fewer than 30 days (`noticeIsShort`: the day kept
+  first, never prorating a day it had paid for), unless the subscriber's
+  own cancellation ends it sooner (that stands, and nothing is told), and
+  sets
+  `peal.billing.retirements.untold_age` (alert
+  `peal-retirement-notices-behind`). When Stripe ends a retired plan on its
+  day (its `deleted` event within `retirementEndTolerance` of the day),
+  `RecordSubscription` credits what it was paid for beyond the day
+  (`CreditReason` `retirement`, as the move does); an end well before the
+  day (a move, a withdrawal) is not the retirement's. A trial runs to its
+  end; a cancellation that ends it by the day stands (`ending`), a later
+  one is brought forward. A server that does not bill lists, and refuses
+  `--apply` (`BillingOff`). Runbook (the owner, sandbox, never in tests): a
+  monthly and a yearly legacy subscription on test clocks, the command,
+  `--apply`, again (nothing more), the notice and email within the hour,
+  the clock past a renewal before the day (charged only up to the day) and
+  past the day (each ends, the credit note of the unused part), one moved
+  before its day (credited once, ended, no end left set), and a
+  `refund.failed` sent from the dashboard (listed for staff).
 - `GET …/billing` answers `accounts` (the workspace's own and the
   pooled count, and for the billing workspace's members only the month's
   account-days, `estimate` by `accountsCharge` of what was reported once
@@ -683,9 +759,8 @@
   month past's usage (`creditsAt`).
   `planOf` reads `payAsYouGo` from `<prefix>_accounts` among the items.
   Once `payAsYouGo` is recorded, `RecordSubscription` ends a trial
-  (`orderedDuringTrial`) and sets a legacy plan to end with its period
-  (`cancelAtPeriodEnd`, key `moved-<subscription>`; the move with a credit
-  is T10's `movedToRateCard`). One per-account subscription per billing
+  (`orderedDuringTrial`) and a legacy plan, credited (`movedToRateCard`,
+  above). One per-account subscription per billing
   account: an order is refused while one Stripe may still bill exists,
   past due and unpaid included (`AlreadySubscribed`, in `PlaceOrder` and
   again in `CheckoutOrders.take`), and one recorded beside another (two

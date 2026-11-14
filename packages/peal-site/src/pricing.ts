@@ -1,6 +1,7 @@
 import {
   accountsCharge,
   accountsMonthly,
+  defaultApiRequestsPerMinute,
   freeAccountsOf,
   partMonthAccountDays,
   pricingExamples,
@@ -314,6 +315,8 @@ const xRatesOf = (locale: Locale, t: PricingMessages): XRates => ({
 
 /** Everything the pricing page states, in the reader's language. */
 export interface PricingPage {
+  /** The API's and the MCP server's rate limit, by standing. */
+  readonly api: string;
   readonly dayRule: string;
   readonly examples: readonly ExampleRow[];
   readonly ladder: readonly LadderRow[];
@@ -335,6 +338,14 @@ export const pricingPage = (
   const { storage } = rateCard;
 
   return {
+    api: fill(t.api.body, {
+      onRequest: count(locale, rateCard.apiRequestsPerMinute.onRequest),
+      withPaymentMethod: count(locale, defaultApiRequestsPerMinute),
+      without: count(
+        locale,
+        rateCard.apiRequestsPerMinute.withoutPaymentMethod
+      ),
+    }),
     dayRule: fill(t.dayRule, {
       days: count(locale, rateCard.daysPerMonth),
       after: count(locale, rateCard.daysPerMonth + 1),

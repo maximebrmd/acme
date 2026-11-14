@@ -279,6 +279,23 @@ class NoticeEvent_PaymentMethodNeeded(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_PlansRetiring(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["PlansRetiring"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PlansRetiring"
+    ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    plan: PaidPlan
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_AllowanceReached(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["AllowanceReached"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -498,6 +515,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionStarted,
         NoticeEvent_TrialEnding,
         NoticeEvent_PaymentMethodNeeded,
+        NoticeEvent_PlansRetiring,
         NoticeEvent_AllowanceReached,
         NoticeEvent_XSpendCeiling,
         NoticeEvent_SubscriptionRenewing,

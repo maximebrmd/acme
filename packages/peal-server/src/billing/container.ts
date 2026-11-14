@@ -2,6 +2,7 @@ import { Effect, Layer } from "effect";
 
 import { AccountDays } from "#billing/application/account-days.ts";
 import { AccountViews } from "#billing/application/account-views.ts";
+import { ApiStandings } from "#billing/application/api-standings.ts";
 import { BillingAccountDesk } from "#billing/application/billing-account-desk.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
@@ -10,6 +11,7 @@ import { CancelSubscription } from "#billing/application/cancel-subscription.ts"
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { ConfirmContractRequest } from "#billing/application/confirm-contract-request.ts";
 import { ContractRequestDesk } from "#billing/application/contract-request-desk.ts";
+import { CreditProblemDesk } from "#billing/application/credit-problem-desk.ts";
 import { GraceWarningLive } from "#billing/application/grace-warning.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
@@ -22,8 +24,10 @@ import { RecordSubscription } from "#billing/application/record-subscription.ts"
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { ReportUsage } from "#billing/application/report-usage.ts";
+import { RetireLegacyPlans } from "#billing/application/retire-legacy-plans.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
+import { SettleCreditProblem } from "#billing/application/settle-credit-problem.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { SpendCeilings } from "#billing/application/spend-ceilings.ts";
 import { StartAccountDays } from "#billing/application/start-account-days.ts";
@@ -36,6 +40,7 @@ import { XPassThrough } from "#billing/application/x-pass-through.ts";
 import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
 import { AccountPlanPoolsLive } from "#billing/infrastructure/account-plan-pools.ts";
 import { AuditedAccountDeskLive } from "#billing/infrastructure/audited-account-desk.ts";
+import { AuditedCreditProblemReviewLive } from "#billing/infrastructure/audited-credit-problem-review.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
 import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-billing-mode.ts";
@@ -50,11 +55,15 @@ import { DrizzleAccountDayStoreLive } from "#billing/infrastructure/drizzle-acco
 import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
+import { DrizzleCreditProblemsLive } from "#billing/infrastructure/drizzle-credit-problems.ts";
 import { DrizzleMeterUsageStoreLive } from "#billing/infrastructure/drizzle-meter-usage-store.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
 import { DrizzleStripeEventLedgerLive } from "#billing/infrastructure/drizzle-stripe-event-ledger.ts";
-import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
+import {
+  DrizzlePlanRetirementsLive,
+  DrizzleSubscriptionsLive,
+} from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { DrizzleTrialsLive } from "#billing/infrastructure/drizzle-trials.ts";
 import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdrawals.ts";
@@ -79,6 +88,8 @@ const RecordsLive = Layer.mergeAll(
   DrizzleContractRequestsLive,
   KeyedContractReferencesLive,
   DrizzleSubscriptionsLive,
+  DrizzlePlanRetirementsLive,
+  DrizzleCreditProblemsLive,
   DrizzleOrdersLive,
   DrizzleTrialsLive,
   DrizzleMeteredPostLedgerLive,
@@ -169,8 +180,12 @@ const AccountDaysLive = AccountDays.layer.pipe(
  */
 export const BillingLive = Layer.mergeAll(
   WorkspaceEntitlements.layerShared,
+  // What the API's rate limit reads of each workspace's standing.
+  ApiStandings.layer.pipe(Layer.provide(WorkspaceEntitlements.layerShared)),
   AccountPlanPoolsLive,
   RecordSubscription.layer,
+  // Money owed back that Stripe did not give, for the webhook and staff.
+  CreditProblemDesk.layer,
   CheckoutOrders.layer,
   BillingRecords.layer,
   MeteredPosts.layer,
@@ -365,9 +380,18 @@ export const ContractRequestsLive = Layer.mergeAll(
  * payment method. The composition root provides the channels context's
  * SharedPlatformAccounts and ChannelUsage, the workspace context's
  * PartnerOwnership and WorkspaceOwners, the staff context's
- * BillingAccountAudit, Ids and the TransactionRunner.
+ * BillingAccountAudit and CreditProblemAudit, Ids and the
+ * TransactionRunner.
  */
-export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
+export const BillingAccountsDeskLive = Layer.mergeAll(
+  BillingAccountDesk.layer,
+  // Staff marking a credit or a refund Stripe did not give as settled.
+  SettleCreditProblem.layer.pipe(
+    Layer.provide(
+      Layer.merge(DrizzleCreditProblemsLive, AuditedCreditProblemReviewLive)
+    )
+  )
+).pipe(
   Layer.provide(
     Layer.mergeAll(
       AccountsLive,
@@ -376,6 +400,22 @@ export const BillingAccountsDeskLive = BillingAccountDesk.layer.pipe(
       ContextAccountChannelsLive,
       AuditedAccountDeskLive,
       StartDaysLive
+    )
+  )
+);
+
+/**
+ * Retiring the legacy plans (`src/retire-plans.ts`, `nx run
+ * peal-server:billing:retire-plans`): their subscriptions on the
+ * database, Stripe through the server's key, and whether the server
+ * bills. Needs the database, migrated.
+ */
+export const RetirePlansLive = RetireLegacyPlans.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzlePlanRetirementsLive,
+      StripeContractsLive,
+      ConfiguredBillingModeLive
     )
   )
 );

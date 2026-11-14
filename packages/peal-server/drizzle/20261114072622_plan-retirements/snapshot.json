@@ -1,0 +1,183 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "634e0ce6-2375-489f-a350-c20b29539f86",
+  "prevIds": [
+    "9d892cac-59ad-42a0-a77d-020ef63843e3"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retires_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retires_at",
+        "n|col|billing.subscriptions.retires_at",
+        "e|col|billing.subscriptions.retires_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retired_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retired_at",
+        "n|col|billing.subscriptions.retired_at",
+        "e|col|billing.subscriptions.retired_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retirement_told_at"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retirement_told_at",
+        "n|col|billing.subscriptions.retirement_told_at",
+        "e|col|billing.subscriptions.retirement_told_at"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retirement_requested_for"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retirement_requested_for",
+        "n|col|billing.subscriptions.retirement_requested_for",
+        "e|col|billing.subscriptions.retirement_requested_for"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "billing",
+        "subscriptions",
+        "retirement_paid_until"
+      ],
+      "writes": [
+        "s|col|billing.subscriptions.retirement_paid_until",
+        "n|col|billing.subscriptions.retirement_paid_until",
+        "e|col|billing.subscriptions.retirement_paid_until"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retired_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retirement_told_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retirement_requested_for",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "subscriptions",
+        "name": "retirement_paid_until",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

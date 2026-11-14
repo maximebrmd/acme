@@ -27,6 +27,7 @@ const RefusalSchema = Schema.Struct({
   _tag: Schema.Literal("TooManyRequests"),
   code: Schema.Literal("too_many_requests"),
   limit: Schema.Literal(5),
+  policy: Schema.Literal("default"),
   message: Schema.String,
   requestId: Schema.String,
   retryAfterSeconds: Schema.Int,

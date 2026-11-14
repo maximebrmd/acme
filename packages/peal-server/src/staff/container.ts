@@ -2,12 +2,14 @@ import { Layer } from "effect";
 
 import { BillingAccountAudit } from "#staff/application/billing-account-audit.ts";
 import { ContractRequestAudit } from "#staff/application/contract-request-audit.ts";
+import { CreditProblemAudit } from "#staff/application/credit-problem-audit.ts";
 import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { LegalDisclosureAudit } from "#staff/application/legal-disclosure-audit.ts";
 import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffRequestLimits } from "#staff/application/staff-request-limits.ts";
 import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
 import { AccountStaffDirectory } from "#staff/infrastructure/account-staff-directory.ts";
@@ -15,6 +17,7 @@ import { ContextSystemHealth } from "#staff/infrastructure/context-system-health
 import { ContextWorkspaceHealth } from "#staff/infrastructure/context-workspace-health.ts";
 import { DrizzleAuditLog } from "#staff/infrastructure/drizzle-audit-log.ts";
 import { DrizzleExpiredAuditEvents } from "#staff/infrastructure/drizzle-expired-audit-events.ts";
+import { ActivityRequestLimitDesk } from "#staff/infrastructure/request-limit-desk.ts";
 import { ShortLinksDesk } from "#staff/infrastructure/short-links-desk.ts";
 import { WorkspacePartnerDesk } from "#staff/infrastructure/workspace-partner-desk.ts";
 
@@ -26,27 +29,31 @@ const AdaptersLive = Layer.mergeAll(
   DrizzleAuditLog,
   DrizzleExpiredAuditEvents,
   ShortLinksDesk,
-  WorkspacePartnerDesk
+  WorkspacePartnerDesk,
+  ActivityRequestLimitDesk
 );
 
 /**
  * The staff console's use cases: what it reads (StaffConsole) and what staff
  * do, recorded in the audit log (StaffActions, and StaffPartners for the
  * partner accounts they grant, StaffShortLinks for the short links they
- * turn off), and the log's retention
+ * turn off, StaffRequestLimits for a workspace's own API rate limit), and
+ * the log's retention
  * (PurgeAuditLog). Needs the database (Drizzle
  * and SqlClient), Ids, and what the other contexts hand staff: the
  * workspace context's AccountDirectory, AccountModeration, PartnerAccounts
  * and PartnerOwnership, billing's
  * WorkspaceEntitlements, the channels' ChannelOversight, publishing's
- * PostOversight and the shortlinks context's ShortLinkModeration, which
- * the composition root brings.
+ * PostOversight, the shortlinks context's ShortLinkModeration and the
+ * activity context's RequestLimitSettings, which the composition root
+ * brings.
  */
 export const StaffLive = Layer.mergeAll(
   StaffActions.layer,
   StaffConsole.layer,
   StaffPartners.layer,
   StaffShortLinks.layer,
+  StaffRequestLimits.layer,
   PurgeAuditLog.layer
 ).pipe(Layer.provide(AdaptersLive));
 
@@ -84,6 +91,14 @@ export const ContractRequestAuditLive = ContractRequestAudit.layer.pipe(
  * and Ids.
  */
 export const BillingAccountAuditLive = BillingAccountAudit.layer.pipe(
+  Layer.provide(DrizzleAuditLog)
+);
+
+/**
+ * The audit log's record of each credit or refund staff mark settled, for
+ * the billing context. Needs the database (Drizzle) and Ids.
+ */
+export const CreditProblemAuditLive = CreditProblemAudit.layer.pipe(
   Layer.provide(DrizzleAuditLog)
 );
 

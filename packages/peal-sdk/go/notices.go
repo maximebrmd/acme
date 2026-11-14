@@ -404,6 +404,7 @@ type NoticeEvent struct {
 	SubscriptionStarted           *NoticeEventSubscriptionStarted
 	TrialEnding                   *NoticeEventTrialEnding
 	PaymentMethodNeeded           *NoticeEventPaymentMethodNeeded
+	PlansRetiring                 *NoticeEventPlansRetiring
 	AllowanceReached              *NoticeEventAllowanceReached
 	XSpendCeiling                 *NoticeEventXSpendCeiling
 	SubscriptionRenewing          *NoticeEventSubscriptionRenewing
@@ -522,6 +523,13 @@ func (n *NoticeEvent) GetPaymentMethodNeeded() *NoticeEventPaymentMethodNeeded {
 		return nil
 	}
 	return n.PaymentMethodNeeded
+}
+
+func (n *NoticeEvent) GetPlansRetiring() *NoticeEventPlansRetiring {
+	if n == nil {
+		return nil
+	}
+	return n.PlansRetiring
 }
 
 func (n *NoticeEvent) GetAllowanceReached() *NoticeEventAllowanceReached {
@@ -697,6 +705,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.PaymentMethodNeeded = value
+	case "PlansRetiring":
+		value := new(NoticeEventPlansRetiring)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PlansRetiring = value
 	case "AllowanceReached":
 		value := new(NoticeEventAllowanceReached)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -814,6 +828,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.PaymentMethodNeeded != nil {
 		return internal.MarshalJSONWithExtraProperty(n.PaymentMethodNeeded, "_tag", "PaymentMethodNeeded")
 	}
+	if n.PlansRetiring != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PlansRetiring, "_tag", "PlansRetiring")
+	}
 	if n.AllowanceReached != nil {
 		return internal.MarshalJSONWithExtraProperty(n.AllowanceReached, "_tag", "AllowanceReached")
 	}
@@ -868,6 +885,7 @@ type NoticeEventVisitor interface {
 	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
 	VisitTrialEnding(*NoticeEventTrialEnding) error
 	VisitPaymentMethodNeeded(*NoticeEventPaymentMethodNeeded) error
+	VisitPlansRetiring(*NoticeEventPlansRetiring) error
 	VisitAllowanceReached(*NoticeEventAllowanceReached) error
 	VisitXSpendCeiling(*NoticeEventXSpendCeiling) error
 	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
@@ -923,6 +941,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.PaymentMethodNeeded != nil {
 		return visitor.VisitPaymentMethodNeeded(n.PaymentMethodNeeded)
+	}
+	if n.PlansRetiring != nil {
+		return visitor.VisitPlansRetiring(n.PlansRetiring)
 	}
 	if n.AllowanceReached != nil {
 		return visitor.VisitAllowanceReached(n.AllowanceReached)
@@ -1006,6 +1027,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.PaymentMethodNeeded != nil {
 		fields = append(fields, "PaymentMethodNeeded")
+	}
+	if n.PlansRetiring != nil {
+		fields = append(fields, "PlansRetiring")
 	}
 	if n.AllowanceReached != nil {
 		fields = append(fields, "AllowanceReached")
@@ -2125,6 +2149,108 @@ func (n *NoticeEventPaymentMethodNeeded) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventPaymentMethodNeeded) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPlansRetiringFieldEndsAt = big.NewInt(1 << 0)
+	noticeEventPlansRetiringFieldPlan   = big.NewInt(1 << 1)
+)
+
+type NoticeEventPlansRetiring struct {
+	EndsAt string   `json:"endsAt" url:"endsAt"`
+	Plan   PaidPlan `json:"plan" url:"plan"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPlansRetiring) GetEndsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndsAt
+}
+
+func (n *NoticeEventPlansRetiring) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventPlansRetiring) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPlansRetiring) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPlansRetiring) SetEndsAt(endsAt string) {
+	n.EndsAt = endsAt
+	n.require(noticeEventPlansRetiringFieldEndsAt)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPlansRetiring) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventPlansRetiringFieldPlan)
+}
+
+func (n *NoticeEventPlansRetiring) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPlansRetiring
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPlansRetiring(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPlansRetiring) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPlansRetiring
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPlansRetiring) String() string {
 	if n == nil {
 		return "<nil>"
 	}

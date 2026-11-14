@@ -858,6 +858,32 @@ layer(BillingIntegration, {
       })
   );
 
+  it.effect("keeps a refund Stripe reports failed for staff, once", () =>
+    Effect.gen(function* refundFailed() {
+      const sql = yield* SqlClient.SqlClient;
+      const run = randomUUID().replaceAll("-", "");
+
+      const payload = fixture("refund.failed")
+        .replaceAll("re_synthetic", `re_${run}`)
+        .replaceAll("evt_synthetic_failed", `evt_failed_${run}`);
+
+      assert.strictEqual(yield* deliver(payload), 200);
+      assert.strictEqual(yield* deliver(payload), 200);
+
+      assert.deepStrictEqual(
+        yield* sql`SELECT kind, amount, currency, code FROM billing.credit_problems WHERE key = ${`refund:re_${run}`}`,
+        [
+          {
+            amount: 950,
+            code: "expired_or_canceled_card",
+            currency: "eur",
+            kind: "refundFailed",
+          },
+        ]
+      );
+    })
+  );
+
   it.effect("refuses an event signed with another secret", () =>
     Effect.gen(function* forged() {
       const delivery = newDelivery();

@@ -69,7 +69,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
   `channel-sets`, `queues`, `recycling`, `feeds`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
-  `admin/workspaces`, `admin/workspaces/[workspaceId]`,
+  `admin/workspaces`, `admin/workspaces/[workspaceId]` (with its API
+  rate limit, `WorkspaceRequestLimit`: staff set a limit of its own, with
+  a reason, or remove it),
   `admin/contract-requests` (through `deskRead`), `admin/billing-accounts`
   (through `accountsDeskRead`: platform accounts under several free billing
   accounts, an account by its id or a workspace's, merging and requiring a
@@ -584,7 +586,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - The billing page shows `GET …/billing` (`BillingView` renders each
   state, `BillingStep` the cancellation and withdrawal steps): the plan
   (the free tier, per-account pricing with its next invoice, or a legacy
-  plan read as it is, with its period's end and no order); the billing
+  plan read as it is, with its period's end); the billing
   account's month (`ThisMonth`) for the members of the workspace that
   bills it only, as the server answers `accountDays` to them alone
   (connected accounts, account-days so far, `estimate` excluding tax,
@@ -600,7 +602,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   required a payment method, `freeWithoutCard`); a legacy plan shows its
   channels against its allowance and no per-account figures; adding a
   payment method, on the free tier only, behind the unticked box, and
-  **Order with obligation to pay**, its refusal beside it;
+  **Order with obligation to pay**, its refusal beside it, and for a
+  legacy plan on the workspace that bills, **Move to per-account
+  pricing** (`MoveToPerAccount`), the same order and box: the server ends
+  the legacy plan once per-account pricing starts, refunding its unused
+  time;
   the ladder (`ladderOf`, from the answer's `rateCard`) with the day rule
   and the two currency sentences; and the other limits. Every price comes
   from the rate card, in US dollars, excluding tax with the amount with

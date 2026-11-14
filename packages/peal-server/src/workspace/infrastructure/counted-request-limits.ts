@@ -1,9 +1,14 @@
 import { Duration, Effect, Layer, Option } from "effect";
 
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
-import { RequestPolicy } from "#activity/application/request-policy.ts";
+import type { LimitHolder } from "#activity/application/request-limiter.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { PartnerStore } from "#workspace/application/partner-store.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { limitSubjectOf } from "#workspace/domain/limit-subject.ts";
+import type { Principal } from "#workspace/domain/principal.ts";
 
 /**
  * How long a request waits to be counted: a database that is slow, or a
@@ -13,23 +18,78 @@ export const countingTimeout = Duration.seconds(2);
 
 /**
  * The rate limit, counted by the activity context. A count the database
- * cannot keep is logged, and the request goes through.
+ * cannot keep is logged, and the request goes through. Whose standing
+ * decides the limit, on a server that bills: an API key's workspace's
+ * billing account; a partner key's partner's home workspace's, whose
+ * plan its customers share; an OAuth application's bound workspace's;
+ * and for a token bound to no workspace, as the command line's, its
+ * user's own billing account (the one they pay for, else the free tier),
+ * one count per user, with the limit staff set for the workspace it acts
+ * in when the user is a member of it.
  */
 export const CountedRequestLimits = Layer.effect(
   RequestLimits,
   Effect.gen(function* CountedRequestLimits() {
     const limiter = yield* RequestLimiter;
-    const policy = yield* RequestPolicy;
+    const partners = yield* PartnerStore;
+    const directory = yield* MemberDirectory;
+
+    const holderOf = (
+      principal: Principal,
+      actingIn: Option.Option<WorkspaceId>
+    ): LimitHolder => {
+      if (principal._tag === "ApiKeyPrincipal") {
+        return {
+          _tag: "workspace",
+          key: `workspace:${principal.workspaceId}`,
+          workspace: Effect.succeed(Option.some(principal.workspaceId)),
+        };
+      }
+
+      if (principal._tag === "PartnerKeyPrincipal") {
+        return {
+          _tag: "workspace",
+          key: `partner:${principal.partnerId}`,
+          workspace: partners
+            .get(principal.partnerId)
+            .pipe(Effect.map(Option.map(({ workspaceId }) => workspaceId))),
+        };
+      }
+
+      const bound = principal.oauth.pipe(
+        Option.flatMap(({ workspaceId }) => workspaceId)
+      );
+
+      return Option.match(bound, {
+        onNone: (): LimitHolder => ({
+          _tag: "payer",
+          actingIn,
+          key: `user:${principal.userId}`,
+          memberships: directory.account(principal.userId).pipe(
+            Effect.map((account) =>
+              Option.toArray(account).flatMap(({ workspaces }) =>
+                workspaces.map(({ id }) => id)
+              )
+            ),
+            Effect.mapError(({ cause }) => new DatabaseError({ cause }))
+          ),
+          userId: principal.userId,
+        }),
+        onSome: (workspaceId): LimitHolder => ({
+          _tag: "workspace",
+          key: `workspace:${workspaceId}`,
+          workspace: Effect.succeed(Option.some(workspaceId)),
+        }),
+      });
+    };
 
     return RequestLimits.of({
-      admit: (principal) =>
+      admit: (principal, actingIn) =>
         Option.match(limitSubjectOf(principal), {
           onNone: () => Effect.succeedNone,
           onSome: (subject) =>
-            limiter.admit(subject).pipe(
-              Effect.map((standing) =>
-                Option.some({ ...standing, policy: policy.name })
-              ),
+            limiter.admit(subject, holderOf(principal, actingIn)).pipe(
+              Effect.map(Option.some),
               Effect.timeoutOrElse({
                 duration: countingTimeout,
                 orElse: () =>

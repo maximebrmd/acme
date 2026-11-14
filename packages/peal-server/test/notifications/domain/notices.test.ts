@@ -151,6 +151,11 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     allowed: 2,
     graceUntil: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
   },
+  PlansRetiring: {
+    _tag: "PlansRetiring",
+    endsAt: DateTime.makeUnsafe("2027-01-01T00:00:00Z"),
+    plan: "starter",
+  },
   AllowanceReached: {
     _tag: "AllowanceReached",
     allowed: 10_000,
@@ -196,6 +201,7 @@ describe("notice events", () => {
       events.SubscriptionWithdrawn,
       events.TrialEnding,
       events.PaymentMethodNeeded,
+      events.PlansRetiring,
       events.AllowanceReached,
       events.XSpendCeiling,
     ]) {
@@ -450,8 +456,9 @@ describe("notification preferences", () => {
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
       Option.some("recyclingEnded"),
-      // Billing's eight, deliveries failing, then the webhook endpoint
+      // Billing's nine, deliveries failing, then the webhook endpoint
       // turned off.
+      Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),

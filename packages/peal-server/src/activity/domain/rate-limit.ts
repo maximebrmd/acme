@@ -1,4 +1,19 @@
-import { DateTime, Schema } from "effect";
+import { DateTime, Option, Schema } from "effect";
+
+/**
+ * The policies' names, as the `RateLimit` headers and `TooManyRequests`
+ * give them: `default` the server's setting (`PEAL_API_REQUESTS_PER_MINUTE`),
+ * `free` a billing account without a payment method, `override` what
+ * staff set for a workspace. Persisted in answers clients read: add, never
+ * rename.
+ */
+export const PolicyNameSchema = Schema.Literals([
+  "default",
+  "free",
+  "override",
+]);
+
+export type PolicyName = typeof PolicyNameSchema.Type;
 
 /**
  * How many requests a credential may send in a window: `limit` requests
@@ -11,7 +26,7 @@ export class RateLimitPolicy extends Schema.Class<RateLimitPolicy>(
 )({
   limit: Schema.Int.check(Schema.isGreaterThan(0)),
   /** The policy's name in the `RateLimit` headers. */
-  name: Schema.NonEmptyString,
+  name: PolicyNameSchema,
   windowSeconds: Schema.Int.check(Schema.isGreaterThan(0)),
 }) {}
 
@@ -21,13 +36,101 @@ export const requestWindowSeconds = 60;
 /** How many requests a minute a credential may send, unless set otherwise. */
 export const defaultRequestsPerMinute = 600;
 
-/** The policy for the API's and the MCP endpoint's bearer credentials. */
-export const requestPolicy = (requestsPerMinute: number): RateLimitPolicy =>
+/** A policy of `requestsPerMinute` in one-minute windows. */
+export const policyNamed = (
+  name: PolicyName,
+  requestsPerMinute: number
+): RateLimitPolicy =>
   new RateLimitPolicy({
     limit: requestsPerMinute,
-    name: "default",
+    name,
     windowSeconds: requestWindowSeconds,
   });
+
+/** The policy for the API's and the MCP endpoint's bearer credentials. */
+export const requestPolicy = (requestsPerMinute: number): RateLimitPolicy =>
+  policyNamed("default", requestsPerMinute);
+
+/** The limits a server that bills chooses between. */
+export interface StandingTerms {
+  /** The server's setting: with a payment method, or a legacy plan. */
+  readonly setting: number;
+  /** Without one (the rate card's). */
+  readonly withoutPaymentMethod: number;
+}
+
+/** What decides one workspace's limit. */
+export interface WorkspaceLimitFacts {
+  /** What staff set for it, if they did. */
+  readonly override: Option.Option<number>;
+  /** Whether its billing account pays: a payment method, or a legacy plan. */
+  readonly paying: boolean;
+}
+
+/**
+ * The free tier's policy: the rate card's limit, never more than the
+ * setting a payer gets, on a server set lower than it.
+ */
+export const freePolicy = (terms: StandingTerms): RateLimitPolicy =>
+  policyNamed("free", Math.min(terms.withoutPaymentMethod, terms.setting));
+
+// The order policies of the same limit are taken in.
+const preference: Readonly<Record<PolicyName, number>> = {
+  default: 0,
+  free: 2,
+  override: 1,
+};
+
+const policyOfWorkspace = (
+  terms: StandingTerms,
+  { override, paying }: WorkspaceLimitFacts
+): RateLimitPolicy =>
+  Option.match(override, {
+    onNone: () =>
+      paying ? policyNamed("default", terms.setting) : freePolicy(terms),
+    onSome: (limit) => policyNamed("override", limit),
+  });
+
+/**
+ * The policy of a credential on a server that bills, from the workspaces
+ * it acts for: each workspace's override when staff set one, else the
+ * setting for a billing account that pays, else the free tier's; the most
+ * generous of them, as one credential has one count. None (a person in no
+ * workspace) is the free tier.
+ */
+export const policyOfWorkspaces = (
+  terms: StandingTerms,
+  workspaces: readonly WorkspaceLimitFacts[]
+): RateLimitPolicy => {
+  let chosen: RateLimitPolicy | undefined;
+
+  for (const facts of workspaces) {
+    const next = policyOfWorkspace(terms, facts);
+
+    if (
+      chosen === undefined ||
+      next.limit > chosen.limit ||
+      (next.limit === chosen.limit &&
+        preference[next.name] < preference[chosen.name])
+    ) {
+      chosen = next;
+    }
+  }
+
+  return chosen ?? freePolicy(terms);
+};
+
+/**
+ * The limit a payment method would give a credential on the free tier's
+ * policy, when it gives more; none for any other policy.
+ */
+export const raisedByPaymentMethod = (
+  terms: StandingTerms,
+  policy: RateLimitPolicy
+): Option.Option<number> =>
+  policy.name === "free" && terms.setting > policy.limit
+    ? Option.some(terms.setting)
+    : Option.none();
 
 /** Where a credential stands in the current window, this request counted. */
 export interface LimitStanding {
@@ -82,3 +185,10 @@ export const standingOf = (
  * the window runs, and the purge leaves a margin for a clock that differs.
  */
 export const countRetentionSeconds = 3600;
+
+/**
+ * The most requests a minute staff may give a workspace of its own: the
+ * rate card offers 1,200 on request, and this leaves room above it for a
+ * case staff weigh, never an unbounded one.
+ */
+export const maxOverridePerMinute = 10_000;
