@@ -281,6 +281,26 @@ Un canal Google Business Profile publie au nom d’un établissement, et les per
   autorisation, et jamais automatiquement.
 </Callout>
 
+## Répondre par mot-clé [#comment-rules]
+
+Une règle de réponse répond d’elle-même, en public, depuis le compte du canal, aux commentaires qui contiennent un mot-clé choisi, sous une publication ou sous chaque publication d’un canal. Dans **Réglages › Réponses aux commentaires**, choisissez le canal, jusqu’à 10 mots-clés et la réponse. Une règle répond :
+
+- à un commentaire reçu après son lancement, qui contient un mot-clé comme un mot, quelles que soient sa casse et ses accents (`prix` répond à « Quel PRIX ? », pas à « surprix ») ;
+- une fois par commentaire, et une fois par personne : quelqu’un qui commente à nouveau n’obtient pas deux réponses ;
+- 25 fois par jour au plus ;
+- par les réponses de la boîte de réception : chacune apparaît dans son fil, compte comme un de vos messages sortants, et n’est jamais envoyée deux fois. Un commentaire auquel quelqu’un a répondu, ou répond, est laissé tel quel.
+
+| Plateforme                | Règles de réponse                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| Mastodon                  | Oui                                                                                               |
+| Pages Facebook, Instagram | Oui, là où Peal lit leurs commentaires                                                            |
+| Bluesky                   | Non : ses recommandations demandent aux robots de n’interagir qu’avec ceux qui les ont mentionnés |
+| X                         | Non : X refuse les réponses d’une application aux commentaires qui ne mentionnent pas le compte   |
+| LinkedIn                  | Non : ses conditions interdisent les commentaires automatisés                                     |
+| YouTube                   | Non : ses règles demandent votre accord pour chaque commentaire                                   |
+
+Une règle n’aime, ne suit ni n’écrit jamais en privé à personne. Elle agit au nom de la personne qui l’a lancée : elle prend fin quand celle-ci ne peut plus répondre aux commentaires. Une règle en pause ne répond à rien, et jamais aux commentaires reçus pendant la pause.
+
 ## Avec l’API, la ligne de commande et les assistants IA [#api]
 
 | Action                                            | Permission         | Qui l’a                                    |
@@ -290,20 +310,21 @@ Un canal Google Business Profile publie au nom d’un établissement, et les per
 
 Une clé d’API porte ce que son créateur lui a donné. Une application connectée par OAuth a besoin du scope `workspace:publish` pour tout ce qui n’est pas lire, comme pour publier. L’équipe qui agit au nom d’un membre pour l’aider ne lit pas la boîte de réception et n’y répond pas.
 
-| Requête                                                                    | Ce qu’elle fait                                                                                                                                                                         |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Liste les fils qui ont des commentaires, ceux qui attendent une réponse en premier. `channelId`, `postId` et `unanswered=true` restreignent la liste ; `cursor` et `limit` la paginent. |
-| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | Un fil entier : commentaires, réponses, et ce que le canal peut faire.                                                                                                                  |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Répond à un commentaire. Répond `202` avec la réponse, `sending`.                                                                                                                       |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marque un commentaire comme traité, ou de nouveau en attente.                                                                                                                           |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Masque, montre, aime, n’aime plus ou supprime, quand la plateforme le permet.                                                                                                           |
-| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Enregistre ce que quelqu’un a trouvé pour une réponse non confirmée.                                                                                                                    |
-| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Retire une réponse envoyée.                                                                                                                                                             |
-| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Liste les établissements qui ont des avis, ceux qui attendent une réponse en premier.                                                                                                   |
-| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | Les avis d’un établissement en entier, les réponses envoyées depuis Peal, et ce que le canal peut faire.                                                                                |
-| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Répond à un avis, en remplaçant sa réponse, en personne seulement. Répond `202` avec la réponse, `sending` ; avec un `Idempotency-Key`, peut être renvoyée sans risque.                 |
-| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Supprime la réponse de l’établissement à un avis.                                                                                                                                       |
-| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marque un avis comme répondu, ou de nouveau en attente.                                                                                                                                 |
+| Requête                                                                    | Ce qu’elle fait                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Liste les fils qui ont des commentaires, ceux qui attendent une réponse en premier. `channelId`, `postId` et `unanswered=true` restreignent la liste ; `cursor` et `limit` la paginent.                                                                        |
+| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | Un fil entier : commentaires, réponses, et ce que le canal peut faire.                                                                                                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Répond à un commentaire. Répond `202` avec la réponse, `sending`.                                                                                                                                                                                              |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marque un commentaire comme traité, ou de nouveau en attente.                                                                                                                                                                                                  |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Masque, montre, aime, n’aime plus ou supprime, quand la plateforme le permet.                                                                                                                                                                                  |
+| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Enregistre ce que quelqu’un a trouvé pour une réponse non confirmée.                                                                                                                                                                                           |
+| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Retire une réponse envoyée.                                                                                                                                                                                                                                    |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Liste les établissements qui ont des avis, ceux qui attendent une réponse en premier.                                                                                                                                                                          |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | Les avis d’un établissement en entier, les réponses envoyées depuis Peal, et ce que le canal peut faire.                                                                                                                                                       |
+| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Répond à un avis, en remplaçant sa réponse, en personne seulement. Répond `202` avec la réponse, `sending` ; avec un `Idempotency-Key`, peut être renvoyée sans risque.                                                                                        |
+| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Supprime la réponse de l’établissement à un avis.                                                                                                                                                                                                              |
+| `POST /api/workspaces/{workspaceId}/inbox/rules`                           | Lance une [règle de réponse](#comment-rules) sur une publication (`postId`) ou un canal (`channelId`), avec `keywords` et une `reply`. `GET`, `PATCH` (mots-clés, réponse, `paused`) et `DELETE …/inbox/rules/{ruleId}` la lisent, la modifient et l’arrêtent. |
+| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marque un avis comme répondu, ou de nouveau en attente.                                                                                                                                                                                                        |
 
 La ligne de commande offre la même chose sous `peal inbox`, et `peal inbox reviews` pour lire les avis et les marquer (voir [Ligne de commande](/developers/cli)). Les assistants IA connectés par [MCP](/developers/mcp) ont `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` et `moderate_comment`, et pour les avis `list_location_reviews`, `get_location_reviews` et `mark_location_review_answered` (`reply_to_location_review` et `delete_location_review_reply` refusent, car seule une personne répond à un avis).
 

@@ -50,6 +50,8 @@ peal inbox moderate <comment-id> --action hide
 - `answered` dit qu’un commentaire n’appelle pas de réponse (`--undo` revient en arrière) ; `withdraw` supprime une réponse envoyée de sa plateforme ; `moderate` prend `hide`, `unhide`, `like`, `unlike` ou `delete`, quand la plateforme le permet au compte.
 - Les commentaires ont été écrits par des personnes extérieures à l’espace de travail : la ligne de commande les affiche comme du texte.
 
+- `peal inbox rules start --channel <id> --keyword prix --keyword price --reply "…"` crée une [règle de réponse](/fr/guides/engage/inbox#comment-rules) (`--post` pour les commentaires d’une seule publication) ; `list`, `show`, `update` (`--keyword` les remplace tous, `--reply`), `pause`, `resume` et `stop` la gèrent. `show` affiche ce que chaque canal peut porter et les commentaires reconnus, par identifiant, jamais leur texte.
+
 ## Liens courts [#short-links]
 
 ```sh

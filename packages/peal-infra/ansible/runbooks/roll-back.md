@@ -194,3 +194,10 @@ run hands it over (armed again when its call never set out,
 2. **It lists a row:** wait a few minutes for its job to settle it, and
    check again; roll back once it lists none. Rules that are active then
    act again after rolling forward, within their windows.
+
+## Past comment rules
+
+The same release's comment rules (migration `comment-rules`) add two
+tables the release before ignores: rules stop answering, and the replies
+they made stay ordinary replies of the inbox, which the release before
+reads as any other. Nothing to check before rolling back.

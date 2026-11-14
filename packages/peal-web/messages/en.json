@@ -2817,6 +2817,7 @@
       "queues": "Queues",
       "recycling": "Repeating posts",
       "followUps": "Follow-ups",
+      "commentRules": "Comment replies",
       "feeds": "Feeds",
       "assistant": "Assistant",
       "newPost": "New post",
@@ -4375,6 +4376,40 @@
       "forbidden": "Your role cannot do that.",
       "notFound": "The rule or the post is no longer there.",
       "taken": "This post already has a rule: change that one, or stop it first."
+    }
+  },
+  "CommentRules": {
+    "title": "Comment replies",
+    "description": "Rules that answer, by themselves and in public, the comments under a channel’s posts that hold a keyword you chose: once a comment and once a person, 25 replies a day at most, each one of your inbox’s replies. They answer on Mastodon, and on Facebook Pages and Instagram where Peal reads their comments; Bluesky’s, X’s, LinkedIn’s and YouTube’s rules forbid an app to answer by itself. A rule never likes, follows or writes privately to anyone.",
+    "readOnly": "You may read the rules: changing them takes a role that answers comments.",
+    "empty": "No rule answers comments by itself.",
+    "keywords": "When a comment says: {keywords}",
+    "status": "{status, select, active {Active} paused {Paused} ended {Ended} other {Unknown}}",
+    "replied": "{count, plural, =0 {No reply yet} one {# reply among the latest comments} other {# replies among the latest comments}}",
+    "carries": "{platform, select, x {X} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} linkedin {LinkedIn} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {A channel}}: {reply, select, available {answers there} noApi {no comments Peal reads} notAllowed {the platform’s rules forbid an app to answer by itself} unsupported {this server does not read its comments} reconnect {connect the channel again} textTooLong {the reply is too long} other {cannot answer}}",
+    "started": "The rule is set: it answers the comments that come from now on.",
+    "pause": "Pause",
+    "paused": "The rule is paused.",
+    "resume": "Resume",
+    "resumed": "The rule is going again.",
+    "stop": "Stop",
+    "stopped": "The rule is stopped.",
+    "form": {
+      "channel": "Channel",
+      "chooseChannel": "Choose a channel",
+      "keywords": "Keywords",
+      "keywordsHelp": "Separated by commas, up to 10; whatever their case and accents.",
+      "reply": "Reply",
+      "public": "It answers in public, by itself, without anyone reading each comment first.",
+      "start": "Start",
+      "missing": {
+        "channel": "Choose a channel.",
+        "keywords": "Give 1 to 10 keywords.",
+        "reply": "Write the reply."
+      }
+    },
+    "errors": {
+      "failed": "The change could not be made ({tag})."
     }
   },
   "ShortLinks": {

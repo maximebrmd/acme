@@ -70,6 +70,9 @@
   `start` takes `--post` or `--channel`, one of them, and `--comment`,
   `--repost` or both, refused before any request otherwise. The studio
   answers it from `test/studio-follow-ups.ts`.
+- `peal inbox rules` (`commands/inbox-rules.ts`: list, show, start,
+  update, pause, resume, stop) keeps the comment rules, from
+  `test/studio-inbox-rules.ts` in tests.
 - `peal media list` takes `--search` (checked against
   the contract's `MediaQuerySchema` before any request) and `--kind`, and prints each
   file's name; `peal media upload` sends the file's base name.

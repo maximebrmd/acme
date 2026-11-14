@@ -87,6 +87,10 @@
   post:schedule before reading anything, and say that what a rule
   publishes goes out by itself, in public. No tool approves a rule: a
   member does, in person.
+- `list_comment_rules` (reading), `start_comment_rule` (open world),
+  `update_comment_rule` and `stop_comment_rule` are in `InboxTools` and
+  `publishingTools`, check engagement:reply before reading anything, and
+  list what a rule matched by id, never a comment's text.
 - `get_media`, `get_media_usage` (reading), `describe_media` (not
   destructive, idempotent) and `delete_media` (destructive: its
   description says an agent calls it only when the user asked for that

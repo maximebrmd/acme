@@ -2817,6 +2817,7 @@
       "queues": "Files d’attente",
       "recycling": "Répétitions",
       "followUps": "Relances",
+      "commentRules": "Réponses aux commentaires",
       "feeds": "Flux",
       "assistant": "Assistant",
       "newPost": "Nouvelle publication",
@@ -4375,6 +4376,40 @@
       "forbidden": "Votre rôle ne permet pas cela.",
       "notFound": "La règle ou la publication n’est plus là.",
       "taken": "Cette publication a déjà une règle : modifiez-la, ou arrêtez-la d’abord."
+    }
+  },
+  "CommentRules": {
+    "title": "Réponses aux commentaires",
+    "description": "Des règles qui répondent d’elles-mêmes, en public, aux commentaires sous les publications d’un canal qui contiennent un mot-clé que vous avez choisi : une fois par commentaire et une fois par personne, 25 réponses par jour au plus, chacune une réponse de votre boîte de réception. Elles répondent sur Mastodon, et sur les Pages Facebook et Instagram là où Peal lit leurs commentaires ; les règles de Bluesky, X, LinkedIn et YouTube interdisent à une application de répondre d’elle-même. Une règle n’aime, ne suit ni n’écrit jamais en privé à personne.",
+    "readOnly": "Vous pouvez lire les règles : les modifier demande un rôle qui répond aux commentaires.",
+    "empty": "Aucune règle ne répond d’elle-même aux commentaires.",
+    "keywords": "Quand un commentaire dit : {keywords}",
+    "status": "{status, select, active {Active} paused {En pause} ended {Terminée} other {Inconnu}}",
+    "replied": "{count, plural, =0 {Aucune réponse pour l’instant} one {# réponse parmi les derniers commentaires} other {# réponses parmi les derniers commentaires}}",
+    "carries": "{platform, select, x {X} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} linkedin {LinkedIn} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {Un canal}} : {reply, select, available {répond là} noApi {aucun commentaire que Peal lit} notAllowed {les règles de la plateforme interdisent à une application de répondre d’elle-même} unsupported {ce serveur ne lit pas ses commentaires} reconnect {reconnectez le canal} textTooLong {la réponse est trop longue} other {ne peut pas répondre}}",
+    "started": "La règle est en place : elle répond aux commentaires qui arrivent à partir de maintenant.",
+    "pause": "Mettre en pause",
+    "paused": "La règle est en pause.",
+    "resume": "Reprendre",
+    "resumed": "La règle reprend.",
+    "stop": "Arrêter",
+    "stopped": "La règle est arrêtée.",
+    "form": {
+      "channel": "Canal",
+      "chooseChannel": "Choisissez un canal",
+      "keywords": "Mots-clés",
+      "keywordsHelp": "Séparés par des virgules, jusqu’à 10 ; quelles que soient leur casse et leurs accents.",
+      "reply": "Réponse",
+      "public": "Elle répond en public, d’elle-même, sans que personne ne lise chaque commentaire avant.",
+      "start": "Lancer",
+      "missing": {
+        "channel": "Choisissez un canal.",
+        "keywords": "Donnez de 1 à 10 mots-clés.",
+        "reply": "Écrivez la réponse."
+      }
+    },
+    "errors": {
+      "failed": "La modification n’a pas pu être faite ({tag})."
     }
   },
   "ShortLinks": {

@@ -276,6 +276,26 @@ A Google Business Profile channel posts as a location, and the people who visit 
   its authorization, and never automatically.
 </Callout>
 
+## Answer by keyword [#comment-rules]
+
+A comment rule answers by itself, in public, as the channel's account, the comments that hold a keyword you chose, under one post or every post of a channel. In **Settings › Comment replies**, choose the channel, up to 10 keywords and the reply. A rule answers:
+
+- a comment received after it started, that holds a keyword as a word, whatever its case and accents (`prix` answers "Quel PRIX ?", not "surprix");
+- once a comment, and once a person: someone who comments again is not answered twice;
+- 25 times a day at most;
+- through the inbox's own replies: each is shown in its thread, counts as one of your outbound messages, and is never sent twice. A comment someone already answered, or is answering, is left alone.
+
+| Platform                  | Comment rules                                                               |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Mastodon                  | Yes                                                                         |
+| Facebook Pages, Instagram | Yes, where Peal reads their comments                                        |
+| Bluesky                   | No: its guidance asks bots to interact only with those who tagged them      |
+| X                         | No: X refuses an app's replies to comments that did not mention the account |
+| LinkedIn                  | No: its terms forbid automated comments                                     |
+| YouTube                   | No: its policies ask for your consent to each comment                       |
+
+A rule never likes, follows or writes privately to anyone. It acts as whoever started it: it ends when they can no longer answer comments. A paused rule answers nothing, and never the comments received while it was paused.
+
 ## With the API, the command line and AI assistants [#api]
 
 | Action                                       | Permission         | Who has it                 |
@@ -285,20 +305,21 @@ A Google Business Profile channel posts as a location, and the people who visit 
 
 An API key carries what its creator gave it. An application connected through OAuth needs the scope `workspace:publish` to do anything but read, as for publishing a post. Staff who act as a member to help them neither read the inbox nor answer.
 
-| Request                                                                    | What it does                                                                                                                                                        |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Lists the threads that have comments, those waiting for an answer first. `channelId`, `postId` and `unanswered=true` narrow the list; `cursor` and `limit` page it. |
-| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | A thread whole: comments, replies, and what the channel can do.                                                                                                     |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Answers a comment. Answers `202` with the reply, `sending`.                                                                                                         |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marks a comment answered, or waiting again.                                                                                                                         |
-| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Hides, shows, likes, unlikes or deletes, where the platform allows.                                                                                                 |
-| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Records what someone found for an unconfirmed reply.                                                                                                                |
-| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Takes a sent reply back.                                                                                                                                            |
-| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Lists the locations that have reviews, those waiting for an answer first.                                                                                           |
-| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | A location's reviews whole, the replies sent from Peal, and what the channel can do.                                                                                |
-| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Answers a review, replacing its reply, in person only. Answers `202` with the reply, `sending`; with an `Idempotency-Key`, safe to send again.                      |
-| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Deletes the location's reply to a review.                                                                                                                           |
-| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marks a review answered, or waiting again.                                                                                                                          |
+| Request                                                                    | What it does                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Lists the threads that have comments, those waiting for an answer first. `channelId`, `postId` and `unanswered=true` narrow the list; `cursor` and `limit` page it.                                                               |
+| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | A thread whole: comments, replies, and what the channel can do.                                                                                                                                                                   |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Answers a comment. Answers `202` with the reply, `sending`.                                                                                                                                                                       |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marks a comment answered, or waiting again.                                                                                                                                                                                       |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Hides, shows, likes, unlikes or deletes, where the platform allows.                                                                                                                                                               |
+| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Records what someone found for an unconfirmed reply.                                                                                                                                                                              |
+| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Takes a sent reply back.                                                                                                                                                                                                          |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads`                  | Lists the locations that have reviews, those waiting for an answer first.                                                                                                                                                         |
+| `GET /api/workspaces/{workspaceId}/inbox/reviews/threads/{threadId}`       | A location's reviews whole, the replies sent from Peal, and what the channel can do.                                                                                                                                              |
+| `PUT /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`         | Answers a review, replacing its reply, in person only. Answers `202` with the reply, `sending`; with an `Idempotency-Key`, safe to send again.                                                                                    |
+| `DELETE /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/reply`      | Deletes the location's reply to a review.                                                                                                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/rules`                           | Starts a [comment rule](#comment-rules) on a post (`postId`) or a channel (`channelId`), with `keywords` and a `reply`. `GET`, `PATCH` (keywords, reply, `paused`) and `DELETE …/inbox/rules/{ruleId}` read, change and stop one. |
+| `POST /api/workspaces/{workspaceId}/inbox/reviews/{reviewId}/answered`     | Marks a review answered, or waiting again.                                                                                                                                                                                        |
 
 The command line has the same under `peal inbox`, and `peal inbox reviews` to read reviews and mark them (see [Command line](/developers/cli)). AI assistants connected through [MCP](/developers/mcp) have `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` and `moderate_comment`, and for reviews `list_location_reviews`, `get_location_reviews` and `mark_location_review_answered` (`reply_to_location_review` and `delete_location_review_reply` refuse, as only a person answers a review).
 
