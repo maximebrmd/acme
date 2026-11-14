@@ -7,6 +7,7 @@ import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
 } from "#shared/application/personal-data.ts";
@@ -15,7 +16,10 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
 import {
+  conversations,
   erasedWorkspaces,
+  messageBoxes,
+  outgoingMessages,
   replies,
   reviewReplies,
   reviewThreads,
@@ -89,6 +93,30 @@ export const DrizzleEngagementRecords = Layer.effect(
       }));
     });
 
+    const exportUserMessages = Effect.fn(
+      "EngagementRecords.exportUserMessages"
+    )(function* exportUserMessages(userId: string) {
+      const rows = yield* db
+        .select({
+          channelId: outgoingMessages.channelId,
+          conversationId: outgoingMessages.conversationId,
+          createdAt: outgoingMessages.createdAt,
+          id: outgoingMessages.id,
+          status: outgoingMessages.status,
+          text: outgoingMessages.text,
+          workspaceId: outgoingMessages.workspaceId,
+        })
+        .from(outgoingMessages)
+        .where(eq(outgoingMessages.authorId, userId))
+        .orderBy(asc(outgoingMessages.id))
+        .pipe(Effect.mapError(failed));
+
+      return rows.map((row): SentMessageRecord => ({
+        ...row,
+        createdAt: DateTime.fromDateUnsafe(row.createdAt),
+      }));
+    });
+
     const eraseWorkspace = Effect.fn("EngagementRecords.eraseWorkspace")(
       function* eraseWorkspace(workspaceId: string) {
         const now = yield* DateTime.now;
@@ -111,6 +139,14 @@ export const DrizzleEngagementRecords = Layer.effect(
               yield* db
                 .delete(reviewThreads)
                 .where(eq(reviewThreads.workspaceId, workspaceId));
+
+              yield* db
+                .delete(messageBoxes)
+                .where(eq(messageBoxes.workspaceId, workspaceId));
+
+              yield* db
+                .delete(conversations)
+                .where(eq(conversations.workspaceId, workspaceId));
             })
           )
           .pipe(Effect.mapError(failed));
@@ -135,6 +171,12 @@ export const DrizzleEngagementRecords = Layer.effect(
           .update(reviewReplies)
           .set({ authorId: null })
           .where(eq(reviewReplies.authorId, userId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(outgoingMessages)
+          .set({ authorId: null })
+          .where(eq(outgoingMessages.authorId, userId))
           .pipe(Effect.mapError(failed));
       }
     );
@@ -161,6 +203,24 @@ export const DrizzleEngagementRecords = Layer.effect(
         platform: Platform,
         at: DateTime.Utc
       ) {
+        // A channel's conversations go at once, whatever its platform,
+        // with their messages and those sent from Peal: correspondence is
+        // kept for the channel's workspace only while it holds the
+        // channel.
+        yield* sql
+          .withTransaction(
+            Effect.gen(function* deleting() {
+              yield* db
+                .delete(messageBoxes)
+                .where(eq(messageBoxes.channelId, channelId));
+
+              yield* db
+                .delete(conversations)
+                .where(eq(conversations.channelId, channelId));
+            })
+          )
+          .pipe(Effect.mapError(failed));
+
         // A location's reviews go at once, with their replies.
         if (platform === "googleBusiness") {
           yield* db
@@ -229,6 +289,7 @@ export const DrizzleEngagementRecords = Layer.effect(
       channelGone,
       eraseWorkspace,
       exportUser,
+      exportUserMessages,
       exportUserReviewReplies,
       forgetUser,
       postRemoved,

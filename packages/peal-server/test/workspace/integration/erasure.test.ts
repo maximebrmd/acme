@@ -186,6 +186,14 @@ const workspaceRows = {
   // do the replies sent to them.
   "engagement.comments": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
+  "engagement.conversations": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.conversations WHERE workspace_id = ${id}`,
+  "engagement.direct_messages": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.direct_messages WHERE workspace_id = ${id}`,
+  "engagement.message_boxes": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.message_boxes WHERE workspace_id = ${id}`,
+  "engagement.outgoing_messages": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.outgoing_messages WHERE workspace_id = ${id}`,
   "engagement.replies": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.replies WHERE workspace_id = ${id}`,
   "engagement.review_replies": (sql, id) =>
@@ -358,8 +366,10 @@ const userRows = {
   // The links they created stay their workspaces', without them.
   "channels.connect_links": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE created_by = ${`user:${id}`}`,
-  // The replies they sent, and the threads of the posts they wrote, stay
-  // with the workspace, without them.
+  // The replies and messages they sent, and the threads of the posts they
+  // wrote, stay with the workspace, without them.
+  "engagement.outgoing_messages": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.outgoing_messages WHERE author_id = ${id}`,
   "engagement.replies": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM engagement.replies WHERE author_id = ${id}`,
   "engagement.review_replies": (sql, id) =>
@@ -737,6 +747,23 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO engagement.review_replies (id, review_id, thread_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
     VALUES (${uuid7()}, ${reviewId}, ${reviewThreadId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic reply', now(), 'sent', now())`;
+
+  // A channel's direct messages: a conversation with someone, their
+  // message and the person's answer.
+  const messageChannelId = uuid7();
+  const conversationId = uuid7();
+
+  yield* sql`INSERT INTO engagement.message_boxes (channel_id, workspace_id, created_at, next_read_at)
+    VALUES (${messageChannelId}, ${workspaceId}, now(), now() + interval '1 hour')`;
+
+  yield* sql`INSERT INTO engagement.conversations (id, workspace_id, channel_id, platform_conversation_id, participants, revision, last_message_at, created_at)
+    VALUES (${conversationId}, ${workspaceId}, ${messageChannelId}, 'c1', '[]'::jsonb, 'r1', now(), now())`;
+
+  yield* sql`INSERT INTO engagement.direct_messages (id, conversation_id, workspace_id, channel_id, platform_message_id, from_account, sender_platform_id, text, sent_at, received_at)
+    VALUES (${uuid7()}, ${conversationId}, ${workspaceId}, ${messageChannelId}, 'm1', false, '7001', 'A synthetic message', now(), now())`;
+
+  yield* sql`INSERT INTO engagement.outgoing_messages (id, conversation_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
+    VALUES (${uuid7()}, ${conversationId}, ${workspaceId}, ${messageChannelId}, ${person.id}, 'A synthetic answer', now(), 'sent', now())`;
   // A sign-in to an ad network, an ad account it connects that an owner
   // allowed to spend, what was read of it, a boost that was stopped with
   // its journal, and the audit trail's line of it.

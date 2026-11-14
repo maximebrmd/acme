@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  SentMessageRecord,
   SentReplyRecord,
   SentReviewReplyRecord,
 } from "#shared/application/personal-data.ts";
@@ -23,7 +24,9 @@ import type { Platform } from "#shared/domain/platform.ts";
  * A user's export holds the replies they wrote, never the comments they
  * answered, which are other people's; and the same for the reviews of
  * locations, which go with their workspace and, at once, with their
- * channel.
+ * channel, and for direct messages: a channel's conversations go at once
+ * with it, and a user's export lists the messages they sent, never those
+ * they received.
  */
 export class EngagementRecords extends Context.Service<
   EngagementRecords,
@@ -39,7 +42,9 @@ export class EngagementRecords extends Context.Service<
      * read ends them, and the comments stay for their retention. The
      * replies sent stay, the workspace's own. A Google Business Profile
      * channel's reviews go at once, with the replies sent to them: Google
-     * lets Peal keep them no longer than it uses them.
+     * lets Peal keep them no longer than it uses them. Whatever the
+     * platform, the channel's conversations go at once, with their
+     * messages and those sent from Peal.
      */
     readonly channelGone: (
       channelId: ChannelId,
@@ -54,13 +59,20 @@ export class EngagementRecords extends Context.Service<
     readonly exportUserReviewReplies: (
       userId: UserId
     ) => Effect.Effect<readonly SentReviewReplyRecord[], DatabaseError>;
-    /** Deletes the workspace's threads, comments, reviews and replies. */
+    /** The direct messages the user sent from Peal, oldest first. */
+    readonly exportUserMessages: (
+      userId: UserId
+    ) => Effect.Effect<readonly SentMessageRecord[], DatabaseError>;
+    /**
+     * Deletes the workspace's threads, comments, reviews, conversations
+     * and what was sent to them.
+     */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * Forgets the user as the author of the replies they wrote in the
-     * workspaces that remain: the replies stay, as the workspace's.
+     * Forgets the user as the author of the replies and messages they
+     * wrote in the workspaces that remain: they stay, as the workspace's.
      */
     readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     /**
