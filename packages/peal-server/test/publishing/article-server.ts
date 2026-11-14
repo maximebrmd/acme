@@ -32,16 +32,14 @@ import { newId } from "#shared/application/ids.ts";
 import { can } from "#shared/domain/access.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
+import { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { authorizersOf } from "#test/channels/connect-support.ts";
 import { editor } from "#test/channels/fakes/fake-wordpress.ts";
 import type { FakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
-import {
-  OpenOutboundGuard,
-  RecordedNotices,
-  TokenCipherTest,
-} from "#test/channels/support.ts";
+import { RecordedNotices, TokenCipherTest } from "#test/channels/support.ts";
 import {
   clusterOver,
   DatabaseTest,
@@ -167,15 +165,43 @@ const SiteAccessTest = ChannelAccessSiteCredentials.pipe(
   Layer.provide(RecordedNotices.layer)
 );
 
+/**
+ * What the outbound guard refuses, by the request's address: nothing
+ * unless a test says.
+ */
+export const guardRefusal = Ref.makeUnsafe<
+  (url: URL) => Option.Option<OutboundRequestRefused["reason"]>
+>(() => Option.none());
+
+// The guard, open to the fake sites on loopback but where a test refuses.
+const SteeredOutboundGuard = Layer.succeed(
+  OutboundGuard,
+  OutboundGuard.of({
+    check: (url) =>
+      Ref.get(guardRefusal).pipe(
+        Effect.flatMap((refusal) =>
+          Option.match(refusal(url), {
+            onNone: () => Effect.void,
+            onSome: (reason) =>
+              Effect.fail(
+                new OutboundRequestRefused({ host: url.host, reason })
+              ),
+          })
+        )
+      ),
+  })
+);
+
 const SitePublisherTest = WordPressSitePublisherLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       SiteAccessTest,
       mediaOf([coverImage, bodyImage]),
-      DrizzleArticleStore
+      DrizzleArticleStore,
+      DrizzleArticleJournal
     )
   ),
-  Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+  Layer.provide(Layer.mergeAll(FetchHttpClient.layer, SteeredOutboundGuard))
 );
 
 /**

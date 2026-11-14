@@ -9,17 +9,20 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Option, Ref } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
 import { fakeWordPress } from "#test/channels/fakes/fake-wordpress.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
 import {
   bodyImage,
   coverImage,
+  guardRefusal,
   siteChannel,
   toldArticles,
 } from "#test/publishing/article-server.ts";
 import {
   content,
+  eventuallyLater,
   onArticles,
   sentTo,
   stateOf,
@@ -359,5 +362,187 @@ describe("an article", () => {
           assert.deepStrictEqual(second?.tags, first?.tags);
         })
       )
+  );
+  it.effect("sends each file once, however many attempts it takes", () =>
+    onArticles(
+      Effect.gen(function* filesOnce() {
+        let unavailable = 0;
+
+        // The site is down for the first look for a tag, after the files.
+        const site = yield* fakeWordPress({
+          intercept: (request) => {
+            const down =
+              request.route === "/wp/v2/tags" &&
+              request.method === "GET" &&
+              unavailable === 0;
+
+            unavailable += down ? 1 : 0;
+
+            return down
+              ? { body: "Service Unavailable", status: 503 }
+              : undefined;
+          },
+        });
+
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* siteChannel(workspaceId, site);
+        const articles = yield* Articles;
+        const actor = writer(workspaceId);
+
+        const article = yield* articles.create(
+          actor,
+          { channelId: channel.id, content: content() },
+          Option.some({ at: Option.none(), timeZone: zone })
+        );
+
+        yield* eventuallyLater(
+          "the article is on the site",
+          Effect.sync(() => site.posts().length === 1)
+        );
+
+        assert.strictEqual(unavailable, 1);
+        assert.lengthOf(site.media(), 2);
+
+        yield* eventuallyLater(
+          "the article is published",
+          ArticleStore.use((store) => store.get(article.id)).pipe(
+            Effect.map((found) =>
+              Option.exists(found, ({ state }) => state._tag === "published")
+            )
+          )
+        );
+
+        // Changed on the site, it sends no file again.
+        yield* articles.updateOnSite(
+          actor,
+          article.id,
+          content({ title: "Spring sowing, revised" })
+        );
+
+        assert.lengthOf(site.media(), 2);
+      })
+    )
+  );
+
+  it.effect("is sent again when the site's name did not resolve for now", () =>
+    onArticles(
+      Effect.gen(function* lookupFailed() {
+        let refusals = 0;
+
+        yield* Ref.set(guardRefusal, () => {
+          refusals += 1;
+
+          return refusals === 1 ? Option.some("lookupFailed") : Option.none();
+        });
+
+        const site = yield* fakeWordPress();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* siteChannel(workspaceId, site);
+
+        yield* (yield* Articles).create(
+          writer(workspaceId),
+          { channelId: channel.id, content: content() },
+          Option.some({ at: Option.none(), timeZone: zone })
+        );
+
+        yield* eventuallyLater(
+          "the article is on the site",
+          Effect.sync(() => site.posts().length === 1)
+        );
+      }).pipe(Effect.ensuring(Ref.set(guardRefusal, () => Option.none())))
+    )
+  );
+
+  it.effect(
+    "fails, and is not left unconfirmed, when the guard refuses the post's call",
+    () =>
+      onArticles(
+        Effect.gen(function* refusedCommit() {
+          // Every call to the site's posts, the one that makes it first.
+          yield* Ref.set(guardRefusal, (url) =>
+            url.pathname.endsWith("/wp/v2/posts")
+              ? Option.some("notPublic")
+              : Option.none()
+          );
+
+          const { sent: article, site } = yield* sentTo();
+
+          assert.strictEqual(stateOf(article), "failed");
+          assert.lengthOf(site.posts(), 0);
+        }).pipe(Effect.ensuring(Ref.set(guardRefusal, () => Option.none())))
+      )
+  );
+
+  it.effect(
+    "loses its cover and excerpt on the site when they are removed",
+    () =>
+      onArticles(
+        Effect.gen(function* removedFields() {
+          const { actor, sent: article, site } = yield* sentTo();
+
+          yield* (yield* Articles).updateOnSite(
+            actor,
+            article.id,
+            content({ coverMediaId: Option.none(), excerpt: Option.none() })
+          );
+
+          assert.strictEqual(site.posts()[0]?.featured_media, 0);
+          assert.strictEqual(site.posts()[0]?.excerpt, "");
+        })
+      )
+  );
+
+  it.effect("says the site keeps no trash, when it does not", () =>
+    onArticles(
+      Effect.gen(function* noTrash() {
+        const { actor, sent: article } = yield* sentTo({
+          intercept: (request) =>
+            request.method === "DELETE"
+              ? {
+                  body: {
+                    code: "rest_trash_not_supported",
+                    data: { status: 501 },
+                    message: "The post does not support trashing.",
+                  },
+                  status: 501,
+                }
+              : undefined,
+        });
+
+        const refused = yield* (yield* Articles)
+          .unpublish(actor, article.id)
+          .pipe(Effect.flip);
+
+        assert.strictEqual(refused._tag, "BadRequest");
+        assert.strictEqual(
+          refused._tag === "BadRequest" ? refused.code : undefined,
+          "rest_trash_not_supported"
+        );
+      })
+    )
+  );
+
+  it.effect("keeps no address the site answers that is not a web page's", () =>
+    onArticles(
+      Effect.gen(function* badLink() {
+        const { sent: article } = yield* sentTo({
+          intercept: (request) =>
+            request.route === "/wp/v2/posts" &&
+            request.method === "POST" &&
+            request.query.get("search") === null
+              ? {
+                  body: { id: 999, link: "data:text/html,synthetic" },
+                  status: 201,
+                }
+              : undefined,
+        });
+
+        assert.strictEqual(stateOf(article), "published");
+        assert.isTrue(
+          article.state._tag === "published" &&
+            article.state.permalink === undefined
+        );
+      })
+    )
   );
 });

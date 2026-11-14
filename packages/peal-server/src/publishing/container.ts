@@ -645,7 +645,8 @@ const SitePublisherLive = WordPressSitePublisherLive.pipe(
     Layer.mergeAll(
       ChannelAccessSiteCredentials,
       limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
-      DrizzleArticleStore
+      DrizzleArticleStore,
+      DrizzleArticleJournal
     )
   ),
   Layer.provide(OutboundGuard.layer),

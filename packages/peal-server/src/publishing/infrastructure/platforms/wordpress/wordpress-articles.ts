@@ -2,6 +2,8 @@ import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
 
+import { ArticleJournal } from "#publishing/application/article-journal.ts";
+import type { SiteFile } from "#publishing/application/article-journal.ts";
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import { SiteCredentials } from "#publishing/application/site-credentials.ts";
@@ -133,6 +135,12 @@ const refusalOf = Effect.fnUntraced(function* refusalOf(
       : new RateLimited();
   }
 
+  // A site whose trash is off cannot take a post there: it says so with
+  // a 501, which is no outage.
+  if (Option.isSome(code) && code.value === "rest_trash_not_supported") {
+    return yield* new BadRequest({ code: code.value });
+  }
+
   if (response.status >= 500 || Option.isNone(code)) {
     return yield* new PlatformUnavailable();
   }
@@ -161,8 +169,15 @@ const sentJson = <A, I>(schema: Schema.Codec<A, I>, ok: readonly number[]) =>
     );
   });
 
-// The site's answer; a failure to reach it is the site being down, and a
-// request the outbound guard refuses one Peal cannot send any more.
+// A request the outbound guard refused, which never left: its name not
+// resolving for now is the site being down for now, tried again later;
+// any other refusal one Peal cannot send any more.
+const guardRefusalOf = (refused: OutboundRequestRefused) =>
+  refused.reason === "lookupFailed"
+    ? new PlatformUnavailable()
+    : new BadRequest({ code: ownRefusalCodes.channelDisconnected });
+
+// The site's answer; a failure to reach it is the site being down.
 const execute = (
   client: Client,
   request: HttpClientRequest.HttpClientRequest
@@ -173,10 +188,7 @@ const execute = (
   client.execute(request).pipe(
     Effect.catchTags({
       HttpClientError: () => Effect.fail(new PlatformUnavailable()),
-      OutboundRequestRefused: () =>
-        Effect.fail(
-          new BadRequest({ code: ownRefusalCodes.channelDisconnected })
-        ),
+      OutboundRequestRefused: (refused) => Effect.fail(guardRefusalOf(refused)),
     })
   );
 
@@ -191,8 +203,9 @@ interface PostFields {
   readonly categories: readonly number[];
   readonly content: string;
   readonly date_gmt?: string;
-  readonly excerpt: string | undefined;
-  readonly featured_media: number | undefined;
+  readonly excerpt: string;
+  /** 0 for none. */
+  readonly featured_media: number;
   readonly status?: string;
   readonly tags: readonly number[];
   readonly title: string;
@@ -224,20 +237,26 @@ const postRoute = (
     answered ? { _fields: "id,link" } : {}
   );
 
+// The post's address, when it is a web page's: anything else the site
+// answers is not kept, nor linked to.
+const webAddress = (link: string | undefined) => {
+  const protocol =
+    link !== undefined && URL.canParse(link) ? new URL(link).protocol : "";
+
+  return protocol === "https:" || protocol === "http:" ? link : undefined;
+};
+
 const published = (post: {
   readonly id: number;
   readonly link?: string;
-}): PublishResult =>
-  post.link === undefined
-    ? {
-        _tag: "published",
-        platformPostId: PlatformPostIdSchema.make(String(post.id)),
-      }
-    : {
-        _tag: "published",
-        permalink: post.link,
-        platformPostId: PlatformPostIdSchema.make(String(post.id)),
-      };
+}): PublishResult => {
+  const permalink = webAddress(post.link);
+  const platformPostId = PlatformPostIdSchema.make(String(post.id));
+
+  return permalink === undefined
+    ? { _tag: "published", platformPostId }
+    : { _tag: "published", permalink, platformPostId };
+};
 
 /**
  * SitePublisher for WordPress sites. Every request goes through the public
@@ -247,6 +266,7 @@ export const WordPressSitePublisherLive = Layer.effect(
   SitePublisher,
   Effect.gen(function* WordPressSitePublisherLive() {
     const store = yield* ArticleStore;
+    const journal = yield* ArticleJournal;
     const credentials = yield* SiteCredentials;
     const library = yield* MediaForPublishing;
     const api = yield* publicHttpClient;
@@ -361,15 +381,35 @@ export const WordPressSitePublisherLive = Layer.effect(
     ) {
       const { content } = article;
       const images = new Map<MediaAssetId, string>();
-      let featured: number | undefined;
+      let featured = 0;
 
-      for (const mediaId of articleMediaOf(content)) {
-        const uploaded = yield* upload(uploads, token, article, mediaId);
+      // A file the site took for the article already, in an attempt
+      // before or for an earlier version, is not sent again.
+      const sent = yield* journal
+        .filesSent(article.id)
+        .pipe(Effect.mapError(() => new PlatformUnavailable()));
 
-        images.set(mediaId, uploaded.source_url);
+      for (const mediaId of new Set(articleMediaOf(content))) {
+        const known = sent.get(mediaId);
+
+        const file =
+          known ??
+          (yield* upload(uploads, token, article, mediaId).pipe(
+            Effect.map((uploaded): SiteFile => ({
+              id: uploaded.id,
+              sourceUrl: uploaded.source_url,
+            })),
+            Effect.tap((uploaded) =>
+              journal
+                .fileSent(article.id, mediaId, uploaded)
+                .pipe(Effect.mapError(() => new PlatformUnavailable()))
+            )
+          ));
+
+        images.set(mediaId, file.sourceUrl);
 
         if (Option.contains(content.coverMediaId, mediaId)) {
-          featured = uploaded.id;
+          featured = file.id;
         }
       }
 
@@ -377,8 +417,10 @@ export const WordPressSitePublisherLive = Layer.effect(
         categories: yield* termIds(token, "categories", content.categories),
         content: articleHtml(content.body, images),
         tags: yield* termIds(token, "tags", content.tags),
-        excerpt: Option.getOrUndefined(
-          content.excerpt.pipe(Option.map(escapeHtml))
+        // None removes the site's, as a change on the site must.
+        excerpt: Option.getOrElse(
+          content.excerpt.pipe(Option.map(escapeHtml)),
+          () => ""
         ),
         featured_media: featured,
         title: siteTitle(article),
@@ -499,8 +541,14 @@ export const WordPressSitePublisherLive = Layer.effect(
         Effect.gen(function* publishing() {
           const fields = yield* fieldsOf(token, article, true);
 
+          // From here a run that stops looks for the post, never makes it.
+          const committedAt = yield* request.committing.pipe(
+            Effect.mapError(() => new PlatformUnavailable())
+          );
+
           // The commit: once it may have reached the site, nothing is
-          // sent again; an answer lost, or unreadable, is looked for.
+          // sent again; an answer lost, or unreadable, is looked for. A
+          // request the guard refused never left.
           const response = yield* api
             .execute(
               signed(
@@ -510,15 +558,17 @@ export const WordPressSitePublisherLive = Layer.effect(
                 ).pipe(HttpClientRequest.bodyJsonUnsafe(fields))
               )
             )
-            .pipe(Effect.option);
+            .pipe(
+              Effect.map(Option.some),
+              Effect.catchTags({
+                HttpClientError: () => Effect.succeedNone,
+                OutboundRequestRefused: (refused) =>
+                  Effect.fail(guardRefusalOf(refused)),
+              })
+            );
 
           if (Option.isNone(response) || response.value.status >= 500) {
-            return yield* lookedUp(
-              token,
-              article,
-              request.startedAt,
-              "noResponse"
-            );
+            return yield* lookedUp(token, article, committedAt, "noResponse");
           }
 
           if (response.value.status !== 200 && response.value.status !== 201) {
@@ -534,7 +584,7 @@ export const WordPressSitePublisherLive = Layer.effect(
             : yield* lookedUp(
                 token,
                 article,
-                request.startedAt,
+                committedAt,
                 "unreadableResponse"
               );
         })

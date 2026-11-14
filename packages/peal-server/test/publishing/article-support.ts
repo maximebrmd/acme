@@ -1,8 +1,11 @@
 // What the articles' integration tests share: an article's content, a
 // member who may do everything with it, and the article sent to a fresh
 // site on a fresh server.
-import { Effect, Option } from "effect";
+import { assert } from "@effect/vitest";
+import { Duration, Effect, Option } from "effect";
 import type { Layer, Scope } from "effect";
+import { Sharding } from "effect/cluster";
+import { TestClock } from "effect/testing";
 
 import { ArticleStore } from "#publishing/application/article-store.ts";
 import { Articles } from "#publishing/application/articles.ts";
@@ -117,3 +120,27 @@ export const onArticles = <A, E>(
   setTime("2026-06-15T07:00:00Z").pipe(
     Effect.andThen(test.pipe(Effect.scoped, Effect.provide(ArticleServerTest)))
   );
+
+/**
+ * Waits until `condition` holds, moving the virtual clock ten seconds a
+ * round: for what waits on a retry's delay.
+ */
+export const eventuallyLater = <E, R>(
+  label: string,
+  condition: Effect.Effect<boolean, E, R>
+) =>
+  Effect.gen(function* waitingLater() {
+    const sharding = yield* Sharding.Sharding;
+
+    for (let round = 0; round < 500; round += 1) {
+      if (yield* condition) {
+        return;
+      }
+
+      yield* sharding.pollStorage;
+      yield* TestClock.adjust(Duration.seconds(10));
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    assert.fail(`Timed out waiting until ${label}`);
+  });
