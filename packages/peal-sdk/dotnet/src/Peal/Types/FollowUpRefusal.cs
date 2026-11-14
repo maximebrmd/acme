@@ -16,6 +16,8 @@ public readonly record struct FollowUpRefusal : IStringEnum
 
     public static readonly FollowUpRefusal NoChannel = new(Values.NoChannel);
 
+    public static readonly FollowUpRefusal AlreadyFollowedUp = new(Values.AlreadyFollowedUp);
+
     public static readonly FollowUpRefusal Channels = new(Values.Channels);
 
     public FollowUpRefusal(string value)
@@ -121,6 +123,8 @@ public readonly record struct FollowUpRefusal : IStringEnum
         public const string PostCancelled = "postCancelled";
 
         public const string NoChannel = "noChannel";
+
+        public const string AlreadyFollowedUp = "alreadyFollowedUp";
 
         public const string Channels = "channels";
     }

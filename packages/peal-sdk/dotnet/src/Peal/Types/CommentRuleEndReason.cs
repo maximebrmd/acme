@@ -12,6 +12,8 @@ public readonly record struct CommentRuleEndReason : IStringEnum
 
     public static readonly CommentRuleEndReason StarterGone = new(Values.StarterGone);
 
+    public static readonly CommentRuleEndReason ChannelGone = new(Values.ChannelGone);
+
     public CommentRuleEndReason(string value)
     {
         Value = value;
@@ -111,5 +113,7 @@ public readonly record struct CommentRuleEndReason : IStringEnum
         public const string Stopped = "stopped";
 
         public const string StarterGone = "starterGone";
+
+        public const string ChannelGone = "channelGone";
     }
 }

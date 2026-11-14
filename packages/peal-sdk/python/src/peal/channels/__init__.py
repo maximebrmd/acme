@@ -6,8 +6,11 @@ import typing
 from importlib import import_module
 
 if typing.TYPE_CHECKING:
-    from .types import ReconnectChannelsRequestMessages
-_dynamic_imports: typing.Dict[str, str] = {"ReconnectChannelsRequestMessages": ".types"}
+    from .types import ReconnectChannelsRequestMessages, ReconnectChannelsRequestReposts
+_dynamic_imports: typing.Dict[str, str] = {
+    "ReconnectChannelsRequestMessages": ".types",
+    "ReconnectChannelsRequestReposts": ".types",
+}
 
 
 def __getattr__(attr_name: str) -> typing.Any:
@@ -31,4 +34,4 @@ def __dir__():
     return sorted(lazy_attrs)
 
 
-__all__ = ["ReconnectChannelsRequestMessages"]
+__all__ = ["ReconnectChannelsRequestMessages", "ReconnectChannelsRequestReposts"]

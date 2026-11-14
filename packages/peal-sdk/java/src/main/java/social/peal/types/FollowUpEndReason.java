@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class FollowUpEndReason {
+    public static final FollowUpEndReason CHANNEL_GONE = new FollowUpEndReason(Value.CHANNEL_GONE, "channelGone");
+
     public static final FollowUpEndReason COMPLETED = new FollowUpEndReason(Value.COMPLETED, "completed");
 
     public static final FollowUpEndReason STARTER_GONE = new FollowUpEndReason(Value.STARTER_GONE, "starterGone");
@@ -45,6 +47,8 @@ public final class FollowUpEndReason {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case CHANNEL_GONE:
+                return visitor.visitChannelGone();
             case COMPLETED:
                 return visitor.visitCompleted();
             case STARTER_GONE:
@@ -60,6 +64,8 @@ public final class FollowUpEndReason {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static FollowUpEndReason valueOf(String value) {
         switch (value) {
+            case "channelGone":
+                return CHANNEL_GONE;
             case "completed":
                 return COMPLETED;
             case "starterGone":
@@ -78,6 +84,8 @@ public final class FollowUpEndReason {
 
         STARTER_GONE,
 
+        CHANNEL_GONE,
+
         UNKNOWN
     }
 
@@ -87,6 +95,8 @@ public final class FollowUpEndReason {
         T visitCompleted();
 
         T visitStarterGone();
+
+        T visitChannelGone();
 
         T visitUnknown(String unknownType);
     }

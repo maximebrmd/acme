@@ -2,4 +2,4 @@
 
 import typing
 
-FollowUpEndReason = typing.Union[typing.Literal["stopped", "completed", "starterGone"], typing.Any]
+FollowUpEndReason = typing.Union[typing.Literal["stopped", "completed", "starterGone", "channelGone"], typing.Any]

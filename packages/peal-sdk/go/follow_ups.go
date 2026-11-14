@@ -796,6 +796,7 @@ const (
 	FollowUpEndReasonStopped     FollowUpEndReason = "stopped"
 	FollowUpEndReasonCompleted   FollowUpEndReason = "completed"
 	FollowUpEndReasonStarterGone FollowUpEndReason = "starterGone"
+	FollowUpEndReasonChannelGone FollowUpEndReason = "channelGone"
 )
 
 func NewFollowUpEndReasonFromString(s string) (FollowUpEndReason, error) {
@@ -806,6 +807,8 @@ func NewFollowUpEndReasonFromString(s string) (FollowUpEndReason, error) {
 		return FollowUpEndReasonCompleted, nil
 	case "starterGone":
 		return FollowUpEndReasonStarterGone, nil
+	case "channelGone":
+		return FollowUpEndReasonChannelGone, nil
 	}
 	var t FollowUpEndReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

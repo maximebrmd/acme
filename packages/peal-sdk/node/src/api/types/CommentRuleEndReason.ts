@@ -2,6 +2,7 @@
 
 export const CommentRuleEndReason = {
         Stopped: "stopped",
-        StarterGone: "starterGone"
+        StarterGone: "starterGone",
+        ChannelGone: "channelGone"
     } as const;
 export type CommentRuleEndReason = typeof CommentRuleEndReason[keyof typeof CommentRuleEndReason];

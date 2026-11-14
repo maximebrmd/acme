@@ -499,12 +499,14 @@ var (
 	reconnectChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	reconnectChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
 	reconnectChannelsRequestFieldMessages    = big.NewInt(1 << 2)
+	reconnectChannelsRequestFieldReposts     = big.NewInt(1 << 3)
 )
 
 type ReconnectChannelsRequest struct {
 	WorkspaceID string                            `json:"-" url:"-"`
 	ChannelID   string                            `json:"-" url:"-"`
 	Messages    *ReconnectChannelsRequestMessages `json:"-" url:"messages,omitempty"`
+	Reposts     *ReconnectChannelsRequestReposts  `json:"-" url:"reposts,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -538,6 +540,13 @@ func (r *ReconnectChannelsRequest) SetChannelID(channelID string) {
 func (r *ReconnectChannelsRequest) SetMessages(messages *ReconnectChannelsRequestMessages) {
 	r.Messages = messages
 	r.require(reconnectChannelsRequestFieldMessages)
+}
+
+// SetReposts sets the Reposts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReconnectChannelsRequest) SetReposts(reposts *ReconnectChannelsRequestReposts) {
+	r.Reposts = reposts
+	r.require(reconnectChannelsRequestFieldReposts)
 }
 
 var (
@@ -2175,6 +2184,28 @@ func NewReconnectChannelsRequestMessagesFromString(s string) (ReconnectChannelsR
 }
 
 func (r ReconnectChannelsRequestMessages) Ptr() *ReconnectChannelsRequestMessages {
+	return &r
+}
+
+type ReconnectChannelsRequestReposts string
+
+const (
+	ReconnectChannelsRequestRepostsTrue  ReconnectChannelsRequestReposts = "true"
+	ReconnectChannelsRequestRepostsFalse ReconnectChannelsRequestReposts = "false"
+)
+
+func NewReconnectChannelsRequestRepostsFromString(s string) (ReconnectChannelsRequestReposts, error) {
+	switch s {
+	case "true":
+		return ReconnectChannelsRequestRepostsTrue, nil
+	case "false":
+		return ReconnectChannelsRequestRepostsFalse, nil
+	}
+	var t ReconnectChannelsRequestReposts
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r ReconnectChannelsRequestReposts) Ptr() *ReconnectChannelsRequestReposts {
 	return &r
 }
 

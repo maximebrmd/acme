@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class CommentRuleEndReason {
+    public static final CommentRuleEndReason CHANNEL_GONE = new CommentRuleEndReason(Value.CHANNEL_GONE, "channelGone");
+
     public static final CommentRuleEndReason STARTER_GONE = new CommentRuleEndReason(Value.STARTER_GONE, "starterGone");
 
     public static final CommentRuleEndReason STOPPED = new CommentRuleEndReason(Value.STOPPED, "stopped");
@@ -43,6 +45,8 @@ public final class CommentRuleEndReason {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case CHANNEL_GONE:
+                return visitor.visitChannelGone();
             case STARTER_GONE:
                 return visitor.visitStarterGone();
             case STOPPED:
@@ -56,6 +60,8 @@ public final class CommentRuleEndReason {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static CommentRuleEndReason valueOf(String value) {
         switch (value) {
+            case "channelGone":
+                return CHANNEL_GONE;
             case "starterGone":
                 return STARTER_GONE;
             case "stopped":
@@ -70,6 +76,8 @@ public final class CommentRuleEndReason {
 
         STARTER_GONE,
 
+        CHANNEL_GONE,
+
         UNKNOWN
     }
 
@@ -77,6 +85,8 @@ public final class CommentRuleEndReason {
         T visitStopped();
 
         T visitStarterGone();
+
+        T visitChannelGone();
 
         T visitUnknown(String unknownType);
     }

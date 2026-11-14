@@ -5,6 +5,8 @@ pub use crate::prelude::*;
 pub struct ReconnectQueryRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub messages: Option<ReconnectChannelsRequestMessages>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reposts: Option<ReconnectChannelsRequestReposts>,
 }
 
 impl ReconnectQueryRequest {
@@ -17,6 +19,7 @@ impl ReconnectQueryRequest {
 #[non_exhaustive]
 pub struct ReconnectQueryRequestBuilder {
     messages: Option<ReconnectChannelsRequestMessages>,
+    reposts: Option<ReconnectChannelsRequestReposts>,
 }
 
 impl ReconnectQueryRequestBuilder {
@@ -25,10 +28,16 @@ impl ReconnectQueryRequestBuilder {
         self
     }
 
+    pub fn reposts(mut self, value: ReconnectChannelsRequestReposts) -> Self {
+        self.reposts = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`ReconnectQueryRequest`].
     pub fn build(self) -> Result<ReconnectQueryRequest, BuildError> {
         Ok(ReconnectQueryRequest {
             messages: self.messages,
+            reposts: self.reposts,
         })
     }
 }

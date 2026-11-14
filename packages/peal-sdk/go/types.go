@@ -9223,11 +9223,12 @@ func (f FollowUpNotPossibleEncodedTag) Ptr() *FollowUpNotPossibleEncodedTag {
 type FollowUpRefusal string
 
 const (
-	FollowUpRefusalNoAction      FollowUpRefusal = "noAction"
-	FollowUpRefusalEmptyComment  FollowUpRefusal = "emptyComment"
-	FollowUpRefusalPostCancelled FollowUpRefusal = "postCancelled"
-	FollowUpRefusalNoChannel     FollowUpRefusal = "noChannel"
-	FollowUpRefusalChannels      FollowUpRefusal = "channels"
+	FollowUpRefusalNoAction          FollowUpRefusal = "noAction"
+	FollowUpRefusalEmptyComment      FollowUpRefusal = "emptyComment"
+	FollowUpRefusalPostCancelled     FollowUpRefusal = "postCancelled"
+	FollowUpRefusalNoChannel         FollowUpRefusal = "noChannel"
+	FollowUpRefusalAlreadyFollowedUp FollowUpRefusal = "alreadyFollowedUp"
+	FollowUpRefusalChannels          FollowUpRefusal = "channels"
 )
 
 func NewFollowUpRefusalFromString(s string) (FollowUpRefusal, error) {
@@ -9240,6 +9241,8 @@ func NewFollowUpRefusalFromString(s string) (FollowUpRefusal, error) {
 		return FollowUpRefusalPostCancelled, nil
 	case "noChannel":
 		return FollowUpRefusalNoChannel, nil
+	case "alreadyFollowedUp":
+		return FollowUpRefusalAlreadyFollowedUp, nil
 	case "channels":
 		return FollowUpRefusalChannels, nil
 	}

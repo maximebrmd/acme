@@ -308,6 +308,7 @@ module Peal
   module Channels
     module Types
       autoload :ReconnectChannelsRequestMessages, ::File.join(__dir__, "peal/channels/types/reconnect_channels_request_messages")
+      autoload :ReconnectChannelsRequestReposts, ::File.join(__dir__, "peal/channels/types/reconnect_channels_request_reposts")
     end
   end
 

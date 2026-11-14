@@ -6,6 +6,7 @@ pub enum FollowUpEndReason {
     Stopped,
     Completed,
     StarterGone,
+    ChannelGone,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -17,6 +18,7 @@ impl Serialize for FollowUpEndReason {
             Self::Stopped => serializer.serialize_str("stopped"),
             Self::Completed => serializer.serialize_str("completed"),
             Self::StarterGone => serializer.serialize_str("starterGone"),
+            Self::ChannelGone => serializer.serialize_str("channelGone"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -29,6 +31,7 @@ impl<'de> Deserialize<'de> for FollowUpEndReason {
             "stopped" => Ok(Self::Stopped),
             "completed" => Ok(Self::Completed),
             "starterGone" => Ok(Self::StarterGone),
+            "channelGone" => Ok(Self::ChannelGone),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -40,6 +43,7 @@ impl fmt::Display for FollowUpEndReason {
             Self::Stopped => write!(f, "stopped"),
             Self::Completed => write!(f, "completed"),
             Self::StarterGone => write!(f, "starterGone"),
+            Self::ChannelGone => write!(f, "channelGone"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

@@ -11,6 +11,7 @@ module Peal
       EMPTY_COMMENT = "emptyComment"
       POST_CANCELLED = "postCancelled"
       NO_CHANNEL = "noChannel"
+      ALREADY_FOLLOWED_UP = "alreadyFollowedUp"
       CHANNELS = "channels"
     end
   end

@@ -637,6 +637,7 @@ type CommentRuleEndReason string
 const (
 	CommentRuleEndReasonStopped     CommentRuleEndReason = "stopped"
 	CommentRuleEndReasonStarterGone CommentRuleEndReason = "starterGone"
+	CommentRuleEndReasonChannelGone CommentRuleEndReason = "channelGone"
 )
 
 func NewCommentRuleEndReasonFromString(s string) (CommentRuleEndReason, error) {
@@ -645,6 +646,8 @@ func NewCommentRuleEndReasonFromString(s string) (CommentRuleEndReason, error) {
 		return CommentRuleEndReasonStopped, nil
 	case "starterGone":
 		return CommentRuleEndReasonStarterGone, nil
+	case "channelGone":
+		return CommentRuleEndReasonChannelGone, nil
 	}
 	var t CommentRuleEndReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

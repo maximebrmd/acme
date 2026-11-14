@@ -14,6 +14,8 @@ public readonly record struct FollowUpEndReason : IStringEnum
 
     public static readonly FollowUpEndReason StarterGone = new(Values.StarterGone);
 
+    public static readonly FollowUpEndReason ChannelGone = new(Values.ChannelGone);
+
     public FollowUpEndReason(string value)
     {
         Value = value;
@@ -115,5 +117,7 @@ public readonly record struct FollowUpEndReason : IStringEnum
         public const string Completed = "completed";
 
         public const string StarterGone = "starterGone";
+
+        public const string ChannelGone = "channelGone";
     }
 }

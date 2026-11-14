@@ -9,6 +9,7 @@ module Peal
 
       STOPPED = "stopped"
       STARTER_GONE = "starterGone"
+      CHANNEL_GONE = "channelGone"
     end
   end
 end

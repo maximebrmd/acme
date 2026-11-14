@@ -10,6 +10,7 @@ module Peal
       STOPPED = "stopped"
       COMPLETED = "completed"
       STARTER_GONE = "starterGone"
+      CHANNEL_GONE = "channelGone"
     end
   end
 end

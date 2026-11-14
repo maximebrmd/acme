@@ -3,6 +3,7 @@
 export const FollowUpEndReason = {
         Stopped: "stopped",
         Completed: "completed",
-        StarterGone: "starterGone"
+        StarterGone: "starterGone",
+        ChannelGone: "channelGone"
     } as const;
 export type FollowUpEndReason = typeof FollowUpEndReason[keyof typeof FollowUpEndReason];

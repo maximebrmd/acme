@@ -8,5 +8,6 @@ enum FollowUpRefusal: string
     case EmptyComment = "emptyComment";
     case PostCancelled = "postCancelled";
     case NoChannel = "noChannel";
+    case AlreadyFollowedUp = "alreadyFollowedUp";
     case Channels = "channels";
 }

@@ -5,6 +5,7 @@ export const FollowUpRefusal = {
         EmptyComment: "emptyComment",
         PostCancelled: "postCancelled",
         NoChannel: "noChannel",
+        AlreadyFollowedUp: "alreadyFollowedUp",
         Channels: "channels"
     } as const;
 export type FollowUpRefusal = typeof FollowUpRefusal[keyof typeof FollowUpRefusal];

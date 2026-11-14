@@ -575,7 +575,7 @@ client.api_keys.revoke(
 </details>
 
 ## channels
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L37-L67">list</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L38-L68">list</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -648,7 +648,7 @@ client.channels.list(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L69-L125">find</a>(...) -> ChannelPage</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L70-L126">find</a>(...) -> ChannelPage</code></summary>
 <dl>
 <dd>
 
@@ -761,7 +761,7 @@ client.channels.find(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L127-L157">platforms</a>(...) -> ConnectablePlatforms</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L128-L158">platforms</a>(...) -> ConnectablePlatforms</code></summary>
 <dl>
 <dd>
 
@@ -834,7 +834,7 @@ client.channels.platforms(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L159-L212">connect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L160-L213">connect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -940,7 +940,7 @@ client.channels.connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L214-L266">complete_connect</a>(...) -> ConnectOutcome</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L215-L267">complete_connect</a>(...) -> ConnectOutcome</code></summary>
 <dl>
 <dd>
 
@@ -1055,7 +1055,7 @@ client.channels.complete_connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L268-L315">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L269-L316">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -1157,7 +1157,7 @@ client.channels.choose_accounts(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L317-L359">reconnect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L318-L363">reconnect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -1169,7 +1169,7 @@ client.channels.choose_accounts(
 <dl>
 <dd>
 
-Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With `reposts=true`, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows `reconnect` until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
 </dd>
 </dl>
 </dd>
@@ -1235,6 +1235,14 @@ client.channels.reconnect(
 <dl>
 <dd>
 
+**reposts:** `typing.Optional[ReconnectChannelsRequestReposts]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -1247,7 +1255,7 @@ client.channels.reconnect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L361-L393">disconnect</a>(...)</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L365-L397">disconnect</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -1329,7 +1337,7 @@ client.channels.disconnect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L395-L435">update</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L399-L439">update</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -1420,7 +1428,7 @@ client.channels.update(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L437-L470">disable</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L441-L474">disable</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -1502,7 +1510,7 @@ client.channels.disable(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L472-L505">enable</a>(...) -> Channel</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L476-L509">enable</a>(...) -> Channel</code></summary>
 <dl>
 <dd>
 
@@ -19388,7 +19396,7 @@ client.inbox_rules.list_comment_rules(
 <dl>
 <dd>
 
-Starts a rule on the comments of a post that went out (`postId`) or of every post of a channel (`channelId`), exactly one of them, with 1 to 10 `keywords` and a `reply`. A rule answers, by itself and in public, as the channel's account, a comment received after it started, under a post it answers on, that holds one of its keywords as a word (whatever its case and accents): with its `reply`, once a comment and once a person, 25 replies a day at most, through the inbox's own replies (their journal, one reply a comment, each one of the billing account's outbound messages). It answers on Mastodon, and on Facebook Pages and Instagram where the server reads their comments; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself, and `channels` says so. It never likes, follows or messages anyone privately. It acts as whoever started it, with what they may do then: it ends when they can no longer answer comments. It is refused when no channel it answers on can carry its reply (CommentRuleNotPossible, with each channel's reason). A workspace keeps 100 rules active or paused. Needs engagement:reply; never staff acting as a member.
+Starts a rule on the comments of a post that went out (`postId`) or of every post of a channel (`channelId`), exactly one of them, with 1 to 10 `keywords` and a `reply`. A rule answers, by itself and in public, as the channel's account, a comment received after it started or was last set going again, under a post it answers on (a post's rule acts on the channels the post is for, scheduled or out), that holds one of its keywords as a word (whatever its case and accents): with its `reply`, once a comment and once a person, 25 replies a day at most, and 100 a day for every rule of a channel together, through the inbox's own replies (their journal, one reply a comment, each one of the billing account's outbound messages). It answers on Mastodon, and on Facebook Pages and Instagram where the server reads their comments; Bluesky's, X's, LinkedIn's and YouTube's rules forbid an app to answer by itself, and `channels` says so. It never likes, follows or messages anyone privately. It acts as whoever started it, with what they may do then: it ends when they can no longer answer comments, and when its channel is disconnected. It is refused when no channel it answers on can carry its reply (CommentRuleNotPossible, with each channel's reason). A workspace keeps 100 rules active or paused. Needs engagement:reply; never staff acting as a member.
 </dd>
 </dl>
 </dd>

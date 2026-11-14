@@ -5,6 +5,7 @@ pub use crate::prelude::*;
 pub enum CommentRuleEndReason {
     Stopped,
     StarterGone,
+    ChannelGone,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -15,6 +16,7 @@ impl Serialize for CommentRuleEndReason {
         match self {
             Self::Stopped => serializer.serialize_str("stopped"),
             Self::StarterGone => serializer.serialize_str("starterGone"),
+            Self::ChannelGone => serializer.serialize_str("channelGone"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -26,6 +28,7 @@ impl<'de> Deserialize<'de> for CommentRuleEndReason {
         match value.as_str() {
             "stopped" => Ok(Self::Stopped),
             "starterGone" => Ok(Self::StarterGone),
+            "channelGone" => Ok(Self::ChannelGone),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -36,6 +39,7 @@ impl fmt::Display for CommentRuleEndReason {
         match self {
             Self::Stopped => write!(f, "stopped"),
             Self::StarterGone => write!(f, "starterGone"),
+            Self::ChannelGone => write!(f, "channelGone"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

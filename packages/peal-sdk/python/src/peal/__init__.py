@@ -1120,7 +1120,7 @@ if typing.TYPE_CHECKING:
         webhooks,
     )
     from ._default_clients import DefaultAioHttpClient, DefaultAsyncHttpxClient
-    from .channels import ReconnectChannelsRequestMessages
+    from .channels import ReconnectChannelsRequestMessages, ReconnectChannelsRequestReposts
     from .client import AsyncPeal, Peal
     from .environment import PealEnvironment
     from .feeds import FeedChangeStatus
@@ -1968,6 +1968,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "RateCardXRates": ".types",
     "ReachableAdAccount": ".types",
     "ReconnectChannelsRequestMessages": ".channels",
+    "ReconnectChannelsRequestReposts": ".channels",
     "RecyclingComing": ".types",
     "RecyclingEndReason": ".types",
     "RecyclingEndsTooSoonEncoded": ".types",
@@ -3115,6 +3116,7 @@ __all__ = [
     "RateCardXRates",
     "ReachableAdAccount",
     "ReconnectChannelsRequestMessages",
+    "ReconnectChannelsRequestReposts",
     "RecyclingComing",
     "RecyclingEndReason",
     "RecyclingEndsTooSoonEncoded",

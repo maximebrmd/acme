@@ -28,6 +28,7 @@ from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from .types.reconnect_channels_request_messages import ReconnectChannelsRequestMessages
+from .types.reconnect_channels_request_reposts import ReconnectChannelsRequestReposts
 from pydantic import ValidationError
 
 # this is used as the default value for optional parameters
@@ -776,10 +777,11 @@ class RawChannelsClient:
         channel_id: str,
         *,
         messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        reposts: typing.Optional[ReconnectChannelsRequestReposts] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Authorization]:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With `reposts=true`, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows `reconnect` until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
 
         Parameters
         ----------
@@ -788,6 +790,8 @@ class RawChannelsClient:
         channel_id : str
 
         messages : typing.Optional[ReconnectChannelsRequestMessages]
+
+        reposts : typing.Optional[ReconnectChannelsRequestReposts]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -805,6 +809,7 @@ class RawChannelsClient:
             method="POST",
             params={
                 "messages": messages,
+                "reposts": reposts,
             },
             request_options=_request_options_with_retries_disabled,
         )
@@ -2003,10 +2008,11 @@ class AsyncRawChannelsClient:
         channel_id: str,
         *,
         messages: typing.Optional[ReconnectChannelsRequestMessages] = None,
+        reposts: typing.Optional[ReconnectChannelsRequestReposts] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Authorization]:
         """
-        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+        Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With `messages=true`, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (`setChannelMessages` answers 409 `InboxActionUnavailable`, `reconnect`, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With `reposts=true`, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows `reconnect` until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
 
         Parameters
         ----------
@@ -2015,6 +2021,8 @@ class AsyncRawChannelsClient:
         channel_id : str
 
         messages : typing.Optional[ReconnectChannelsRequestMessages]
+
+        reposts : typing.Optional[ReconnectChannelsRequestReposts]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2032,6 +2040,7 @@ class AsyncRawChannelsClient:
             method="POST",
             params={
                 "messages": messages,
+                "reposts": reposts,
             },
             request_options=_request_options_with_retries_disabled,
         )

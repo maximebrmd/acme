@@ -858,7 +858,7 @@ public class AsyncRawChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With <code>reposts=true</code>, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows <code>reconnect</code> until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
      */
     public CompletableFuture<PealClientHttpResponse<Authorization>> reconnect(String workspaceId, String channelId) {
         return reconnect(
@@ -866,7 +866,7 @@ public class AsyncRawChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With <code>reposts=true</code>, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows <code>reconnect</code> until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
      */
     public CompletableFuture<PealClientHttpResponse<Authorization>> reconnect(
             String workspaceId, String channelId, RequestOptions requestOptions) {
@@ -875,7 +875,7 @@ public class AsyncRawChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With <code>reposts=true</code>, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows <code>reconnect</code> until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
      */
     public CompletableFuture<PealClientHttpResponse<Authorization>> reconnect(
             String workspaceId, String channelId, ReconnectChannelsRequest request) {
@@ -883,7 +883,7 @@ public class AsyncRawChannelsClient {
     }
 
     /**
-     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. Needs channel:connect.
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. With <code>messages=true</code>, the sign-in also asks for the account's direct messages where the platform asks for them apart: on Bluesky, the chat methods' permissions, which turning a channel's messages on needs (<code>setChannelMessages</code> answers 409 <code>InboxActionUnavailable</code>, <code>reconnect</code>, until they are granted). A reconnect of a Bluesky channel that granted them asks them again, so its messages stay readable. With <code>reposts=true</code>, a Bluesky sign-in also asks to repost the account's own posts, which a follow-up rule that reposts there needs (its channel shows <code>reconnect</code> until it is granted); a reconnect of a channel that granted it asks it again. Needs channel:connect.
      */
     public CompletableFuture<PealClientHttpResponse<Authorization>> reconnect(
             String workspaceId, String channelId, ReconnectChannelsRequest request, RequestOptions requestOptions) {
@@ -897,6 +897,10 @@ public class AsyncRawChannelsClient {
         if (request.getMessages().isPresent()) {
             QueryStringMapper.addQueryParameter(
                     httpUrl, "messages", request.getMessages().get(), false);
+        }
+        if (request.getReposts().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "reposts", request.getReposts().get(), false);
         }
         if (requestOptions != null) {
             requestOptions.getQueryParameters().forEach((_key, _value) -> {

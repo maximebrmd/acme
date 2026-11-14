@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class FollowUpRefusal {
     public static final FollowUpRefusal EMPTY_COMMENT = new FollowUpRefusal(Value.EMPTY_COMMENT, "emptyComment");
 
+    public static final FollowUpRefusal ALREADY_FOLLOWED_UP =
+            new FollowUpRefusal(Value.ALREADY_FOLLOWED_UP, "alreadyFollowedUp");
+
     public static final FollowUpRefusal CHANNELS = new FollowUpRefusal(Value.CHANNELS, "channels");
 
     public static final FollowUpRefusal POST_CANCELLED = new FollowUpRefusal(Value.POST_CANCELLED, "postCancelled");
@@ -51,6 +54,8 @@ public final class FollowUpRefusal {
         switch (value) {
             case EMPTY_COMMENT:
                 return visitor.visitEmptyComment();
+            case ALREADY_FOLLOWED_UP:
+                return visitor.visitAlreadyFollowedUp();
             case CHANNELS:
                 return visitor.visitChannels();
             case POST_CANCELLED:
@@ -70,6 +75,8 @@ public final class FollowUpRefusal {
         switch (value) {
             case "emptyComment":
                 return EMPTY_COMMENT;
+            case "alreadyFollowedUp":
+                return ALREADY_FOLLOWED_UP;
             case "channels":
                 return CHANNELS;
             case "postCancelled":
@@ -92,6 +99,8 @@ public final class FollowUpRefusal {
 
         NO_CHANNEL,
 
+        ALREADY_FOLLOWED_UP,
+
         CHANNELS,
 
         UNKNOWN
@@ -105,6 +114,8 @@ public final class FollowUpRefusal {
         T visitPostCancelled();
 
         T visitNoChannel();
+
+        T visitAlreadyFollowedUp();
 
         T visitChannels();
 

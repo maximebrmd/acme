@@ -2,4 +2,4 @@
 
 import typing
 
-CommentRuleEndReason = typing.Union[typing.Literal["stopped", "starterGone"], typing.Any]
+CommentRuleEndReason = typing.Union[typing.Literal["stopped", "starterGone", "channelGone"], typing.Any]

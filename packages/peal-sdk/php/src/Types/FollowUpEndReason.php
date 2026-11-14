@@ -7,4 +7,5 @@ enum FollowUpEndReason: string
     case Stopped = "stopped";
     case Completed = "completed";
     case StarterGone = "starterGone";
+    case ChannelGone = "channelGone";
 }
