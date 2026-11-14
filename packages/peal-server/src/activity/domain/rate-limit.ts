@@ -180,3 +180,10 @@ export const standingOf = (
  * the window runs, and the purge leaves a margin for a clock that differs.
  */
 export const countRetentionSeconds = 3600;
+
+/**
+ * The most requests a minute staff may give a workspace of its own: the
+ * rate card offers 1,200 on request, and this leaves room above it for a
+ * case staff weigh, never an unbounded one.
+ */
+export const maxOverridePerMinute = 10_000;

@@ -3314,7 +3314,8 @@
       "twoStepOff": "La validation en deux étapes est désactivée sur ce compte : il n’y a rien à réinitialiser.",
       "unknown": "Cela n’a pas marché. Réessayez.",
       "verified": "Cette adresse est déjà confirmée.",
-      "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède."
+      "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède.",
+      "billingOff": "Ce serveur ne facture pas : chaque clé envoie selon son réglage."
     },
     "workspaces": {
       "title": "Espaces de travail",
@@ -3392,7 +3393,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} mergeBillingAccounts {A fusionné des comptes de facturation} requirePaymentMethod {A exigé un moyen de paiement} restoreFreeTier {A rendu une offre gratuite} detachBillingWorkspace {A détaché un espace de travail de son compte de facturation} setRequestLimit {A fixé la limite de débit d’un espace de travail} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -3596,6 +3597,21 @@
       "allHint": "Désactive tous les liens courts encore actifs de cet espace de travail, comme lorsqu’il est signalé pour abus : chacun répond alors 410. Consigné une seule fois dans le journal d’audit, avec le motif.",
       "disableAll": "Les désactiver tous",
       "allDisabled": "{count, plural, =0 {Aucun lien court n’était encore actif.} one {# lien court désactivé.} other {# liens courts désactivés.}}"
+    },
+    "requestLimit": {
+      "title": "Limite de débit de l’API",
+      "description": "Combien de requêtes par minute chaque clé de l’espace de travail, et chaque application qui y agit, peut envoyer.",
+      "current": "{requestsPerMinute, number} requêtes par minute : {policy, select, default {le réglage du serveur} free {un compte de facturation sans moyen de paiement} override {fixée par l’équipe pour cet espace de travail} other {{policy}}}.",
+      "setOn": "Fixée le",
+      "unbilled": "Ce serveur ne facture pas : chaque clé envoie selon son réglage, et aucun espace de travail n’a de limite propre.",
+      "hint": "Une limite propre à l’espace de travail remplace celle de sa situation dans la minute, quoi que paie son compte de facturation. La retirer rend celle de sa situation.",
+      "limit": "Requêtes par minute",
+      "limitHint": "De 1 à {most, number}. {offered, number} est ce qui est proposé sur demande.",
+      "save": "Fixer la limite",
+      "saving": "Enregistrement…",
+      "saved": "La limite de l’espace de travail est fixée.",
+      "remove": "Retirer sa limite propre",
+      "removed": "L’espace de travail envoie de nouveau selon la limite de sa situation."
     }
   },
   "Impersonation": {

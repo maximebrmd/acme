@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { ActivityLog } from "#activity/application/activity-log.ts";
 import { ActivityRecords } from "#activity/application/activity-records.ts";
+import { RequestLimitSettings } from "#activity/application/request-limit-settings.ts";
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import { BilledRequestStandings } from "#activity/infrastructure/billed-request-standings.ts";
 import {
@@ -20,7 +21,10 @@ import {
 // How many requests each key and each application sends, with its policy
 // from the settings, and, on a server that bills, from the standing the
 // billing context tells and the overrides staff set.
-const RequestLimitsLive = RequestLimiter.layer.pipe(
+const RequestLimitsLive = Layer.mergeAll(
+  RequestLimiter.layer,
+  RequestLimitSettings.layer
+).pipe(
   Layer.provideMerge(RequestPolicyLive),
   Layer.provide(
     Layer.mergeAll(
@@ -50,7 +54,8 @@ const ActivityLogLive = Layer.mergeAll(
 /**
  * What callers do through the API, as the server keeps it: how many
  * requests each key and each application sends (RequestLimiter, with its
- * policy from the settings), and each workspace's activity log
+ * policy from the settings and the standing, and RequestLimitSettings, a
+ * workspace's own limit, which staff set), and each workspace's activity log
  * (ActivityLog, ActivityRecords). Needs the database (Drizzle), Ids,
  * the workspace context's CredentialNames, which names the keys and the
  * applications in the log, and the billing context's ApiStandings, which

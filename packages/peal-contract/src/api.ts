@@ -1578,6 +1578,7 @@ export type {
 export { ScheduleInPast } from "./schedule-in-past.ts";
 
 export {
+  maxRequestLimitPerMinute,
   maxStaffReasonLength,
   StaffActionSchema,
   StaffApi,
@@ -1591,6 +1592,8 @@ export {
   staffPageSize,
   StaffReasonPayloadSchema,
   StaffReasonSchema,
+  StaffRequestLimitPayloadSchema,
+  StaffRequestLimitSchema,
   StaffSessionSchema,
   staffShortLinkPageSize,
   StaffShortLinkPageSchema,
@@ -1616,6 +1619,7 @@ export type {
   StaffPartner,
   StaffPostCounts,
   StaffReasonPayload,
+  StaffRequestLimit,
   StaffSession,
   StaffShortLink,
   StaffShortLinkPage,

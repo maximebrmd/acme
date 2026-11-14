@@ -8,6 +8,7 @@ import {
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
+  BillingNotEnabled,
   CurrentStaff,
   FailureReasonSchema,
   ShortLinkNotFound,
@@ -21,6 +22,7 @@ import type {
   StaffAuditEvent,
   StaffChannel,
   StaffPartner,
+  StaffRequestLimit,
   StaffShortLink,
   StaffUser,
   StaffUserSummary,
@@ -30,6 +32,7 @@ import type {
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import type { PartnerPosition } from "#staff/application/ports/partner-desk.ts";
+import type { StaffRequestLimit as RequestLimitView } from "#staff/application/ports/request-limit-desk.ts";
 import type { StaffShortLinkSummary } from "#staff/application/ports/short-link-desk.ts";
 import type {
   UserProfile,
@@ -44,6 +47,7 @@ import type {
   WorkspaceOverview,
 } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffRequestLimits } from "#staff/application/staff-request-limits.ts";
 import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import { StaffReasonSchema } from "#staff/domain/staff-reason.ts";
 
@@ -283,6 +287,14 @@ const shortLinkView = (link: StaffShortLinkSummary): StaffShortLink => ({
   workspaceId: link.workspaceId,
 });
 
+const requestLimitView = (limit: RequestLimitView): StaffRequestLimit => ({
+  bills: limit.bills,
+  override: Option.getOrNull(limit.override),
+  paying: limit.paying,
+  policy: limit.policy,
+  requestsPerMinute: limit.requestsPerMinute,
+});
+
 export const StaffHandlers = HttpApiBuilder.group(
   Api,
   "staff",
@@ -291,6 +303,7 @@ export const StaffHandlers = HttpApiBuilder.group(
     const actions = yield* StaffActions;
     const partners = yield* StaffPartners;
     const shortLinks = yield* StaffShortLinks;
+    const requestLimits = yield* StaffRequestLimits;
 
     // A short link turned off or on again, by the staff member, recorded.
     const turnShortLink = (
@@ -464,6 +477,34 @@ export const StaffHandlers = HttpApiBuilder.group(
             ShortLinkNotFound: () => Effect.fail(new ShortLinkNotFound()),
           })
         ),
+      setWorkspaceRequestLimit: ({ params, payload }) =>
+        Effect.gen(function* setWorkspaceRequestLimit() {
+          const workspaceId = decodeWorkspaceId(params.workspaceId);
+
+          if (Option.isNone(workspaceId)) {
+            return yield* new WorkspaceNotFound();
+          }
+
+          const { userId } = yield* currentStaff;
+
+          const limit = yield* requestLimits
+            .set({
+              reason: yield* decodeReason(payload.reason).pipe(Effect.orDie),
+              requestsPerMinute: Option.fromNullOr(payload.requestsPerMinute),
+              staffId: userId,
+              workspaceId: workspaceId.value,
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                RequestLimitsNotBilled: () =>
+                  Effect.fail(new BillingNotEnabled()),
+                WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
+              })
+            );
+
+          return requestLimitView(limit);
+        }),
       system: () =>
         staffConsole.system.pipe(
           Effect.orDie,
@@ -510,6 +551,18 @@ export const StaffHandlers = HttpApiBuilder.group(
                 WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
               }),
               Effect.flatMap(workspaceView)
+            ),
+        }),
+      workspaceRequestLimit: ({ params }) =>
+        Option.match(decodeWorkspaceId(params.workspaceId), {
+          onNone: () => Effect.fail(new WorkspaceNotFound()),
+          onSome: (workspaceId) =>
+            requestLimits.of(workspaceId).pipe(
+              Effect.map(requestLimitView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
+              })
             ),
         }),
       workspaceShortLinks: ({ params }) =>

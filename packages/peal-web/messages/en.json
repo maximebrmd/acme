@@ -3314,7 +3314,8 @@
       "twoStepOff": "Two-step verification is off on this account: there is nothing to reset.",
       "unknown": "That did not work. Try again.",
       "verified": "This address is confirmed already.",
-      "workspaceGone": "This workspace no longer exists, or a partner owns it."
+      "workspaceGone": "This workspace no longer exists, or a partner owns it.",
+      "billingOff": "This server does not bill: every key sends under its setting."
     },
     "workspaces": {
       "title": "Workspaces",
@@ -3392,7 +3393,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} resetTwoStep {Reset two-step verification} disableShortLink {Turned a short link off} enableShortLink {Turned a short link back on} disableWorkspaceShortLinks {Turned off a workspace's short links} mergeBillingAccounts {Merged billing accounts} requirePaymentMethod {Required a payment method} restoreFreeTier {Gave a free tier back} detachBillingWorkspace {Detached a workspace from its billing account} setRequestLimit {Set a workspace’s rate limit} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -3596,6 +3597,21 @@
       "allHint": "Turns off every short link of this workspace still on, as when it is reported for abuse: each then answers 410. Recorded once in the audit log, with the reason.",
       "disableAll": "Turn them all off",
       "allDisabled": "{count, plural, =0 {No short link was still on.} one {# short link turned off.} other {# short links turned off.}}"
+    },
+    "requestLimit": {
+      "title": "API rate limit",
+      "description": "How many requests a minute each key of the workspace, and each application acting in it, may send.",
+      "current": "{requestsPerMinute, number} requests a minute: {policy, select, default {the server’s setting} free {a billing account without a payment method} override {set by staff for this workspace} other {{policy}}}.",
+      "setOn": "Set on",
+      "unbilled": "This server does not bill: every key sends under its setting, and no workspace has a limit of its own.",
+      "hint": "A limit of the workspace’s own replaces its standing’s within a minute, whatever its billing account pays. Removing it gives the standing’s back.",
+      "limit": "Requests a minute",
+      "limitHint": "From 1 to {most, number}. {offered, number} is what is offered on request.",
+      "save": "Set the limit",
+      "saving": "Saving…",
+      "saved": "The workspace’s limit is set.",
+      "remove": "Remove its own limit",
+      "removed": "The workspace sends under its standing’s limit again."
     }
   },
   "Impersonation": {

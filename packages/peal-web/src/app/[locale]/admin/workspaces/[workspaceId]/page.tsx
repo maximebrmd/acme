@@ -17,6 +17,7 @@ import { ChannelHealth } from "#components/staff/channel-health.tsx";
 import { Instant } from "#components/staff/instant.tsx";
 import { PartnerPosition } from "#components/staff/partner-position.tsx";
 import { Fact, Section } from "#components/staff/section.tsx";
+import { WorkspaceRequestLimit } from "#components/staff/workspace-request-limit.tsx";
 import { WorkspaceShortLinks } from "#components/staff/workspace-short-links.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
@@ -54,6 +55,10 @@ const WorkspacePage = async ({
     staff.partner({ params: { workspaceId } })
   );
 
+  const requestLimit = await staffRead((staff) =>
+    staff.workspaceRequestLimit({ params: { workspaceId } })
+  );
+
   const t = await getTranslations("Staff.workspace");
   const twoStep = await getTranslations("TwoStep");
   const staffT = await getTranslations("Staff");
@@ -63,6 +68,7 @@ const WorkspacePage = async ({
   const billing = await getTranslations("Billing");
   const partners = await getTranslations("Staff.partner");
   const shortLinks = await getTranslations("Staff.shortLinks");
+  const requestLimits = await getTranslations("Staff.requestLimit");
   const { subscription } = workspace.billing;
 
   return (
@@ -125,6 +131,20 @@ const WorkspacePage = async ({
             owned: partners("owned"),
             workspaces: partners("workspaces"),
           }}
+        />
+      </Section>
+      <Section
+        title={requestLimits("title")}
+        description={requestLimits("description")}
+      >
+        <WorkspaceRequestLimit
+          limit={requestLimit}
+          setAt={
+            requestLimit.override === null
+              ? null
+              : DateTime.formatIso(requestLimit.override.setAt)
+          }
+          workspaceId={workspaceId}
         />
       </Section>
       <Section title={shortLinks("title")}>

@@ -11,6 +11,7 @@ import { AuditLog } from "#staff/application/ports/audit-log.ts";
 import { Moderation } from "#staff/application/ports/moderation.ts";
 import type { EndedImpersonation } from "#staff/application/ports/moderation.ts";
 import { PartnerDesk } from "#staff/application/ports/partner-desk.ts";
+import { RequestLimitDesk } from "#staff/application/ports/request-limit-desk.ts";
 import { ShortLinkDesk } from "#staff/application/ports/short-link-desk.ts";
 import { StaffDirectory } from "#staff/application/ports/staff-directory.ts";
 import type { UserProfile } from "#staff/application/ports/staff-directory.ts";
@@ -19,6 +20,7 @@ import { WorkspaceHealth } from "#staff/application/ports/workspace-health.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffRequestLimits } from "#staff/application/staff-request-limits.ts";
 import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import type { AuditEvent } from "#staff/domain/audit-event.ts";
 
@@ -301,6 +303,21 @@ export const memoryStaff = (
             })
           )
         ),
+        // A server that does not bill: the setting is everyone's.
+        Layer.succeed(
+          RequestLimitDesk,
+          RequestLimitDesk.of({
+            of: () =>
+              Effect.succeed({
+                bills: false,
+                override: Option.none(),
+                paying: false,
+                policy: "default",
+                requestsPerMinute: 600,
+              }),
+            set: () => Effect.succeedNone,
+          })
+        ),
         Ids.layerTest
       );
 
@@ -309,6 +326,7 @@ export const memoryStaff = (
         StaffConsole.layer,
         StaffPartners.layer,
         StaffShortLinks.layer,
+        StaffRequestLimits.layer,
         ImpersonationAudit.layer
       ).pipe(
         Layer.provideMerge(ports),

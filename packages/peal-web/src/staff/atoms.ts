@@ -35,6 +35,12 @@ export const disableWorkspaceShortLinks = PealApi.mutation(
 // Opens a partner account for a workspace.
 export const grantPartner = PealApi.mutation("staff", "grantPartner");
 
+// Gives a workspace an API rate limit of its own, or its standing's again.
+export const setWorkspaceRequestLimit = PealApi.mutation(
+  "staff",
+  "setWorkspaceRequestLimit"
+);
+
 // Records a legal request, then answers it: for staff who hold the legal
 // role.
 export const answerLegalRequest = PealApi.mutation("legal", "answer");
